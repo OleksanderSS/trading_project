@@ -656,6 +656,25 @@ class ColabTrainingController:
             # skipped heavy model can never become a champion -- the skip
             # silently disqualifies it.
             sidecar = self._load_sidecar(model_filename)
+
+            # Reuse only when the model was fitted to THIS batch.
+            #
+            # "The file exists" was the entire cache test, and a filename
+            # carries no trace of the data behind it. Re-run prepare -- new
+            # bars, a changed indicator, a different ticker set -- and every
+            # model keeps its name while the features underneath it move.
+            # The old check would skip all of them forever, so the batch
+            # would silently be scored by models fitted to data it no longer
+            # contains.
+            current_batch = self._batch_fingerprint()
+            trained_on = (sidecar or {}).get("batch_fingerprint", "")
+            if sidecar and current_batch and trained_on and trained_on != current_batch:
+                print(
+                    f"    🔄 {model_type:<14} | Модель від іншої партії "
+                    f"({trained_on[:8]}… ≠ {current_batch[:8]}…) — перетреновую."
+                )
+                sidecar = None
+
             if sidecar:
                 print(f"    ⏭️  {model_type:<14} | Вже існує, метрики з кешу.")
                 model_result = {
@@ -1629,6 +1648,31 @@ class ColabTrainingController:
         print(f"    🎯 Autoencoder - {metrics} - збережено: {model_path.name}")
         return metrics
 
+    def _batch_fingerprint(self) -> str:
+        """Which batch this run is training on.
+
+        prepare writes raw_db_fingerprint.json beside the parquets, holding a
+        hash of the raw data and a hash of the code that built the features.
+        Together they identify the batch: change either and the features are
+        different numbers, so a model fitted to the old ones is stale.
+
+        Empty when the file is absent -- an unidentifiable batch disables the
+        reuse check rather than silently reusing against nothing.
+        """
+        cached = getattr(self, "_batch_fp_cache", None)
+        if cached is not None:
+            return cached
+        value = ""
+        try:
+            path = self.path_manager.batch_dir / "raw_db_fingerprint.json"
+            if path.exists():
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                value = f"{payload.get('fingerprint','')[:16]}:{payload.get('code_fingerprint','')[:16]}"
+        except (OSError, json.JSONDecodeError) as exc:
+            self.logger.warning("Could not read the batch fingerprint: %s", exc)
+        self._batch_fp_cache = value
+        return value
+
     def _sidecar_path(self, model_filename: str) -> Path:
         return self.path_manager.batch_dir / f"{model_filename}.metrics.json"
 
@@ -1646,6 +1690,11 @@ class ColabTrainingController:
                 "metrics": metrics,
                 "selected_features": list(selected_features or []),
                 "saved_at": datetime.now().isoformat(),
+                # Which batch this fit belongs to. Without it, "the model
+                # file exists" is the only reuse test there is, and a model
+                # fitted to last week's features is indistinguishable from
+                # one fitted to today's.
+                "batch_fingerprint": self._batch_fingerprint(),
             }
             self._sidecar_path(model_filename).write_text(
                 json.dumps(payload, ensure_ascii=False), encoding="utf-8"
