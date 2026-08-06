@@ -170,8 +170,41 @@ class ModelingStage(BaseStage):
             # Same defect as the context lookup fixed in ce566d0f; this call
             # site was missed because it tests a column directly instead of
             # going through _latest_context_value.
+            #
+            # THEN: context_pattern_id turned out to be unusable as a key,
+            # for a reason independent of which column was read. It is a
+            # SHA-256 of a five-fingerprint sequence, each fingerprint ~185
+            # tri-state drivers, so the space is astronomically large and
+            # every row gets its own value. Measured on the export:
+            #
+            #     15m  14,209 rows -> 14,201 distinct patterns
+            #     60m   5,652 rows ->  5,647 distinct
+            #     1d    7,128 rows ->  7,112 distinct
+            #
+            # One observation per pattern. Keying champions by it gives one
+            # champion per row, which is the same amount of information as
+            # the constant 'normal' it replaced -- both extremes, neither a
+            # regime. The fix in 9fa3a84a read the right column; the column
+            # cannot do this job.
+            #
+            # MARKET_REGIME can: 6 to 8 values per timeframe, well spread
+            # (15m: RANGING 5131, TRENDING_UP 4136, TRENDING_DOWN 3363,
+            # NORMAL 1012, MEAN_REVERSION 550). That is what a champion
+            # keyed by regime needs -- enough repetition for the diary to
+            # accumulate evidence per regime.
+            #
+            # Read from THIS timeframe, not from the daily bar. A 15m model
+            # sees 15m features and its edge is a 15m phenomenon; keying it
+            # by a regime that changes once a day would hold nearly constant
+            # across a session and erase the variation the model exists to
+            # trade. The higher-timeframe view is not lost -- the assembler
+            # already puts ctx_1d_MARKET_REGIME_1d on the finer rows, so the
+            # model can use the daily regime as a FEATURE without it being
+            # the key.
             current_pattern = self._latest_context_value(
-                df, ("context_pattern_id",), default='normal',
+                df,
+                ("MARKET_REGIME", "market_regime", "regime"),
+                default='normal',
                 timeframe=str(timeframe),
             ) or 'normal'
             logger.info(

@@ -257,8 +257,31 @@ class PathManager:
         print(f"📁 PROJECT_PATH: {self.PROJECT_PATH}")
         print(f"📁 SRC_PATH: {self.SRC_PATH}")
 
-        # Set batch directory
-        self.batch_dir = Path(self.PROJECT_PATH) / "data" / "colab" / "accumulated" / "main_database"
+        # Set batch directory.
+        #
+        # COLAB_BATCH_DIR wins when set, because the batch does not always
+        # live inside the checkout. One real workflow copies features.parquet
+        # and targets.parquet from a local machine to Drive, trains against
+        # them there, and copies the results back -- so the code is in one
+        # place and the data in another, and deriving the batch path from
+        # PROJECT_PATH finds nothing.
+        #
+        # Falls back to the in-project location, which is where --mode
+        # prepare writes it.
+        override = os.environ.get("COLAB_BATCH_DIR")
+        if override:
+            self.batch_dir = Path(override)
+            print(f"📦 BATCH_DIR (from COLAB_BATCH_DIR): {self.batch_dir}")
+        else:
+            self.batch_dir = Path(self.PROJECT_PATH) / "data" / "colab" / "accumulated" / "main_database"
+            print(f"📦 BATCH_DIR: {self.batch_dir}")
+        if not (self.batch_dir / "features.parquet").exists():
+            # Said here, where the path is still in hand, rather than as a
+            # FileNotFoundError several screens later.
+            print(
+                f"⚠️ features.parquet not found in {self.batch_dir}. "
+                "Set COLAB_BATCH_DIR to where the batch actually is."
+            )
 
 # ==============================================================================
 # 3. MEMORY MONITOR

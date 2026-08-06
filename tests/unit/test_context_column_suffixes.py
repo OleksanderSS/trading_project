@@ -210,3 +210,44 @@ def test_the_training_pattern_is_read_with_its_timeframe_suffix():
 
     assert "_latest_context_value(" in code
     assert "df['context_pattern_id'].iloc[-1]" not in code
+
+
+def test_the_training_pattern_uses_a_key_that_actually_groups():
+    """context_pattern_id is unique per row, so it cannot key a champion.
+
+    It is a SHA-256 of five concatenated fingerprints, each ~185 tri-state
+    drivers, so the space is astronomically large. Measured on the export:
+    15m 14,209 rows -> 14,201 distinct; 60m 5,652 -> 5,647; 1d 7,128 ->
+    7,112. One observation per pattern carries the same information as the
+    constant 'normal' it replaced -- both extremes, neither a regime.
+
+    MARKET_REGIME has 6-8 values per timeframe and is well spread, which is
+    what a champion keyed by regime needs.
+
+    Read from the model's OWN timeframe: a 15m model's edge is a 15m
+    phenomenon, and a daily regime would hold nearly constant across a
+    session. The daily view is still available to the model as a feature via
+    the assembler's ctx_1d_* columns.
+    """
+    import inspect
+    import io
+    import textwrap
+    import tokenize
+
+    source = textwrap.dedent(inspect.getsource(ModelingStage.run))
+
+    # COMMENTS stripped, string literals KEPT. The lookahead scanner's
+    # _code_only blanks strings as well, which is correct when hunting for
+    # operations and wrong here: the thing being asserted on IS a string
+    # literal, so that helper erases the evidence. It did, on the first run
+    # of this test.
+    code = " ".join(
+        token.string
+        for token in tokenize.generate_tokens(io.StringIO(source).readline)
+        if token.type != tokenize.COMMENT
+    )
+
+    assert "MARKET_REGIME" in code
+    assert "context_pattern_id" not in code, (
+        "the champion key is back on a row-unique hash"
+    )
