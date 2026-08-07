@@ -638,8 +638,25 @@ class ColabTrainingController:
                 # documented guarantee, so this must be explicit, not assumed.
                 tf_rows = tf_rows.sort_values('datetime')
             tf_rows = tf_rows.reset_index(drop=True)
-            print(f"\n  ⏱️  Таймфрейм {timeframe}: {tf_rows.shape}")
-            for target_col in target_cols:
+
+            # Only the targets this timeframe actually carries.
+            #
+            # The list was taken once from the whole merged frame, so each
+            # timeframe then walked all 27 and announced "0 samples" for the
+            # ~20 that do not exist at that cadence -- target_up_1d has no
+            # meaning on a 15-minute bar, and the targets ARE partitioned
+            # that way by design, not by accident. Cheap in time (the sample
+            # check returns before any work) but it buried the real lines in
+            # the log and wrote an empty entry per skipped target into
+            # colab_results.json.
+            live_targets = [c for c in target_cols
+                            if tf_rows[c].notna().sum() >= self._MIN_TRAINING_SAMPLES]
+            skipped = len(target_cols) - len(live_targets)
+            print(f"\n  ⏱️  Таймфрейм {timeframe}: {tf_rows.shape} | "
+                  f"таргетів {len(live_targets)}"
+                  + (f" (ще {skipped} не існують на цьому таймфреймі)" if skipped else ""))
+
+            for target_col in live_targets:
                 self._process_target(ticker, timeframe, target_col, tf_rows, heavy_models)
 
     @staticmethod
@@ -672,7 +689,7 @@ class ColabTrainingController:
 
         # Filter data
         mask = merged[target_col].notna()
-        if mask.sum() < 50:
+        if mask.sum() < self._MIN_TRAINING_SAMPLES:
             print(f"    ⚠️ Лише {mask.sum()} зразків, занадто мало.")
             return
 
@@ -1087,6 +1104,12 @@ class ColabTrainingController:
     # three architectures were paying real compute for no more expressive
     # power than a plain dense layer applied once. mlp/tabnet/autoencoder
     # are non-sequential by design and correctly stay on the flat features.
+    #: Below this, a target is not trainable and is not attempted. One
+    #: definition: the per-timeframe target list and the per-target guard
+    #: both read it, and two copies of a threshold are two thresholds as
+    #: soon as one of them is tuned.
+    _MIN_TRAINING_SAMPLES = 50
+
     _SEQUENCE_WINDOW = 20  # trading days of history; matches the SMA_20/BB_20 lookback already used elsewhere in this pipeline
     _SEQUENCE_MODEL_TYPES = {'cnn', 'lstm', 'gru', 'transformer'}
 
