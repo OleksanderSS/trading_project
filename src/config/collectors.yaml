@@ -432,11 +432,23 @@ collectors:
       1d:
         period: 2y
       1h:
-        # Yahoo serves hourly bars for 730 days, not 60. The 60 here (and a
-        # hardcoded 58-day clamp in yf_collector) threw away 92% of the
-        # available history, which is why a rare hourly event like
-        # target_hourly_breakout_1h arrived clustered in a single month.
-        period: 730d
+        # Bounded by NEWS coverage, not by Yahoo.
+        #
+        # Yahoo serves hourly bars for 730 days, and yf_collector's clamp now
+        # allows that (it used to cut every intraday interval to 58 days).
+        # But our news history starts 2026-03-14: rss_news 8,894 rows from
+        # 03-20, google_news 5,194 from 03-14. Asking for 730 days would add
+        # ~17 months of bars whose 144 news/sentiment features are
+        # zero-filled -- teaching the models that the past was newsless,
+        # which is worse than not having the bars.
+        #
+        # Nothing currently distinguishes "no news happened" from "no news
+        # collected": sentiment_available_* is the constant 1.0 on all three
+        # timeframes. Until that is trustworthy, price history should not
+        # outrun news history.
+        #
+        # Raise this as news accumulates. The ceiling is 728.
+        period: 180d
     timeout: 30
     type: yahoo_finance
     benchmark_tickers:

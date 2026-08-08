@@ -104,10 +104,7 @@ def test_a_short_request_is_left_alone():
 # --------------------------------------------------------- the config
 
 
-def test_the_config_asks_for_the_history_the_clamp_now_allows():
-    """A raised ceiling changes nothing while the request stays at 60d.
-    Both halves have to move, which is exactly the kind of pair that gets
-    half-done."""
+def _configured_hourly_period_days():
     import yaml
 
     with open("src/config/collectors.yaml", encoding="utf-8") as handle:
@@ -116,8 +113,36 @@ def test_the_config_asks_for_the_history_the_clamp_now_allows():
     timeframes = config["collectors"]["yahoo_finance"]["timeframes"] \
         if "collectors" in config else config["yahoo_finance"]["timeframes"]
     period = str(timeframes["1h"]["period"])
+    assert period.endswith("d"), period
+    return int(period.rstrip("d"))
 
-    assert period.endswith("d")
-    assert int(period.rstrip("d")) > 700, (
-        f"1h period is {period}; the collector can now fetch ~728 days"
+
+def test_the_config_asks_for_more_than_the_old_clamp_allowed():
+    """The clamp used to make anything above 58 days meaningless. That it
+    now asks for materially more is the point of raising the ceiling."""
+    assert _configured_hourly_period_days() > 100
+
+
+def test_the_config_stays_within_what_news_covers():
+    """Price history must not outrun news history.
+
+    144 of the feature columns come from news and sentiment, and nothing
+    distinguishes "no news happened" from "no news collected" --
+    sentiment_available_* is the constant 1.0 on all three timeframes.
+    News starts 2026-03-14, so 730 days of bars would come with ~17 months
+    of zero-filled news features that read as a quiet market.
+
+    This is a ceiling on the CONFIG, not on the collector: the clamp
+    correctly allows 728, and this number should rise as news accumulates.
+    """
+    assert _configured_hourly_period_days() <= 365, (
+        "hourly history now reaches far past the news that is supposed to "
+        "explain it -- check news coverage before raising this"
     )
+
+
+def test_the_request_is_within_what_the_provider_serves():
+    """A config asking for more than the clamp allows is silently truncated,
+    which reads in the log as a limit nobody chose."""
+    assert (_configured_hourly_period_days()
+            <= YFCollector._intraday_limit_days("1h"))
