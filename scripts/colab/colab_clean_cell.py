@@ -672,6 +672,54 @@ class ColabTrainingController:
             return [('all', merged)]
         return [(str(tf), rows) for tf, rows in merged.groupby('interval', sort=True)]
 
+    @classmethod
+    def _classification_split_verdict(cls, y_ser):
+        """Why this classification target cannot be trained here, or None.
+
+        The split is chronological, so a rare event that happens to cluster
+        late lands entirely in validation and leaves the training portion
+        with a single class. Measured on AAPL 60m
+        target_hourly_breakout_1h: 11 positives in 278 rows, all 11 inside
+        the final 20%.
+
+        Six of the seven trainers accepted that without complaint. A
+        classifier fitted to one class can only ever predict that class,
+        and it scored 44/55 = 80% on a validation window that is mostly the
+        same class -- a respectable-looking number for a model that learned
+        nothing. Only TabNet refused, with
+
+            Valid set -- {0, 1} -- contains unkown targets from training set
+
+        so the one model that failed loudly was the only honest report in
+        the group, and the six that "succeeded" were the real damage.
+
+        Checked once for the whole target rather than per trainer: the
+        condition is a property of the data and the split, not of any
+        architecture. Sequence models purge additional rows off the end of
+        the training portion, so they can still hit a degenerate split this
+        does not catch -- that now surfaces as a recorded error rather than
+        a success, which is the other half of the same fix.
+
+        Rare-but-present is left to train. Where the line sits between
+        "rare" and "too rare" is a modelling decision, not something to
+        decide silently inside a guard; the imbalance is printed so it is
+        visible in the log.
+        """
+        y = pd.Series(y_ser).dropna()
+        if len(y) < cls._MIN_TRAINING_SAMPLES:
+            return f"лише {len(y)} зразків"
+
+        _, _, y_train, y_val = cls._chronological_split(y, y)
+        train_classes = sorted(pd.Series(y_train).unique().tolist())
+        if len(train_classes) < 2:
+            counts = pd.Series(y).value_counts().sort_index().to_dict()
+            return (
+                f"тренувальна вибірка має один клас {train_classes} — "
+                f"модель могла б передбачати лише його "
+                f"(усього {counts}, розділ хронологічний)"
+            )
+        return None
+
     def _results_slot(self, ticker, timeframe, target_col):
         """The dict this (ticker, timeframe, target) writes its models into."""
         return (
@@ -725,6 +773,15 @@ class ColabTrainingController:
         target_type = self.config_loader.target_type_for(target_col)
         is_classification = target_type in CLASSIFICATION_TARGET_TYPES
         y_scaler = None
+
+        if is_classification:
+            verdict = self._classification_split_verdict(y_ser)
+            if verdict:
+                print(f"    ⛔ {verdict}")
+                self._results_slot(ticker, timeframe, target_col)['_context'] = {
+                    'status': 'error', 'message': verdict,
+                }
+                return
 
         # Scaling - CRITICAL FOR NEURAL NETWORKS
         try:
