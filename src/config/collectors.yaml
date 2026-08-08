@@ -432,7 +432,11 @@ collectors:
       1d:
         period: 2y
       1h:
-        period: 60d
+        # Yahoo serves hourly bars for 730 days, not 60. The 60 here (and a
+        # hardcoded 58-day clamp in yf_collector) threw away 92% of the
+        # available history, which is why a rare hourly event like
+        # target_hourly_breakout_1h arrived clustered in a single month.
+        period: 730d
     timeout: 30
     type: yahoo_finance
     benchmark_tickers:

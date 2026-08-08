@@ -6,7 +6,7 @@ import threading
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pandas as pd
 import yfinance as yf
@@ -17,6 +17,8 @@ from src.data.validation.price_source_gate import (
     price_source_issues,
     quarantine_bad_rows,
 )
+
+from src.pipeline.timeframe_lineage import normalize_timeframe
 
 from .base_collector import BaseCollector
 
@@ -69,11 +71,63 @@ class YFCollector(BaseCollector):
                 return new_from_cache.to_dict('records')
         return None
 
+    #: How far back Yahoo serves each intraday interval. These are the
+    #: provider's own limits, and they are NOT uniform -- which is the whole
+    #: point of a table here.
+    #:
+    #: One hardcoded 58 stood in for all of them, applied to any interval
+    #: ending in 'm' or 'h'. For 15m that is correct (Yahoo's limit is 60
+    #: days). For hourly it threw away 92% of the available history: Yahoo
+    #: serves 1h for 730 days, and every request was cut to 58.
+    #:
+    #: The cost was not abstract. AAPL's hourly series reached the training
+    #: batch with 363 bars, and target_hourly_breakout_1h had 11 positive
+    #: events in it -- all inside one volatile stretch in July, so the
+    #: chronological split left the training portion with a single class and
+    #: six models were fitted to it (see the guard in
+    #: scripts/colab/colab_clean_cell.py::_classification_split_verdict).
+    #: Rare events need a long enough window to stop being clustered.
+    #:
+    #: Keyed on the canonical timeframe name, so '1h' and '60m' -- the two
+    #: spellings this project has already been bitten by -- resolve to one
+    #: entry.
+    _INTRADAY_HISTORY_LIMIT_DAYS: ClassVar[dict[str, int]] = {
+        '1m': 7,
+        '2m': 60,
+        '5m': 60,
+        '15m': 60,
+        '30m': 60,
+        '90m': 60,
+        '60m': 730,
+    }
+
+    #: Requesting exactly the provider's boundary date fails intermittently
+    #: (timezone edges, weekends). Ask for slightly less.
+    _HISTORY_LIMIT_SAFETY_DAYS = 2
+
+    #: Used when the interval is not in the table. The conservative choice:
+    #: a new intraday interval gets the tightest common limit rather than a
+    #: silent 730 that the provider would refuse.
+    _DEFAULT_INTRADAY_LIMIT_DAYS = 60
+
+    @classmethod
+    def _intraday_limit_days(cls, interval: str) -> int:
+        """Yahoo's history depth for `interval`, minus a safety margin."""
+        canonical = normalize_timeframe(interval) or str(interval)
+        limit = cls._INTRADAY_HISTORY_LIMIT_DAYS.get(
+            canonical, cls._DEFAULT_INTRADAY_LIMIT_DAYS
+        )
+        return max(1, limit - cls._HISTORY_LIMIT_SAFETY_DAYS)
+
     def _adjust_intraday_dates(self, interval: str, start_date: datetime, end_date: datetime, reference_now: datetime) -> tuple[datetime, datetime]:
         """Adjust dates for intraday intervals."""
-        limit_date = reference_now - timedelta(days=58)
+        limit_days = self._intraday_limit_days(interval)
+        limit_date = reference_now - timedelta(days=limit_days)
         if start_date < limit_date:
-            self.logger.warning(f"Interval '{interval}' is intraday and start_date {start_date} is too old. Adjusting to {limit_date}")
+            self.logger.warning(
+                f"Interval '{interval}' is intraday and start_date {start_date} "
+                f"is older than Yahoo serves ({limit_days}d). Adjusting to {limit_date}"
+            )
             start_date = limit_date
 
         # Ensure start is before end after adjustment
