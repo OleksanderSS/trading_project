@@ -903,6 +903,36 @@ class ColabTrainingController:
             # is one copy too many -- the value from the top of this method
             # is the one the skip check and _save_sidecar already use.
 
+            # A trainer that RETURNS an error is still a failure.
+            #
+            # Several trainers report failure by returning {'error': ...}
+            # rather than raising: TabNet when pytorch_tabnet is missing, the
+            # sequence models when there is not enough history to build a
+            # single window. Nothing here looked at that, so the run recorded
+            # status='success', wrote a metrics sidecar, and listed a
+            # model_path for a file that was never written.
+            #
+            # Measured on the 2026-08-07 run: 4,620 sidecars against 4,619
+            # models -- the extra one is exactly this. The count is how the
+            # defect was found, which is the point of counting.
+            if isinstance(metrics, dict) and 'error' in metrics:
+                print(f"    ❌ {model_type:<14} | {metrics['error']}")
+                self._results_slot(ticker, timeframe, target_col)[model_type] = {
+                    'status': 'error',
+                    'message': str(metrics['error'])[:200],
+                }
+                return
+
+            if not model_path.exists():
+                # The trainer reported numbers and left no file. Recording it
+                # as a success would hand Stage 5 a path to nothing.
+                print(f"    ❌ {model_type:<14} | метрики є, файл моделі не записано")
+                self._results_slot(ticker, timeframe, target_col)[model_type] = {
+                    'status': 'error',
+                    'message': f'no model file at {model_filename}',
+                }
+                return
+
             model_result = {
                 'status': 'success',
                 'model_path': model_filename,
