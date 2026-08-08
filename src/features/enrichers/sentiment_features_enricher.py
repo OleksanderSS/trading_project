@@ -312,7 +312,21 @@ class SentimentFeaturesEnricher(BaseEnricher):
         # Fill sentiment strictly within each ticker, then use neutral for tickers with no signal.
         sentiment_values = pd.to_numeric(df_enriched[sentiment_col], errors='coerce')
         carried_sentiment = sentiment_values.groupby(df_enriched['ticker']).ffill()
-        df_enriched['sentiment_available'] = carried_sentiment.notna().astype(int)
+
+        # The flag reports a reading on THIS bar, not the presence of a
+        # value after forward-fill.
+        #
+        # It was computed from carried_sentiment, i.e. after the ffill --
+        # so one reading anywhere in a ticker's history made every later row
+        # "available", forever. Measured on the 2026-08-06 export it is the
+        # constant 1.0 on all three timeframes, including 5,757 daily rows
+        # predating any sentiment source in the database.
+        #
+        # A constant column cannot inform a model, and this one does worse
+        # than that: it asserts a reading exists for rows carrying a value
+        # stale by days. Distinguishing a fresh sentiment from a stale one
+        # is the entire reason to have the flag.
+        df_enriched['sentiment_available'] = sentiment_values.notna().astype(int)
         df_enriched[sentiment_col] = carried_sentiment.where(carried_sentiment.notna(), 0.0)
 
         return df_enriched
