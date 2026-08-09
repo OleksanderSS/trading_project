@@ -126,3 +126,92 @@ def test_a_frame_without_a_timeframe_column_is_left_alone(service):
     frame = pd.DataFrame({"ticker": ["AAPL"] * 3, "close": [1.0, 2.0, 3.0]})
 
     assert len(service._rows_for_timeframe(frame, "AAPL", "1d")) == 3
+
+
+# --------------------------------------------------------------------------
+# When dropping empties the frame, say WHICH columns did it.
+#
+# On the 2026-08-09 run 313 of 660 contexts ended at "has no data after
+# dropping incomplete rows" -- 127 of 154 on 15m, 84 of 110 on 60m -- and
+# the message named not a single feature. The cause could not be
+# established from the artifacts afterwards, only guessed at. A row is
+# dropped BY a column, and the column is the part worth knowing.
+# --------------------------------------------------------------------------
+
+
+def _service_with_capture(caplog):
+    import logging
+
+    from src.pipeline.stages.prediction.data_preparation_service import (
+        DataPreparationService,
+    )
+
+    service = DataPreparationService.__new__(DataPreparationService)
+    service.logger = logging.getLogger("drop-diagnostic-test")
+    caplog.set_level(logging.ERROR, logger="drop-diagnostic-test")
+    return service
+
+
+def test_the_column_that_emptied_the_frame_is_named(caplog):
+    import numpy as np
+
+    service = _service_with_capture(caplog)
+    frame = pd.DataFrame({
+        "good_feature": [1.0, 2.0, 3.0],
+        "ctx_60m_dead": [np.nan, np.nan, np.nan],
+    })
+
+    result = service._drop_incomplete_model_rows(
+        frame, ["good_feature", "ctx_60m_dead"], "XLF_60m_target_x"
+    )
+
+    assert result is None
+    message = caplog.text
+    assert "ctx_60m_dead" in message, message
+    assert "good_feature" not in message, (
+        "the column that was fine is named as if it were a culprit"
+    )
+
+
+def test_the_message_counts_how_many_features_are_wholly_null(caplog):
+    import numpy as np
+
+    service = _service_with_capture(caplog)
+    frame = pd.DataFrame({
+        "a": [np.nan, np.nan],
+        "b": [np.nan, np.nan],
+        "c": [1.0, 2.0],
+    })
+
+    service._drop_incomplete_model_rows(frame, ["a", "b", "c"], "ctx")
+
+    assert "2 of 3" in caplog.text, caplog.text
+
+
+def test_a_partially_null_feature_is_reported_separately(caplog):
+    import numpy as np
+
+    service = _service_with_capture(caplog)
+    frame = pd.DataFrame({
+        "always_null": [np.nan, np.nan],
+        "sometimes_null": [1.0, np.nan],
+    })
+
+    service._drop_incomplete_model_rows(frame, ["always_null", "sometimes_null"], "ctx")
+
+    text = caplog.text
+    assert "always_null" in text
+    assert "sometimes_null" in text
+    assert "1 more" in text or "null in some" in text, text
+
+
+def test_a_frame_that_survives_is_left_alone(caplog):
+    """The diagnostic must not fire on the working path."""
+    service = _service_with_capture(caplog)
+    frame = pd.DataFrame({"a": [1.0, 2.0], "b": [3.0, 4.0]})
+
+    result = service._drop_incomplete_model_rows(frame, ["a", "b"], "ctx")
+
+    assert result is not None
+    assert len(result) == 2
+    assert caplog.text == ""

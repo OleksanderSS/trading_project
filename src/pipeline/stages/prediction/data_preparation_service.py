@@ -342,6 +342,7 @@ class DataPreparationService:
         if not model_feature_cols:
             return ticker_df
 
+        original = ticker_df
         complete_rows = ticker_df[model_feature_cols].notna().all(axis=1)
         if complete_rows.all():
             return ticker_df
@@ -354,8 +355,32 @@ class DataPreparationService:
         ticker_df = ticker_df[complete_rows].copy()
 
         if ticker_df.empty:
+            # Name the columns that emptied it.
+            #
+            # This used to report only that nothing survived. On the
+            # 2026-08-09 run 313 of 660 contexts ended here -- 127 of 154 on
+            # 15m, 84 of 110 on 60m -- and the message named not one feature,
+            # so the cause could not be established from the artifacts
+            # afterwards. A row is dropped BY a column; the column is the
+            # part worth knowing.
+            present = [c for c in model_feature_cols if c in original.columns]
+            null_counts = original[present].isna().sum()
+            blockers = null_counts[null_counts == len(original)]
+            partial = null_counts[
+                (null_counts > 0) & (null_counts < len(original))
+            ].sort_values(ascending=False)
+
             self.logger.error(
-                f'Context {context_id} has no data after dropping incomplete rows; skipping prediction.'
+                f'Context {context_id} has no data after dropping incomplete '
+                f'rows; skipping prediction. '
+                f'{len(blockers)} of {len(present)} required feature(s) are '
+                f'null in EVERY one of the {len(original)} candidate rows'
+                + (f' (e.g. {", ".join(list(blockers.index)[:5])})'
+                   if len(blockers) else '')
+                + (f'; {len(partial)} more are null in some'
+                   f' (worst: {", ".join(list(partial.index)[:3])})'
+                   if len(partial) else '')
+                + '.'
             )
             return None
 
