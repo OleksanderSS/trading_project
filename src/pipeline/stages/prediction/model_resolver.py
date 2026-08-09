@@ -173,21 +173,36 @@ class ModelResolver:
         expected_target = target.lower().replace('-', '_')
         expected_model  = model_type.lower().replace('-', '_')
 
+        # An exact timeframe match wins; an unlabelled file is a fallback,
+        # never a rival.
+        #
+        # This used to accept either in one pass, on the reasoning that a
+        # pre-split name "is the only candidate there is". It stopped being
+        # the only candidate the moment a run wrote labelled names beside the
+        # old ones: data/trained_models holds 4,614 labelled models and 3,536
+        # unlabelled ones left from 2026-08-04/05, so for most contexts BOTH
+        # match and the winner was whichever the directory listing reached
+        # first. The stale ones were fitted to a different batch, and on the
+        # heavy side to several timeframes mixed together -- exactly the
+        # models this naming was introduced to stop using.
+        fallback = None
         for stem, fpath in available_files.items():
             parsed = self._parse_model_stem(stem)
             if parsed is None:
                 continue
             file_ticker, file_tf, file_target, file_model_type = parsed
-            # An unlabelled file (pre-split naming) matches any timeframe --
-            # it is the only candidate there is. Two labelled names must
-            # agree.
-            tf_ok = not file_tf or not expected_tf or (
-                normalize_timeframe(file_tf) == expected_tf)
-            if (file_ticker == expected_ticker
-                    and file_model_type == expected_model
-                    and file_target == expected_target
-                    and tf_ok):
-                return fpath
+            if (file_ticker != expected_ticker
+                    or file_model_type != expected_model
+                    or file_target != expected_target):
+                continue
+            if file_tf and expected_tf:
+                if normalize_timeframe(file_tf) == expected_tf:
+                    return fpath
+                continue
+            if fallback is None:
+                fallback = fpath
+        if fallback is not None:
+            return fallback
 
         # Fallback: loose substring match for flexibility.
         needle = '_'.join(

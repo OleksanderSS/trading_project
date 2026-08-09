@@ -39,6 +39,11 @@ except ImportError:
 
 
 class FeatureDriftMonitor:
+
+    #: Ceiling on features per drift check. Evidently stalls for
+    #: minutes on the full ~1,940-column frame, and Stage 7 runs one
+    #: check per (ticker, timeframe) context.
+    MAX_DRIFT_FEATURES = 100
     """
     Monitors feature drift using Evidently AI.
 
@@ -113,17 +118,47 @@ class FeatureDriftMonitor:
                 if not col.startswith('target_') and col not in ['hash', 'interval']
             ]
 
-        # Ensure columns exist in both datasets
-        common_columns = list(set(feature_columns) & set(self.reference_data.columns) & set(current_data.columns))
+        # Ensure columns exist in both datasets and have sufficient non-null values
+        valid_common = [
+            col for col in (set(feature_columns) & set(self.reference_data.columns) & set(current_data.columns))
+            if self.reference_data[col].count() >= 10 and current_data[col].count() >= 10
+        ]
+        valid_common.sort()
+        available_count = len(valid_common)
 
-        if not common_columns:
-            raise DataProcessingError("No common columns between reference and current data")
+        # Cap to MAX_DRIFT_FEATURES so Evidently does not stall for minutes on
+        # ~1,940 columns. The cap is necessary; WHICH features it keeps is the
+        # part that has to be deliberate.
+        #
+        # It was `valid_common[:100]` after an alphabetical sort, i.e. the
+        # first hundred names -- everything starting with A and part of B.
+        # Verified on the 2026-08-09 run: the sampled set opens AATR_14_15m,
+        # AATR_14_1d, AATR_14_60m, ABB_Lower_15m. Whole families (volume_*,
+        # sentiment_*, state_*) could drift without a single one of them
+        # being looked at, and the report would still say no drift detected.
+        #
+        # An evenly-spaced stride over the sorted names spans the whole space
+        # instead of one end of it. It is still a SAMPLE, so the result says
+        # so rather than implying full coverage.
+        if available_count > self.MAX_DRIFT_FEATURES:
+            step = available_count / self.MAX_DRIFT_FEATURES
+            valid_common = [
+                valid_common[int(i * step)] for i in range(self.MAX_DRIFT_FEATURES)
+            ]
 
-        logger.info(f"🔍 Checking drift for {len(common_columns)} features...")
+        if not valid_common:
+            raise DataProcessingError("No valid non-empty common columns between reference and current data")
+
+        sampled = available_count > len(valid_common)
+        logger.info(
+            f"🔍 Checking drift for {len(valid_common)} features"
+            + (f" (evenly sampled from {available_count})" if sampled else "")
+            + "..."
+        )
 
         # Prepare data
-        ref_data = self.reference_data[common_columns].copy()
-        cur_data = current_data[common_columns].copy()
+        ref_data = self.reference_data[valid_common].copy()
+        cur_data = current_data[valid_common].copy()
 
         # Create Evidently report
         try:
@@ -209,6 +244,13 @@ class FeatureDriftMonitor:
                 'drift_score': drift_score,
                 'drifted_features_count': sum(1 for d in column_drifts.values() if d['drift_detected']),
                 'total_features': len(column_drifts),
+                # What was actually looked at. "No drift detected" over 100 of
+                # 1,940 features is a different statement from "no drift", and
+                # the result has to carry the difference -- otherwise a reader
+                # (human or downstream) takes 5% coverage for full coverage.
+                'features_checked': len(column_drifts),
+                'features_available': available_count,
+                'features_sampled': available_count > len(column_drifts),
                 'column_drifts': column_drifts,
                 'report_path': str(report_path),
                 'timestamp': timestamp

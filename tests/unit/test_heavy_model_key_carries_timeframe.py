@@ -225,3 +225,47 @@ def test_selected_features_land_on_the_model_they_belong_to():
     assert models_metadata[
         heavy_model_key("AAPL", "1d", "target_return", "mlp")
     ]["selected_features"] == ["rsi_1d"]
+
+
+def test_a_labelled_file_beats_a_stale_unlabelled_one(resolver):
+    """Both match; the one naming the timeframe must win.
+
+    data/trained_models holds 4,614 labelled models beside 3,536 unlabelled
+    ones left from 2026-08-04/05. The first version of this matcher accepted
+    either in a single pass, so for most contexts BOTH were candidates and
+    the winner was whichever the directory listing reached first. The stale
+    ones were fitted to a different batch -- and on the heavy side to several
+    timeframes at once, which is what the timeframe in the name exists to
+    prevent.
+    """
+    available = _files(
+        "model_aapl_target_return_mlp",       # stale, 2026-08-04
+        "model_aapl_1d_target_return_mlp",    # current
+    )
+
+    matched = resolver._match_model_file(
+        "AAPL", "1d", "target_return", "mlp", available
+    )
+
+    assert matched is not None
+    assert "1d" in matched.name, f"took the stale file: {matched.name}"
+
+
+def test_the_stale_file_still_answers_when_it_is_the_only_one(resolver):
+    """The fallback stays a fallback -- it is not removed, only outranked."""
+    available = _files("model_aapl_target_return_mlp")
+
+    assert resolver._match_model_file(
+        "AAPL", "1d", "target_return", "mlp", available
+    ) is not None
+
+
+def test_order_of_the_directory_listing_does_not_decide(resolver):
+    """The defect was order-dependent, so the test has to be too."""
+    forward = _files("model_aapl_1d_target_return_mlp", "model_aapl_target_return_mlp")
+    reverse = _files("model_aapl_target_return_mlp", "model_aapl_1d_target_return_mlp")
+
+    a = resolver._match_model_file("AAPL", "1d", "target_return", "mlp", forward)
+    b = resolver._match_model_file("AAPL", "1d", "target_return", "mlp", reverse)
+
+    assert a.name == b.name == "model_aapl_1d_target_return_mlp.pkl"

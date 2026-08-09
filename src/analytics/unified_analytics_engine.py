@@ -7,6 +7,7 @@ import importlib
 import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
 
 import pandas as pd
@@ -30,6 +31,9 @@ class UnifiedAnalyticsEngine:
     - Implements a caching mechanism to prevent redundant computations for identical input datasets.
     - Persists and manages analytical results via ModelResultsManager.
     """
+
+    #: Seconds one analyzer may take before the engine gives up on it.
+    DEFAULT_ANALYZER_TIMEOUT = 120
 
     def __init__(self, config_manager: UnifiedConfigManager):
         """
@@ -213,8 +217,8 @@ class UnifiedAnalyticsEngine:
                     hash_input += f'{key}_{str(value)}'
             return hashlib.sha256(hash_input.encode()).hexdigest()
 
-    def run_full_analysis(self, data_map: dict[str, Any], **kwargs) ->dict[
-        str, Any]:
+    def run_full_analysis(self, data_map: dict[str, Any], *,
+        timeout: float | None = None, **kwargs) ->dict[str, Any]:
         """
         Executes all registered analyzers in parallel using the thread pool.
 
@@ -223,6 +227,13 @@ class UnifiedAnalyticsEngine:
         2. Check cache for existing results.
         3. If no cache, route relevant data slices to analyzers.
         4. Collect and aggregate parallel results with safety timeouts.
+
+        `timeout` is the engine's own budget per analyzer, declared here
+        rather than read out of **kwargs. kwargs is forwarded verbatim to
+        every analyzer's analyze(), so a timeout smuggled through it arrives
+        as an argument each analyzer must tolerate -- and one that does not
+        fails for a reason unrelated to analysis. Stage 7 passing timeout=30
+        broke a caller this way on 2026-08-09.
         """
         data_hash = self._generate_data_hash(data_map)
         cached_results = self.results_manager.get_cached_analysis(data_hash)
@@ -266,17 +277,43 @@ class UnifiedAnalyticsEngine:
                     'supporting_review_only': True,
                 }
                 routing_status[name] = {'status': 'skipped_no_input_contract'}
+        timeout = self.DEFAULT_ANALYZER_TIMEOUT if timeout is None else timeout
         for name, future in futures.items():
             try:
-                raw_result = future.result(timeout=120)
+                raw_result = future.result(timeout=timeout)
                 results[name] = self._normalize_analyzer_result(raw_result)
                 routing_status[name] = {'status': 'executed'}
+            except FuturesTimeoutError:
+                # A timeout must SAY it timed out.
+                #
+                # concurrent.futures.TimeoutError carries no message, so
+                # str(e) is the empty string -- and the failure was recorded
+                # as {'error': '', 'status': 'failed'}. On the 2026-08-09 run
+                # that is what 54 of 66 feature_drift results looked like:
+                # failures with no stated reason, indistinguishable from a
+                # crash, and reported upstream as "checked without errors".
+                # Reconstructing that they were timeouts took reading the
+                # artifacts. The number that explains them belongs in them.
+                message = f'timed out after {timeout}s'
+                logger.error(f"Analyzer '{name}' {message}")
+                results[name] = {
+                    'error': message,
+                    'status': 'failed',
+                    'timed_out': True,
+                    'timeout_seconds': timeout,
+                    'supporting_review_only': True,
+                }
+                routing_status[name] = {
+                    'status': 'failed',
+                    'error_type': 'TimeoutError',
+                    'timeout_seconds': timeout,
+                }
             except Exception as e:
                 logger.exception(
                     f"Parallel execution failed for analyzer '{name}': {e}"
                     )
                 results[name] = {
-                    'error': str(e),
+                    'error': str(e) or f'{type(e).__name__} (no message)',
                     'status': 'failed',
                     'supporting_review_only': True,
                 }

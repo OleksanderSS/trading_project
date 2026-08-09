@@ -2,6 +2,8 @@ import asyncio
 
 import pandas as pd
 
+import logging
+
 from src.pipeline.stages.stage_7_evaluation import EvaluationStage
 
 
@@ -41,9 +43,15 @@ class _Analytics:
         self.data_map = None
         self.data_maps = []
 
-    def run_full_analysis(self, data_map):
+    def run_full_analysis(self, data_map, *, timeout=None, **kwargs):
+        # Mirrors the real signature, timeout included. The double accepted
+        # only data_map, so when Stage 7 began passing a per-context budget
+        # this raised TypeError -- and the stage's own handler then failed on
+        # a missing logger, reporting the AttributeError instead. A double
+        # that drifts from its original tests the double.
         self.data_map = data_map
         self.data_maps.append(data_map)
+        self.timeout = timeout
         return {}
 
 
@@ -62,6 +70,9 @@ class _Config:
 
 def _stage() -> EvaluationStage:
     stage = object.__new__(EvaluationStage)
+    # Without this the stage's exception handler raises AttributeError and
+    # buries whatever actually went wrong.
+    stage.logger = logging.getLogger("stage7-test")
     stage.config_manager = _Config()
     stage.backtest_analyzer = _BacktestAnalyzer()
     stage.metrics_calc = _Metrics()

@@ -418,7 +418,20 @@ class EvaluationStage(BaseStage):
         for context_key, price_frame in price_contexts.items():
             context_data_map = dict(data_map)
             context_data_map['price_data'] = price_frame
-            result = self.analytics_engine.run_full_analysis(context_data_map)
+            # Per-context budget. 30s was chosen to stop a five-hour Stage 7,
+            # and it did -- by timing out 54 of 66 contexts on 2026-08-09,
+            # each recorded with an empty error message. A timeout that most
+            # contexts cannot meet is not a budget, it is a silent skip.
+            #
+            # Configurable, because the right number depends on the feature
+            # count and the machine; and now that a timeout says so in the
+            # result, the next run reports whether this one is enough.
+            result = self.analytics_engine.run_full_analysis(
+                context_data_map,
+                timeout=self.config_manager.get(
+                    'analysis.engine.context_timeout_seconds', 90
+                ),
+            )
             if isinstance(result, dict):
                 result = dict(result)
                 result['_stage7_context_window'] = (
