@@ -338,7 +338,7 @@ Total: ~2-3 hours
 - **Module README**: `src/calibration/README.md`
 - **Summary**: `CALIBRATION_SUMMARY.md`
 - **Checklist**: `CALIBRATION_CHECKLIST.md`
-- **Data Strategy**: `.kiro/steering/data_strategy.md`
+- **Data Strategy**: `docs/archive/data_strategy.md`
 
 ---
 

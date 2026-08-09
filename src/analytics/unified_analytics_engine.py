@@ -6,6 +6,7 @@ import hashlib
 import importlib
 import json
 import logging
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeoutError
 from typing import Any
@@ -34,6 +35,11 @@ class UnifiedAnalyticsEngine:
 
     #: Seconds one analyzer may take before the engine gives up on it.
     DEFAULT_ANALYZER_TIMEOUT = 120
+
+    #: Result statuses that mean the analyzer did not produce an
+    #: answer. Reported inside the payload rather than raised, so the
+    #: engine has to read them to know a run failed.
+    FAILURE_STATUSES = frozenset({'failed', 'error', 'unavailable'})
 
     def __init__(self, config_manager: UnifiedConfigManager):
         """
@@ -153,7 +159,9 @@ class UnifiedAnalyticsEngine:
             # inputs, and on 2026-08-09 they did -- 54 of 66 contexts
             # produced a timeout at 30s. A cache keyed without it serves the
             # short run's answers to the long one.
-            'analyzer_timeout': self._contract_timeout,
+            'analyzer_timeout': getattr(
+                self, '_contract_timeout', self.DEFAULT_ANALYZER_TIMEOUT
+            ),
         }
 
     def _analysis_contract_hash(self) -> str:
@@ -222,7 +230,27 @@ class UnifiedAnalyticsEngine:
                         )
                 else:
                     hash_input += f'{key}_{str(value)}'
-            return hashlib.sha256(hash_input.encode()).hexdigest()
+            # A hash that could not be computed properly must never serve as
+            # a cache key.
+            #
+            # This fallback identifies a frame by key + shape + its first
+            # three rows, so two different datasets of the same shape with
+            # the same head collide -- and the engine then returns one's
+            # analysis for the other. It fires on any exception above,
+            # including ones with nothing to do with "complex types": an
+            # AttributeError introduced on 2026-08-09 sent every call down
+            # here, and two deliberately different data maps hashed
+            # identically.
+            #
+            # Made a guaranteed MISS instead. Recomputing is cheap; serving
+            # the wrong context's analysis is not, and it would be invisible.
+            unique = uuid.uuid4().hex
+            logger.warning(
+                'Analysis cache disabled for this call: the input fingerprint '
+                'could not be computed, and the fallback cannot tell two '
+                'datasets apart reliably enough to reuse a result.'
+            )
+            return hashlib.sha256(f'{hash_input}_{unique}'.encode()).hexdigest()
 
     def run_full_analysis(self, data_map: dict[str, Any], *,
         timeout: float | None = None, **kwargs) ->dict[str, Any]:
@@ -295,7 +323,24 @@ class UnifiedAnalyticsEngine:
             try:
                 raw_result = future.result(timeout=timeout)
                 results[name] = self._normalize_analyzer_result(raw_result)
-                routing_status[name] = {'status': 'executed'}
+                # An analyzer that RETURNS a failure is still a failure.
+                #
+                # Only a raised exception counted before, so DriftAnalyzer's
+                # `return {"status": "unavailable", "reason": ...}` -- its
+                # own catch-all -- was recorded as 'executed' with an empty
+                # failed list. On the 2026-08-09 evening run that was all 66
+                # contexts, and because nothing looked failed, all 66 were
+                # cached. The same shape as the Colab trainer returning
+                # {'error': ...} and being filed as a success.
+                reported = str(results[name].get('status', '')).lower()
+                if reported in self.FAILURE_STATUSES:
+                    routing_status[name] = {
+                        'status': 'failed',
+                        'error_type': f'reported_{reported}',
+                        'reason': results[name].get('reason'),
+                    }
+                else:
+                    routing_status[name] = {'status': 'executed'}
             except FuturesTimeoutError:
                 # A timeout must SAY it timed out.
                 #

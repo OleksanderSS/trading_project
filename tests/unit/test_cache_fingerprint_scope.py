@@ -152,3 +152,62 @@ def test_a_stage_4_edit_does_not_move_the_fingerprint(tmp_path, monkeypatch):
     assert fingerprint() != before, "a Stage 3 edit no longer invalidates the cache"
 
     shutil.rmtree(root)
+
+
+# --------------------------------------------------------------------------
+# Helper modules the cached stages import.
+#
+# Only src/pipeline/stages is hashed by directory, so src/pipeline's own
+# helpers were invisible -- while stages/feature_engineering/orchestrator.py
+# imports is_target_like_column and targets.py imports
+# is_direct_target_column from target_column_utils to decide which columns
+# are features and which are targets. A change there changes what
+# features.parquet and targets.parquet CONTAIN, and the fingerprint would
+# not have moved.
+# --------------------------------------------------------------------------
+
+
+def test_the_helper_modules_are_hashed():
+    covered = _fingerprinted()
+
+    for module in PipelineExecutor._FINGERPRINT_FILES:
+        assert Path(module) in covered, module
+
+
+def test_the_listed_helpers_are_the_ones_the_cached_stages_import():
+    """Pins the list against reality rather than against itself.
+
+    Every src/pipeline/*.py module imported by a fingerprinted stage decides
+    something about the cached artifact, so it belongs in the list. A new
+    such import should fail here rather than silently go unhashed.
+    """
+    import re
+
+    listed = {Path(f).name for f in PipelineExecutor._FINGERPRINT_FILES}
+    imported: set[str] = set()
+
+    for stage in ("collection", "processing", "feature_engineering"):
+        stage_dir = ROOT / "src" / "pipeline" / "stages" / stage
+        sources = list(stage_dir.rglob("*.py")) if stage_dir.is_dir() else []
+        sources += list((ROOT / "src" / "pipeline" / "stages").glob(f"stage_*{stage}*.py"))
+        for path in sources:
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for match in re.finditer(r"from src\.pipeline\.([a-z_]+) import", text):
+                imported.add(f"{match.group(1)}.py")
+
+    missing = imported - listed
+    assert not missing, (
+        f"cached stages import {sorted(missing)} from src/pipeline, and those "
+        f"modules are not in the code fingerprint"
+    )
+
+
+def test_the_helpers_do_not_drag_in_the_orchestrators():
+    """src/pipeline also holds the stage 4-7 orchestrators. Naming files
+    rather than the directory is what keeps them out."""
+    covered = {p.as_posix() for p in _fingerprinted()}
+
+    for excluded in ("src/pipeline/pipeline_orchestrator.py",
+                     "src/pipeline/hybrid_orchestrator.py",
+                     "src/pipeline/pipeline_factory.py"):
+        assert excluded not in covered, excluded

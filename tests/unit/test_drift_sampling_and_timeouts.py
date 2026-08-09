@@ -219,3 +219,58 @@ def test_the_real_batch_has_constant_columns_to_exclude():
         "no constant columns left to trip Evidently -- if this is genuinely "
         "true now, the filter is harmless, but check before removing it"
     )
+
+
+# ------------------------------------------- a hash that failed is not a key
+
+
+def test_a_failed_fingerprint_never_reuses_a_cached_result():
+    """The fallback identifies a frame by key + shape + head(3), so two
+    different datasets of the same shape with the same first rows collide --
+    and the engine would return one's analysis for the other.
+
+    Found because an AttributeError sent every call down that path on
+    2026-08-09 and two deliberately different data maps hashed identically.
+    The fallback is now a guaranteed cache MISS: recomputing is cheap,
+    serving the wrong context's analysis is not.
+    """
+    import pandas as pd
+
+    from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
+
+    engine = object.__new__(UnifiedAnalyticsEngine)
+    engine.analyzer_configs = []
+    engine.analyzers = {}
+    engine.analyzer_data_map = {}
+    engine.analyzer_registration_report = {}
+
+    # A column of lists: hash_pandas_object raises "unhashable type: 'list'"
+    # and the fallback takes over. A stray object() would NOT do it -- the
+    # main path stringifies unknown values, so str(object()) sails through.
+    # The first version of this test used one and passed for the wrong
+    # reason, asserting a difference that never had to exist.
+    frame = pd.DataFrame({"a": [[1, 2], [3, 4], [5, 6]]})
+    data_map = {"price_data": frame}
+
+    first = engine._generate_data_hash(data_map)
+    second = engine._generate_data_hash(data_map)
+
+    assert first != second, (
+        "an uncomputable fingerprint still produces a stable key, so a "
+        "cached result can be served for data nobody could identify"
+    )
+
+
+def test_the_contract_hash_survives_a_bare_engine():
+    """_contract_timeout is set in __init__, but every construction path has
+    to reach the hash -- an AttributeError here does not surface, it drops
+    into the colliding fallback."""
+    from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
+
+    engine = object.__new__(UnifiedAnalyticsEngine)
+    engine.analyzer_configs = []
+    engine.analyzers = {}
+    engine.analyzer_data_map = {}
+    engine.analyzer_registration_report = {}
+
+    assert engine._analysis_contract_hash()

@@ -1,3 +1,9 @@
+> **Archived 2026-08-09.** Moved out of `.kiro/steering/`, the steering
+> directory of the Kiro IDE, which this project does not use — nothing in the
+> codebase reads it and the pipeline never loaded it. The document itself is
+> project thinking worth keeping: the data-accumulation and synthetic-scenario
+> strategy behind stages 0-3. Kept as a record, not as a live plan.
+
 # 📊 Data Accumulation & Synthetic Generation Strategy
 
 ## Overview

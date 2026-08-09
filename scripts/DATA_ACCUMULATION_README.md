@@ -379,7 +379,7 @@ results/
 
 ### Documentation
 - `scripts/data_accumulation_strategy.md` - Strategy overview
-- `.kiro/steering/data_strategy.md` - Steering guide
+- `docs/archive/data_strategy.md` - Steering guide
 - `docs/CALIBRATION_GUIDE.md` - DEAN calibration
 - `docs/HYBRID_PIPELINE.md` - Hybrid pipeline architecture
 

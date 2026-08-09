@@ -90,6 +90,30 @@ class PipelineExecutor:
         'src/data/validation',
     )
 
+    #: Individual modules outside those trees that the cached stages import
+    #: and that decide what the cached artifact CONTAINS.
+    #:
+    #: Added 2026-08-09. Only src/pipeline/stages is hashed, so
+    #: src/pipeline/target_column_utils.py was invisible -- while
+    #: stages/feature_engineering/orchestrator.py and targets.py import it to
+    #: decide which columns are features, which are targets and which are
+    #: identifiers. 069a4341 changed exactly that (a ctx_ prefix was hiding
+    #: three identity columns), and the fingerprint would not have moved: a
+    #: rebuild would have been skipped and the old split kept.
+    #:
+    #: timeframe_lineage.py is here for the same reason -- normalize_timeframe
+    #: and is_timeframe_token decide how bars are grouped and which suffix a
+    #: column gets.
+    #:
+    #: A directory would be the tidier rule, but src/pipeline also holds the
+    #: orchestrators, which run stages 4-7 and belong out (see
+    #: _NON_CACHED_STAGE_DIRS). Naming the files keeps the boundary honest;
+    #: the test below pins it against what the stages actually import.
+    _FINGERPRINT_FILES = (
+        'src/pipeline/target_column_utils.py',
+        'src/pipeline/timeframe_lineage.py',
+    )
+
     #: Stage subtrees that CANNOT affect the cached artifact, because the
     #: cache gates stages 0-3 only. Everything under 'src/pipeline/stages'
     #: is hashed except these.
@@ -149,6 +173,11 @@ class PipelineExecutor:
                         path, project_root
                     )
                 )
+
+        for rel_file in PipelineExecutor._FINGERPRINT_FILES:
+            file_path = project_root / rel_file
+            if file_path.exists():
+                paths.append(file_path)
 
         config_dir = project_root / PipelineExecutor._CONFIG_FINGERPRINT_DIR
         if config_dir.exists():
