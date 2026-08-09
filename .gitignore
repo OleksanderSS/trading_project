@@ -117,3 +117,11 @@ reports/dean_os/
 *.temp
 *.log.1
 *.log.2
+
+# Run artifacts, regenerated on every pipeline run
+# ------------------------------------------------
+# These kept turning up as untracked noise in `git status`, which is how a
+# real change (a reverted notebook) nearly got committed alongside them.
+reports/drift/
+reports/hybrid_*.txt
+scratch/
