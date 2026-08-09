@@ -118,10 +118,31 @@ class FeatureDriftMonitor:
                 if not col.startswith('target_') and col not in ['hash', 'interval']
             ]
 
-        # Ensure columns exist in both datasets and have sufficient non-null values
+        # Ensure columns exist in both datasets, have sufficient non-null
+        # values, and actually vary.
+        #
+        # A constant column cannot drift, and Evidently does not merely
+        # ignore it -- it tries to bin the range and raises
+        #
+        #     Too many bins for data range. Cannot create 10 finite-sized bins
+        #
+        # which fails the whole context, not just that column. All 66
+        # contexts died that way on the 2026-08-09 evening run. They had not
+        # before only because the previous selection took the first hundred
+        # names alphabetically (AATR_*, ABB_*, all continuous) and never
+        # reached the constants; sampling across the whole space found them
+        # immediately.
+        candidates = (
+            set(feature_columns)
+            & set(self.reference_data.columns)
+            & set(current_data.columns)
+        )
         valid_common = [
-            col for col in (set(feature_columns) & set(self.reference_data.columns) & set(current_data.columns))
-            if self.reference_data[col].count() >= 10 and current_data[col].count() >= 10
+            col for col in candidates
+            if self.reference_data[col].count() >= 10
+            and current_data[col].count() >= 10
+            and self.reference_data[col].nunique(dropna=True) > 1
+            and current_data[col].nunique(dropna=True) > 1
         ]
         valid_common.sort()
         available_count = len(valid_common)

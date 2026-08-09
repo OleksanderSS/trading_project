@@ -147,3 +147,75 @@ def test_a_message_less_exception_still_names_its_type():
     assert "no message" in source, (
         "an exception whose str() is empty is still recorded as error=''"
     )
+
+
+# ----------------------------------------------------- constants cannot drift
+
+
+def test_a_constant_column_is_excluded():
+    """Evidently does not ignore a constant column -- it raises.
+
+        Too many bins for data range. Cannot create 10 finite-sized bins
+
+    and the exception fails the whole context, not just that column. All 66
+    contexts died that way on the 2026-08-09 evening run. They had survived
+    the morning only because the selection took the first hundred names
+    alphabetically (AATR_*, ABB_*, all continuous) and never reached the
+    constants; sampling across the whole space found them at once.
+    """
+    import inspect
+
+    source = inspect.getsource(FeatureDriftMonitor.check_drift)
+
+    assert "nunique" in source, (
+        "nothing excludes zero-variance columns, so one constant feature "
+        "still fails an entire context"
+    )
+
+
+def test_the_variance_filter_runs_before_the_sample_is_drawn():
+    """Filtering after sampling would keep the failure and merely shrink the
+    sample: a constant column drawn into the 100 would still raise."""
+    import inspect
+
+    source = inspect.getsource(FeatureDriftMonitor.check_drift)
+    filter_at = source.index("nunique")
+    sample_at = source.index("MAX_DRIFT_FEATURES")
+
+    assert filter_at < sample_at
+
+
+def test_the_real_batch_has_constant_columns_to_exclude():
+    """The measurement the filter rests on: 198 of 774 columns that pass the
+    non-null test do not vary."""
+    from pathlib import Path
+
+    import numpy as np
+    import pandas as pd
+
+    path = Path("data/colab/accumulated/main_database/features.parquet")
+    if not path.exists():
+        pytest.skip("no prepared batch on disk")
+
+    frame = pd.read_parquet(path)
+    rows = frame[(frame.ticker == "XLF") & (frame.interval == "60m")]
+    if rows.empty:
+        pytest.skip("XLF 60m not in this batch")
+
+    ref, cur = rows.iloc[: len(rows) // 2], rows.iloc[len(rows) // 2 :]
+    numeric = [
+        c for c in rows.select_dtypes(include=[np.number]).columns
+        if not c.startswith("target_") and c not in ("hash", "interval")
+    ]
+    populated = [
+        c for c in numeric if ref[c].count() >= 10 and cur[c].count() >= 10
+    ]
+    varying = [
+        c for c in populated
+        if ref[c].nunique(dropna=True) > 1 and cur[c].nunique(dropna=True) > 1
+    ]
+
+    assert len(populated) > len(varying), (
+        "no constant columns left to trip Evidently -- if this is genuinely "
+        "true now, the filter is harmless, but check before removing it"
+    )

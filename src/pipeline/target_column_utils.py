@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from src.pipeline.timeframe_lineage import is_timeframe_token
+
 _DIRECT_TARGET_PREFIXES = ("target_", "target.", "target:", "target-", "target ")
 _DERIVED_TARGET_MARKERS = ("_target_", "_target.", "_target:", "_target-", "_target ")
 
@@ -51,8 +53,32 @@ def is_identity_column(column: object) -> bool:
     context_fingerprint_1d and context_pattern_seq_60m, and a check against
     the bare names alone would miss every one of them -- the same
     one-thing-two-names trap this project has hit repeatedly.
+
+    A leading ctx_<timeframe>_ is stripped first, because the cross-timeframe
+    assembler copies a lower timeframe's columns forward under that prefix --
+    identity columns included. ctx_1d_context_fingerprint_1d is the same
+    string as context_fingerprint_1d, one prefix later, and the stem check
+    anchored at the start of the name did not see it.
+
+    That gap cost the 2026-08-09 run 313 of 660 contexts. The columns are not
+    empty in features.parquet -- they hold strings, so an all-NaN scan finds
+    nothing wrong -- but Stage 5 coerces with pd.to_numeric before checking,
+    which turns every one of them into NaN, and a row with a NaN in a
+    required feature is dropped. Three such columns emptied the entire
+    50-row prediction window, per context, silently:
+
+        3 of 777 required feature(s) are null in EVERY one of the 50
+        candidate rows (e.g. ctx_1d_context_fingerprint_1d,
+        ctx_1d_context_pattern_seq_1d, ctx_1d_context_pattern_id_1d)
     """
     text = _normalize_column_name(column)
+    if text.startswith("ctx_"):
+        parts = text.split("_", 2)
+        # Only a genuine timeframe segment is a prefix. A column merely
+        # beginning with "ctx_" keeps its name -- stripping two fields from
+        # anything would turn ctx_volume_ratio into ratio.
+        if len(parts) == 3 and is_timeframe_token(parts[1]):
+            text = parts[2]
     for stem in _IDENTITY_STEMS:
         if text == stem or text.startswith(f"{stem}_"):
             return True

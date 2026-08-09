@@ -110,3 +110,85 @@ def test_selection_excludes_them_even_if_they_arrive_numeric():
     source = inspect.getsource(data_preparation.prepare_data_for_models)
 
     assert "is_identity_column(c)" in source
+
+
+# --------------------------------------------------------------------------
+# The cross-timeframe prefix defeated the stem check.
+#
+# The assembler copies a lower timeframe's columns forward as ctx_<tf>_*,
+# identity columns included. ctx_1d_context_fingerprint_1d is the same
+# string as context_fingerprint_1d one prefix later, and a stem check
+# anchored at the start of the name did not see it.
+#
+# It cost the 2026-08-09 run 313 of 660 contexts. What made it hard to find:
+# the columns are NOT empty in features.parquet -- they hold strings, so an
+# all-NaN scan comes back clean (it did, and the hypothesis was wrongly
+# discarded). Stage 5 coerces with pd.to_numeric first, which turns them
+# into NaN, and a row with a NaN in a required feature is dropped. Three
+# such columns emptied every 50-row prediction window.
+# --------------------------------------------------------------------------
+
+
+import pytest
+
+from src.pipeline.target_column_utils import is_identity_column
+
+
+@pytest.mark.parametrize("column", [
+    "ctx_1d_context_fingerprint_1d",
+    "ctx_1d_context_pattern_seq_1d",
+    "ctx_1d_context_pattern_id_1d",
+    "ctx_60m_context_fingerprint_60m",
+    "ctx_60m_context_pattern_id_60m",
+    "ctx_1d_ticker",
+    "ctx_15m_hash",
+])
+def test_a_prefixed_identity_column_is_still_an_identity_column(column):
+    assert is_identity_column(column) is True
+
+
+@pytest.mark.parametrize("column", [
+    "ctx_1d_open",
+    "ctx_1d_high",
+    "ctx_1d_SMA_100_1d",
+    "ctx_60m_ATR_14_60m",
+    "ctx_1d_market_context_put_call_ratio_1d",
+])
+def test_a_prefixed_real_feature_is_left_alone(column):
+    """The daily context's genuine market columns are the whole point of
+    carrying it forward."""
+    assert is_identity_column(column) is False
+
+
+def test_only_a_genuine_timeframe_is_stripped():
+    """Stripping two fields from anything beginning with ctx_ would turn
+    ctx_volume_ratio into 'ratio' and ctx_ticker_count into 'count'."""
+    assert is_identity_column("ctx_volume_ratio") is False
+    assert is_identity_column("ctx_something_ticker") is False
+
+
+def test_the_three_columns_named_in_the_2026_08_09_log_are_caught():
+    """The exact strings Stage 5 reported as null in every candidate row."""
+    for column in (
+        "ctx_1d_context_fingerprint_1d",
+        "ctx_1d_context_pattern_seq_1d",
+        "ctx_1d_context_pattern_id_1d",
+    ):
+        assert is_identity_column(column), column
+
+
+def test_the_real_export_has_exactly_the_six_prefixed_identity_columns():
+    """Pins the measurement: 6 of 1,978 columns, none of them a feature."""
+    from pathlib import Path
+
+    import pandas as pd
+
+    path = Path("data/colab/accumulated/main_database/features.parquet")
+    if not path.exists():
+        pytest.skip("no prepared batch on disk")
+
+    columns = list(pd.read_parquet(path).columns)
+    prefixed = [c for c in columns if c.startswith("ctx_") and is_identity_column(c)]
+
+    assert len(prefixed) == 6, sorted(prefixed)
+    assert all("context_" in c for c in prefixed), sorted(prefixed)
