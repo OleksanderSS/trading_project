@@ -50,6 +50,7 @@ class UnifiedAnalyticsEngine:
         self.max_workers = engine_config.get('max_workers', 4)
         self.analyzer_configs = engine_config.get('analyzers', [])
         self.results_manager = ModelResultsManager()
+        self._contract_timeout = self.DEFAULT_ANALYZER_TIMEOUT
         self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
         self._register_analyzers_from_config()
         logger.info(
@@ -147,6 +148,12 @@ class UnifiedAnalyticsEngine:
                     self.analyzer_registration_report.items()
                 )
             },
+            # The budget belongs in the contract: an analyzer given 30s and
+            # one given 90s can return different results from identical
+            # inputs, and on 2026-08-09 they did -- 54 of 66 contexts
+            # produced a timeout at 30s. A cache keyed without it serves the
+            # short run's answers to the long one.
+            'analyzer_timeout': self._contract_timeout,
         }
 
     def _analysis_contract_hash(self) -> str:
@@ -235,6 +242,12 @@ class UnifiedAnalyticsEngine:
         fails for a reason unrelated to analysis. Stage 7 passing timeout=30
         broke a caller this way on 2026-08-09.
         """
+        # Set BEFORE the hash is taken: _analysis_contract_payload reads it,
+        # so assigning it later would key the cache on the PREVIOUS call's
+        # budget and hand a 90s run the 30s run's cached answers.
+        self._contract_timeout = (
+            self.DEFAULT_ANALYZER_TIMEOUT if timeout is None else timeout
+        )
         data_hash = self._generate_data_hash(data_map)
         cached_results = self.results_manager.get_cached_analysis(data_hash)
         if cached_results:
@@ -277,7 +290,7 @@ class UnifiedAnalyticsEngine:
                     'supporting_review_only': True,
                 }
                 routing_status[name] = {'status': 'skipped_no_input_contract'}
-        timeout = self.DEFAULT_ANALYZER_TIMEOUT if timeout is None else timeout
+        timeout = self._contract_timeout
         for name, future in futures.items():
             try:
                 raw_result = future.result(timeout=timeout)
@@ -324,7 +337,27 @@ class UnifiedAnalyticsEngine:
         results['_analysis_coverage'] = self._analysis_coverage(
             routing_status
         )
-        self.results_manager.cache_analysis(data_hash, results)
+
+        # A failure is not a result worth keeping.
+        #
+        # The cache key is data + analyzer contract, and neither moves when a
+        # timeout is raised or an analyzer is repaired. So caching a failed
+        # run makes the failure permanent: the 2026-08-09 run cached 54
+        # feature_drift timeouts, and every later run -- including the ones
+        # with a longer budget and a fixed monitor -- would have been served
+        # those same 54 failures without executing anything.
+        failed = [
+            name for name, outcome in routing_status.items()
+            if outcome.get('status') == 'failed'
+        ]
+        if failed:
+            logger.warning(
+                f"Not caching this analysis: {len(failed)} analyzer(s) failed "
+                f"({', '.join(sorted(failed)[:5])}). A cached failure cannot "
+                f"be retried."
+            )
+        else:
+            self.results_manager.cache_analysis(data_hash, results)
         return results
 
     def _normalize_analyzer_result(self, result: Any) -> dict[str, Any]:
