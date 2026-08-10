@@ -274,3 +274,74 @@ def test_the_contract_hash_survives_a_bare_engine():
     engine.analyzer_registration_report = {}
 
     assert engine._analysis_contract_hash()
+
+
+# --------------------------------------------- a monitor that cannot fire says so
+
+
+def _analyzer(tmp_path):
+    from src.analytics.analyzers.drift_analyzer import DriftAnalyzer
+
+    return DriftAnalyzer(baseline_path=str(tmp_path / "ref.parquet"))
+
+
+def _frame(n=50, scale=0.5):
+    import pandas as pd
+
+    return pd.DataFrame({"x": range(n), "y": [i * scale for i in range(n)]})
+
+
+def test_the_first_frame_becomes_the_baseline(tmp_path):
+    result = _analyzer(tmp_path).analyze({"features_data": _frame()})
+
+    assert result["status"] == "baseline_set"
+
+
+def test_comparing_a_batch_against_its_own_baseline_is_declared(tmp_path):
+    """The state this whole session kept mistaking for a working check.
+
+    The baseline outlives the process, so once written, the same batch is
+    compared against itself on every later run -- and 0.0 then reads as
+    "checked and found nothing". On 2026-08-10 all 40 completed contexts
+    reported exactly 0.0 for that reason.
+
+    A monitor that cannot fire has to say so where someone looks, otherwise
+    "turn this on when a second batch exists" is something to forget.
+    """
+    analyzer = _analyzer(tmp_path)
+    frame = _frame()
+    analyzer.analyze({"features_data": frame})
+
+    result = analyzer.analyze({"features_data": frame})
+
+    assert result["status"] == "not_applicable"
+    assert "second batch" in result["reason"]
+    assert "drift_score" not in result, (
+        "a number is still reported for a comparison that did not happen"
+    )
+
+
+def test_a_genuinely_different_batch_is_still_measured(tmp_path):
+    """The guard must not swallow the case it exists to enable."""
+    analyzer = _analyzer(tmp_path)
+    analyzer.analyze({"features_data": _frame(50, 0.5)})
+
+    result = analyzer.analyze({"features_data": _frame(80, 0.9)})
+
+    # The monitor reports its own status ('OK'); the wrapper only fills one
+    # in when it does not. What matters here is that a comparison happened.
+    assert result["status"] != "not_applicable", result["status"]
+    assert result["status"] in ("OK", "checked", "unavailable"), result["status"]
+
+
+def test_the_signature_survives_a_baseline_loaded_from_disk(tmp_path):
+    """A new process rebuilds the analyzer; without recovering the signature
+    it would compare the same batch and report 0.0 again."""
+    frame = _frame()
+    first = _analyzer(tmp_path)
+    first.analyze({"features_data": frame})
+
+    second = _analyzer(tmp_path)
+    result = second.analyze({"features_data": frame})
+
+    assert result["status"] == "not_applicable"

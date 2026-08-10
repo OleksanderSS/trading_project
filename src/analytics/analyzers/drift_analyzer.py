@@ -45,11 +45,14 @@ class DriftAnalyzer(IAnalyzer):
 
     def _load_baseline(self) -> None:
         self._baseline_set = False
+        self._baseline_signature = ""
         if not self.baseline_path.exists():
             return
         try:
-            self.monitor.set_reference_data(pd.read_parquet(self.baseline_path))
+            reference = pd.read_parquet(self.baseline_path)
+            self.monitor.set_reference_data(reference)
             self._baseline_set = True
+            self._baseline_signature = self._frame_signature(reference)
             logger.info(f"Drift baseline loaded from {self.baseline_path}")
         except Exception as e:
             logger.warning(f"Could not load drift baseline ({e}); it will be rebuilt.")
@@ -67,6 +70,22 @@ class DriftAnalyzer(IAnalyzer):
                 f"have to rebuild it."
             )
 
+    @staticmethod
+    def _frame_signature(frame: "pd.DataFrame") -> str:
+        """Cheap identity for a feature frame.
+
+        Shape plus column names plus the first and last index values. Enough
+        to recognise "this is the batch the baseline came from" without
+        hashing millions of cells on every context.
+        """
+        try:
+            bounds = ""
+            if len(frame):
+                bounds = f"{frame.index[0]}|{frame.index[-1]}"
+            return f"{frame.shape}|{len(frame.columns)}|{bounds}"
+        except Exception:
+            return ""
+
     def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         """Compare the current feature frame against the stored baseline."""
         frame = data.get("features_data") if isinstance(data, dict) else data
@@ -76,15 +95,47 @@ class DriftAnalyzer(IAnalyzer):
 
         if not self._baseline_set:
             self._store_baseline(frame)
+            self._baseline_signature = self._frame_signature(frame)
             return {
                 "status": "baseline_set",
                 "reason": "first frame adopted as reference; drift needs a second one",
                 "rows": int(len(frame)),
             }
 
+        # Say when there is nothing to compare, instead of reporting 0.0.
+        #
+        # The baseline outlives the process, so once it is written the same
+        # batch is compared against itself on every later run -- and the
+        # honest answer, drift 0.0, is indistinguishable from "checked and
+        # found nothing". On 2026-08-10 all 40 completed contexts reported
+        # exactly 0.0 for that reason, and it read as a working check.
+        #
+        # A monitor that cannot fire should say so in the place someone
+        # looks, not require them to remember. Reporting it explicitly is
+        # what makes "turn this on when a second batch exists" something the
+        # run reminds you of rather than something to forget.
+        signature = self._frame_signature(frame)
+        if signature and signature == getattr(self, "_baseline_signature", None):
+            return {
+                "status": "not_applicable",
+                "reason": (
+                    "the baseline was built from this same data, so drift is "
+                    "0.0 by construction, not by measurement. It becomes "
+                    "meaningful once a second batch exists to compare against."
+                ),
+                "baseline_path": str(self.baseline_path),
+                "rows": int(len(frame)),
+            }
+
         try:
             result = self.monitor.check_drift(frame)
-            return {"status": "checked", **(result or {})}
+            # The monitor reports its own status ('OK'), and spreading it
+            # last means that value wins -- which is right, but the line read
+            # as though 'checked' were the answer. It never was. Stating the
+            # precedence rather than relying on dict ordering.
+            payload = dict(result or {})
+            payload.setdefault("status", "checked")
+            return payload
         except Exception as e:
             logger.warning(f"Drift check unavailable: {e}")
             return {"status": "unavailable", "reason": str(e)}
