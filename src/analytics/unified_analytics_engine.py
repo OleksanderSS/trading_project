@@ -253,7 +253,8 @@ class UnifiedAnalyticsEngine:
             return hashlib.sha256(f'{hash_input}_{unique}'.encode()).hexdigest()
 
     def run_full_analysis(self, data_map: dict[str, Any], *,
-        timeout: float | None = None, **kwargs) ->dict[str, Any]:
+        timeout: float | None = None, skip: set[str] | None = None,
+        **kwargs) ->dict[str, Any]:
         """
         Executes all registered analyzers in parallel using the thread pool.
 
@@ -287,7 +288,17 @@ class UnifiedAnalyticsEngine:
         futures = {}
         results: dict[str, Any] = {}
         routing_status: dict[str, dict[str, Any]] = {}
+        skip = skip or set()
         for name, analyzer in self.analyzers.items():
+            if name in skip:
+                # Its inputs did not change since the caller last ran it, so
+                # a second run can only repeat the first answer.
+                results[name] = {
+                    'status': 'skipped_inputs_unchanged',
+                    'supporting_review_only': True,
+                }
+                routing_status[name] = {'status': 'skipped_inputs_unchanged'}
+                continue
             try:
                 input_data = self._get_data_for_analyzer(name, data_map)
             except ConfigurationError as exc:

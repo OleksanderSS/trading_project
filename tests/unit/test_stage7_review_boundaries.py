@@ -209,3 +209,73 @@ def test_stage7_partitions_feature_prices_by_market_context():
         "end": "2026-06-29T12:15:00+00:00",
         "timestamp_source": "timestamp",
     }
+
+
+# --------------------------------------------------------------------------
+# 66 identical computations cannot say more than one.
+#
+# The per-context loop swaps price_data and nothing else, so an analyzer
+# reading features_data sees the same frame in every context. feature_drift
+# does exactly that, and holds a single project-wide baseline, so it
+# compared one frame against itself 66 times: measured on the 2026-08-10
+# run, 40 results with one distinct drift score (0.0) and zero contexts
+# detecting drift. The other 26 spent the full 90s budget reaching the same
+# conclusion.
+# --------------------------------------------------------------------------
+
+
+def test_an_analyzer_that_reads_only_invariant_inputs_is_named():
+    stage = _stage()
+    stage.analytics_engine.analyzer_data_map = {
+        "feature_drift": ["features_data"],
+        "market_regime": ["price_data"],
+        "critical_signals": ["price_data", "features_data"],
+    }
+    contexts = {"ticker=AAPL|interval=1d": pd.DataFrame({"close": [1.0]}),
+                "ticker=MSFT|interval=1d": pd.DataFrame({"close": [2.0]})}
+
+    invariant = stage._context_invariant_analyzers({}, contexts)
+
+    assert invariant == {"feature_drift"}, invariant
+
+
+def test_an_analyzer_reading_price_data_is_never_skipped():
+    """It is the one input the loop varies, so its result genuinely differs
+    per context."""
+    stage = _stage()
+    stage.analytics_engine.analyzer_data_map = {
+        "market_regime": ["price_data"],
+        "critical_signals": ["price_data", "features_data"],
+    }
+    contexts = {"a": pd.DataFrame({"close": [1.0]}),
+                "b": pd.DataFrame({"close": [2.0]})}
+
+    assert stage._context_invariant_analyzers({}, contexts) == set()
+
+
+def test_a_single_context_skips_nothing():
+    """With one context there is no repetition to avoid, and skipping would
+    only complicate the result."""
+    stage = _stage()
+    stage.analytics_engine.analyzer_data_map = {"feature_drift": ["features_data"]}
+
+    assert stage._context_invariant_analyzers(
+        {}, {"only": pd.DataFrame({"close": [1.0]})}
+    ) == set()
+
+
+def test_the_list_comes_from_the_engine_not_from_a_hardcoded_name():
+    """An analyzer that starts reading price_data must stop being counted
+    invariant on its own -- the drift this codebase keeps producing is a
+    hand-maintained list that no longer matches its source."""
+    import inspect
+
+    from src.pipeline.stages.stage_7_evaluation import EvaluationStage
+
+    source = inspect.getsource(EvaluationStage._context_invariant_analyzers)
+
+    assert "analyzer_data_map" in source
+    assert "feature_drift" not in source, (
+        "the analyzer is named in the code rather than derived from its "
+        "declared inputs"
+    )

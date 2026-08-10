@@ -404,6 +404,28 @@ class EvaluationStage(BaseStage):
             contexts[context_key] = group.copy()
         return contexts
 
+    def _context_invariant_analyzers(
+        self,
+        data_map: dict[str, Any],
+        price_contexts: dict[str, pd.DataFrame],
+    ) -> set[str]:
+        """Analyzers that read nothing this loop varies.
+
+        Derived from the engine's own data_mapping rather than named here,
+        so an analyzer that starts reading price_data stops being counted
+        automatically. Empty when there is only one context, where the
+        distinction cannot matter.
+        """
+        if len(price_contexts) < 2:
+            return set()
+        varied = {'price_data'}
+        engine = self.analytics_engine
+        mapping = getattr(engine, 'analyzer_data_map', {}) or {}
+        return {
+            name for name, inputs in mapping.items()
+            if inputs and not (set(inputs) & varied)
+        }
+
     def _run_context_partitioned_analysis(
         self,
         data_map: dict[str, Any],
@@ -415,9 +437,28 @@ class EvaluationStage(BaseStage):
         failed_analyzers: set[str] = set()
         disabled_analyzers: set[str] = set()
 
-        for context_key, price_frame in price_contexts.items():
+        # Analyzers whose inputs this loop does not vary are run ONCE.
+        #
+        # The loop swaps price_data and nothing else, so an analyzer reading
+        # features_data sees the identical frame in all 66 contexts.
+        # feature_drift does exactly that, and it also holds a single
+        # project-wide baseline (reports/drift/reference_features.parquet),
+        # so it compared one frame against itself 66 times and reported a
+        # drift score of exactly 0.0 every time -- measured on the
+        # 2026-08-10 run: 40 results, one distinct score, zero contexts
+        # detecting drift. The other 26 spent the full 90s budget and timed
+        # out reaching the same conclusion.
+        #
+        # Running it once is not a shortcut: 66 identical computations
+        # cannot say more than one. Per-context drift would need a baseline
+        # per context, which is a design decision and not this fix.
+        invariant = self._context_invariant_analyzers(data_map, price_contexts)
+        invariant_results: dict[str, Any] = {}
+
+        for index, (context_key, price_frame) in enumerate(price_contexts.items()):
             context_data_map = dict(data_map)
             context_data_map['price_data'] = price_frame
+            skip = invariant if index else set()
             # Per-context budget. 30s was chosen to stop a five-hour Stage 7,
             # and it did -- by timing out 54 of 66 contexts on 2026-08-09,
             # each recorded with an empty error message. A timeout that most
@@ -431,7 +472,18 @@ class EvaluationStage(BaseStage):
                 timeout=self.config_manager.get(
                     'analysis.engine.context_timeout_seconds', 90
                 ),
+                skip=skip,
             )
+            if isinstance(result, dict):
+                # Carry the one computed answer into every later context, so
+                # the report still shows a result everywhere -- it just is
+                # not recomputed 65 more times to reach the same number.
+                for name in skip:
+                    if name in invariant_results:
+                        result[name] = invariant_results[name]
+                for name in invariant:
+                    if not index and name in result:
+                        invariant_results[name] = result[name]
             if isinstance(result, dict):
                 result = dict(result)
                 result['_stage7_context_window'] = (
