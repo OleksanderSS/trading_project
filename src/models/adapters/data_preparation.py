@@ -197,9 +197,27 @@ def handle_categorical_features(df: pd.DataFrame, exclude_cols: list[str]) -> tu
             df_out = pd.concat([df_out, dummies], axis=1).drop(columns=[col])
             info[col] = 'one-hot'
         else:
-            le = LabelEncoder()
-            df_out[col] = le.fit_transform(df_out[col].astype(str))
-            info[col] = 'label'
+            # A label-encoded column cannot exist at prediction time.
+            #
+            # The encoder is built here and discarded here. Training then
+            # sees MARKET_REGIME_1d as integers while the prediction path
+            # reads the raw frame, where it is still 'TRENDING_UP' -- and
+            # pd.to_numeric turns that into NaN, dropping every candidate
+            # row. Measured on the 2026-08-10 run: 101 contexts blocked, and
+            # every single one names a MARKET_REGIME_* column as the feature
+            # null in all 50 rows.
+            #
+            # Nothing is lost by dropping them. All five columns that reach
+            # this branch are MARKET_REGIME variants, and each already has a
+            # numeric counterpart in the frame (MARKET_REGIME_ENCODED_*,
+            # produced by the enricher and persisted like any other feature).
+            #
+            # To bring label encoding back, persist the mapping alongside the
+            # imputer and scaler in light_data and apply it in
+            # DataPreparationService. Until then a feature that cannot be
+            # reproduced is not a feature.
+            df_out.drop(columns=[col], inplace=True)
+            info[col] = 'dropped_unpersisted_encoding'
     return df_out, info
 
 def log_data_distribution(df: pd.DataFrame):

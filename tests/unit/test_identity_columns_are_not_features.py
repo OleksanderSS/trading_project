@@ -192,3 +192,111 @@ def test_the_real_export_has_exactly_the_six_prefixed_identity_columns():
 
     assert len(prefixed) == 6, sorted(prefixed)
     assert all("context_" in c for c in prefixed), sorted(prefixed)
+
+
+# --------------------------------------------------------------------------
+# A feature that cannot be reproduced at prediction time is not a feature.
+#
+# handle_categorical_features label-encoded any categorical with more than
+# five values, using an encoder built and discarded in the same call.
+# Training then saw MARKET_REGIME_1d as integers while the prediction path
+# read the raw frame, where it is still 'TRENDING_UP' -- pd.to_numeric turns
+# that into NaN and drops every candidate row.
+#
+# Measured on the 2026-08-10 run: 101 contexts blocked, every one naming a
+# MARKET_REGIME_* column as null in all 50 rows. All five columns reaching
+# that branch are MARKET_REGIME variants, and each already has a numeric
+# MARKET_REGIME_ENCODED_* counterpart, so dropping them loses nothing.
+# --------------------------------------------------------------------------
+
+
+def test_a_high_cardinality_categorical_is_dropped_not_label_encoded():
+    import numpy as np
+    import pandas as pd
+
+    from src.models.adapters.data_preparation import handle_categorical_features
+
+    frame = pd.DataFrame({
+        "MARKET_REGIME_1d": ["A", "B", "C", "D", "E", "F"] * 3,
+        "close": np.arange(18, dtype=float),
+    })
+
+    out, info = handle_categorical_features(frame, exclude_cols=[])
+
+    assert "MARKET_REGIME_1d" not in out.columns
+    assert info["MARKET_REGIME_1d"] == "dropped_unpersisted_encoding"
+
+
+def test_the_numeric_counterpart_is_kept():
+    """MARKET_REGIME_ENCODED_* carries the same information and survives the
+    prediction path, which is the whole reason dropping is safe."""
+    import numpy as np
+    import pandas as pd
+
+    from src.models.adapters.data_preparation import handle_categorical_features
+
+    frame = pd.DataFrame({
+        "MARKET_REGIME_1d": ["A", "B", "C", "D", "E", "F"] * 3,
+        "MARKET_REGIME_ENCODED_1d": np.arange(18, dtype=float),
+    })
+
+    out, _ = handle_categorical_features(frame, exclude_cols=[])
+
+    assert "MARKET_REGIME_ENCODED_1d" in out.columns
+
+
+def test_a_low_cardinality_categorical_is_still_one_hot_encoded():
+    """One-hot creates NEW named columns, so it does not have the same
+    problem -- do not sweep it up with the fix."""
+    import numpy as np
+    import pandas as pd
+
+    from src.models.adapters.data_preparation import handle_categorical_features
+
+    frame = pd.DataFrame({
+        "volatility_regime_1d": ["low", "mid", "high"] * 6,
+        "close": np.arange(18, dtype=float),
+    })
+
+    out, info = handle_categorical_features(frame, exclude_cols=[])
+
+    assert info["volatility_regime_1d"] == "one-hot"
+    assert any(c.startswith("volatility_regime_1d_") for c in out.columns)
+
+
+def test_no_label_encoder_remains_in_the_path():
+    """The encoder was the mechanism; leaving it in invites its return."""
+    import inspect
+
+    from src.models.adapters import data_preparation
+
+    source = inspect.getsource(data_preparation.handle_categorical_features)
+
+    assert "LabelEncoder()" not in source, (
+        "label encoding is back, and its mapping is still not persisted"
+    )
+
+
+def test_the_real_batch_has_exactly_the_market_regime_columns_affected():
+    """Pins the measurement the fix rests on: 5 columns, all MARKET_REGIME."""
+    from pathlib import Path
+
+    import pandas as pd
+
+    path = Path("data/colab/accumulated/main_database/features.parquet")
+    if not path.exists():
+        pytest.skip("no prepared batch on disk")
+
+    frame = pd.read_parquet(path)
+    categorical = [
+        c for c in frame.select_dtypes(include=["object", "category"]).columns
+        if not is_identity_column(c)
+        and "ticker" not in c.lower() and "timeframe" not in c.lower()
+    ]
+    high_cardinality = [c for c in categorical if frame[c].nunique() > 5]
+
+    assert high_cardinality, "nothing reaches the dropped branch any more"
+    assert all("MARKET_REGIME" in c for c in high_cardinality), high_cardinality
+    for column in high_cardinality:
+        twin = column.replace("MARKET_REGIME", "MARKET_REGIME_ENCODED")
+        assert twin in frame.columns, f"{column} has no numeric counterpart"
