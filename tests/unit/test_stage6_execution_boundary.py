@@ -76,7 +76,23 @@ def test_stage6_blocks_live_and_paper_without_initializing_stack():
         assert not hasattr(stage, "portfolio")
 
 
-def test_final_stages_default_excludes_stage6_but_explicit_request_keeps_it():
+def test_final_stages_default_includes_stage6():
+    """Stage 6 is in the default set, and its safety does not depend on that.
+
+    It used to be excluded, and the run then reported
+    `execution_status: stage_6_not_requested` -- which reads as an
+    operator's decision when it was a literal in
+    _prepare_final_stages_params. Three consecutive runs were summarised as
+    "trading simulation performed" on that basis while Stage 6 had never
+    executed, and every financial number came from Stage 7's backtest.
+
+    The exclusion was not a safety measure. It was recorded by a bulk
+    coverage commit (794f518d) that documented what the code did, with no
+    rationale given, and it protects nothing: the guarantee lives INSIDE the
+    stage, which defaults to execution_mode='review_only' and blocks even
+    paper execution (see the two tests above). Excluding it from the default
+    did not make execution safer, it made a stage invisible.
+    """
     orchestrator = object.__new__(FinalStagesOrchestrator)
     orchestrator.batch_name = "batch"
 
@@ -85,8 +101,19 @@ def test_final_stages_default_excludes_stage6_but_explicit_request_keeps_it():
         None, None, [6, 7]
     )
 
-    assert default_stages == [5, 7]
+    assert default_stages == [5, 6, 7]
     assert explicit_stages == [5, 6, 7]
+
+
+def test_an_explicit_narrower_request_is_still_honoured():
+    """Including 6 by default must not mean forcing it: a caller asking for
+    5 and 7 alone still gets exactly that."""
+    orchestrator = object.__new__(FinalStagesOrchestrator)
+    orchestrator.batch_name = "batch"
+
+    _, stages = orchestrator._prepare_final_stages_params(None, None, [5, 7])
+
+    assert stages == [5, 7]
 
 
 def test_stage7_accepts_stage5_predictions_when_stage6_is_skipped():

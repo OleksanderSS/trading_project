@@ -39,7 +39,19 @@ class FinalStagesOrchestrator:
             colab_results = {}
 
         batch_name = batch_name or colab_results.get('batch_name', self.batch_name)
-        stages_to_run = stages_to_run or [5, 7]
+        # Stage 6 belongs in the default. It was omitted, and the run then
+        # reported `execution_status: stage_6_not_requested` -- which reads
+        # as an operator's choice when it was a literal in this line. Three
+        # consecutive runs were summarised as "trading simulation performed"
+        # on that basis, and every financial number produced so far came from
+        # Stage 7's backtest instead.
+        #
+        # Safe to include: stage 6 defaults to execution_mode='review_only'
+        # and BLOCKS even paper execution
+        # (`blocked_paper_execution_requires_isolated_executor`), so it emits
+        # a review receipt and touches no portfolio. Running it is how its
+        # output becomes visible at all.
+        stages_to_run = stages_to_run or [5, 6, 7]
 
         # Ensure stage 5 is included if stages 6 or 7 are requested
         if 6 in stages_to_run or 7 in stages_to_run:
