@@ -502,6 +502,41 @@ class DataManager(IDatabaseManager):
             logger.warning(f"Hash column '{hash_col}' not found in DataFrame for table '{table_name}'. Cannot filter new records.")
             return df
 
+        # The column has to exist on BOTH sides. Only the DataFrame was
+        # checked, so a table whose hash column is spelled differently blew up
+        # in SQL instead: the collection orchestrator calls this without
+        # `unique_cols`, which defaults to 'hash', while
+        # sociological_sentiment_data stores 'record_hash' -- every
+        # reddit_sentiment collection raised
+        # "Binder Error: Referenced column hash not found in FROM clause"
+        # and skipped deduplication entirely.
+        table_columns = {
+            row[0]
+            for row in self.con.execute(
+                'SELECT column_name FROM duckdb_columns() WHERE table_name = ?',
+                [table_name],
+            ).fetchall()
+        }
+        if hash_col not in table_columns:
+            fallback = next(
+                (candidate for candidate in ('record_hash', 'hash')
+                 if candidate in table_columns and candidate in df.columns),
+                None,
+            )
+            if fallback is None:
+                logger.warning(
+                    "Table '%s' has no column '%s' (and no shared fallback); "
+                    "skipping new-record filtering. Incoming rows rely on the "
+                    "table's unique index for protection. Table columns: %s",
+                    table_name, hash_col, sorted(table_columns)[:8],
+                )
+                return df
+            logger.warning(
+                "Table '%s' has no column '%s'; falling back to '%s' for "
+                "duplicate filtering.", table_name, hash_col, fallback,
+            )
+            hash_col = fallback
+
         try:
             existing_hashes_tuples = self.con.execute(
                 f'SELECT {self._quote_identifier(hash_col)} FROM {self._quote_identifier(table_name)}'

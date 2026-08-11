@@ -39,7 +39,13 @@ class VIXCollector(BaseCollector):
         self.enabled = self.configs.get('enabled', True)
         self.timeout = self.configs.get('timeout', 30)
         self.table_name = self.configs.get('table_name', "vix_data")
-        self.hash_keys = self.configs.get('hash_keys', ["date", "vix_current", "volatility_regime"])
+        # Default must name real columns: _standardize_columns produces
+        # vix_close and rejects a frame without it. "vix_current" existed in
+        # neither the collector nor the table, so every row's hash was built
+        # from an empty string in that slot, and the same name reaching
+        # DataManager as `unique_on` broke this table's unique index and its
+        # duplicate check outright.
+        self.hash_keys = self.configs.get('hash_keys', ["date", "vix_close", "volatility_regime"])
 
         # Merge parameters from configuration structure
         params = self.configs.get('params', {})
