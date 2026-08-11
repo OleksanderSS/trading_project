@@ -45,39 +45,57 @@ models:
     light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]
     heavy: ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]
 
-  # Number of features for each model
+  # Feature budget per model. THE source of this number: read through
+  # src/config/feature_budget.get_model_max_features, which both the local
+  # trainer and the Colab trainer now call.
+  #
+  # These values did nothing until 2026-08-11. They were handed to the model
+  # CONSTRUCTOR as a hyperparameter, never used to limit feature selection,
+  # while a hardcoded map inside the Colab script decided the real numbers
+  # (cnn 64, lstm/gru/transformer/autoencoder 128, mlp/tabnet 256) and the
+  # light branch was not capped at all — median 388 features, max 1,145.
+  #
+  # Why 35 everywhere, and why the old split was backwards: the binding
+  # constraint is observations per feature, not model complexity. Measured on
+  # the current batch, a daily context has ~308 training rows, 60m ~505, 15m
+  # ~656. At 35 features that is 9 / 14 / 19 observations each — thin but
+  # falsifiable. At the old 100-115 for heavy models it is 3 to 6, which
+  # cannot distinguish an edge from a coincidence. Neural nets need MORE
+  # observations per parameter than trees, so giving them the larger budget
+  # was the wrong way round.
+  #
+  # Treat 35 as a measurement setting, not a final answer. If a model beats
+  # the naive baseline on the untouched holdout at 35 features, that result
+  # means something and the budget can be raised with evidence behind it.
   per_model:
-    # Light models: 20-60 features
     catboost:
-      max_features: 45
+      max_features: 35
     lightgbm:
-      max_features: 50
+      max_features: 35
     xgboost:
-      max_features: 48
+      max_features: 35
     random_forest:
-      max_features: 40
+      max_features: 35
     linear:
       max_features: 35
     svm:
-      max_features: 42
+      max_features: 35
     knn:
-      max_features: 38
-    
-    # Heavy models: 80-120 features
+      max_features: 35
     mlp:
-      max_features: 100
+      max_features: 35
     cnn:
-      max_features: 95
+      max_features: 35
     lstm:
-      max_features: 110
+      max_features: 35
     gru:
-      max_features: 105
+      max_features: 35
     transformer:
-      max_features: 115
+      max_features: 35
     tabnet:
-      max_features: 90
+      max_features: 35
     autoencoder:
-      max_features: 100
+      max_features: 35
 
   sentiment:
     model_name: "yiyanghkust/finbert-tone"

@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from src.pipeline.constants import champion_filename, model_candidate_filename
+from src.config.feature_budget import get_model_max_features
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
@@ -366,11 +367,13 @@ class BaseTrainer(ABC):
             is_classification=is_classif
         )
 
-        model.train(data['X_train'], data['y_train'])
+        columns = self._select_features_for_model(m_type, data, is_classif)
+
+        model.train(self._project(data['X_train'], columns), data['y_train'])
 
         eval_X = data['X_val'] if data.get('X_val') is not None else data['X_test']
         eval_y = data['y_val'] if data.get('y_val') is not None else data['y_test']
-        preds = model.predict(eval_X)
+        preds = model.predict(self._project(eval_X, columns))
 
         score = self.evaluator.calculate(
             eval_y, preds,
@@ -406,6 +409,68 @@ class BaseTrainer(ABC):
         )
 
         return score_val, model
+
+    @staticmethod
+    def _project(frame: Any, columns: list[str] | None) -> Any:
+        """Restrict a feature matrix to `columns`, if it is column-addressable."""
+        if not columns or not hasattr(frame, "columns"):
+            return frame
+        usable = [column for column in columns if column in frame.columns]
+        return frame[usable] if usable else frame
+
+    def _select_features_for_model(self, model_type: str, data: dict[str, Any],
+                                   is_classif: bool) -> list[str] | None:
+        """Pick this model's feature budget, ranked on TRAIN ROWS ONLY.
+
+        The light branch had no budget at all: every model was handed every
+        numeric column — a measured median of 388 features against roughly 308
+        training rows on a daily context. That is not a weak model, it is an
+        unfalsifiable one, and it is why "the champion beat the others" has
+        never meant anything here.
+
+        Ranking is by absolute Pearson correlation with the target over the
+        TRAINING split only, so neither the validation split that chooses the
+        winner nor the holdout that judges it takes any part in deciding which
+        columns exist (Codex §6.2). Cheap, order-stable, and deliberately not a
+        new selection framework: the point is a budget, and a budget only helps
+        if it is applied everywhere rather than perfectly anywhere.
+
+        Returns None when there is nothing to do, in which case the caller
+        passes the frame through untouched.
+        """
+        X_train = data.get('X_train')
+        if X_train is None or not hasattr(X_train, 'columns'):
+            return None
+
+        budget = get_model_max_features(model_type, self.config_manager)
+        if len(X_train.columns) <= budget:
+            return list(X_train.columns)
+
+        try:
+            y = np.asarray(data.get('y_train')).ravel()
+            numeric = X_train.select_dtypes(include=[np.number])
+            if numeric.empty or len(y) != len(numeric):
+                return list(X_train.columns[:budget])
+
+            y_series = pd.Series(y, index=numeric.index).astype(float)
+            correlations = numeric.corrwith(y_series).abs()
+            # A column with no variance correlates to NaN; it carries no
+            # information either way, so it sorts last rather than randomly.
+            ranked = correlations.fillna(-1.0).sort_values(
+                ascending=False, kind="mergesort"
+            )
+            chosen = list(ranked.index[:budget])
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(
+                    f"{model_type}: {len(X_train.columns)} -> {len(chosen)} features"
+                )
+            return chosen
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
+            self.logger.warning(
+                f"Could not rank features for '{model_type}' ({e}); "
+                f"falling back to the first {budget} columns."
+            )
+            return list(X_train.columns[:budget])
 
     def _record_winner_test_score(self, winner_model: Any, data: dict[str, Any],
                                 is_classif: bool, results: dict[str, Any]) -> None:

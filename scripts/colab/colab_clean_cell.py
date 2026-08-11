@@ -1975,18 +1975,29 @@ class ColabTrainingController:
         return payload if isinstance(payload, dict) and payload.get("metrics") else None
 
     def _get_model_max_features(self, model_type):
-        """Отримати максимальну кількість фіч для моделі"""
-        max_features_map = {
-            'mlp': 256,
-            'lstm': 128,
-            'gru': 128,
-            'cnn': 64,
-            'transformer': 128,
-            'tabnet': 256,
-            'autoencoder': 128,
-            'random_forest': 256
-        }
-        return max_features_map.get(model_type.lower(), 128)
+        """Feature budget for `model_type`, from the project config.
+
+        This used to be a hardcoded map (mlp 256, cnn 64, lstm/gru/transformer/
+        autoencoder 128, tabnet 256) and it was the copy that actually ran:
+        measured across 4,613 trained artifacts, every heavy model's feature
+        count matched it exactly and matched src/config/models.yaml on none of
+        the seven types. The configured numbers had never taken effect
+        anywhere, because the local trainer passed them to the model
+        constructor as a hyperparameter instead of using them as a budget.
+
+        One source now: src/config/feature_budget. The fallback keeps this
+        script working if it is ever run without the repo's config on the
+        path, which is the situation the hardcoded map was really guarding
+        against.
+        """
+        try:
+            from src.config.feature_budget import get_model_max_features
+            return get_model_max_features(model_type)
+        except ImportError:
+            # Mirrors feature_budget.DEFAULT_MAX_FEATURES; kept as a literal
+            # precisely because this branch is the one where that module
+            # could not be imported.
+            return 35
 
 # ==============================================================================
 # MAIN EXECUTION
