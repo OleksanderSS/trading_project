@@ -345,3 +345,35 @@ def test_the_signature_survives_a_baseline_loaded_from_disk(tmp_path):
     result = second.analyze({"features_data": frame})
 
     assert result["status"] == "not_applicable"
+
+
+def test_the_same_rows_with_different_values_are_still_compared(tmp_path):
+    """The defect the first version of the signature introduced.
+
+    Shape and index bounds alone called a frame with f1 shifted by 4.0 "the
+    same batch" and skipped the comparison -- blinding the monitor to the one
+    thing it exists to detect. Caught immediately by
+    test_feature_drift_wiring.py; pinned here beside the guard it constrains.
+    """
+    analyzer = _analyzer(tmp_path)
+    baseline = _frame(200, 0.5)
+    analyzer.analyze({"features_data": baseline})
+
+    moved = baseline.copy()
+    moved["y"] = moved["y"] + 4.0
+
+    result = analyzer.analyze({"features_data": moved})
+
+    assert result["status"] != "not_applicable", (
+        "identical shape and index, different values -- this is drift, not a "
+        "repeat of the same batch"
+    )
+
+
+def test_an_unhashable_frame_is_measured_rather_than_skipped(tmp_path):
+    """When the signature cannot be taken, the answer is unknown -- and an
+    unknown answer must fall on the side of doing the work."""
+    import pandas as pd
+
+    analyzer = _analyzer(tmp_path)
+    assert analyzer._frame_signature(pd.DataFrame({"a": [[1, 2], [3, 4]]})) == ""

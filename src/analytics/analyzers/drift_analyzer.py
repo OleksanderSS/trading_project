@@ -72,18 +72,34 @@ class DriftAnalyzer(IAnalyzer):
 
     @staticmethod
     def _frame_signature(frame: "pd.DataFrame") -> str:
-        """Cheap identity for a feature frame.
+        """Content identity for a feature frame, or "" when it cannot be taken.
 
-        Shape plus column names plus the first and last index values. Enough
-        to recognise "this is the batch the baseline came from" without
-        hashing millions of cells on every context.
+        Shape and index bounds are NOT enough, and the first version of this
+        used only those. Drift's whole subject is the same rows carrying
+        different values -- a frame with f1 shifted by 4.0 has an identical
+        shape, an identical index and completely different data. That
+        signature called it "the same batch" and skipped the comparison,
+        which made the monitor blind to precisely what it exists to see.
+        Three tests in test_feature_drift_wiring.py said so immediately.
+
+        So the values are hashed. An empty string means "could not tell",
+        and the caller must then MEASURE rather than skip: an unknown answer
+        has to fall on the side of doing the work, not of assuming it is
+        unnecessary.
         """
         try:
-            bounds = ""
-            if len(frame):
-                bounds = f"{frame.index[0]}|{frame.index[-1]}"
-            return f"{frame.shape}|{len(frame.columns)}|{bounds}"
+            import hashlib
+
+            import pandas as pd
+
+            digest = hashlib.sha256(
+                pd.util.hash_pandas_object(frame, index=True).values.tobytes()
+            ).hexdigest()
+            return f"{frame.shape}|{digest}"
         except Exception:
+            # Unhashable column types (a column of lists will do it) reach
+            # here. Returning "" makes the equality test below fail, so the
+            # comparison runs.
             return ""
 
     def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
