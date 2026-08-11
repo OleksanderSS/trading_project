@@ -10,7 +10,9 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Hybrid Trading Pipeline')
     parser.add_argument(
         '--mode',
-        choices=['local', 'full', 'prepare', 'light', 'continue', 'calibrate'],
+        # 'calibrate' removed: it was advertised here and dispatched in
+        # run_hybrid_pipeline.py to an executor method that does not exist.
+        choices=['local', 'full', 'prepare', 'light', 'continue'],
         default='local',
         help='Pipeline execution mode'
     )

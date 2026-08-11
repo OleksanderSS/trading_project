@@ -8,7 +8,6 @@ Usage:
     python run_hybrid_pipeline.py --mode prepare    # Preparation for Colab
     python run_hybrid_pipeline.py --mode light      # Light models training only
     python run_hybrid_pipeline.py --mode continue   # Continue after Colab results
-    python run_hybrid_pipeline.py --mode calibrate  # DEAN hyperparameter calibration
 """
 
 import asyncio
@@ -231,8 +230,16 @@ async def main():
         results = await PipelineExecutor.execute_full_mode(orchestrator, tickers, timeframes)
     elif args.mode == 'continue':
         results = await PipelineExecutor.execute_continue_mode(orchestrator, args)
-    elif args.mode == 'calibrate':
-        results = await PipelineExecutor.execute_calibrate_mode(orchestrator, args)
+    else:
+        # `--mode calibrate` sat in the parser's choices and was dispatched
+        # here to PipelineExecutor.execute_calibrate_mode, which has never
+        # existed -- so the advertised mode raised AttributeError on every
+        # invocation. A mode that reaches this branch is advertised without an
+        # implementation; say so instead of falling through with results=None,
+        # which the reporting below reads as an empty successful run.
+        raise NotImplementedError(
+            f"Mode '{args.mode}' is accepted by the CLI but has no executor."
+        )
 
     # Log enhanced component statistics
     if model_pool:

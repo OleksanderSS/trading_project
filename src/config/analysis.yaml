@@ -131,3 +131,22 @@ stage7_analysis_engine: &stage7_analysis_engine
 
 analysis:
   engine: *stage7_analysis_engine
+
+# ---------------------------------------------------------------------------
+# Financial-metric conventions. Single source for every Sharpe/Sortino in the
+# project: src.metrics.financial.financial_metrics_library.get_risk_free_rate
+# reads `metrics.risk_free_rate` from here.
+#
+# Both keys were already being READ (PortfolioMetricsCalculator asked for
+# `metrics.risk_free_rate` and `metrics.trading_days_per_year`) while no YAML
+# defined a `metrics:` section at all, so every read silently took its own
+# fallback -- 0.02 in one place, 0.0 in another. That split is what published
+# two different Sharpe ratios for one equity curve in Stage 7.
+#
+# Changing risk_free_rate changes every Sharpe and Sortino the project
+# reports. Producers record the value they used alongside the ratio
+# (`risk_free_rate_used`), so older artifacts stay interpretable.
+# ---------------------------------------------------------------------------
+metrics:
+  risk_free_rate: 0.0
+  trading_days_per_year: 252

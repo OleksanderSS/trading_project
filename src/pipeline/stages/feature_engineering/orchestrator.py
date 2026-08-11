@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.analytics.calculators.advanced_econometrics_calculator import AdvancedEconometricsCalculator
@@ -261,33 +262,114 @@ class FeatureEngineeringStage(BaseStage):
             if column not in metadata_columns and not is_target_like_column(column)
         ]
 
+    #: Columns restored onto an enriched frame when an enricher drops them.
+    _SERVICE_COLUMNS = (
+        "datetime",
+        "timestamp",
+        "date",
+        "ticker",
+        "interval",
+        "timeframe",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "hash",
+    )
+
+    #: Columns that identify a row well enough to prove two frames are still in
+    #: the same order. `hash` is the collector's per-row SHA-256 and is exact;
+    #: the price columns are a strong practical check when it was dropped.
+    _ALIGNMENT_ANCHORS = ("hash", "close", "volume", "open")
+
     def _restore_service_columns(
         self,
         enriched_df: pd.DataFrame,
         source_df: pd.DataFrame,
     ) -> pd.DataFrame:
-        """Preserve row-level source identity when enrichers drop service columns."""
+        """Restore service columns an enricher dropped, WITHOUT trusting order.
+
+        This method wrote `source_df[column].to_numpy()` straight onto the
+        enriched frame, guarded only by equal row counts. Row count is not row
+        identity: an enricher that returns the same rows in a different order
+        (a groupby-apply, a sort, a merge) makes that assignment paste every
+        value onto the wrong row.
+
+        That is not hypothetical -- it is what produced the 2026-08-06 batch.
+        Measured on it: for AAPL 1d, all 327 exported bars are genuine bars
+        from the database (matched by `hash`), every OHLCV field and every
+        calendar feature belongs to that real bar, and NOT ONE row carries the
+        date the bar actually has. Only `datetime` was wrong, because
+        `datetime` was the only column the enricher dropped and this method
+        restored. `apply_guards` then sorted by that wrong date (see run()),
+        which is why the file looks tidy: dates ascending, bars shuffled
+        against them, offsets up to 686 days. Every indicator, every
+        shift(-n) target and every model trained on that batch was built on
+        bars in a random order.
+
+        The repair: prove the rows correspond before copying anything.
+        `hash` (the collector's per-row SHA-256) gives an exact join. Failing
+        that, a surviving price column proves positional alignment. If neither
+        is available the frames cannot be matched, and this raises rather than
+        guessing -- a silent wrong answer here is invisible for weeks.
+        """
         if len(enriched_df) != len(source_df):
             return enriched_df
+
         result = enriched_df.copy()
-        service_columns = (
-            "datetime",
-            "timestamp",
-            "date",
-            "ticker",
-            "interval",
-            "timeframe",
-            "open",
-            "high",
-            "low",
-            "close",
-            "volume",
-            "hash",
+        missing = [
+            column
+            for column in self._SERVICE_COLUMNS
+            if column not in result.columns and column in source_df.columns
+        ]
+        if not missing:
+            return result
+
+        # Exact route: join on the row hash, which survives reordering.
+        if "hash" in result.columns and "hash" in source_df.columns:
+            source_by_hash = source_df.drop_duplicates("hash").set_index("hash")
+            if result["hash"].is_unique and result["hash"].isin(source_by_hash.index).all():
+                for column in missing:
+                    result[column] = result["hash"].map(source_by_hash[column]).to_numpy()
+                return result
+
+        # Fallback: a column present in BOTH frames proves the row order is
+        # unchanged, so a positional copy is safe.
+        anchor = next(
+            (
+                column
+                for column in self._ALIGNMENT_ANCHORS
+                if column in result.columns and column in source_df.columns
+            ),
+            None,
         )
-        for column in service_columns:
-            if column not in result.columns and column in source_df.columns:
-                result[column] = source_df[column].to_numpy(copy=True)
-        return result
+        if anchor is not None:
+            left = result[anchor].to_numpy()
+            right = source_df[anchor].to_numpy()
+            aligned = (
+                np.array_equal(left, right)
+                if left.dtype == object or not np.issubdtype(left.dtype, np.number)
+                else np.allclose(
+                    left.astype(float), right.astype(float), rtol=1e-9, equal_nan=True
+                )
+            )
+            if aligned:
+                for column in missing:
+                    result[column] = source_df[column].to_numpy(copy=True)
+                return result
+            raise ValueError(
+                f"Cannot restore {missing} onto the enriched frame: the "
+                f"enricher reordered its rows (anchor column '{anchor}' no "
+                f"longer matches the source row for row order). Restoring by "
+                f"position here would attach these values to the wrong bars."
+            )
+
+        raise ValueError(
+            f"Cannot restore {missing} onto the enriched frame: no 'hash' and "
+            f"no shared anchor column to prove the rows still correspond. "
+            f"Enrichers must preserve either the row hash or a price column."
+        )
 
     # Held-out fraction (chronological tail, per ticker) that feature selection
     # must never see. Matches the test_size=0.2 convention already used by

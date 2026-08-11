@@ -53,6 +53,37 @@ def infer_periods_per_year(returns: pd.Series) -> int:
         return 12
     return 4                           # quarterly
 
+#: Fallback when config carries no `metrics.risk_free_rate`. 0.0 is the
+#: convention calculate_sharpe_ratio already defaults to, so this constant
+#: introduces no third answer.
+DEFAULT_RISK_FREE_RATE = 0.0
+
+
+def get_risk_free_rate() -> float:
+    """The project's single annual risk-free rate for Sharpe/Sortino.
+
+    Stage 7 published TWO Sharpe ratios for the same equity curve --
+    `metrics.sharpe_ratio` 1.0212 and `backtest_stats.sharpe_ratio` 0.7023 in
+    summary_20260810_123512.json -- and the gap was reproduced to sixteen
+    digits as (0.02 / 252) / per_period_std * sqrt(252). Same series, same
+    annualisation: the ONLY difference was that one path assumed a 0% rate and
+    the other 2%. Three defaults existed (0.0 here, 0.02 in
+    metrics_mixin._calculate_sharpe, 0.02 in PortfolioMetricsCalculator via a
+    `metrics.risk_free_rate` key that no YAML defines).
+
+    Callers must record the value they used alongside the ratio; a Sharpe
+    without its rate cannot be compared with another Sharpe.
+    """
+    try:
+        from src.config.unified_config_manager import get_current_config
+        value = get_current_config().get('metrics.risk_free_rate', DEFAULT_RISK_FREE_RATE)
+        return float(value) if value is not None else DEFAULT_RISK_FREE_RATE
+    except (ImportError, AttributeError, TypeError, ValueError):
+        # Config is unavailable in bare unit tests; the constant keeps the
+        # policy single-valued rather than letting each caller re-guess.
+        return DEFAULT_RISK_FREE_RATE
+
+
 logger = ProjectLogger.get_logger("FinancialMetricsLibrary")
 
 

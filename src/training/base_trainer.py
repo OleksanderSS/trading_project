@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from src.pipeline.constants import champion_filename, model_candidate_filename
 from src.config.unified_config_manager import get_current_config
@@ -263,6 +264,7 @@ class BaseTrainer(ABC):
 
         try:
             # 2. Determine which models to train
+            results["training_sanity"] = self._check_training_sanity(data)
             model_types = self._prepare_model_training_list(ticker, data)
             is_classification = 'classification' in data.get('target_type', '')
 
@@ -407,23 +409,82 @@ class BaseTrainer(ABC):
 
     def _record_winner_test_score(self, winner_model: Any, data: dict[str, Any],
                                 is_classif: bool, results: dict[str, Any]) -> None:
-        """Scores the already-selected winner on the untouched test split.
+        """Scores the already-selected winner on the untouched holdout.
 
-        This is the only place the test set is used. It never influences
-        which model wins — it's recorded purely so downstream consumers get
-        one honest, selection-independent number instead of the
-        validation score being mistaken for a true out-of-sample result.
+        It never influences which model wins — it's recorded so downstream
+        consumers get one selection-independent number.
+
+        The honesty of that number depends entirely on WHICH split arrives
+        here, and for a long time the wrong one did. Stage 4's orchestrator
+        passes the validation split under the key ``X_test`` (its own
+        docstring says so), so this method re-scored the winner on exactly the
+        rows that had just chosen it and published the result as
+        ``winner_test_metrics``. Every "test" number Stage 4 ever produced was
+        a second copy of the selection score.
+
+        The real purged holdout now travels under ``X_holdout``/``y_holdout``,
+        a key nothing in the selection path reads. When it is absent, no score
+        is emitted at all: an absent measurement must not be representable as
+        a passing one.
         """
-        preds = winner_model.predict(data['X_test'])
-        score = self.evaluator.calculate(
-            data['y_test'], preds,
-            task_type="classification" if is_classif else "regression"
-        )
-        results['winner_test_metrics'] = {
-            'score': float(score.get('F1' if is_classif else 'R2', 0.0)),
+        X_holdout = data.get('X_holdout')
+        y_holdout = data.get('y_holdout')
+        if X_holdout is None or y_holdout is None or len(X_holdout) == 0:
+            results['winner_holdout_metrics'] = {
+                'status': 'no_holdout_available',
+                'reason': (
+                    "Caller supplied no X_holdout/y_holdout. The winner was "
+                    "not measured on any data outside model selection."
+                ),
+                'holdout_sample_count': 0,
+            }
+            return
+
+        task_type = "classification" if is_classif else "regression"
+        preds = winner_model.predict(X_holdout)
+        score = self.evaluator.calculate(y_holdout, preds, task_type=task_type)
+        metric_key = 'F1' if is_classif else 'R2'
+
+        results['winner_holdout_metrics'] = {
+            'status': 'measured',
+            'score': float(score.get(metric_key, 0.0)),
+            'metric': metric_key,
             'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
             'mse': float(score.get('MSE', 0.0)) if not is_classif else None,
+            'holdout_sample_count': int(len(X_holdout)),
+            'baseline_score': self._score_naive_baseline(data, is_classif, task_type, metric_key),
         }
+
+    def _score_naive_baseline(self, data: dict[str, Any], is_classif: bool,
+                              task_type: str, metric_key: str) -> float | None:
+        """Score a train-only naive predictor on the holdout.
+
+        Majority class for classification, train mean for regression. Fitted
+        on TRAIN alone so it carries no holdout information, and scored with
+        the same evaluator as the winner so the two numbers are comparable.
+
+        Without this, "the winner scored 0.62" has no scale: 0.62 is excellent
+        against a 0.50 baseline and worthless against a 0.61 one.
+        """
+        try:
+            y_train = np.asarray(data.get('y_train')).ravel()
+            y_holdout = data.get('y_holdout')
+            if y_train.size == 0 or y_holdout is None:
+                return None
+            n = len(y_holdout)
+            if is_classif:
+                values, counts = np.unique(y_train[~pd.isna(y_train)], return_counts=True)
+                if values.size == 0:
+                    return None
+                constant = values[int(np.argmax(counts))]
+            else:
+                constant = float(np.nanmean(y_train))
+            baseline_preds = np.full(n, constant)
+            score = self.evaluator.calculate(y_holdout, baseline_preds, task_type=task_type)
+            return float(score.get(metric_key, 0.0))
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.warning(f"Could not score naive baseline: {e}")
+            return None
 
     def _finalize_ticker_results(self, results: dict[str, Any], winner: str | None, best_score: float) -> dict:
         """Packages the final results dictionary."""
@@ -440,15 +501,201 @@ class BaseTrainer(ABC):
         )
         if winner_record:
             winner_path = Path(winner_record["model_path"])
-            champion_path = self._promote_champion_file(
-                winner_path,
-                ticker=str(results.get("ticker") or "unknown"),
-                timeframe=str(results.get("timeframe") or ""),
-                target=str(results.get("target_name") or "unknown"),
-            )
             results["winner_model_path"] = str(winner_path)
-            results["model_path"] = str(champion_path)
+
+            gate = self._evaluate_promotion_gate(results)
+            results["promotion_gate"] = gate
+
+            if gate["passed"]:
+                champion_path = self._promote_champion_file(
+                    winner_path,
+                    ticker=str(results.get("ticker") or "unknown"),
+                    timeframe=str(results.get("timeframe") or ""),
+                    target=str(results.get("target_name") or "unknown"),
+                )
+                results["model_path"] = str(champion_path)
+            else:
+                # No CHAMP_ write. Any champion already on disk for this
+                # (ticker, timeframe, target) stays as it is -- a failed gate
+                # withholds a promotion, it does not retract the incumbent.
+                # Downstream keeps resolving the previous champion, which is
+                # why blocking here cannot zero out Stage 5.
+                self.logger.warning(
+                    "Champion NOT promoted for %s/%s/%s: %s",
+                    results.get("ticker"), results.get("timeframe"),
+                    results.get("target_name"), "; ".join(gate["reasons"]),
+                )
         return results
+
+    #: A holdout score at or above this is treated as evidence of leakage or a
+    #: degenerate split rather than of skill. Codex §8.7: an R2 near 0.99 or an
+    #: accuracy near 100% on financial data should trigger an audit, never an
+    #: automatic promotion.
+    IMPLAUSIBLE_SCORE = 0.99
+
+    def _check_training_sanity(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Shape checks that decide whether a result can mean anything.
+
+        Measured on this project's own artifacts: a typical run fits roughly
+        237 features on ~192 training rows with ~19 validation rows. More
+        parameters than observations does not produce a weak model, it
+        produces an unfalsifiable one -- any score it reports is a property of
+        the split, not of the market.
+
+        `blocking` entries stop promotion. `warnings` are recorded and do not.
+        """
+        X_train = data.get('X_train')
+        train_rows = int(len(X_train)) if X_train is not None else 0
+        feature_names = data.get('feature_names') or []
+        n_features = len(feature_names)
+        if not n_features and hasattr(X_train, 'shape') and len(getattr(X_train, 'shape', ())) > 1:
+            n_features = int(X_train.shape[1])
+
+        X_val = data.get('X_val')
+        X_holdout = data.get('X_holdout')
+        val_rows = int(len(X_val)) if X_val is not None else 0
+        holdout_rows = int(len(X_holdout)) if X_holdout is not None else 0
+
+        blocking: list[str] = []
+        warnings: list[str] = []
+
+        # Whether an over-parameterised fit blocks promotion outright is a
+        # policy choice, and the measurement argues for making it opt-in.
+        # On the 2026-08-06 batch EVERY context is over-parameterised:
+        # AAPL 1d 327 usable numeric features on ~196 train rows, SPY 60m
+        # 605 on ~151, AAPL 15m 870 on ~390. Blocking by default would stop
+        # the light branch producing champions at all.
+        #
+        # The holdout-versus-baseline test below is the empirical answer to
+        # "is this overfit": a model that memorised its training rows fails on
+        # a split it has never been evaluated against. Refusing on the ratio
+        # alone pre-emptively discards models that evidence might vindicate.
+        # So the ratio is reported loudly and left to the operator.
+        config_manager = getattr(self, 'config_manager', None)
+        block_on_ratio = False
+        if config_manager is not None:
+            try:
+                cfg = config_manager.get('training.promotion_gate', {}) or {}
+                block_on_ratio = bool(cfg.get('block_when_features_exceed_rows', False))
+            except (AttributeError, TypeError, KeyError):
+                block_on_ratio = False
+
+        if train_rows == 0:
+            blocking.append("no training rows")
+        elif n_features >= train_rows:
+            message = (
+                f"{n_features} features on {train_rows} training rows: "
+                f"at least as many parameters as observations"
+            )
+            (blocking if block_on_ratio else warnings).append(message)
+        elif n_features > train_rows / 3:
+            warnings.append(
+                f"{n_features} features on {train_rows} training rows "
+                f"(ratio {n_features / train_rows:.2f}); Codex §2.5 suggests "
+                f"20-40 train-only selected features for a first honest contour"
+            )
+
+        if 0 < val_rows < 20:
+            warnings.append(f"validation split has only {val_rows} rows")
+        if holdout_rows == 0:
+            warnings.append("no holdout split supplied")
+
+        return {
+            'train_rows': train_rows,
+            'validation_rows': val_rows,
+            'holdout_rows': holdout_rows,
+            'feature_count': n_features,
+            'blocking': blocking,
+            'warnings': warnings,
+        }
+
+    def _evaluate_promotion_gate(self, results: dict[str, Any]) -> dict[str, Any]:
+        """Decide whether the winner may be written as CHAMP_.
+
+        Promotion used to be an unconditional `shutil.copy2` executed for
+        whichever model happened to score highest, however badly: a model that
+        lost to predicting the training mean still became the champion the
+        prediction stage would load, because nothing ever compared it to
+        anything. "Champion" named the winner of the round, not a model shown
+        to be useful.
+
+        Three conditions, all cheap and all measurable from what training
+        already produces:
+
+        1. the winner was scored on a real holdout (not the selection split);
+        2. that holdout was not vanishingly small;
+        3. the winner beat the train-only naive baseline on it.
+
+        Everything richer that a promotion gate should eventually check --
+        walk-forward stability, cost stress, shadow outcomes -- needs evidence
+        this pipeline does not yet produce. This is the floor, not the target.
+        """
+        # Not every BaseTrainer subclass carries a config_manager (BatchTrainer
+        # does not), and a promotion gate that raises is worse than one that
+        # falls back to its documented defaults.
+        config_manager = getattr(self, 'config_manager', None)
+        cfg = {}
+        if config_manager is not None:
+            try:
+                cfg = config_manager.get('training.promotion_gate', {}) or {}
+            except (AttributeError, TypeError, KeyError):
+                cfg = {}
+        enabled = bool(cfg.get('enabled', True))
+        min_rows = int(cfg.get('min_holdout_rows', 20))
+        min_margin = float(cfg.get('min_baseline_margin', 0.0))
+
+        holdout = results.get('winner_holdout_metrics') or {}
+        reasons: list[str] = []
+
+        if not enabled:
+            return {
+                'passed': True,
+                'reasons': ['gate_disabled_by_config'],
+                'enabled': False,
+            }
+
+        if holdout.get('status') != 'measured':
+            reasons.append(
+                f"no holdout measurement ({holdout.get('status', 'missing')})"
+            )
+        else:
+            n = int(holdout.get('holdout_sample_count', 0))
+            if n < min_rows:
+                reasons.append(f"holdout has {n} rows, minimum is {min_rows}")
+
+            score = holdout.get('score')
+            baseline = holdout.get('baseline_score')
+            if score is None or not np.isfinite(score):
+                reasons.append("holdout score is not finite")
+            elif baseline is None:
+                reasons.append("naive baseline could not be scored for comparison")
+            elif float(score) <= float(baseline) + min_margin:
+                reasons.append(
+                    f"holdout score {float(score):.4f} does not beat the naive "
+                    f"baseline {float(baseline):.4f} by {min_margin}"
+                )
+            elif float(score) >= self.IMPLAUSIBLE_SCORE:
+                # A near-perfect score on market data is the signature of a
+                # leak or a degenerate target, and the one case where a HIGHER
+                # number must be treated worse than a middling one.
+                reasons.append(
+                    f"holdout score {float(score):.4f} is implausibly high "
+                    f"(>= {self.IMPLAUSIBLE_SCORE}); audit for leakage before "
+                    f"promoting"
+                )
+
+        # Shape problems make the score above unfalsifiable, so they block
+        # regardless of how the comparison went.
+        sanity = results.get('training_sanity') or {}
+        reasons.extend(sanity.get('blocking') or [])
+
+        return {
+            'passed': not reasons,
+            'reasons': reasons or ['holdout_measured_and_beats_baseline'],
+            'enabled': True,
+            'min_holdout_rows': min_rows,
+            'min_baseline_margin': min_margin,
+        }
 
     def _save_model_candidate(
         self,

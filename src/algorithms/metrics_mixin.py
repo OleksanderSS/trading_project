@@ -10,6 +10,7 @@ import pandas as pd
 # `_infer_periods_per_year` directly from this module.
 from src.metrics.financial.financial_metrics_library import (
     FinancialMetricsLibrary,
+    get_risk_free_rate,
     infer_periods_per_year as _infer_periods_per_year,
 )
 
@@ -20,22 +21,31 @@ class PerformanceMetricsMixin:
     def _calculate_sharpe(
         self,
         returns: pd.Series,
-        risk_free_rate: float = 0.02,
+        risk_free_rate: float | None = None,
         periods_per_year: int | None = None,
     ) -> float:
         """Delegates to FinancialMetricsLibrary.calculate_sharpe_ratio (the
-        canonical implementation) — this wrapper only exists to keep this
-        mixin's own call signature and defaults for existing callers.
-        Behavior is unchanged: risk_free_rate=0.02 default (unlike the
-        other two Sharpe call sites, which default to 0.0 — preserved here
-        rather than silently unified, since changing it would change every
-        backtest metric this mixin produces), cadence-aware
-        periods_per_year auto-inference when not given, and 0.0 (not NaN)
-        on insufficient data or zero/non-finite excess-return std.
+        canonical implementation).
+
+        The hardcoded 0.02 default this used to carry was deliberately left
+        in place by an earlier pass, on the grounds that unifying it would
+        change every backtest metric the mixin produces. It changed them the
+        other way instead: Stage 7 published this mixin's Sharpe as
+        `backtest_stats.sharpe_ratio` (0.7023) beside the evaluation
+        calculator's Sharpe as `metrics.sharpe_ratio` (1.0212) for ONE equity
+        curve, and the gap reproduces exactly as (0.02/252)/std*sqrt(252).
+        Two answers to one question is worse than one answer under a stated
+        convention, so the rate now comes from get_risk_free_rate() and every
+        producer records which rate it used.
+
+        Unchanged: cadence-aware periods_per_year auto-inference when not
+        given, and 0.0 (not NaN) on insufficient data or zero/non-finite
+        excess-return std.
         """
+        rate = get_risk_free_rate() if risk_free_rate is None else risk_free_rate
         return FinancialMetricsLibrary.calculate_sharpe_ratio(
             returns,
-            risk_free_rate=risk_free_rate,
+            risk_free_rate=rate,
             trading_days_per_year=periods_per_year,
             on_error=0.0,
         )

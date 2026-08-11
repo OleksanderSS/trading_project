@@ -234,12 +234,23 @@ class AdvancedBacktestEngine(PerformanceMetricsMixin):
 
             from src.algorithms.metrics_mixin import _infer_periods_per_year as _ppy
             _ppy_val = _ppy(daily_returns) if not daily_returns.empty else 252
+            from src.metrics.financial.financial_metrics_library import get_risk_free_rate
+            _rf = get_risk_free_rate()
             report['performance_metrics'] = {'total_return': float((
                 final_equity - initial_capital) / initial_capital),
                 'annual_return': float(daily_returns.mean() * _ppy_val) if not daily_returns.empty else 0.0,
-                'sharpe_ratio': float(self._calculate_sharpe(daily_returns)),
+                'sharpe_ratio': float(self._calculate_sharpe(daily_returns, risk_free_rate=_rf)),
                 'max_drawdown': float(self._calculate_max_drawdown(returns_series)
-                ), 'win_rate': float(self._calculate_win_rate(daily_returns))}
+                # _calculate_win_rate takes an EQUITY CURVE and differences it
+                # itself. It was handed `daily_returns`, which is already
+                # returns_series.pct_change() -- so the published win rate was
+                # the share of bars on which the RETURN rose, not the share of
+                # bars that made money. Those coincide only by accident.
+                ), 'win_rate': float(self._calculate_win_rate(returns_series)),
+                # The Sharpe above is meaningless next to another Sharpe unless
+                # the convention travels with it.
+                'risk_free_rate_used': float(_rf),
+                'periods_per_year_used': int(_ppy_val)}
             # Expose the real simulated equity curve so downstream
             # consumers (BacktestAnalyzer._normalize_backtest_results)
             # don't have to fabricate a fake straight-line approximation

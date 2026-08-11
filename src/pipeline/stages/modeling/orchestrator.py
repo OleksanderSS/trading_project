@@ -430,11 +430,19 @@ class ModelingStage(BaseStage):
         context_pattern_seq: str | None = None,
         timeframe: str = "",
     ) -> dict[str, Any]:
-        """Adapt nested preparation output and reserve the holdout.
+        """Adapt nested preparation output and forward the holdout separately.
 
         UnifiedTrainingManager calls its selection split ``X_test``. Stage 4
         supplies validation there and does not expose the prepared holdout to
         model selection.
+
+        The prepared holdout used to stop here: reserving it kept it out of
+        selection, but it also meant BaseTrainer._record_winner_test_score --
+        which reads ``X_test`` -- re-scored the winner on the very rows that
+        chose it and filed the result as a test metric. It now travels under
+        ``X_holdout``/``y_holdout``, keys no selection code reads, so the
+        number is measured on data the model has never been evaluated against
+        and the promotion gate has something real to check.
         """
         light = prepared_data.get("light_models")
         if not isinstance(light, dict):
@@ -451,6 +459,17 @@ class ModelingStage(BaseStage):
             "y_train": y_train,
             "X_test": light["X_val"],
             "y_test": light["y_val"],
+            # Selection reads X_val when present and falls back to X_test
+            # otherwise; passing it explicitly means the fallback is never
+            # what decides, and the two keys can no longer drift apart.
+            "X_val": light["X_val"],
+            "y_val": light["y_val"],
+            # The purged holdout, produced with a gap by
+            # prepare_data_for_models. Deliberately NOT named *_test: the test
+            # keys are the selection split here, and one confusable name is
+            # what caused the original defect.
+            "X_holdout": light.get("X_test"),
+            "y_holdout": light.get("y_test"),
             "feature_names": list(light.get("feature_names") or []),
             "target_name": target_name,
             # Reaches BaseTrainer, which names the model file with it. Without

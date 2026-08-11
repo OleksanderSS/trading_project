@@ -129,6 +129,14 @@ def test_active_stage4_adapts_nested_splits_and_reserves_holdout():
     assert context["prepared_holdout_reserved"] is True
     assert context["target_type"] == "classification"
 
+    # The purged holdout must reach the trainer, but never under a key the
+    # selection path reads. Reserving it without forwarding it is what made
+    # BaseTrainer re-score the winner on its own selection split and publish
+    # the result as a test metric.
+    assert context["X_holdout"] is prepared["light_models"]["X_test"]
+    assert context["y_holdout"] is prepared["light_models"]["y_test"]
+    assert context["X_val"] is prepared["light_models"]["X_val"]
+
 
 def test_model_preparation_preserves_timestamp_split_lineage():
     frame = pd.DataFrame(
@@ -331,8 +339,8 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
         model_type="random_forest",
     )
 
-    result = trainer._finalize_ticker_results(
-        {
+    def _results(**extra):
+        base = {
             "ticker": "NVDA",
             "timeframe": "1d",
             "target_name": "target_up",
@@ -347,7 +355,31 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
                 "linear": {"score": 0.55},
                 "random_forest": {"score": 0.62},
             },
-        },
+        }
+        base.update(extra)
+        return base
+
+    # Without a holdout measurement the winner is identified but NOT promoted.
+    # Promotion used to be an unconditional copy, so this path always produced
+    # a CHAMP_ file no matter what the model was worth.
+    blocked = trainer._finalize_ticker_results(_results(), "random_forest", 0.62)
+    assert blocked["winner_model_path"] == str(winner)
+    assert "model_path" not in blocked
+    assert blocked["promotion_gate"]["passed"] is False
+    assert not (tmp_path / "CHAMP_NVDA_1d_target_up.joblib").exists()
+
+    # With a measured holdout that beats the naive baseline, it is promoted.
+    result = trainer._finalize_ticker_results(
+        _results(
+            winner_holdout_metrics={
+                "status": "measured",
+                "score": 0.62,
+                "metric": "F1",
+                "baseline_score": 0.40,
+                "holdout_sample_count": 58,
+            },
+            training_sanity={"blocking": [], "warnings": []},
+        ),
         "random_forest",
         0.62,
     )
@@ -356,6 +388,7 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
     assert winner.exists()
     assert first != winner
     assert result["winner_model_path"] == str(winner)
+    assert result["promotion_gate"]["passed"] is True
     champion_path = Path(result["model_path"])
     # The timeframe is part of the champion filename. Stage 4 runs this
     # suite once per (ticker, timeframe) into one output directory, so

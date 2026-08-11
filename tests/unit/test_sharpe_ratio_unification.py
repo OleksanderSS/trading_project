@@ -10,6 +10,12 @@ implementation; the other two delegate to it. These tests confirm each
 call site's pre-existing external behavior (defaults, failure value) is
 byte-for-byte unchanged after the refactor — this is a consolidation, not
 a behavior change.
+
+UPDATE (2026-08-10): the one default that was deliberately NOT unified then,
+metrics_mixin's risk_free_rate=0.02, has now been unified too. Leaving it
+split is what let a single Stage 7 summary publish two different Sharpe
+ratios for one equity curve. The rate is now a single policy,
+get_risk_free_rate(), and each producer records the rate it used.
 """
 import numpy as np
 import pandas as pd
@@ -19,6 +25,7 @@ from src.algorithms.metrics_mixin import PerformanceMetricsMixin
 from src.analytics.calculators.risk_reward_calculator import RiskRewardCalculator, TradeConfig
 from src.metrics.financial.financial_metrics_library import (
     FinancialMetricsLibrary,
+    get_risk_free_rate,
     infer_periods_per_year,
 )
 
@@ -82,19 +89,40 @@ class _MixinHost(PerformanceMetricsMixin):
     pass
 
 
-def test_metrics_mixin_delegate_preserves_002_default_and_zero_on_failure():
-    """metrics_mixin.py's _calculate_sharpe has always defaulted to
-    risk_free_rate=0.02 (unlike the other two call sites' 0.0 default) and
-    returns 0.0 rather than NaN on failure — both must be preserved
-    exactly, not silently unified to match the other two."""
+def test_metrics_mixin_uses_the_project_risk_free_policy_and_zero_on_failure():
+    """The mixin's hardcoded risk_free_rate=0.02 is gone.
+
+    It used to be preserved on purpose, so as not to move every backtest
+    metric at once. The cost showed up in Stage 7's own output: one equity
+    curve, two Sharpe ratios (backtest_stats 0.7023 via this mixin,
+    metrics 1.0212 via the evaluation calculator's rf=0.0), differing by
+    exactly (0.02/252)/std*sqrt(252). The rate now comes from
+    get_risk_free_rate() at every producer.
+
+    Unchanged and still asserted: 0.0 rather than NaN on failure.
+    """
     host = _MixinHost()
     returns = _returns(seed=3)
 
     via_wrapper = host._calculate_sharpe(returns)
     via_canonical = FinancialMetricsLibrary.calculate_sharpe_ratio(
-        returns, risk_free_rate=0.02, trading_days_per_year=infer_periods_per_year(returns), on_error=0.0,
+        returns,
+        risk_free_rate=get_risk_free_rate(),
+        trading_days_per_year=infer_periods_per_year(returns),
+        on_error=0.0,
     )
     assert via_wrapper == pytest.approx(via_canonical)
+
+    # An explicitly passed rate still wins over the policy.
+    explicit = host._calculate_sharpe(returns, risk_free_rate=0.05)
+    assert explicit == pytest.approx(
+        FinancialMetricsLibrary.calculate_sharpe_ratio(
+            returns,
+            risk_free_rate=0.05,
+            trading_days_per_year=infer_periods_per_year(returns),
+            on_error=0.0,
+        )
+    )
 
     # Failure case: constant returns -> zero std -> 0.0 (not NaN).
     constant = pd.Series([0.01] * 10)

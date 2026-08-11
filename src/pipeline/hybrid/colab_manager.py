@@ -278,22 +278,71 @@ class ColabManager:
 
             # Build combined df with both features and targets for correlation check
             target_cols = [c for c in targets_df.columns if is_direct_target_column(c)]
-            combined = pd.concat([features_df, targets_df[target_cols]], axis=1) if target_cols else features_df
 
-            report = guard.check(combined, target_cols=target_cols if target_cols else None)
+            # Checked one ticker at a time. This used to be a single
+            # `pd.concat([features_df, targets_df[target_cols]], axis=1)` over
+            # the whole batch, and on the 2026-08-11 rebuild that killed the
+            # run outright at the very last step, after 100 minutes of work:
+            #   MemoryError: Unable to allocate 801 MiB for an array with
+            #   shape (1940, 54099)
+            # concat has to consolidate, and the enrichers leave the frame in
+            # thousands of single-column blocks (the "highly fragmented"
+            # warnings ContextMapEnricher emits), so one contiguous float64
+            # block of every feature x every row is demanded at once.
+            #
+            # Nothing needs that frame to exist. FeatureLeakageGuard already
+            # groups by ticker internally and measures leakage per instrument
+            # (deliberately -- see _check_correlation_per_ticker: the worst
+            # instrument decides, pooling would let a leak hide). Slicing per
+            # ticker first is therefore the same computation with peak memory
+            # divided by the ticker count, and forbidden columns are unioned
+            # so the outcome is identical.
+            forbidden: list[str] = []
+            high_corr: dict[str, Any] = {}
+            if 'ticker' in features_df.columns:
+                groups = list(features_df.groupby('ticker', sort=False).groups.items())
+            else:
+                groups = [('unknown', features_df.index)]
 
-            if report.has_issues:
-                if report.forbidden_cols:
+            for ticker_name, row_index in groups:
+                feature_slice = features_df.loc[row_index]
+                if target_cols:
+                    # Sliced by INDEX LABEL, never by position. The concat this
+                    # replaces aligned on the index, so reindexing preserves
+                    # its semantics exactly; taking .iloc positions here would
+                    # silently pair each ticker's features with whatever
+                    # targets happened to sit at those offsets -- the same
+                    # class of defect that put bars on the wrong dates in the
+                    # 2026-08-06 batch.
+                    target_slice = targets_df[target_cols].reindex(feature_slice.index)
+                    combined = pd.concat([feature_slice, target_slice], axis=1)
+                else:
+                    combined = feature_slice
+
+                report = guard.check(
+                    combined,
+                    target_cols=target_cols if target_cols else None,
+                    ticker=str(ticker_name),
+                )
+                for column in report.forbidden_cols or []:
+                    if column not in forbidden:
+                        forbidden.append(column)
+                for column, value in (report.high_corr_cols or {}).items():
+                    high_corr.setdefault(column, value)
+                del combined
+
+            if forbidden or high_corr:
+                if forbidden:
                     logger.warning(
-                        f"[LeakageGuard] Removing {len(report.forbidden_cols)} forbidden columns: "
-                        f"{report.forbidden_cols[:5]}{'...' if len(report.forbidden_cols) > 5 else ''}"
+                        f"[LeakageGuard] Removing {len(forbidden)} forbidden columns: "
+                        f"{forbidden[:5]}{'...' if len(forbidden) > 5 else ''}"
                     )
-                    features_df = features_df.drop(columns=report.forbidden_cols, errors='ignore')
+                    features_df = features_df.drop(columns=forbidden, errors='ignore')
 
-                if report.high_corr_cols:
+                if high_corr:
                     logger.warning(
-                        f"[LeakageGuard] {len(report.high_corr_cols)} features with high target "
-                        f"correlation. Review: {list(report.high_corr_cols.keys())[:5]}"
+                        f"[LeakageGuard] {len(high_corr)} features with high target "
+                        f"correlation. Review: {list(high_corr.keys())[:5]}"
                     )
             else:
                 logger.debug("[LeakageGuard] No leakage detected.")
@@ -304,13 +353,27 @@ class ColabManager:
         return features_df
 
     def _save_df_to_parquet(self, df: pd.DataFrame, path: Path):
-        """Saves DataFrame to Parquet, ensuring datetime column is preserved."""
-        df_to_save = df.copy()
-        if 'datetime' not in df_to_save.columns and isinstance(df_to_save.index, pd.DatetimeIndex):
-            df_to_save = df_to_save.reset_index()
-            if 'index' in df_to_save.columns:
-                df_to_save = df_to_save.rename(columns={'index': 'datetime'})
+        """Saves DataFrame to Parquet, ensuring datetime column is preserved.
 
+        The copy is made only when the frame actually needs changing. It used
+        to be unconditional, and at this batch's width that is an 840 MB
+        duplicate of a frame that is about to be written unmodified -- on the
+        2026-08-11 rebuild the run had already died one step earlier for want
+        of 801 MB, so an avoidable full copy here is a second landmine on the
+        same path. `to_parquet(index=False)` does not mutate its input, so
+        there is nothing to protect against when no reset is required.
+        """
+        needs_datetime_from_index = (
+            'datetime' not in df.columns
+            and isinstance(df.index, pd.DatetimeIndex)
+        )
+        if not needs_datetime_from_index:
+            df.to_parquet(path, index=False)
+            return
+
+        df_to_save = df.reset_index()
+        if 'index' in df_to_save.columns:
+            df_to_save = df_to_save.rename(columns={'index': 'datetime'})
         df_to_save.to_parquet(path, index=False)
 
     def _handle_batch_configuration(self, batch_dir: Path, config: BatchPreparationConfig,

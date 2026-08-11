@@ -118,7 +118,9 @@ class ArgumentValidator:
     @staticmethod
     def _validate_mode(args: Any, errors: list[str]) -> None:
         """Validates execution mode."""
-        valid_modes = ['local', 'full', 'prepare', 'light', 'continue', 'calibrate']
+        # Keep in step with create_argument_parser's choices; 'calibrate' was
+        # listed in both while no executor implemented it.
+        valid_modes = ['local', 'full', 'prepare', 'light', 'continue']
         if args.mode not in valid_modes:
             errors.append(
                 "❌ Invalid mode '{}'. Available modes: {}".format(
