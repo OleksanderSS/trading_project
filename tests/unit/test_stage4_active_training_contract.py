@@ -459,3 +459,30 @@ def test_stage5_result_carries_stage4_lineage_into_stage7_candidate(tmp_path):
     assert candidate["model_type"] == "random_forest"
     assert candidate["timeframe"] == "15m"
     assert candidate["context_fingerprint"] == "ctx-nvda-15m"
+
+
+def test_a_refused_promotion_is_not_recorded_as_a_champion():
+    """A gate that blocks the file but not the record blocks nothing.
+
+    BaseTrainer withholds the CHAMP_ file when the winner fails the
+    holdout-versus-baseline check, but Stage 4 wrote the champion metadata
+    regardless -- and Stage 5 reads the metadata, so it would resolve the
+    context anyway and load whatever CHAMP_ file was already on disk. One real
+    run logged "Champion NOT promoted for AAPL/15m/target_intraday_return_15m"
+    and "Pattern Champion ... catboost" for that context seven seconds apart.
+    """
+    stage = object.__new__(ModelingStage)
+
+    blocked = {
+        "promotion_gate": {
+            "passed": False,
+            "reasons": ["holdout score -0.0168 does not beat the naive baseline -0.0007"],
+        }
+    }
+    assert stage._champion_is_allowed(blocked, "AAPL_15m_t_RANGING") is False
+
+    passed = {"promotion_gate": {"passed": True, "reasons": ["holdout_measured_and_beats_baseline"]}}
+    assert stage._champion_is_allowed(passed, "AAPL_15m_t_RANGING") is True
+
+    # A trainer that reports no gate at all (older callers) is not punished.
+    assert stage._champion_is_allowed({}, "AAPL_15m_t_RANGING") is True

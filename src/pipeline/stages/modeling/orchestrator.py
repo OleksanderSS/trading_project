@@ -387,6 +387,21 @@ class ModelingStage(BaseStage):
                     )
                     if artifact_paths and metric_artifacts is not None:
                         metric_artifacts.append(artifact_paths)
+
+                    # A blocked promotion must not be announced as a champion.
+                    # BaseTrainer withholds the CHAMP_ file when the winner
+                    # fails the holdout-versus-baseline gate, but this metadata
+                    # was written regardless -- so one run logged
+                    # "Champion NOT promoted for AAPL/15m/target_intraday_return_15m"
+                    # and then "Pattern Champion ... catboost" for that very
+                    # context, seven seconds apart. Stage 5 reads THIS dict, so
+                    # the refusal would have been cosmetic: it would resolve the
+                    # context anyway and fall back to whatever CHAMP_ file was
+                    # already on disk -- which today means a model trained on
+                    # the corrupted batch.
+                    if not self._champion_is_allowed(ticker_result, context_key):
+                        continue
+
                     champions[context_key] = {
                         'ticker': ticker,
                         'timeframe': timeframe,
@@ -430,6 +445,32 @@ class ModelingStage(BaseStage):
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Error modeling {ticker}: {e}")
+
+    @staticmethod
+    def _champion_is_allowed(ticker_result: dict[str, Any], context_key: str) -> bool:
+        """A refused promotion must not be recorded as a champion.
+
+        BaseTrainer withholds the CHAMP_ file when the winner fails the
+        holdout-versus-baseline gate, but this stage wrote the champion
+        METADATA regardless -- and Stage 5 reads the metadata. One run logged
+
+            Champion NOT promoted for AAPL/15m/target_intraday_return_15m
+            Pattern Champion ... target_intraday_return_15m ... catboost
+
+        seven seconds apart, for the same context. The refusal was therefore
+        cosmetic: Stage 5 would resolve that context anyway and fall back to
+        whichever CHAMP_ file already sat on disk -- which today means a model
+        trained on the corrupted batch. A gate that blocks a file but not the
+        record of it blocks nothing.
+        """
+        gate = ticker_result.get('promotion_gate') or {}
+        if not gate or gate.get('passed', True):
+            return True
+        logger.info(
+            "No champion recorded for %s: %s",
+            context_key, "; ".join(gate.get('reasons') or ['promotion gate failed']),
+        )
+        return False
 
     def _build_unified_training_context(
         self,
