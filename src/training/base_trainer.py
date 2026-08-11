@@ -313,15 +313,23 @@ class BaseTrainer(ABC):
         best_score = -np.inf
         winner_name = None
         winner_model = None
+        # Each model is now fitted on ITS OWN feature budget, so the columns
+        # it was trained on have to travel with it. Scoring the winner on the
+        # holdout without them raises "The feature names should match those
+        # that were passed during fit" and takes the whole stage down.
+        winner_columns: list[str] | None = None
 
         for m_type in model_types:
             try:
-                score_val, model = self._train_individual_model(ticker, m_type, data, is_classif, results)
+                score_val, model, columns = self._train_individual_model(
+                    ticker, m_type, data, is_classif, results
+                )
 
                 if score_val > best_score:
                     best_score = score_val
                     winner_name = m_type
                     winner_model = model
+                    winner_columns = columns
             except Exception as e:
                 # Deliberately broad. This loop exists precisely so that one
                 # unusable (ticker, target, model) combination is skipped and
@@ -345,13 +353,20 @@ class BaseTrainer(ABC):
                 continue
 
         if winner_model is not None:
-            self._record_winner_test_score(winner_model, data, is_classif, results)
+            # Travels into the champion metadata, which is what Stage 5 uses
+            # to build the frame it feeds the model. Without it, prediction
+            # hands a 35-column model all 388 columns and is refused.
+            results['winner_selected_features'] = list(winner_columns or [])
+            self._record_winner_test_score(
+                winner_model, data, is_classif, results, columns=winner_columns
+            )
 
         return best_score, winner_name
 
     def _train_individual_model(self, ticker: str, m_type: str, data: dict[str, Any],
-                              is_classif: bool, results: dict[str, Any]) -> tuple[float, Any]:
-        """Handles creation, training, and evaluation of a single model instance.
+                              is_classif: bool, results: dict[str, Any]
+                              ) -> tuple[float, Any, list[str] | None]:
+        """Train one model on its own feature budget; return score, model, columns.
 
         LEAKAGE FIX: model selection must score candidates on the validation
         split, not the test split — scoring on test here would let the
@@ -359,6 +374,11 @@ class BaseTrainer(ABC):
         supposed to give an unbiased final read. Falls back to the test
         split only when no validation split is present in `data` (older
         callers that don't produce one), so this stays backward compatible.
+
+        The selected columns are returned because a model fitted on 35 of 388
+        columns cannot later be handed all 388: sklearn raises "The feature
+        names should match those that were passed during fit". Every caller
+        that predicts with this model must project the frame the same way.
         """
         model = self.model_factory.create_model(
             model_name=m_type,
@@ -408,7 +428,7 @@ class BaseTrainer(ABC):
             context_pattern_seq=data.get('context_pattern_seq')
         )
 
-        return score_val, model
+        return score_val, model, columns
 
     @staticmethod
     def _project(frame: Any, columns: list[str] | None) -> Any:
@@ -473,8 +493,15 @@ class BaseTrainer(ABC):
             return list(X_train.columns[:budget])
 
     def _record_winner_test_score(self, winner_model: Any, data: dict[str, Any],
-                                is_classif: bool, results: dict[str, Any]) -> None:
+                                is_classif: bool, results: dict[str, Any],
+                                columns: list[str] | None = None) -> None:
         """Scores the already-selected winner on the untouched holdout.
+
+        `columns` are the features the winner was FITTED on. They must be
+        applied here too — a model trained on 35 of 388 columns rejects the
+        full frame outright ("The feature names should match those that were
+        passed during fit"), which took the whole modelling stage down on the
+        first run after per-model budgets were introduced.
 
         It never influences which model wins — it's recorded so downstream
         consumers get one selection-independent number.
@@ -506,7 +533,7 @@ class BaseTrainer(ABC):
             return
 
         task_type = "classification" if is_classif else "regression"
-        preds = winner_model.predict(X_holdout)
+        preds = winner_model.predict(self._project(X_holdout, columns))
         score = self.evaluator.calculate(y_holdout, preds, task_type=task_type)
         metric_key = 'F1' if is_classif else 'R2'
 

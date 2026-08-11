@@ -407,8 +407,18 @@ class ModelingStage(BaseStage):
                         'model_category': 'light',
                         'metrics': metrics,
                         'model_path': ticker_result.get('model_path'),
+                        # The WINNER'S OWN columns, not every column the
+                        # context offered. Each model is now fitted on its own
+                        # feature budget, so a champion trained on 35 of 388
+                        # columns must be described by those 35: Stage 5 builds
+                        # its input frame from this list
+                        # (data_preparation_service: ticker_df_clean[
+                        # selected_features]), and handing the model the full
+                        # set makes it reject the frame outright.
                         'selected_features': list(
-                            training_context.get("feature_names") or []
+                            ticker_result.get("winner_selected_features")
+                            or training_context.get("feature_names")
+                            or []
                         ),
                         'context_fingerprint': context_fingerprint,
                         'pipeline_control_metric_artifacts': artifact_paths,

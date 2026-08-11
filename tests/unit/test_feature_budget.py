@@ -125,6 +125,56 @@ def test_projection_only_keeps_requested_columns():
     assert BaseTrainer._project(np.zeros((2, 2)), ['a']) is not None
 
 
+class _ColumnStrictModel:
+    """Refuses a frame whose columns differ from the fitted ones, as sklearn does."""
+
+    def __init__(self):
+        self.fitted_columns = None
+
+    def train(self, X, y):
+        self.fitted_columns = list(X.columns)
+
+    def predict(self, X):
+        if list(X.columns) != self.fitted_columns:
+            raise ValueError(
+                "The feature names should match those that were passed during fit."
+            )
+        return np.zeros(len(X))
+
+
+def test_the_holdout_is_scored_on_the_columns_the_winner_was_fitted_on():
+    """The regression that killed the first budgeted run.
+
+    _record_winner_test_score predicted on the full holdout frame while the
+    model had been fitted on 35 of 388 columns, so sklearn refused it and the
+    modelling stage died with "Critical error in stage 'ModelingStage'".
+    """
+    host = _Host(_StubConfig({'models.per_model.linear.max_features': 5}))
+    data = _data(n_rows=120, n_features=60)
+    columns = host._select_features_for_model('linear', data, is_classif=False)
+
+    model = _ColumnStrictModel()
+    model.train(BaseTrainer._project(data['X_train'], columns), data['y_train'])
+
+    data['X_holdout'] = data['X_train'].copy()
+    data['y_holdout'] = data['y_train'].copy()
+    results = {}
+
+    host._record_winner_test_score(model, data, False, results, columns=columns)
+
+    assert results['winner_holdout_metrics']['status'] == 'measured'
+
+
+def test_the_winner_columns_reach_the_results_for_stage5():
+    host = _Host(_StubConfig({'models.per_model.linear.max_features': 4}))
+    data = _data(n_rows=120, n_features=40)
+    columns = host._select_features_for_model('linear', data, is_classif=False)
+
+    assert columns is not None and len(columns) == 4
+    # Stage 5 rebuilds its input frame from exactly this list.
+    assert set(columns) <= set(data['X_train'].columns)
+
+
 def test_constant_columns_lose_to_informative_ones():
     host = _Host(_StubConfig({'models.per_model.linear.max_features': 3}))
     data = _data(n_features=20)
