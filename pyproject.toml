@@ -43,5 +43,8 @@ disable_error_code = ["import-untyped"]
 exclude_dirs = ["tests", "venv", ".gemini"]
 tests = ["B201", "B301"]
 
-[tool.pytest.ini_options]
-addopts = "--cov=src --cov-report=xml --cov-report=lcov"
+# pytest is configured in pytest.ini, which takes precedence over this file
+# whenever it exists. A [tool.pytest.ini_options] block here carrying
+# `--cov=src --cov-report=xml --cov-report=lcov` was therefore dead: pytest
+# never read it, coverage was never collected, and the stale coverage.xml in
+# the repo (2026-06-11) was the only sign. Put pytest settings in pytest.ini.
