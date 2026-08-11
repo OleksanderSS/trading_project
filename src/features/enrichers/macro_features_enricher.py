@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
@@ -294,9 +295,39 @@ class MacroFeaturesEnricher(BaseEnricher):
             macro_reset = macro_reset.rename(columns={macro_datetime_col:
                 'datetime'})
         macro_reset = self._normalize_datetime_column(macro_reset, 'datetime')
-        df_merged = pd.merge_asof(df_reset.sort_values('datetime'),
-            macro_reset.sort_values('datetime'), on='datetime', direction=
-            'backward')
+
+        # merge_asof requires both sides sorted by the join key, so the sort
+        # below is unavoidable -- but the ORIGINAL row order has to come back.
+        # This frame holds several tickers, so sorting by datetime interleaves
+        # them and the caller receives the same rows in a different sequence.
+        #
+        # That, together with the set_index('datetime') that hides the column,
+        # is what corrupted the 2026-08-06 training batch: Stage 3's
+        # _restore_service_columns saw `datetime` missing and pasted it back
+        # BY POSITION from the unsorted source, so every bar received another
+        # bar's date -- offsets up to 686 days, not one row correct across
+        # 54,000. The restore is identity-checked now, but an enricher that
+        # silently permutes its input is a trap for the next consumer too, so
+        # the order is restored here at the source.
+        #
+        # mergesort keeps rows with identical timestamps (different tickers)
+        # in their original relative order.
+        order_key = '__macro_merge_row_order'
+        df_reset = df_reset.copy()
+        df_reset[order_key] = np.arange(len(df_reset))
+
+        df_merged = pd.merge_asof(
+            df_reset.sort_values('datetime', kind='mergesort'),
+            macro_reset.sort_values('datetime', kind='mergesort'),
+            on='datetime',
+            direction='backward',
+        )
+        df_merged = (
+            df_merged.sort_values(order_key, kind='mergesort')
+            .drop(columns=[order_key])
+            .reset_index(drop=True)
+        )
+
         if 'datetime' in df_merged.columns:
             return df_merged.set_index('datetime')
         else:

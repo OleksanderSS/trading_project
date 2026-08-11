@@ -184,11 +184,7 @@ def split_datetime_ticker(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]
 
 def roundtrip_datetime_ticker(features_df: pd.DataFrame, metadata_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Combines features with metadata while preserving index alignment.
-
-    Ensures that:
-    - datetime and ticker are properly restored to features
-    - No index misalignment occurs
+    Combines features with metadata, aligned on the index.
 
     Args:
         features_df: Feature DataFrame (may lack datetime/ticker)
@@ -196,6 +192,23 @@ def roundtrip_datetime_ticker(features_df: pd.DataFrame, metadata_df: pd.DataFra
 
     Returns:
         Combined DataFrame with datetime and ticker columns
+
+    Raises:
+        ValueError: if the two frames' indexes do not correspond, which is the
+            only case in which the values cannot be matched to their rows.
+
+    This function promised "No index misalignment occurs" and then assigned
+    `metadata_df['datetime'].values` -- a POSITIONAL copy that ignores the
+    index entirely, guarded only by equal length. Reorder `features_df`
+    anywhere between split_datetime_ticker() and here and every row gets
+    another row's timestamp.
+
+    It has no callers today, so it corrupted nothing. It is repaired rather
+    than left as written because the identical construction in Stage 3's
+    `_restore_service_columns` DID reach production and put 54,000 bars on the
+    wrong dates: real bars, real prices, other days' timestamps, undetected
+    for weeks because a later sort by the corrupted column made the file look
+    orderly. A dormant copy of that is a landmine, not dead code.
     """
     result = features_df.copy()
 
@@ -203,14 +216,23 @@ def roundtrip_datetime_ticker(features_df: pd.DataFrame, metadata_df: pd.DataFra
     if result.index.name == 'datetime' or isinstance(result.index, pd.DatetimeIndex):
         result = result.reset_index()
 
-    # Add metadata
-    if len(metadata_df) == len(result):
-        result['datetime'] = metadata_df['datetime'].values
-        result['ticker'] = metadata_df['ticker'].values
-    else:
+    if len(metadata_df) != len(result):
         logger.warning(
             f"⚠️ Length mismatch: features={len(result)}, metadata={len(metadata_df)}"
         )
+        return result
+
+    if not result.index.equals(metadata_df.index):
+        raise ValueError(
+            "Cannot restore datetime/ticker: the feature and metadata frames "
+            "no longer share an index, so their rows cannot be matched. "
+            "Copying by position here would attach each row's timestamp to a "
+            "different row."
+        )
+
+    # Index-aligned, not positional.
+    result['datetime'] = metadata_df['datetime']
+    result['ticker'] = metadata_df['ticker']
 
     return result
 

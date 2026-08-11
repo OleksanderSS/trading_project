@@ -5,6 +5,7 @@ import os
 import pkgutil
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
@@ -245,6 +246,9 @@ class FeatureOrchestrator:
 
         df_enriched = enricher.enrich(df, **kwargs)
 
+        self._warn_if_row_identity_changed(enricher, df, df_enriched)
+        df_enriched = self._restore_input_row_order(enricher, df, df_enriched)
+
         # ✅ Lineage tracking — captures what each enricher adds
         tracker = get_lineage_tracker()
         if tracker is not None:
@@ -275,6 +279,108 @@ class FeatureOrchestrator:
         }
 
         return df_enriched, stats
+
+    #: Columns that tie a row to the bar it describes.
+    _IDENTITY_COLUMNS = ("datetime", "ticker", "interval", "hash")
+
+    @staticmethod
+    def _warn_if_row_identity_changed(enricher, before: pd.DataFrame, after: pd.DataFrame) -> None:
+        """Name the enricher that drops an identity column or reorders rows.
+
+        Both are invisible from the outside: the frame keeps its row count and
+        its features, so every downstream log looks normal. They are also
+        exactly the two conditions that corrupted the 2026-08-06 batch --
+        Stage 3's `_restore_service_columns` pasted `datetime` back by
+        POSITION, so a dropped-and-reordered frame got every date attached to
+        the wrong bar, and nothing said which enricher had done it. That
+        restore is now identity-checked and repairs itself via `hash`, so this
+        can no longer corrupt anything; it is logged because a repair that
+        nobody is told about is a defect waiting to come back the day the hash
+        is dropped too.
+
+        Cheap by construction: a set difference, and one array compare on the
+        hash column that is already there.
+        """
+        try:
+            dropped = [
+                column
+                for column in FeatureOrchestrator._IDENTITY_COLUMNS
+                if column in before.columns and column not in after.columns
+            ]
+            if dropped:
+                logger.warning(
+                    "Enricher '%s' dropped identity column(s) %s; downstream has "
+                    "to reconstruct them.",
+                    enricher.name, dropped,
+                )
+
+            if len(before) == len(after) and "hash" in before.columns and "hash" in after.columns:
+                if not before["hash"].to_numpy().tolist() == after["hash"].to_numpy().tolist():
+                    logger.warning(
+                        "Enricher '%s' returned the same %d rows in a DIFFERENT "
+                        "ORDER. Any positional reattachment of columns after this "
+                        "point pairs values with the wrong bars.",
+                        enricher.name, len(after),
+                    )
+        except (AttributeError, TypeError, ValueError) as e:  # never block the pipeline
+            logger.debug(f"Row-identity check skipped for '{getattr(enricher, 'name', '?')}': {e}")
+
+    @staticmethod
+    def _restore_input_row_order(enricher, before: pd.DataFrame, after: pd.DataFrame) -> pd.DataFrame:
+        """Put the rows back in the order the enricher was handed them.
+
+        Reordering is not a bug in the enrichers themselves -- `merge_asof`
+        requires its inputs sorted by the join key, and a per-ticker
+        `groupby(...)` + `concat` naturally emits groups in key order. What is
+        a bug is letting that permutation escape, because everything
+        downstream reasonably assumes row i still describes bar i.
+
+        Measured on one real run, FOUR of the twenty enrichers returned the
+        same 24,395 rows in a different sequence: macro_features (which also
+        dropped `datetime`, and that combination is what put 54,000 bars on
+        the wrong dates), nlp_features, keyword_entity and news_quality.
+        Patching each one separately would leave the twenty-first free to do
+        it again, so the invariant is enforced here, once, at the boundary
+        every enricher passes through.
+
+        Uses the collector's per-row `hash`, so it is exact and independent of
+        index type. Silently does nothing when the row count changed (the
+        enricher filtered, which is its right) or when there is no unique hash
+        to align on -- in that case `_warn_if_row_identity_changed` has
+        already said so.
+        """
+        try:
+            if len(before) != len(after):
+                return after
+            if "hash" not in before.columns or "hash" not in after.columns:
+                return after
+
+            before_hashes = before["hash"].to_numpy()
+            after_hashes = after["hash"].to_numpy()
+            if before_hashes.tolist() == after_hashes.tolist():
+                return after
+            if not before["hash"].is_unique or not after["hash"].is_unique:
+                return after
+
+            position = {value: index for index, value in enumerate(before_hashes)}
+            target = np.fromiter(
+                (position.get(value, -1) for value in after_hashes),
+                dtype=np.int64,
+                count=len(after_hashes),
+            )
+            if (target < 0).any():
+                return after  # not the same set of rows; leave it alone
+
+            restored = after.iloc[np.argsort(target, kind="mergesort")]
+            logger.info(
+                "Restored input row order after enricher '%s'.", enricher.name
+            )
+            return restored
+        except (AttributeError, TypeError, ValueError, KeyError) as e:
+            logger.warning(
+                f"Could not restore row order after '{getattr(enricher, 'name', '?')}': {e}"
+            )
+            return after
 
     def _handle_duplicate_columns(self, df: pd.DataFrame, enricher_name: str) -> pd.DataFrame:
         """Handle duplicate columns created by enricher."""
