@@ -2,6 +2,7 @@ import csv
 import json
 import logging
 import queue
+import re
 import sys
 import threading
 from datetime import datetime
@@ -19,6 +20,58 @@ class ContextAdapter(logging.LoggerAdapter):
         ticker = self.extra.get('ticker', 'N/A')
         tf = self.extra.get('timeframe', 'N/A')
         return f'[{ticker}|{tf}] {msg}', kwargs
+
+
+#: Query parameters and headers whose value is a credential. Matched
+#: case-insensitively against `name=value` in any logged text.
+_SECRET_PARAM_NAMES = (
+    "api_key", "apikey", "access_token", "token", "auth", "key",
+    "password", "secret", "client_secret", "signature",
+)
+
+_SECRET_PATTERN = re.compile(
+    r"(?i)\b(" + "|".join(_SECRET_PARAM_NAMES) + r")=([^&\s\"'<>]+)"
+)
+
+
+class SecretRedactingFilter(logging.Filter):
+    """Strip credential values out of every log record.
+
+    httpx logs each request at INFO with the FULL url, so a collector that
+    authenticates by query parameter writes its key into system.log and into
+    every redirected run log on every call. Observed live: the FRED key
+    appears in cleartext on each of the dozens of series requests per run.
+    The keys are in `.env`, the logs are gitignored and none of the four
+    tracked .log files contain one -- so this is exposure, not a breach --
+    but a credential that is written thousands of times is one paste of a log
+    away from being published.
+
+    Filtering at the handler covers every logger in the process, including
+    third-party ones this project does not call directly (httpx, urllib3),
+    which is the only place that can be done once rather than per collector.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            if isinstance(record.msg, str) and "=" in record.msg:
+                record.msg = _SECRET_PATTERN.sub(r"\1=***REDACTED***", record.msg)
+            if record.args:
+                if isinstance(record.args, dict):
+                    record.args = {
+                        key: (_SECRET_PATTERN.sub(r"\1=***REDACTED***", value)
+                              if isinstance(value, str) else value)
+                        for key, value in record.args.items()
+                    }
+                else:
+                    record.args = tuple(
+                        _SECRET_PATTERN.sub(r"\1=***REDACTED***", value)
+                        if isinstance(value, str) else value
+                        for value in record.args
+                    )
+        except (TypeError, ValueError, AttributeError):
+            # A filter must never drop a record because redaction failed.
+            pass
+        return True
 
 
 class ProjectLogger:
@@ -145,12 +198,15 @@ class ProjectLogger:
             format_string = (
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         formatter = logging.Formatter(format_string)
+        secret_filter = SecretRedactingFilter()
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setFormatter(formatter)
+        stream_handler.addFilter(secret_filter)
         root_logger.addHandler(stream_handler)
         file_handler = RotatingFileHandler(ProjectLogger._system_log_file,
             maxBytes=10 * 1024 * 1024, backupCount=5, encoding='utf-8')
         file_handler.setFormatter(formatter)
+        file_handler.addFilter(secret_filter)
         root_logger.addHandler(file_handler)
         root_logger.propagate = False
         ProjectLogger._is_configured = True
