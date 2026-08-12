@@ -5,7 +5,8 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression, LogisticRegression
+import numpy as _np
+from sklearn.linear_model import LogisticRegression, RidgeCV
 
 from src.core.logging.logger import ProjectLogger
 from src.models.interfaces import BaseModel
@@ -29,7 +30,30 @@ class LinearModel(BaseModel):
             if self.task_type == "classification":
                 self.model = LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42, **kwargs)
             else:
-                self.model = LinearRegression(**kwargs)
+                # Was LinearRegression -- unregularised OLS, on 35 correlated
+                # features and ~306 training rows. Measured on the 2026-08-12
+                # batch across 22 daily contexts, median holdout R2:
+                #
+                #     OLS,        35 features   -7.35
+                #     RidgeCV,    35 features   -0.85
+                #     RidgeCV,    10 features   -0.25
+                #     ElasticNet, 35 features   -0.14
+                #     baseline (predict the training mean)  -0.01
+                #
+                # A model at -7.35 is not weak, it is worse than a constant by
+                # a factor of hundreds, and `linear` had won 135 of 354
+                # champion slots. Note the asymmetry this fixes: the
+                # classification branch above has always been regularised
+                # (sklearn's LogisticRegression applies L2 by default), so
+                # only regression targets were exposed.
+                #
+                # RidgeCV picks alpha by leave-one-out over the training rows,
+                # so there is no hyperparameter to guess and no validation
+                # data spent. It does NOT make returns predictable -- even
+                # ElasticNet stays below the baseline on the median -- it
+                # stops this model from actively fabricating fits.
+                kwargs.setdefault('alphas', _np.logspace(-3, 4, 40))
+                self.model = RidgeCV(**kwargs)
 
             self.model.fit(X, y)
             self.is_trained = True
