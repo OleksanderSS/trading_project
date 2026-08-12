@@ -272,6 +272,14 @@ class DataPreparationService:
             selected_features,
         )
 
+    #: A row with more than this share of its features imputed is refused.
+    #: Training fills a missing value with the train median, so prediction now
+    #: does too — but the intraday case makes the limit necessary: `ctx_1d_*`
+    #: columns are absent on the newest bars because the day has not closed,
+    #: and imputing a whole day's context is inventing the very thing being
+    #: asked about, not tolerating a gap.
+    MAX_IMPUTED_SHARE = 0.5
+
     def _apply_training_preprocessor(self, frame: "pd.DataFrame", meta: dict[str, Any],
                                      context_id: str) -> "pd.DataFrame":
         """Put the features back into the space the model was trained in.
@@ -309,6 +317,17 @@ class DataPreparationService:
             import pandas as pd
 
             ordered = frame.reindex(columns=fit_columns)
+
+            # How much of each row is about to be INVENTED. Applying the
+            # training imputer here settles a long-standing asymmetry —
+            # training filled missing values with the train median while
+            # prediction dropped the row, two opposite readings of the same
+            # gap — and settles it the way training reads it. But filling one
+            # absent feature of thirty-five is not the same act as filling
+            # thirty: the second is a forecast from almost nothing, and it
+            # must not look like the first.
+            missing_share = ordered.isna().mean(axis=1)
+
             values = ordered.to_numpy(dtype=float)
             if imputer is not None:
                 values = imputer.transform(values)
@@ -316,6 +335,22 @@ class DataPreparationService:
                 values = scaler.transform(values)
 
             transformed = pd.DataFrame(values, columns=fit_columns, index=frame.index)
+
+            mostly_invented = missing_share > self.MAX_IMPUTED_SHARE
+            if mostly_invented.any():
+                self.logger.warning(
+                    '%s: dropping %d of %d row(s) where more than %.0f%% of the '
+                    'features had to be imputed — a prediction from mostly '
+                    'invented inputs is not a prediction.',
+                    context_id, int(mostly_invented.sum()), len(transformed),
+                    self.MAX_IMPUTED_SHARE * 100,
+                )
+                transformed = transformed.loc[~mostly_invented]
+                frame = frame.loc[~mostly_invented]
+            if missing_share.max() > 0:
+                self.logger.debug(
+                    f'{context_id}: imputed up to {missing_share.max():.1%} of a row'
+                )
             # Keep anything the transform did not cover (context columns,
             # identity) so downstream slicing still finds it.
             for column in frame.columns:

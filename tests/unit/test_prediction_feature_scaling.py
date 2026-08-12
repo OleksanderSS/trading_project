@@ -125,6 +125,52 @@ def test_columns_the_scaler_never_saw_are_kept_but_not_transformed(service, tmp_
     assert out["context_pattern_id"].iloc[0] == "abc"
 
 
+def test_a_row_with_one_gap_is_imputed_the_way_training_imputed_it(service, tmp_path):
+    """Training filled missing values with the train median; prediction dropped
+    the row. Two opposite readings of one gap. Prediction now reads it the way
+    training does."""
+    train = pd.DataFrame({
+        "a": np.linspace(0.0, 10.0, 50),
+        "b": np.linspace(100.0, 200.0, 50),
+        "c": np.linspace(-1.0, 1.0, 50),
+        "d": np.linspace(5.0, 15.0, 50),
+    })
+    _fit_preprocessor(tmp_path, train)
+
+    live = pd.DataFrame({"a": [5.0], "b": [150.0], "c": [0.0], "d": [np.nan]})
+    out = service._apply_training_preprocessor(live, _meta(tmp_path), "ctx")
+
+    assert len(out) == 1, "one missing feature of four must not discard the row"
+    assert out.notna().all(axis=None)
+
+
+def test_a_mostly_invented_row_is_refused(service, tmp_path):
+    """Filling one feature of four is tolerance; filling three is invention.
+
+    The intraday case makes this concrete: ctx_1d_* columns are absent on the
+    newest bars because the day has not closed, so imputing them fabricates
+    the very context being asked about.
+    """
+    train = pd.DataFrame({
+        "a": np.linspace(0.0, 10.0, 50),
+        "b": np.linspace(100.0, 200.0, 50),
+        "c": np.linspace(-1.0, 1.0, 50),
+        "d": np.linspace(5.0, 15.0, 50),
+    })
+    _fit_preprocessor(tmp_path, train)
+
+    live = pd.DataFrame({
+        "a": [5.0, 5.0],
+        "b": [150.0, np.nan],
+        "c": [0.0, np.nan],
+        "d": [10.0, np.nan],
+    })
+    out = service._apply_training_preprocessor(live, _meta(tmp_path), "ctx")
+
+    assert len(out) == 1, "the 75%-imputed row must be refused"
+    assert out.index.tolist() == [0]
+
+
 def test_a_missing_preprocessor_leaves_the_frame_alone(service, tmp_path):
     """Champions promoted before this artifact existed must not be guessed at."""
     live = pd.DataFrame({"close": [120.0, 130.0]})
