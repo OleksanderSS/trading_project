@@ -234,15 +234,46 @@ class SentimentFeaturesEnricher(BaseEnricher):
         else:
             sentiment_agg = pd.DataFrame(columns=['ticker', 'datetime', 'nlp_sentiment_score'])
 
+        # Both names are known: `time_col` and `sentiment_col` were resolved
+        # by the caller. Renaming them explicitly replaces a loop that took
+        # "the first column that is not ticker or datetime" and called it the
+        # sentiment.
+        #
+        # The aggregations above return [ticker, <time_col>, <sentiment_col>]
+        # and the time column is `published_at`, not `datetime` -- so the loop
+        # renamed the TIMESTAMP to nlp_sentiment_score and left the sentiment
+        # untouched under its own name. Measured on 2026-08-12:
+        #
+        #   {'ticker': 'AAPL',
+        #    'nlp_sentiment_score': Timestamp('2026-03-27 00:00:00'),
+        #    'sentiment': 0.0377...}
+        #
+        # `pd.to_numeric` on that timestamp yields ~1.7e18 nanoseconds, which
+        # is never null -- so `sentiment_available` read 1.0 on every bar in
+        # the batch, including 9,070 daily bars predating any news, and all
+        # thirteen sentiment features (rolling mean, std, velocity, decay
+        # weighting, news intensity) were computed from epoch nanoseconds.
+        # The actual sentiment reached nothing.
+        renames = {}
+        if time_col in sentiment_agg.columns and 'datetime' not in sentiment_agg.columns:
+            renames[time_col] = 'datetime'
+        if sentiment_col in sentiment_agg.columns:
+            renames[sentiment_col] = 'nlp_sentiment_score'
+        if renames:
+            sentiment_agg = sentiment_agg.rename(columns=renames)
+
         self._normalize_datetime_column(sentiment_agg, 'datetime')
         if 'ticker' not in sentiment_agg.columns:
             sentiment_agg['ticker'] = 'general'
+
         if 'nlp_sentiment_score' not in sentiment_agg.columns:
-            # Якщо колонка з sentiment має іншу назву, перейменовуємо
-            for col in sentiment_agg.columns:
-                if col not in ['ticker', 'datetime']:
-                    sentiment_agg = sentiment_agg.rename(columns={col: 'nlp_sentiment_score'})
-                    break
+            # Say it rather than guess. A guessed column is what produced
+            # timestamps-as-sentiment for months.
+            logger.error(
+                "News aggregation produced no sentiment column (had %s, "
+                "expected '%s'); sentiment features will be skipped.",
+                list(sentiment_agg.columns), sentiment_col,
+            )
 
         return sentiment_agg
 
