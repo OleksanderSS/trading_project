@@ -95,6 +95,76 @@ def test_rows_without_a_timestamp_or_a_value_are_dropped():
     assert result['bar_count'] == 18
 
 
+def test_cost_stress_charges_only_the_increment_not_the_whole_fee_again():
+    """All five return targets already have 0.5% round-trip subtracted.
+
+    Charging it a second time would understate the edge as badly as omitting
+    it overstates it, so 1.0x must leave the curve exactly as built.
+    """
+    from src.pipeline.stages.evaluation.holdout_equity import (
+        BASELINE_ROUND_TRIP_COST,
+        stress_costs,
+    )
+
+    frame = _predictions(n=100)
+    base = build_holdout_equity(frame)
+    stressed = stress_costs(frame)
+
+    assert stressed['baseline_already_in_target'] is True
+    assert stressed['levels']['x1']['incremental_charged'] == 0.0
+    assert np.isclose(
+        stressed['levels']['x1']['total_return'],
+        float(base['portfolio_history']['total_value'].iloc[-1] / 100_000.0 - 1.0),
+    )
+    assert stressed['levels']['x2']['incremental_charged'] == BASELINE_ROUND_TRIP_COST
+
+
+def test_higher_costs_never_improve_the_result():
+    from src.pipeline.stages.evaluation.holdout_equity import stress_costs
+
+    stressed = stress_costs(_predictions(n=100))
+    returns = [stressed['levels'][k]['total_return'] for k in ('x1', 'x1.5', 'x2')]
+
+    assert returns[0] >= returns[1] >= returns[2]
+
+
+def test_a_signal_that_flips_every_bar_reports_full_turnover():
+    """Turnover is usually the number that decides whether costs kill an edge."""
+    from src.pipeline.stages.evaluation.holdout_equity import stress_costs
+
+    frame = _predictions(n=60)
+    frame['prediction'] = [1.0, -1.0] * 30      # flips on every bar
+
+    stressed = stress_costs(frame)
+
+    assert stressed['turnover'] > 0.95
+    # And that turnover must cost something by x2.
+    assert stressed['levels']['x2']['total_return'] < stressed['levels']['x1']['total_return']
+
+
+def test_a_held_position_pays_once_for_entering_and_no_more():
+    """Buy and hold still pays the entry. It just does not pay it 60 times."""
+    from src.pipeline.stages.evaluation.holdout_equity import stress_costs
+
+    held = _predictions(n=60)
+    held['prediction'] = 1.0                     # one entry, then held
+
+    flipping = _predictions(n=60)
+    flipping['prediction'] = [1.0, -1.0] * 30    # a round trip every bar
+
+    held_stress = stress_costs(held)
+    flip_stress = stress_costs(flipping)
+
+    assert held_stress['turnover'] < 0.05        # 1 trade in 60 bars
+    assert flip_stress['turnover'] > 0.95
+
+    def cost_of_doubling(result):
+        return result['levels']['x1']['total_return'] - result['levels']['x2']['total_return']
+
+    # Both pay, but turnover decides by how much — the point of the check.
+    assert cost_of_doubling(flip_stress) > 10 * cost_of_doubling(held_stress)
+
+
 def test_return_targets_are_recognised_by_name():
     assert is_return_target('target_return_1d')
     assert is_return_target('target_hourly_return_1h')

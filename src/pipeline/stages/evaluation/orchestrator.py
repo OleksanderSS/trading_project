@@ -169,6 +169,9 @@ class EvaluationStage(BaseStage):
             # volatility of 8.46e-05 computed from them. Holdout predictions
             # are ~100-220 purged bars per context that the model never saw.
             holdout = self._holdout_equity(signals_data)
+            if holdout.get('status') == 'built' and holdout.get('_frame') is not None:
+                from src.pipeline.stages.evaluation.holdout_equity import stress_costs
+                backtest_results['cost_stress'] = stress_costs(holdout['_frame'])
             if holdout.get('status') == 'built':
                 portfolio_history = holdout['portfolio_history']
                 backtest_results['portfolio_history'] = portfolio_history
@@ -289,7 +292,11 @@ class EvaluationStage(BaseStage):
                     frame = load_holdout_predictions(candidates[-1])
             if frame is None:
                 return {'status': 'no_holdout_artifact'}
-            return build_holdout_equity(frame)
+            result = build_holdout_equity(frame)
+            # The raw rows travel with the result so cost stress can be run on
+            # the same set without re-reading and re-filtering the artifact.
+            result['_frame'] = frame
+            return result
         except (ImportError, OSError, ValueError, KeyError, TypeError) as e:
             self.logger.error(f'Could not build the holdout equity curve: {e}')
             return {'status': 'error', 'error': str(e)}

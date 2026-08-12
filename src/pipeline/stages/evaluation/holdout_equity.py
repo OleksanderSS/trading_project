@@ -109,6 +109,92 @@ def build_holdout_equity(
     }
 
 
+#: Round-trip cost already subtracted from every return target by
+#: targets.yaml (commission 0.1% + spread 0.05% + slippage 0.1%, doubled).
+#: Verified against the config for all five return targets before use —
+#: charging it a second time would understate the edge as badly as omitting
+#: it overstates it.
+BASELINE_ROUND_TRIP_COST = 0.005
+
+#: Codex §21.3: an edge that only survives at the assumed cost level is not an
+#: edge. 1.0 is what the data already carries.
+COST_STRESS_MULTIPLIERS = (1.0, 1.5, 2.0)
+
+
+def stress_costs(
+    predictions: pd.DataFrame,
+    *,
+    multipliers: tuple[float, ...] = COST_STRESS_MULTIPLIERS,
+    initial_capital: float = 100_000.0,
+) -> dict[str, Any]:
+    """Does the edge survive higher trading costs than assumed?
+
+    The five return targets already have a 0.5% round trip subtracted by
+    targets.yaml, so 1.0x is the curve as built and each higher multiplier
+    charges only the INCREMENT — (m - 1) x 0.5% — never the whole amount
+    again.
+
+    The increment is charged on position CHANGES rather than on every bar,
+    which is what actually costs money. Note the asymmetry that creates and
+    that this function cannot fix: the baseline 0.5% was subtracted from every
+    bar by the target definition regardless of whether a trade happened, which
+    is conservative. Reported turnover makes the difference visible instead of
+    burying it.
+
+    Turnover is the number that usually decides. A signal that flips position
+    every bar pays the round trip every bar, and at 0.5% a 15m strategy would
+    need to earn that back 26 times a day.
+    """
+    base = build_holdout_equity(predictions, initial_capital=initial_capital)
+    if base.get('status') != 'built':
+        return base
+
+    frame = predictions.copy()
+    frame = frame[frame['target'].map(is_return_target)]
+    frame['datetime'] = pd.to_datetime(frame['datetime'], utc=True, errors='coerce')
+    frame = frame.dropna(subset=['datetime', 'prediction', 'actual'])
+    frame['position'] = np.sign(frame['prediction'].astype(float))
+
+    # A position change within one context, in time order.
+    frame = frame.sort_values(['context', 'datetime'])
+    previous = frame.groupby('context')['position'].shift(1).fillna(0.0)
+    frame['traded'] = (frame['position'] != previous).astype(float)
+
+    turnover_per_bar = frame.groupby('datetime')['traded'].mean().sort_index()
+    overall_turnover = float(frame['traded'].mean())
+
+    results = {}
+    for multiplier in multipliers:
+        increment = (float(multiplier) - 1.0) * BASELINE_ROUND_TRIP_COST
+        frame['stressed_return'] = (
+            frame['position'] * frame['actual'].astype(float)
+            - frame['traded'] * increment
+        )
+        per_bar = frame.groupby('datetime')['stressed_return'].mean().sort_index()
+        equity = initial_capital * (1.0 + per_bar).cumprod()
+        total_return = float(equity.iloc[-1] / initial_capital - 1.0) if len(equity) else 0.0
+        results[f"x{multiplier:g}"] = {
+            'round_trip_cost': BASELINE_ROUND_TRIP_COST * float(multiplier),
+            'incremental_charged': increment,
+            'total_return': total_return,
+            'final_equity': float(equity.iloc[-1]) if len(equity) else initial_capital,
+            'mean_bar_return': float(per_bar.mean()),
+        }
+
+    survives = all(entry['total_return'] > 0 for entry in results.values())
+    return {
+        'status': 'built',
+        'bar_count': base['bar_count'],
+        'context_count': base['context_count'],
+        'turnover': overall_turnover,
+        'mean_turnover_per_bar': float(turnover_per_bar.mean()),
+        'baseline_round_trip_cost': BASELINE_ROUND_TRIP_COST,
+        'baseline_already_in_target': True,
+        'levels': results,
+        'survives_double_costs': survives,
+    }
+
+
 def load_holdout_predictions(path: str | Path | None) -> pd.DataFrame | None:
     """Read the artifact Stage 4 wrote, if it is there."""
     if not path:
