@@ -25,6 +25,10 @@ gives ~9 observations each, and 15m contexts (~656 rows) give ~19.
 """
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 #: Used when config carries no value for a model. Deliberately the same for
 #: every type: the binding constraint is how many rows the context has, not
 #: how complex the architecture is. The old numbers had it backwards, giving
@@ -52,5 +56,12 @@ def get_model_max_features(model_type: str, config_manager=None) -> int:
         )
         budget = int(value)
         return budget if budget > 0 else DEFAULT_MAX_FEATURES
-    except (ImportError, AttributeError, TypeError, ValueError):
+    except (ImportError, AttributeError, TypeError, ValueError) as e:
+        # Say it. A budget silently reverting to the default is exactly the
+        # shape of defect this project keeps finding: the operator edits
+        # models.yaml, nothing changes, and nothing explains why.
+        logger.warning(
+            "Could not read the feature budget for '%s' (%s); falling back to %d.",
+            model_type, e, DEFAULT_MAX_FEATURES,
+        )
         return DEFAULT_MAX_FEATURES

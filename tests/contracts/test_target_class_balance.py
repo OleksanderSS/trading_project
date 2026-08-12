@@ -44,17 +44,18 @@ TARGETS = Path('data/colab/accumulated/main_database/targets.parquet')
 #: unambiguous cases without pretending to more precision than it has.
 MIN_POSITIVE_RATE = 0.02
 
-#: Known degenerate today. Each needs its definition changed (a lower spike
-#: threshold) or the target retired — not a modelling fix.
+#: EMPTY, and it should stay that way. The three volatility_spike targets that
+#: lived here were fixed rather than tolerated: lowering the ATR spike
+#: threshold from 10% to 3% moved them from 1.04% / 1.00% / 2.11% positives to
+#: 9.30% / 5.74% / 14.41% — measured on the 2026-08-12 regeneration, against
+#: predictions of 9.29% / 5.63% / 14.72%.
 #:
-#: volatility_spike_1d is deliberately NOT listed: at 2.11% it clears the
-#: floor, and the ratchet below caught it the moment it was allowlisted out of
-#: habit. An allowlist that quietly covers a target which no longer needs it is
-#: how the next real one gets hidden.
-KNOWN_DEGENERATE = {
-    'target_volatility_spike_1h',
-    'target_volatility_spike_15m',
-}
+#: The ratchet earned its keep twice on the way: once when volatility_spike_1d
+#: was allowlisted out of habit despite already clearing the floor, and once
+#: here, when it refused to let the entries outlive the problem. An allowlist
+#: that covers a target which no longer needs it is how the next real one gets
+#: hidden.
+KNOWN_DEGENERATE: set[str] = set()
 
 
 def _binary_targets():

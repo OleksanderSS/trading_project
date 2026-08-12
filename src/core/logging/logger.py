@@ -52,25 +52,27 @@ class SecretRedactingFilter(logging.Filter):
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
-        try:
-            if isinstance(record.msg, str) and "=" in record.msg:
-                record.msg = _SECRET_PATTERN.sub(r"\1=***REDACTED***", record.msg)
-            if record.args:
-                if isinstance(record.args, dict):
-                    record.args = {
-                        key: (_SECRET_PATTERN.sub(r"\1=***REDACTED***", value)
-                              if isinstance(value, str) else value)
-                        for key, value in record.args.items()
-                    }
-                else:
-                    record.args = tuple(
-                        _SECRET_PATTERN.sub(r"\1=***REDACTED***", value)
-                        if isinstance(value, str) else value
-                        for value in record.args
-                    )
-        except (TypeError, ValueError, AttributeError):
-            # A filter must never drop a record because redaction failed.
-            pass
+        # No try/except here on purpose, and no logging call either. This runs
+        # INSIDE logging, so raising would break the caller's log statement and
+        # logging a failure would recurse. Every operation below is therefore
+        # written so it cannot raise: each one is guarded by an isinstance
+        # check, and re.sub on a str never fails.
+        if isinstance(record.msg, str) and "=" in record.msg:
+            record.msg = _SECRET_PATTERN.sub(r"\1=***REDACTED***", record.msg)
+
+        args = record.args
+        if isinstance(args, dict):
+            record.args = {
+                key: (_SECRET_PATTERN.sub(r"\1=***REDACTED***", value)
+                      if isinstance(value, str) else value)
+                for key, value in args.items()
+            }
+        elif isinstance(args, tuple):
+            record.args = tuple(
+                _SECRET_PATTERN.sub(r"\1=***REDACTED***", value)
+                if isinstance(value, str) else value
+                for value in args
+            )
         return True
 
 
