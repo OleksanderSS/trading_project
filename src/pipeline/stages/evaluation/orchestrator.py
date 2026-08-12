@@ -689,6 +689,34 @@ class EvaluationStage(BaseStage):
             'timestamp': pd.Timestamp.now().isoformat(),
             'notification_status': 'basic_evaluation_not_sent',
         }
+        # The holdout curve does not depend on the thing that failed. The
+        # backtest needs a price series alongside Stage 5's live signals --
+        # one bar per context, which is why can_run_backtest refuses. The
+        # holdout artifact is a different source entirely: bars the model
+        # never saw, each carrying its own realised value, which for a return
+        # target IS the return. Discarding it here is what left the
+        # 2026-08-12 run reporting total_signals 47, trades_executed 0,
+        # portfolio_value 0 while 11,047 out-of-sample rows across 65
+        # contexts sat unread in data/results/.
+        holdout = self._holdout_equity(signals_data)
+        if holdout.get('status') == 'built':
+            holdout.pop('_frame', None)
+            history = holdout.pop('portfolio_history', None)
+            returns = holdout.pop('returns', None)
+            if history is not None and len(history):
+                holdout['final_value'] = float(history['total_value'].iloc[-1])
+            if returns is not None and len(returns):
+                holdout['mean_bar_return'] = float(returns.mean())
+            summary['holdout_equity'] = holdout
+            self.logger.info(
+                'Holdout equity built from %s out-of-sample bars.',
+                holdout.get('bar_count'),
+            )
+        else:
+            summary['holdout_equity'] = {'status': holdout.get('status')}
+            self.logger.warning(
+                'No holdout equity curve: %s', holdout.get('status')
+            )
         if signals_data['trading_activity']:
             summary['learning_review_candidate'] = (
                 self._build_learning_review_candidate(
