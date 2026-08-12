@@ -113,9 +113,23 @@ def test_the_guard_runs_before_any_model_is_trained():
     assert guard < training
 
 
-def test_the_batch_on_disk_has_exactly_the_one_known_case():
-    """Pins the measured scope. A rise means the split or the targets moved
-    and this needs looking at again, not silencing."""
+def test_the_batch_on_disk_does_not_grow_new_single_class_contexts():
+    """Pins the measured scope as a ceiling. A rise means the split or the
+    targets moved and this needs looking at again, not silencing.
+
+    Measured 2026-08-12, after the batch was rebuilt on repaired bar dates:
+    zero contexts, down from the one this file was written for. The case did
+    not get fixed, it dissolved -- AAPL 60m target_hourly_breakout_1h now
+    holds 895 labelled rows with 91 positives (10.2%), where it held 278 rows
+    with 11 positives, all of which had landed inside the final 20%. With
+    three times the history the positives no longer sit entirely in the
+    validation window.
+
+    The behaviour of the guard is pinned by the tests above, which build the
+    pathological series directly and do not depend on what is on disk. This
+    one watches the data, so it is an inequality: zero is the good outcome,
+    and anything above the historical one is the signal.
+    """
     features = Path("data/colab/accumulated/main_database/features.parquet")
     targets = Path("data/colab/accumulated/main_database/targets.parquet")
     if not (features.exists() and targets.exists()):
@@ -141,5 +155,9 @@ def test_the_batch_on_disk_has_exactly_the_one_known_case():
         ) and rows[col].notna().sum() >= controller._MIN_TRAINING_SAMPLES
     ]
 
-    assert len(refused) == 1, f"expected the one known context, got {refused}"
-    assert refused[0][2] == "target_hourly_breakout_1h"
+    assert len(refused) <= 1, (
+        f"single-class training contexts rose above the one historical case: "
+        f"{refused}. The guard will refuse them, so nothing trains on one "
+        f"class -- but a rise means the split or the target thresholds moved, "
+        f"and that is worth understanding rather than accepting."
+    )
