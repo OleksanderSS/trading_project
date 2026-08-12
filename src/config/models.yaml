@@ -64,24 +64,49 @@ models:
   # observations per parameter than trees, so giving them the larger budget
   # was the wrong way round.
   #
-  # Treat 35 as a measurement setting, not a final answer. If a model beats
-  # the naive baseline on the untouched holdout at 35 features, that result
-  # means something and the budget can be raised with evidence behind it.
+  # 35 was a measurement setting, and on 2026-08-12 it got measured. Holdout
+  # R2 on target_return_1d across 22 daily contexts (median / share of
+  # contexts above zero), sweeping the budget with everything else held
+  # fixed — same split, same scaler, same correlation ranking:
+  #
+  #     model            k=5              k=12             k=35
+  #     linear          -0.052  15.9%    -0.062  13.6%    -0.087   6.8%
+  #     catboost        -0.051  18.2%    -0.043  22.7%    -0.028  18.2%
+  #     lightgbm        -0.150   6.8%    -0.204   6.8%    -0.254   2.3%
+  #     random_forest   -0.199   6.8%    -0.147   9.1%    -0.126   6.8%
+  #     knn             -0.198   9.1%    -0.165   0.0%    -0.186  18.2%
+  #     svm             -0.209   0.0%    -0.240   4.5%    -0.276   0.0%
+  #     xgboost         -0.317   0.0%    -0.348   4.5%    -0.336   4.5%
+  #
+  # (For linear a finer sweep put the median best at k=3, -0.036, with k=5
+  # holding the better share above zero. Baseline — predict the training
+  # mean — scores -0.01 on the same holdouts.)
+  #
+  # The direction is NOT the same for every model, which is why one number
+  # for all of them was wrong. Linear, lightgbm, svm and xgboost degrade as
+  # features are added; catboost and random_forest improve, because both
+  # subsample features per split and do their own selection. Handing all
+  # seven the same 35 penalised four of them.
+  #
+  # Scope, stated so it is not over-read: one regression target, daily
+  # contexts, ~368 training rows. It does not measure classification, where
+  # 51 of the 65 surviving champions live, nor the heavy models below, which
+  # were archived before this ran. Those keep 35 until someone measures them.
   per_model:
     catboost:
-      max_features: 35
+      max_features: 35     # best at 35; improves with more
     lightgbm:
-      max_features: 35
+      max_features: 5      # -0.150 at 5 vs -0.254 at 35
     xgboost:
-      max_features: 35
+      max_features: 5      # worst model measured at any budget; see above
     random_forest:
-      max_features: 35
+      max_features: 35     # best at 35; improves with more
     linear:
-      max_features: 35
+      max_features: 5      # -0.052 at 5 vs -0.087 at 35, and -7.35 before RidgeCV
     svm:
-      max_features: 35
+      max_features: 5      # -0.209 at 5 vs -0.276 at 35
     knn:
-      max_features: 35
+      max_features: 12     # distance-based; degrades in high dimension
     mlp:
       max_features: 35
     cnn:
