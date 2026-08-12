@@ -544,39 +544,96 @@ class BaseTrainer(ABC):
             'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
             'mse': float(score.get('MSE', 0.0)) if not is_classif else None,
             'holdout_sample_count': int(len(X_holdout)),
-            'baseline_score': self._score_naive_baseline(data, is_classif, task_type, metric_key),
+            **self._score_naive_baselines(data, is_classif, task_type, metric_key),
         }
 
-    def _score_naive_baseline(self, data: dict[str, Any], is_classif: bool,
-                              task_type: str, metric_key: str) -> float | None:
-        """Score a train-only naive predictor on the holdout.
+    def _score_naive_baselines(self, data: dict[str, Any], is_classif: bool,
+                               task_type: str, metric_key: str) -> dict[str, Any]:
+        """Score the naive predictors the winner has to beat.
 
-        Majority class for classification, train mean for regression. Fitted
-        on TRAIN alone so it carries no holdout information, and scored with
-        the same evaluator as the winner so the two numbers are comparable.
+        Two of them, and which one binds matters enormously:
 
-        Without this, "the winner scored 0.62" has no scale: 0.62 is excellent
-        against a 0.50 baseline and worthless against a 0.61 one.
+        - CONSTANT: majority class, or the train mean. Fitted on TRAIN alone.
+        - PERSISTENCE (regression only): "tomorrow equals today", i.e. the
+          previous actual value. Zero work, no model, no features.
+
+        The gate used to compare against the constant only, and for a slow,
+        trending series that is a hopeless opponent — which is how seven
+        indicator-prediction targets produced 138 of 354 champions. Measured on
+        this batch, persistence ALONE explains:
+
+            target_sma_20_f1        R2 0.9994
+            target_ema_20_f1        R2 0.9994
+            target_bb_upper_f1      R2 0.9984
+            target_macd_hist_f1     R2 0.9264
+            target_volume_ratio_f1  R2 0.8077
+            target_atr_14_f5        R2 0.8043
+            target_rsi_14_f1        R2 0.8010
+
+        A model scoring 0.998 on tomorrow's SMA_20 has added nothing over
+        doing nothing: 19 of the 20 closes in that average are already known.
+        Against the train mean it looked like a triumph.
+
+        So the bar is the STRONGER of the two. Nothing is removed and no target
+        is disabled — the targets may still be useful, as diagnostics or as
+        inputs elsewhere. What changes is that beating a constant no longer
+        counts as skill on a series that barely moves.
+
+        Persistence uses the previous ACTUAL value, which is genuinely known at
+        forecast time, so this is a fair opponent rather than a leak. The first
+        holdout row has no predecessor and is given its own value, which flatters
+        the baseline very slightly — deliberately, since erring toward a harder
+        gate is the safe direction.
         """
+        out: dict[str, Any] = {'baseline_score': None}
         try:
             y_train = np.asarray(data.get('y_train')).ravel()
             y_holdout = data.get('y_holdout')
             if y_train.size == 0 or y_holdout is None:
-                return None
-            n = len(y_holdout)
+                return out
+
+            y_true = np.asarray(y_holdout).ravel()
+            n = y_true.size
+            if n == 0:
+                return out
+
             if is_classif:
                 values, counts = np.unique(y_train[~pd.isna(y_train)], return_counts=True)
                 if values.size == 0:
-                    return None
+                    return out
                 constant = values[int(np.argmax(counts))]
             else:
                 constant = float(np.nanmean(y_train))
-            baseline_preds = np.full(n, constant)
-            score = self.evaluator.calculate(y_holdout, baseline_preds, task_type=task_type)
-            return float(score.get(metric_key, 0.0))
+
+            constant_score = float(
+                self.evaluator.calculate(
+                    y_holdout, np.full(n, constant), task_type=task_type
+                ).get(metric_key, 0.0)
+            )
+            out['baseline_constant_score'] = constant_score
+            out['baseline_score'] = constant_score
+            out['baseline_kind'] = 'constant'
+
+            if is_classif or n < 3:
+                return out
+
+            persistence = np.empty(n, dtype=float)
+            persistence[0] = y_true[0]
+            persistence[1:] = y_true[:-1]
+            persistence_score = float(
+                self.evaluator.calculate(
+                    y_holdout, persistence, task_type=task_type
+                ).get(metric_key, 0.0)
+            )
+            out['baseline_persistence_score'] = persistence_score
+
+            if np.isfinite(persistence_score) and persistence_score > constant_score:
+                out['baseline_score'] = persistence_score
+                out['baseline_kind'] = 'persistence'
+            return out
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.warning(f"Could not score naive baseline: {e}")
-            return None
+            self.logger.warning(f"Could not score naive baselines: {e}")
+            return out
 
     def _finalize_ticker_results(self, results: dict[str, Any], winner: str | None, best_score: float) -> dict:
         """Packages the final results dictionary."""

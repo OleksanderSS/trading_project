@@ -177,6 +177,64 @@ def test_regression_baseline_is_the_train_mean():
     assert host._evaluate_promotion_gate(results)['passed'] is False
 
 
+def test_a_persistent_series_must_be_beaten_by_persistence_not_by_the_mean():
+    """The bar for a slow-moving target is "tomorrow equals today", not the mean.
+
+    Seven indicator-prediction targets produced 138 of 354 champions because
+    the only opponent was the train mean. Measured on the real batch,
+    persistence alone scores R2 0.9994 on target_sma_20_f1 and 0.9984 on
+    target_bb_upper_f1 — a model at 0.998 there has added nothing, while
+    against the mean it looked like a triumph.
+    """
+    host = _Host()
+    # A drifting series: the mean is a terrible predictor, persistence is
+    # nearly perfect — exactly the shape of SMA_20 one bar ahead.
+    n = 80
+    trend = np.linspace(100.0, 140.0, n) + np.sin(np.arange(n) / 5.0) * 0.05
+    data = {
+        'X_train': pd.DataFrame({'f': trend[:40]}),
+        'y_train': trend[:40],
+        'X_holdout': pd.DataFrame({'f': trend[40:]}),
+        'y_holdout': trend[40:],
+    }
+
+    scores = host._score_naive_baselines(data, False, 'regression', 'R2')
+
+    assert scores['baseline_persistence_score'] > scores['baseline_constant_score']
+    # The published bar is the stronger opponent.
+    assert scores['baseline_score'] == scores['baseline_persistence_score']
+    assert scores['baseline_kind'] == 'persistence'
+    assert scores['baseline_score'] > 0.9
+
+
+def test_the_constant_still_wins_when_the_series_has_no_momentum():
+    """On noise, persistence is bad and the mean is the honest bar."""
+    host = _Host()
+    rng = np.random.default_rng(4)
+    noise = rng.normal(size=120)
+    data = {
+        'X_train': pd.DataFrame({'f': noise[:60]}),
+        'y_train': noise[:60],
+        'X_holdout': pd.DataFrame({'f': noise[60:]}),
+        'y_holdout': noise[60:],
+    }
+
+    scores = host._score_naive_baselines(data, False, 'regression', 'R2')
+
+    assert scores['baseline_kind'] == 'constant'
+    assert scores['baseline_persistence_score'] < scores['baseline_constant_score']
+
+
+def test_classification_keeps_the_majority_class_bar_only():
+    host = _Host()
+    data = _classification_data()
+
+    scores = host._score_naive_baselines(data, True, 'classification', 'F1')
+
+    assert scores['baseline_kind'] == 'constant'
+    assert 'baseline_persistence_score' not in scores
+
+
 def test_gate_can_be_disabled_to_restore_the_old_behaviour():
     host = _Host(gate_cfg={'enabled': False})
     assert host._evaluate_promotion_gate({})['passed'] is True
