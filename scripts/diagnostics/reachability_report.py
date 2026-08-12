@@ -98,11 +98,38 @@ def _build_import_graph(files: list[Path]) -> dict[str, set[Path]]:
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     importers[alias.name].add(path)
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                importers[node.module].add(path)
+            elif isinstance(node, ast.ImportFrom):
+                target = _resolve_import_from(node, path)
+                if not target:
+                    continue
+                importers[target].add(path)
                 for alias in node.names:
-                    importers[f"{node.module}.{alias.name}"].add(path)
+                    importers[f"{target}.{alias.name}"].add(path)
     return importers
+
+
+def _resolve_import_from(node: ast.ImportFrom, path: Path) -> str | None:
+    """Turn `from .evaluation.orchestrator import X` into its absolute name.
+
+    Relative imports were a blind spot in the first version of this script,
+    and an expensive one: `src/pipeline/stages/stage_7_evaluation.py` is a
+    fourteen-line facade that subclasses the 699-line
+    `evaluation/orchestrator.py` through `from .evaluation.orchestrator
+    import EvaluationStage`. Recorded verbatim, that key never matches the
+    absolute module name, so the largest live module in Stage 7 was reported
+    as UNREFERENCED. Every relative import in the repository was invisible
+    the same way.
+    """
+    if node.level == 0:
+        return node.module
+    package_parts = list(path.relative_to(PROJECT_ROOT).with_suffix("").parts)
+    if path.name == "__init__.py":
+        package_parts = package_parts[:-1]
+    # level 1 is the containing package, level 2 its parent, and so on.
+    base = package_parts[: len(package_parts) - node.level]
+    if not base:
+        return node.module
+    return ".".join(base + ([node.module] if node.module else []))
 
 
 def _discovered_reason(path: Path) -> str | None:
