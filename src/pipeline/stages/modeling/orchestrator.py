@@ -454,6 +454,13 @@ class ModelingStage(BaseStage):
                     if not self._champion_is_allowed(ticker_result, context_key):
                         continue
 
+                    if self._is_indicator_prediction(target_name):
+                        logger.info(
+                            "No champion recorded for %s: indicator_prediction "
+                            "targets are measured but not promoted", context_key,
+                        )
+                        continue
+
                     stability = self._walk_forward_stability(
                         df, ticker=ticker, timeframe=str(timeframe),
                         target_name=target_name, context_key=context_key,
@@ -878,6 +885,39 @@ class ModelingStage(BaseStage):
                 f"{worst}"
             ),
         }
+
+    @staticmethod
+    def _is_indicator_prediction(target_name: str) -> bool:
+        """Indicator targets are measured, never promoted to trade on.
+
+        `target_sma_20_f1` asks for tomorrow's 20-period moving average: 19 of
+        its 20 terms are already known today, which is why persistence alone
+        scores R2 0.998-0.9994 on this family. A model that beats that is
+        doing arithmetic, not forecasting, and the score it earns is ~0.999 --
+        sitting in the same champion table as a directional model at 0.55
+        balanced accuracy. Any downstream ranking that compares champions
+        across targets picks the arithmetic.
+
+        On the 2026-08-12 run 12 of 65 champions were here
+        (volume_ratio_f1 10, macd_hist_f1 2), and none of them names a price
+        move anyone can trade. They still train, still score, still write
+        holdout predictions -- so the family stays available as evidence and
+        as a feature source. It just stops reaching Stage 5.
+        """
+        if not target_name:
+            return False
+        try:
+            from src.config.target_type_registry import load_target_types
+            return load_target_types().get(target_name) == 'indicator_prediction'
+        except (ImportError, OSError, ValueError) as e:
+            # The registry is the same one the Colab cell and the champion
+            # selector read; if it cannot be loaded, promote as before rather
+            # than silently refusing every target.
+            logger.warning(
+                "Could not read the target registry (%s); "
+                "not filtering indicator targets this run.", e,
+            )
+            return False
 
     @staticmethod
     def _champion_is_allowed(ticker_result: dict[str, Any], context_key: str) -> bool:
