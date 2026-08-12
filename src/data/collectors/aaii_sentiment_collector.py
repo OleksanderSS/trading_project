@@ -27,7 +27,17 @@ class AIISentimentCollector(BaseCollector):
         self.table_name = self.configs.get('table_name', 'aaii_sentiment_data')
         self.hash_keys = self.configs.get('hash_keys', ['date', 'bullish',
             'bearish', 'neutral'])
-        self.base_url = 'https://www.aaii.com/sentimentsurvey'
+        self.base_url = self.configs.get(
+            'base_url', 'https://www.aaii.com/sentimentsurvey')
+        # AAII answers HTTP 403 to this project's user agent. That is a
+        # deliberate block on automated access, not a misconfiguration, and it
+        # is not worked around here: sending a browser string to defeat it
+        # would be circumventing a stated access decision by a site whose
+        # survey sits behind a paid membership. The collector therefore still
+        # returns nothing -- but it now says so by name in the collection
+        # summary instead of counting as a success. Disable it in config, or
+        # replace it with a licensed source.
+        self.user_agent = self.configs.get('user_agent')
         self.logger.info(
             f'AIISentimentCollector initialized. Enabled: {self.enabled}')
 
@@ -66,8 +76,11 @@ class AIISentimentCollector(BaseCollector):
     async def _fetch_aaii_data(self) ->list[dict[str, Any]]:
         """Fetches data from AAII website."""
         try:
-            url = f'{self.base_url}/sentimentsurveyresults'
-            client = await self.http_client_factory.get_http_client(timeout=self.timeout)
+            # /sentimentsurveyresults is HTTP 404 -- that path does not exist.
+            # The survey figures are on the section page itself.
+            url = self.base_url
+            client = await self.http_client_factory.get_http_client(
+                timeout=self.timeout, user_agent=self.user_agent)
             async with client as http_client:
                 response = await http_client.get(url)
                 if response.status_code == 404:
@@ -129,6 +142,25 @@ class AIISentimentCollector(BaseCollector):
                         bullish = float(bullish_values[i])
                         bearish = float(bearish_values[i])
                         neutral = float(neutral_values[i])
+                        # Three independent regexes over a whole page pair by
+                        # position, not by row: the i-th "Bullish" and the
+                        # i-th "Bearish" need not belong to the same week.
+                        # Measured on the live page, the first matches were
+                        # 49.5 / 52.0 / 31.4 -- three different readings that
+                        # would have been stored as one survey. The survey is
+                        # a partition of respondents, so its three shares sum
+                        # to 100; anything else is a mispairing, and a wrong
+                        # sentiment number is worse than a missing one.
+                        total = bullish + bearish + neutral
+                        if abs(total - 100.0) > 1.0:
+                            self.logger.warning(
+                                'AAII record %d rejected: bullish %.1f + '
+                                'bearish %.1f + neutral %.1f = %.1f, not 100. '
+                                'The page layout has changed and these three '
+                                'values are not one survey.',
+                                i, bullish, bearish, neutral, total,
+                            )
+                            continue
                         data.append({'date': date_obj.strftime('%Y-%m-%d'),
                             'bullish': bullish, 'bearish': bearish,
                             'neutral': neutral, 'spread': bullish - bearish,

@@ -26,7 +26,19 @@ class FearGreedCollector(BaseCollector):
         self.table_name = self.configs.get('table_name', 'fear_greed_data')
         self.hash_keys = self.configs.get('hash_keys', ['date',
             'fear_greed_index', 'classification'])
-        self.base_url = 'https://production.datapoint.cloud/api/fear-greed'
+        # production.datapoint.cloud no longer completes a TLS handshake --
+        # the host is gone, and the collector's own 404 branch could never
+        # report that because the failure happens before any status exists.
+        # CNN publishes the index at this address; measured 2026-08-12, it
+        # returns 251 daily points shaped exactly as the parser below expects.
+        self.base_url = self.configs.get(
+            'base_url',
+            'https://production.dataviz.cnn.io/index/fearandgreed/graphdata',
+        )
+        # No user-agent override: the project's own TradingBot/2.0 string gets
+        # HTTP 200 here (checked 2026-08-12). The endpoint was the whole
+        # problem, not the identity we send.
+        self.user_agent = self.configs.get('user_agent')
         self.logger.info(
             f'FearGreedCollector initialized. Enabled: {self.enabled}')
 
@@ -63,13 +75,34 @@ class FearGreedCollector(BaseCollector):
             self.logger.error(f'Error in FearGreedCollector: {e}')
             return None
 
+    @staticmethod
+    def _series_from_payload(json_data: Any) -> list[dict[str, Any]]:
+        """Pull the daily series out of whichever shape the endpoint returns.
+
+        CNN nests it under `fear_and_greed_historical.data` as
+        [{'x': epoch_ms, 'y': score, 'rating': str}, ...]. The retired
+        datapoint.cloud endpoint put the same shape at the top level under
+        `data`. Both are read, so this survives the endpoint moving again --
+        which it already did once, silently, into a domain that stopped
+        completing a TLS handshake.
+        """
+        if not isinstance(json_data, dict):
+            return []
+        historical = json_data.get('fear_and_greed_historical')
+        if isinstance(historical, dict):
+            series = historical.get('data')
+            if isinstance(series, list) and series:
+                return series
+        series = json_data.get('data')
+        return series if isinstance(series, list) else []
+
     async def _fetch_fear_greed_data(self) ->list[dict[str, Any]]:
         """Fetches data from CNN Fear & Greed API."""
         try:
-            client = await self.http_client_factory.get_http_client(timeout=self.
-                timeout)
+            client = await self.http_client_factory.get_http_client(
+                timeout=self.timeout, user_agent=self.user_agent)
             async with client:
-                url = f'{self.base_url}/1.0/JSON'
+                url = self.base_url
                 response = await client.get(url)
                 if response.status_code == 404:
                     self.logger.error(
@@ -85,7 +118,7 @@ class FearGreedCollector(BaseCollector):
                         )
                     return []
                 json_data = response.json()
-                data = json_data.get('data', [])
+                data = self._series_from_payload(json_data)
                 if not data:
                     self.logger.warning(
                         'Empty data received from Fear & Greed API')

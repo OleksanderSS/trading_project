@@ -69,7 +69,22 @@ class WikimediaAttentionCollector(BaseCollector):
         self.logger.info(f"Fetching Wikipedia pageviews for {len(search_terms)} terms from {start_str} to {end_str}")
 
         client = await self.http_client_factory.get_http_client()
-        headers = {"User-Agent": "DEAN_OS_Agent research@example.com"}
+        # "DEAN_OS_Agent research@example.com" was refused with HTTP 403 and
+        # the body "Please set a user-agent and respect our robot policy" --
+        # Wikimedia requires a real client name, a version and a contact, and
+        # example.com is not one. Every request returned 403, so this collector
+        # produced nothing while reporting a bare exception with no message.
+        # Measured 2026-08-12: the string below returns HTTP 200.
+        # Set collectors.wikimedia_attention.user_agent to a real contact
+        # address; it is what Wikimedia asks for and what keeps access.
+        headers = {
+            "User-Agent": self.configs.get(
+                "user_agent",
+                "trading-research-pipeline/1.0 "
+                "(+https://github.com/OleksanderSS; automated research)",
+            ),
+            "Accept": "application/json",
+        }
 
         all_views = []
         
