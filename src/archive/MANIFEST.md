@@ -1813,3 +1813,30 @@ Left standing deliberately: `shadow_battle` runs synthetic stress scenarios
 (Black Swan, Flash Crash) through `TradingModelArena`, and the
 shadow-evidence stage is still owed. It is worth reading before it is worth
 deleting — but it is not that stage, and it cannot currently be invoked.
+
+### `src/main/modes/{train,predict,training_data_pipeline}.py` → `src/archive/main/modes/` (2026-08-12)
+
+Three of the nine files in that package, not the package. The first attempt
+at this archived the whole directory and broke four working entry points --
+`run_shadow_battle.py`, `run_historical_replay.py`, `run_monster_test.py` and
+`scripts/verify_backtesting.py` import their modes directly from the
+repository root, which is exactly the ENTRY POINT case
+`scripts/diagnostics/reachability_report.py` was written to warn about. The
+report had it right and listed only these three as ARCHIVE_ONLY; the mistake
+was reaching for the package instead of reading its own output. Reverted and
+redone per file.
+
+`TrainMode`, `PredictMode` and `run_pipeline` were dispatched only by
+`src/archive/main/system_orchestrator.py`, archived earlier. No root script
+invokes them, no test imports them, and the live pipeline trains in Stage 4
+and predicts in Stage 5 through `run_hybrid_pipeline.py`. The lazy re-export
+of `TrainMode` in `src/main/modes/__init__.py` was removed with them.
+
+The other six stay: `base.py` supports the survivors, and `backtest.py`,
+`historical_replay.py`, `monster_test.py` and `shadow_battle.py` each have a
+live entry point. `shadow_battle` in particular runs synthetic stress
+scenarios (Black Swan, Flash Crash) through `TradingModelArena` and can be
+invoked today via `python run_shadow_battle.py` -- it is not the
+shadow-evidence stage Codex asks for, which needs forward calendar time on
+unseen data, but it is reachable and worth reading before that stage is
+designed.
