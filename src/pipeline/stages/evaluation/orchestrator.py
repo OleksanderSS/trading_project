@@ -162,6 +162,34 @@ class EvaluationStage(BaseStage):
 
             portfolio_history = backtest_results['portfolio_history']
 
+            # Prefer the out-of-sample curve when Stage 4 produced one. The
+            # backtest above is built from Stage 5, which predicts the LATEST
+            # bar of each context — 540 predictions pivoted to a (3, 22)
+            # table, three time points, and a Sharpe of -329.82 at a
+            # volatility of 8.46e-05 computed from them. Holdout predictions
+            # are ~100-220 purged bars per context that the model never saw.
+            holdout = self._holdout_equity(signals_data)
+            if holdout.get('status') == 'built':
+                portfolio_history = holdout['portfolio_history']
+                backtest_results['portfolio_history'] = portfolio_history
+                backtest_results['equity_curve_source'] = 'holdout_predictions'
+                backtest_results['equity_curve_bars'] = holdout['bar_count']
+                self.logger.info(
+                    '📈 Equity curve from %d out-of-sample bars across %d contexts '
+                    '(was %d point(s) from Stage 5 signals)',
+                    holdout['bar_count'], holdout['context_count'],
+                    len(signals_df['datetime'].unique())
+                    if 'datetime' in signals_df.columns else -1,
+                )
+            else:
+                backtest_results['equity_curve_source'] = 'stage5_signals'
+                backtest_results['holdout_equity_status'] = holdout.get('status')
+                self.logger.warning(
+                    'No out-of-sample equity curve (%s); financial metrics come '
+                    'from Stage 5 signals, which hold one point per context.',
+                    holdout.get('status'),
+                )
+
             # 2. Calculate Financial Metrics
             financial_metrics = self.metrics_calc.calculate_financial_metrics(portfolio_history)
 
@@ -239,6 +267,32 @@ class EvaluationStage(BaseStage):
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Critical error in comprehensive evaluation: {e}", exc_info=True)
             return self._create_basic_evaluation(signals_df, signals_data)
+
+    def _holdout_equity(self, signals_data: dict[str, Any]) -> dict[str, Any]:
+        """Equity curve from Stage 4's out-of-sample predictions, if any."""
+        try:
+            from src.pipeline.stages.evaluation.holdout_equity import (
+                build_holdout_equity,
+                load_holdout_predictions,
+            )
+
+            path = signals_data.get('holdout_predictions_path')
+            frame = load_holdout_predictions(path)
+            if frame is None:
+                # Fall back to the newest artifact on disk: `continue` runs
+                # Stage 7 in the same process as Stage 4, but a Stage 7 rerun
+                # on its own would otherwise find nothing.
+                candidates = sorted(
+                    Path('data/results').glob('holdout_predictions_*.parquet')
+                )
+                if candidates:
+                    frame = load_holdout_predictions(candidates[-1])
+            if frame is None:
+                return {'status': 'no_holdout_artifact'}
+            return build_holdout_equity(frame)
+        except (ImportError, OSError, ValueError, KeyError, TypeError) as e:
+            self.logger.error(f'Could not build the holdout equity curve: {e}')
+            return {'status': 'error', 'error': str(e)}
 
     def _build_learning_review_candidate(
         self,

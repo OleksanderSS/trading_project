@@ -234,12 +234,61 @@ class ModelingStage(BaseStage):
                 if item.get("manifest")
             }
         )
+        holdout_path = self._write_holdout_predictions(champions)
         return {
             'models_metadata': champions,
             'processed_data': enriched_data,
             'pipeline_control_metric_artifacts': metric_artifacts,
             'pipeline_control_metric_artifact_manifests': manifests,
+            'holdout_predictions_path': str(holdout_path) if holdout_path else None,
         }
+
+    @staticmethod
+    def _write_holdout_predictions(champions: dict[str, Any]) -> "Path | None":
+        """Collect every champion's out-of-sample series into one artifact.
+
+        Stage 7 builds its equity curve from Stage 5, which answers a
+        different question: Stage 5 predicts the LATEST bar of each context,
+        one point apiece, so 540 predictions pivoted to a (3, 22) table. Three
+        time points, from which it reported a Sharpe of -329.82 on a
+        volatility of 8.46e-05 — a three-point curve, not a nearly flat one.
+
+        The holdout is ~100-220 purged bars per context that the model never
+        saw and was never selected on, and each row already carries its
+        timestamp, its prediction and the realised value. For a return target
+        that realised value IS the return, so an honest out-of-sample curve
+        needs no price data at all: position * actual, summed across contexts.
+        """
+        rows: list[dict[str, Any]] = []
+        for context_key, champion in champions.items():
+            series = champion.get('holdout_predictions') or []
+            for record in series:
+                rows.append({
+                    'context': context_key,
+                    'ticker': champion.get('ticker'),
+                    'timeframe': champion.get('timeframe'),
+                    'target': champion.get('target_name') or champion.get('target'),
+                    'model_type': champion.get('model_type'),
+                    'datetime': record.get('datetime'),
+                    'prediction': record.get('prediction'),
+                    'actual': record.get('actual'),
+                })
+        if not rows:
+            logger.info('No holdout predictions to persist.')
+            return None
+
+        frame = pd.DataFrame(rows)
+        directory = Path('data/results')
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / (
+            f"holdout_predictions_{datetime.datetime.now():%Y%m%d_%H%M%S}.parquet"
+        )
+        frame.to_parquet(path, index=False)
+        logger.info(
+            'Wrote %d out-of-sample holdout predictions across %d contexts to %s',
+            len(frame), frame['context'].nunique(), path.name,
+        )
+        return path
 
     def _run_walk_forward_review_only(
         self,
@@ -450,6 +499,13 @@ class ModelingStage(BaseStage):
                         ),
                         'context_fingerprint': context_fingerprint,
                         'pipeline_control_metric_artifacts': artifact_paths,
+                        # The winner's out-of-sample series, kept so Stage 7
+                        # can build an equity curve from real forecasts rather
+                        # than from Stage 5's three live signals.
+                        'holdout_predictions': ticker_result.get(
+                            'winner_holdout_predictions'
+                        ) or [],
+                        'walk_forward_stability': stability,
                         'timestamp': datetime.datetime.now().isoformat()
                     }
 
