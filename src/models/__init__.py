@@ -23,7 +23,6 @@ __all__ = [
     'SmartModelSelector',
     'PredictionDriftMonitor',
     'get_prediction_drift_monitor',
-    'ModelQualityController',
 ]
 
 
@@ -99,8 +98,5 @@ def __getattr__(name: str):
             return PredictionDriftMonitor
         elif name == "get_prediction_drift_monitor":
             return get_prediction_drift_monitor
-    elif name == "ModelQualityController":
-        from .quality.controller import ModelQualityController
-        return ModelQualityController
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -26,8 +26,6 @@ from src.cli.pipeline_executor import PipelineExecutor
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.pipeline.hybrid_orchestrator import HybridOrchestrator
-from src.models.persistent_pool import PersistentModelPool
-from src.models.quality.controller import ModelQualityController
 
 # Configure console encoding for Windows
 if sys.platform == 'win32':
@@ -193,16 +191,16 @@ async def main():
         os.environ['MAX_ITERATIONS'] = str(args.max_iterations)
         logger.info(f"⚡ MAX_ITERATIONS: {args.max_iterations} (default: 100)")
 
-    # Initialize enhanced components
-    logger.info("🔧 Initializing enhanced components...")
-    model_pool = PersistentModelPool(
-        max_models=50,
-        cache_dir=".model_cache"
-    )
-    quality_controller = ModelQualityController(
-        drift_threshold=0.3
-    )
-    logger.info("✅ Enhanced components initialized")
+    # Two "enhanced components" were constructed here -- a PersistentModelPool
+    # and a ModelQualityController -- and handed to nobody. Neither was passed
+    # to HybridOrchestrator or to any stage, so nothing ever populated them,
+    # and the summary below reported their empty state as a result:
+    #     📊 Model Pool Stats: hits=0, hit_rate=0.0%, avg_quality=0.00
+    #     ✅ Quality Report: 0 baselines tracked
+    # in every run in logs/. A zero next to a ✅ reads as "measured, nothing
+    # wrong" when it means "never ran", which is the more expensive of the two
+    # mistakes. Construction and report removed; the pool class stays in
+    # src/models/persistent_pool.py should caching ever be wired for real.
 
     # Initialize orchestrator
     logger.info(f"🚀 Launching hybrid pipeline (batch: {args.batch_name})...")
@@ -240,17 +238,6 @@ async def main():
         raise NotImplementedError(
             f"Mode '{args.mode}' is accepted by the CLI but has no executor."
         )
-
-    # Log enhanced component statistics
-    if model_pool:
-        pool_stats = model_pool.get_enhanced_stats()
-        logger.info(f"📊 Model Pool Stats: hits={pool_stats['hits']}, "
-                   f"hit_rate={pool_stats['hit_rate']:.1f}%, "
-                   f"avg_quality={pool_stats['avg_quality']:.2f}")
-    
-    if quality_controller:
-        quality_report = quality_controller.generate_report()
-        logger.info(f"✅ Quality Report: {quality_report['total_baselines']} baselines tracked")
 
     # Log completion
     failed = (

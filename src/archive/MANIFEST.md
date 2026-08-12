@@ -1700,3 +1700,75 @@ and factory import cleanly, `run_hybrid_pipeline.py --help` still works, and
   style). Zero callers anywhere in code or config; the only references were in
   this audit's own notes. `src/scripts/data/auto_accumulator.py` is now the
   single implementation and has been rewritten against real APIs.
+
+## Wave 12 — dead code the import graph could not see (2026-08-12)
+
+A scan for modules with no importer returned 98 files / 13,250 lines, and
+most of that number is wrong. Enrichers are discovered by walking the
+package, collectors by a factory, modes by a registry — none of them is
+imported by name anywhere, and all of them run. The scan also missed the
+repository root, which is where the largest finding turned out to live.
+What follows is what survived checking each candidate against the logs of
+real runs.
+
+### `src/models/quality/controller.py` → `src/archive/models/quality/`
+
+`ModelQualityController` (193 lines) plus its test. The entry point
+`run_hybrid_pipeline.py` constructed it, handed it to no one, and then
+called `generate_report()` on it at the end of every run:
+
+    ✅ Quality Report: 0 baselines tracked
+
+Nothing ever called `update_baseline`, so `baseline_stats` was empty by
+construction and the count could only ever be zero. The same block built a
+`PersistentModelPool`, passed it to nothing, and reported
+`hits=0, hit_rate=0.0%` for the same reason. Both constructions and both
+report lines are removed. A zero beside a ✅ reads as "measured, nothing
+wrong"; it meant "never ran".
+
+Its methods were duplicates in any case: drift by `FeatureDriftMonitor`
+(persisted baselines, sampling cap) and `PredictionDriftMonitor`,
+`compare_models` by champion selection. `PersistentModelPool` itself stays
+in `src/models/persistent_pool.py` — a cache is worth wiring later, and
+Wave 8 had already deferred that decision.
+
+### `src/features/enrichers/finbert_sentiment.py` → `src/archive/features/enrichers/`
+
+A second FinBERT. `FinBERTSentimentAnalyzer` loads `ProsusAI/finbert`; so
+does the live `get_finbert_pipeline` in `src/sentiment/sentiment_models.py`,
+which three modules use. The difference is where they import torch: the live
+one does it inside the function, this one at module top level — inside the
+package `FeatureOrchestrator` imports module by module to discover enrichers.
+So every feature-engineering run paid the transformers import to reach a
+class that is not a `BaseEnricher` and could never be discovered as one.
+Discovery no longer imports transformers (verified) and still finds all 17
+enrichers. Its one importer, the already-dead `src/agents/archive/veto_system.py`,
+now points at the archive path, as its `KnowledgeIngestor` import already did.
+
+### `src/features/enrichers/improved_sentiment_enricher.py` → same directory
+
+Not a `BaseEnricher` either, so likewise never discovered. Its idea — carry
+the last known sentiment forward instead of filling zeros — is already live
+in `sentiment_features_enricher.py` as
+`sentiment_values.groupby(df['ticker']).ffill()`, vectorised and without the
+5-row lookback limit. The archived version also fills leftovers with 0.5 as
+"neutral", which is only neutral on a 0..1 scale.
+
+### `src/data/quality/` → deleted (contents already archived in Wave 3)
+
+A package containing nothing but an `__init__.py` importing two modules
+archived long ago, so `import src.data.quality` raised ModuleNotFoundError.
+Its one importer, `scripts/run_audit_checks.py` (429 lines), therefore could
+not start — every invocation died on line 28. Archived alongside: its checks
+read tables that no longer exist (`raw_data`, `enriched_features`,
+`market_data_raw`) and its "feature drift" check only asserted that the
+evidently package is installed. The live equivalent is `tests/contracts/`.
+
+### Left alone deliberately
+
+`FeatureEngineeringMonitor` and the three monitors behind it (~1,200 lines)
+are unwired but implement real checks; wiring them is a decision with a known
+cost (`check_drift` over a full feature frame produced a five-hour hang in
+Stage 7), not a cleanup. `src/main/modes/shadow_battle.py` and
+`src/scripts/simulation/shadow_arena.py` have no callers but are the nearest
+thing in the repository to the shadow-evidence stage that is still owed.

@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 
 from src.archive.models_dead.knowledge_ingestor import KnowledgeIngestor
 from src.meta_learning.memory.diary_engine import DiaryEngine, DecisionRecord, DecisionType, DecisionOutcome
-from src.features.enrichers.finbert_sentiment import FinBERTSentimentAnalyzer
+from src.archive.features.enrichers.finbert_sentiment import FinBERTSentimentAnalyzer
 
 logger = logging.getLogger(__name__)
 
