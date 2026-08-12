@@ -317,24 +317,31 @@ class DataPreparationService:
             import pandas as pd
 
             ordered = frame.reindex(columns=fit_columns)
-
-            # How much of each row is about to be INVENTED. Applying the
-            # training imputer here settles a long-standing asymmetry —
-            # training filled missing values with the train median while
-            # prediction dropped the row, two opposite readings of the same
-            # gap — and settles it the way training reads it. But filling one
-            # absent feature of thirty-five is not the same act as filling
-            # thirty: the second is a forecast from almost nothing, and it
-            # must not look like the first.
-            missing_share = ordered.isna().mean(axis=1)
-
             values = ordered.to_numpy(dtype=float)
+
+            # SimpleImputer DROPS any column that had no observed value during
+            # fit ("Skipping features without any observed values"), so its
+            # output can be narrower than fit_columns and the scaler behind it
+            # was fitted on that narrower matrix. Measured on this batch, 1d
+            # contexts carry 398 all-NaN ctx_1d_* columns — a daily bar gets no
+            # daily context, by design — so building a frame with fit_columns
+            # raised "Shape of passed values is (1, 2), indices imply (1, 3)",
+            # which the handler below turned into zero predictions for every
+            # one of the 396 daily contexts.
+            output_columns = self._surviving_columns(imputer, fit_columns)
+
             if imputer is not None:
                 values = imputer.transform(values)
             if scaler is not None:
                 values = scaler.transform(values)
 
-            transformed = pd.DataFrame(values, columns=fit_columns, index=frame.index)
+            # How much of each row is about to be INVENTED, measured over the
+            # columns the model actually uses. Counting the all-NaN ones would
+            # mark every 1d row as mostly-missing and refuse it, when those
+            # columns are not features at all — they were dropped at fit time.
+            missing_share = ordered[output_columns].isna().mean(axis=1)
+
+            transformed = pd.DataFrame(values, columns=output_columns, index=frame.index)
 
             mostly_invented = missing_share > self.MAX_IMPUTED_SHARE
             if mostly_invented.any():
@@ -351,10 +358,14 @@ class DataPreparationService:
                 self.logger.debug(
                     f'{context_id}: imputed up to {missing_share.max():.1%} of a row'
                 )
-            # Keep anything the transform did not cover (context columns,
-            # identity) so downstream slicing still finds it.
+            # Carry over what the transform was never meant to touch: context
+            # and identity columns. NOT the fit columns the imputer dropped —
+            # those were features with no observed value at fit time, and
+            # putting them back would reintroduce an all-NaN column the model
+            # was never fitted on.
+            fit_column_set = set(fit_columns)
             for column in frame.columns:
-                if column not in transformed.columns:
+                if column not in transformed.columns and column not in fit_column_set:
                     transformed[column] = frame[column]
             transformed.attrs = dict(frame.attrs)
             self.logger.debug(
@@ -367,6 +378,30 @@ class DataPreparationService:
                 f'refusing to predict on differently-scaled features.'
             )
             return frame.iloc[0:0]
+
+    @staticmethod
+    def _surviving_columns(imputer: Any, fit_columns: list[str]) -> list[str]:
+        """The columns the imputer actually emits.
+
+        A SimpleImputer silently drops every feature that had no observed
+        value during fit, recording NaN in `statistics_` for it. The scaler
+        chained behind it was therefore fitted on the narrower matrix, and any
+        frame rebuilt with the original column list will not line up.
+        """
+        if imputer is None:
+            return list(fit_columns)
+        try:
+            names = imputer.get_feature_names_out(fit_columns)
+            return [str(name) for name in names]
+        except (AttributeError, ValueError, TypeError):
+            statistics = getattr(imputer, 'statistics_', None)
+            if statistics is None or len(statistics) != len(fit_columns):
+                return list(fit_columns)
+            return [
+                column
+                for column, statistic in zip(fit_columns, statistics)
+                if not np.isnan(statistic)
+            ]
 
     def _load_preprocessor(self, meta: dict[str, Any], context_id: str) -> dict[str, Any] | None:
         """Load the imputer+scaler saved beside this context's champion."""

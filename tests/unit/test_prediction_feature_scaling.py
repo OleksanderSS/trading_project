@@ -171,6 +171,51 @@ def test_a_mostly_invented_row_is_refused(service, tmp_path):
     assert out.index.tolist() == [0]
 
 
+def test_columns_that_were_empty_at_fit_time_do_not_break_the_transform(service, tmp_path):
+    """The 1d case, and it would have cost every daily prediction.
+
+    A daily bar gets no daily context by design, so 1d contexts carry 398
+    all-NaN ctx_1d_* columns. SimpleImputer drops such columns at fit time and
+    the scaler behind it is fitted on the narrower matrix, so rebuilding a
+    frame with the original column list raised
+    "Shape of passed values is (1, 2), indices imply (1, 3)" — which the error
+    handler turned into an empty frame, i.e. zero predictions for 396 of 660
+    contexts.
+    """
+    train = pd.DataFrame({
+        "close": np.linspace(100.0, 140.0, 50),
+        "ctx_1d_empty": [np.nan] * 50,
+        "volume": np.linspace(4.8e7, 5.2e7, 50),
+    })
+    _fit_preprocessor(tmp_path, train)
+
+    live = pd.DataFrame({"close": [120.0], "ctx_1d_empty": [np.nan], "volume": [5.0e7]})
+    out = service._apply_training_preprocessor(live, _meta(tmp_path), "ctx")
+
+    assert len(out) == 1, "an all-NaN fit column must not cost the prediction"
+    assert "ctx_1d_empty" not in out.columns
+    assert set(["close", "volume"]).issubset(out.columns)
+    assert abs(out["close"].iloc[0]) < 5
+
+
+def test_empty_fit_columns_do_not_count_toward_the_imputed_share(service, tmp_path):
+    """398 columns that were never features must not mark a row as invented."""
+    train = pd.DataFrame({
+        "close": np.linspace(100.0, 140.0, 50),
+        **{f"ctx_1d_{i}": [np.nan] * 50 for i in range(8)},
+    })
+    _fit_preprocessor(tmp_path, train)
+
+    live = pd.DataFrame({
+        "close": [120.0],
+        **{f"ctx_1d_{i}": [np.nan] for i in range(8)},
+    })
+    out = service._apply_training_preprocessor(live, _meta(tmp_path), "ctx")
+
+    # 8 of 9 columns are NaN, but none of them is a feature.
+    assert len(out) == 1
+
+
 def test_a_missing_preprocessor_leaves_the_frame_alone(service, tmp_path):
     """Champions promoted before this artifact existed must not be guessed at."""
     live = pd.DataFrame({"close": [120.0, 130.0]})
