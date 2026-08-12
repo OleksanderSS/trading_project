@@ -27,6 +27,48 @@ from src.utils.artifact_security import resolve_trusted_artifact_path
 KERAS_EXTENSION = '.keras'
 
 
+def shape_input_for_keras(x_input, model_input_shape, sequence_builder=None):
+    """Shape a 2-D feature frame for a model that declares a 3-D input.
+
+    The number of timesteps is read from THE MODEL, not from a list of type
+    names. That list -- ['lstm', 'gru', 'transformer'] -- was a second copy of
+    a fact the model already carries, and it drifted: the Colab trainer's
+    `_SEQUENCE_MODEL_TYPES` is {'cnn', 'lstm', 'gru', 'transformer'} with
+    `_SEQUENCE_WINDOW = 20`, so a Colab-trained CNN was built on twenty
+    timesteps and served one:
+
+        Negative dimension size caused by subtracting 3 from 1
+        inputs=tf.Tensor(shape=(32, 1, 64))
+
+    Twenty such failures in the 2026-08-11 run, every one a CNN. The list was
+    not wrong when written -- the local CNNModel really does use a single
+    timestep -- it was wrong to exist twice.
+
+    CNN was the lucky case. Conv1D with a kernel of 3 cannot span a length of
+    1, so it crashed and we found out. An LSTM handed one timestep of a
+    twenty-step window returns a plausible number instead.
+    """
+    expected_timesteps = model_input_shape[1]
+
+    if not expected_timesteps or expected_timesteps <= 1:
+        # The model itself declares a single timestep: (n, 1, n_features),
+        # which is how the local CNNModel shapes its data -- NOT
+        # (n, n_features, 1). An earlier version expanded on the last axis
+        # for 'cnn' and fed it a transposed, incompatible shape.
+        return np.expand_dims(x_input, axis=1)
+
+    if len(x_input) >= expected_timesteps and sequence_builder is not None:
+        return sequence_builder.build_sequences(
+            x_input, window_size=expected_timesteps, step_size=1
+        )
+
+    # Too little history for one full window: repeat the most recent row
+    # rather than quietly handing over a shorter sequence.
+    last_row = x_input[-1:]
+    repeated = np.repeat(last_row, expected_timesteps, axis=0)
+    return repeated.reshape(1, expected_timesteps, -1)
+
+
 class ModelLoaderStrategy:
     """
     Encapsulates model loading logic with multiple fallback strategies.
@@ -340,45 +382,12 @@ class ModelLoaderStrategy:
                 # Convert to float to avoid "Invalid dtype: object" errors
                 x_input = np.asarray(x_input, dtype=np.float32)
 
-                # Handle 3D input shape requirements for sequential models
                 if len(self.model.input_shape) == 3 and len(x_input.shape) == 2:
-                    # Check if this is a sequential model (LSTM, GRU, Transformer)
-                    is_sequential = any(seq in self.model_type.lower()
-                                     for seq in ['lstm', 'gru', 'transformer'])
-
-                    self.logger.debug(f"Model type: {self.model_type}, is_sequential: {is_sequential}, input_shape: {self.model.input_shape}, x_input.shape: {x_input.shape}")
-
-                    if is_sequential:
-                        # Extract expected timesteps from model input shape
-                        expected_timesteps = self.model.input_shape[1]
-
-                        self.logger.debug(f"Building sequences with window_size={expected_timesteps}")
-
-                        # Build proper sequences using SequenceBuilder
-                        if len(x_input) >= expected_timesteps:
-                            # Use sliding window to create sequences
-                            x_input = self.sequence_builder.build_sequences(
-                                x_input,
-                                window_size=expected_timesteps,
-                                step_size=1
-                            )
-                            self.logger.debug(f"Sequences built: {x_input.shape}")
-                        else:
-                            # Not enough data: repeat last row to create sequences
-                            last_row = x_input[-1:]
-                            repeated = np.repeat(last_row, expected_timesteps, axis=0)
-                            x_input = repeated.reshape(1, expected_timesteps, -1)
-                            self.logger.debug(f"Repeated last row: {x_input.shape}")
-                    else:
-                        # Non-sequential neural models (CNN and any others):
-                        # timesteps=1, matching how CNNModel.train()/predict()
-                        # actually shape their data - (n_samples, 1,
-                        # n_features) via x_norm.reshape((n, 1, n_features)) -
-                        # NOT (n_samples, n_features, 1). A previous version
-                        # of this branch special-cased 'cnn' to expand on the
-                        # last axis instead, which fed CNN's own trained model
-                        # a transposed, incompatible shape.
-                        x_input = np.expand_dims(x_input, axis=1)
+                    x_input = shape_input_for_keras(
+                        x_input,
+                        self.model.input_shape,
+                        sequence_builder=self.sequence_builder,
+                    )
                 elif len(self.model.input_shape) == 2 and len(x_input.shape) == 3:
                     x_input = x_input.squeeze(axis=1)
 
