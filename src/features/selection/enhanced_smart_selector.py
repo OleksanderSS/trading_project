@@ -33,12 +33,16 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
     NOT tracked in this class. It constructed `drift_monitor`,
     `freshness_monitor`, `regime_tracker` and `news_decay_modeler` and called
     a method on NONE of them -- four of five components were initialisation
-    cost and a false impression of monitoring. Drift and freshness checks do
-    exist, in `src.pipeline.stages.monitoring.feature_monitoring.
-    FeatureEngineeringMonitor`, which is the class written to run them around
-    feature engineering; it currently has no callers either. Wiring it is a
-    deliberate decision, not a cleanup: `check_drift` over a full feature
-    frame is the computation that produced a five-hour hang in Stage 7.
+    cost and a false impression of monitoring. Where those checks actually
+    live, as of 2026-08-12: feature drift runs in Stage 7, via
+    UnifiedAnalyticsEngine -> DriftAnalyzer -> FeatureDriftMonitor (the path
+    that produced "feature_drift: failed 54 of 66" on the 2026-08-09 run, and
+    whose 100-feature cap and 30-second timeout are pinned by
+    test_drift_sampling_and_timeouts.py). Source freshness is reported at
+    collection, which is where a feed dies. The FeatureEngineeringMonitor
+    facade that used to be named here has been archived: its drift half
+    duplicated Stage 7, and re-running `check_drift` over a full feature frame
+    is the computation that once hung Stage 7 for five hours.
     """
 
     def __init__(self, config_manager: UnifiedConfigManager | None = None):

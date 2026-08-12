@@ -1772,3 +1772,44 @@ cost (`check_drift` over a full feature frame produced a five-hour hang in
 Stage 7), not a cleanup. `src/main/modes/shadow_battle.py` and
 `src/scripts/simulation/shadow_arena.py` have no callers but are the nearest
 thing in the repository to the shadow-evidence stage that is still owed.
+
+### `src/pipeline/stages/monitoring/feature_monitoring.py` → `src/archive/pipeline/stages/monitoring/` (2026-08-12)
+
+`FeatureEngineeringMonitor` was deferred earlier the same day as "unwired but
+real -- wiring is a decision, not a cleanup". Checking where its two halves
+already live settled it:
+
+- **Drift is not unwired.** It runs in Stage 7 through
+  UnifiedAnalyticsEngine → DriftAnalyzer → FeatureDriftMonitor. That is the
+  path that produced `feature_drift: failed 54 of 66 contexts` on the
+  2026-08-09 run, and whose 100-feature cap and 30-second timeout are pinned
+  by `test_drift_sampling_and_timeouts.py`. Running `check_drift` a second
+  time around feature engineering would duplicate a live mechanism with the
+  computation that once hung Stage 7 for five hours.
+- **Freshness was genuinely unchecked**, and the facade was the only thing
+  that would have called it. But its 532 lines of per-source age thresholds
+  answer a question the pipeline was not asking, while the question it *was*
+  missing turned out to be one line away: of 16 enabled collectors on the
+  2026-08-11 run, four delivered nothing (aaii_sentiment and put_call_ratio
+  answering HTTP 403, fear_greed and wikimedia_attention raising), and the
+  collection summary reported all 16 as successfully processed. That is fixed
+  where it happens, in the collection orchestrator.
+
+`DataFreshnessMonitor` and `RegimeImportanceTracker` are left in place. Both
+are now ARCHIVE_ONLY in `scripts/diagnostics/reachability_report.py` — the
+honest label for "kept on purpose, reachable by nothing".
+
+### Not archived, needs a decision: `src/main/modes/`
+
+`src/archive/main/system_orchestrator.py` was the dispatcher for
+`TrainMode`, `PredictMode`, `BacktestMode`, `ShadowBattleMode`,
+`HistoricalEventReplayMode` and `MonsterTestMode`. It was archived; the six
+modes were not. They still import `modes/base.py` and each other, so an
+import graph reports them as live — the case that motivated the ARCHIVE_ONLY
+bucket. The live entry point is `run_hybrid_pipeline.py`, whose modes are
+local/light/prepare/full/continue. Nothing dispatches these six.
+
+Left standing deliberately: `shadow_battle` runs synthetic stress scenarios
+(Black Swan, Flash Crash) through `TradingModelArena`, and the
+shadow-evidence stage is still owed. It is worth reading before it is worth
+deleting — but it is not that stage, and it cannot currently be invoked.

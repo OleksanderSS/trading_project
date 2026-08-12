@@ -191,19 +191,36 @@ class CollectionStage(BaseStage):
         УНІФІКОВАНА обробка та збереження результатів колекторів.
         Всі колектори обробляються однаково - без SELF_SAVING.
         """
-        successful = 0
+        # A single `successful` counter treated three different outcomes as
+        # one. Measured on the 2026-08-11 run: 16 collectors enabled, 10
+        # delivered rows, and aaii_sentiment (HTTP 403), put_call_ratio
+        # (HTTP 403), fear_greed and wikimedia_attention delivered nothing --
+        # yet the summary read "Successfully processed 16 collectors", because
+        # returning None counts the same as returning data. Four dead sources
+        # stayed invisible for as long as nobody read the collectors' own logs.
+        delivered: list[str] = []
+        silent: list[str] = []
+        failed: list[str] = []
 
         for i, res in enumerate(results):
             collector = collectors[i]
             collector_type = collector.collector_type
 
             if isinstance(res, Exception):
-                self.logger.error(f"Error in '{collector_type}': {res}")
+                # `{res}` alone printed "Error in 'fear_greed': " with nothing
+                # after the colon, because str() on some exceptions is empty --
+                # the same signature that hid 54 drift timeouts. The type name
+                # is what makes an empty message identifiable.
+                self.logger.error(
+                    f"Error in '{collector_type}': {type(res).__name__}: {res}",
+                    exc_info=res,
+                )
+                failed.append(collector_type)
                 continue
 
             if res is None:
                 self.logger.info(f"Collector '{collector_type}' returned no new data.")
-                successful += 1
+                silent.append(collector_type)
                 continue
 
             # Конвертуємо в DataFrame якщо потрібно
@@ -211,7 +228,7 @@ class CollectionStage(BaseStage):
 
             if df is None or df.empty:
                 self.logger.info(f"Collector '{collector_type}' returned empty data.")
-                successful += 1
+                silent.append(collector_type)
                 continue
 
             self.logger.info(f"Received {len(df)} records from '{collector_type}'.")
@@ -227,14 +244,33 @@ class CollectionStage(BaseStage):
                 # 3. Кешування результатів
                 self._cache_collector_data(collector, df)
 
-                successful += 1
+                delivered.append(collector_type)
 
             except Exception as e:
-                self.logger.error(f"Failed to process data from '{collector_type}': {e}")
+                self.logger.error(
+                    f"Failed to process data from '{collector_type}': "
+                    f"{type(e).__name__}: {e}",
+                    exc_info=True,
+                )
+                failed.append(collector_type)
                 continue
 
-        if successful > 0:
-            self.logger.info(f"Successfully processed {successful} collectors.")
+        total = len(delivered) + len(silent) + len(failed)
+        self.logger.info(
+            f"Collection: {len(delivered)}/{total} collectors delivered rows."
+        )
+        if silent:
+            # Not an error -- a source can legitimately have nothing new, and
+            # deduplication removes repeats within a day. But a source that is
+            # silent every run is a source that has stopped working, and that
+            # is only visible if the names are said out loud.
+            self.logger.warning(
+                f"Delivered nothing this run: {', '.join(sorted(silent))}. "
+                f"Legitimate when there is genuinely nothing new; check the "
+                f"collector's own log if a name keeps appearing here."
+            )
+        if failed:
+            self.logger.error(f"Failed outright: {', '.join(sorted(failed))}.")
 
     def _normalize_dataframe(self, result) -> pd.DataFrame | None:
         """
