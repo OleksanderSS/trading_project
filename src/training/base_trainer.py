@@ -537,6 +537,9 @@ class BaseTrainer(ABC):
         score = self.evaluator.calculate(y_holdout, preds, task_type=task_type)
         metric_key = 'F1' if is_classif else 'R2'
 
+        results['winner_holdout_predictions'] = self._holdout_prediction_series(
+            X_holdout, y_holdout, preds
+        )
         results['winner_holdout_metrics'] = {
             'status': 'measured',
             'score': float(score.get(metric_key, 0.0)),
@@ -546,6 +549,61 @@ class BaseTrainer(ABC):
             'holdout_sample_count': int(len(X_holdout)),
             **self._score_naive_baselines(data, is_classif, task_type, metric_key),
         }
+
+    @staticmethod
+    def _holdout_prediction_series(X_holdout: Any, y_holdout: Any, preds: Any) -> list[dict[str, Any]]:
+        """Keep the winner's holdout predictions, with their timestamps.
+
+        These were computed, reduced to a single R2, and thrown away — and
+        they are the only genuinely out-of-sample, time-stamped predictions
+        the pipeline produces.
+
+        Stage 7's backtest currently builds its equity curve from Stage 5
+        instead, which answers a different question: Stage 5 predicts the
+        LATEST bar of each context, one point apiece, so 540 predictions
+        pivoted to a `(3, 22)` table. Three time points. That is why the last
+        run reported a Sharpe of -329.82 on a volatility of 8.46e-05 — not a
+        flat curve, a three-point one. No financial number computed from it
+        can mean anything, however good the models are.
+
+        The holdout is ~100-220 purged bars per context that the model never
+        saw and never selected on. Retaining these rows is what lets an equity
+        curve be built from real out-of-sample forecasts rather than from
+        three live signals.
+
+        Returned as plain records so they survive JSON; the caller decides
+        where to persist them.
+        """
+        try:
+            index = getattr(X_holdout, 'index', None)
+            y_true = np.asarray(y_holdout).ravel()
+            y_pred = np.asarray(preds).ravel()
+            n = min(len(y_true), len(y_pred))
+            if n == 0:
+                return []
+
+            if index is not None and len(index) >= n:
+                stamps = [
+                    value.isoformat() if hasattr(value, 'isoformat') else str(value)
+                    for value in list(index)[:n]
+                ]
+            else:
+                stamps = [None] * n
+
+            return [
+                {
+                    'datetime': stamps[i],
+                    'prediction': float(y_pred[i]),
+                    'actual': float(y_true[i]),
+                }
+                for i in range(n)
+                if np.isfinite(y_pred[i]) and np.isfinite(y_true[i])
+            ]
+        except (ValueError, TypeError, AttributeError, IndexError) as e:
+            logging.getLogger(__name__).warning(
+                f"Could not retain holdout predictions: {e}"
+            )
+            return []
 
     def _score_naive_baselines(self, data: dict[str, Any], is_classif: bool,
                                task_type: str, metric_key: str) -> dict[str, Any]:

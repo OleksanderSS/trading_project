@@ -177,6 +177,48 @@ def test_regression_baseline_is_the_train_mean():
     assert host._evaluate_promotion_gate(results)['passed'] is False
 
 
+def test_holdout_predictions_are_kept_with_their_timestamps():
+    """The only out-of-sample time series the pipeline produces must survive.
+
+    Stage 7 builds its equity curve from Stage 5, which predicts the LATEST
+    bar of each context — 540 predictions pivoted to a (3, 22) table. Three
+    time points, hence Sharpe -329.82 on volatility 8.46e-05. The holdout is
+    ~100-220 purged bars per context that the model never saw; those rows,
+    with their timestamps, are what an honest curve needs.
+    """
+    host = _Host()
+    index = pd.date_range("2026-03-01", periods=40, freq="D", tz="UTC")
+    data = _classification_data(n=40)
+    data['X_holdout'] = pd.DataFrame(
+        {'f': np.arange(40.0)}, index=index
+    )
+    data['y_holdout'] = data['y_holdout'][:40]
+    results = {}
+
+    host._record_winner_test_score(_PerfectModel(data['y_holdout']), data, True, results)
+
+    series = results['winner_holdout_predictions']
+    assert len(series) == 40
+    assert series[0]['datetime'].startswith('2026-03-01')
+    assert series[-1]['datetime'].startswith('2026-04-09')
+    assert {'datetime', 'prediction', 'actual'} == set(series[0])
+    # A real series, not three points.
+    assert len({row['datetime'] for row in series}) == 40
+
+
+def test_holdout_predictions_survive_a_missing_index():
+    host = _Host()
+    data = _classification_data(n=30)
+    data['X_holdout'] = np.zeros((30, 3))  # no index at all
+    results = {}
+
+    host._record_winner_test_score(_PerfectModel(data['y_holdout'][:30]), data, True, results)
+
+    series = results['winner_holdout_predictions']
+    assert len(series) == 30
+    assert all(row['datetime'] is None for row in series)
+
+
 def test_a_persistent_series_must_be_beaten_by_persistence_not_by_the_mean():
     """The bar for a slow-moving target is "tomorrow equals today", not the mean.
 
