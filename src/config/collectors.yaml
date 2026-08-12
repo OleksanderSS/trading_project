@@ -1,9 +1,16 @@
 collectors:
   aaii_sentiment:
+    # Disabled 2026-08-12: AAII answers HTTP 403 to this project's user agent
+    # — a deliberate block on automated access to a survey behind a paid
+    # membership, not a misconfiguration, and not worked around here. It had
+    # been enabled and delivering nothing since at least 2026-08-11 while the
+    # collection summary counted it as successfully processed. Its HTML parser
+    # is broken independently (the date pattern reads "August 6, 2026" as
+    # "ust 6, 2026"), so re-enabling needs a licensed source, not a retry.
     cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
-    enabled: true
+    enabled: false
     hash_keys:
     - date
     - bullish
@@ -332,11 +339,18 @@ collectors:
     timeout: 500
     type: newsapi
   put_call_ratio:
+    # Disabled 2026-08-12: CBOE returns HTTP 403 through bot protection, from
+    # this project's user agent and from a browser one alike. Their side, and
+    # not defeated here. This collector has been repaired twice before (a
+    # domain that did not resolve; 59/60 days of fabricated history), so the
+    # honest state is off rather than a third attempt. CNN's fear-greed
+    # payload carries a put_call_options component if a substitute is wanted
+    # — a different series, not a drop-in replacement.
     allow_sample_fallback: false
     cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
-    enabled: true
+    enabled: false
     hash_keys:
     - date
     - put_call_ratio
