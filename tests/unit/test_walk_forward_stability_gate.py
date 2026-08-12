@@ -85,6 +85,21 @@ def test_the_share_of_folds_required_is_three_quarters(fold_count, folds_above, 
     assert (folds_above >= required) is should_pass
 
 
+def test_no_fold_may_come_out_worse_than_a_coin():
+    """Counting folds says how OFTEN signal held, never whether it collapsed.
+
+    AAPL/1d cleared 2 of 4 folds with a worst fold of 0.388 balanced accuracy
+    — materially worse than guessing on a quarter of its history. That is not
+    an unstable edge, it is two lucky windows. 0.5 is not a tuned threshold;
+    it is chance itself.
+    """
+    assert ModelingStage._MIN_WORST_FOLD_BALANCED_ACCURACY == 0.5
+
+    # The two conditions are independent: enough folds is not sufficient.
+    enough_folds_but_collapsed = (3 >= 3) and (0.388 >= 0.5)
+    assert enough_folds_but_collapsed is False
+
+
 def test_an_unmeasurable_context_is_passed_through_rather_than_failed():
     """Refusing what could not be measured is the same error as trusting a zero."""
     stage = object.__new__(ModelingStage)

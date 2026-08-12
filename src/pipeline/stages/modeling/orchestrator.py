@@ -475,6 +475,15 @@ class ModelingStage(BaseStage):
     #: than the alternative of pretending one split proves anything.
     _STABLE_FOLD_SHARE = 0.75
 
+    #: No fold may come out worse than a coin. Not a tuned threshold — 0.5
+    #: balanced accuracy IS chance, so this asks only that the context never
+    #: collapsed below it on any window. It is independent of the count above,
+    #: which measures how OFTEN signal held but not whether it ever fell
+    #: apart: AAPL/1d cleared 2 of 4 folds with a worst fold of 0.388, and a
+    #: model that is materially worse than guessing on a quarter of the
+    #: history has not shown stability, it has shown two lucky windows.
+    _MIN_WORST_FOLD_BALANCED_ACCURACY = 0.5
+
     #: Floors for a shrunken fold geometry. Below these a fold stops being a
     #: measurement: a validation window of a dozen rows and a training window
     #: of eighty tell you about the split, not the market.
@@ -567,15 +576,33 @@ class ModelingStage(BaseStage):
             self._MIN_STABLE_FOLDS,
             math.ceil(self._STABLE_FOLD_SHARE * fold_count),
         )
+        held_often_enough = above >= required
+        never_collapsed = (
+            worst is None
+            or float(worst) >= self._MIN_WORST_FOLD_BALANCED_ACCURACY
+        )
+
+        reasons = []
+        if not held_often_enough:
+            reasons.append(
+                f"signal held on {above} of {fold_count} walk-forward folds; "
+                f"{required} required"
+            )
+        if not never_collapsed:
+            reasons.append(
+                f"worst fold scored {float(worst):.3f} balanced accuracy, "
+                f"below chance ({self._MIN_WORST_FOLD_BALANCED_ACCURACY})"
+            )
+
         return {
-            'passed': above >= required,
+            'passed': held_often_enough and never_collapsed,
             'fold_count': fold_count,
             'folds_above_majority': above,
             'folds_required': required,
             'worst_fold_balanced_accuracy': worst,
-            'reason': (
-                f"signal held on {above} of {fold_count} walk-forward folds; "
-                f"{required} required"
+            'reason': '; '.join(reasons) or (
+                f"signal held on {above} of {fold_count} folds, worst fold "
+                f"{worst}"
             ),
         }
 
