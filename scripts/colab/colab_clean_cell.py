@@ -826,8 +826,23 @@ class ColabTrainingController:
         Field order matches the light branch's champion key,
         {ticker}_{timeframe}_{target}_{...}, so both halves of the hybrid
         read the same way.
+
+        Delegates to src.pipeline.constants.heavy_model_key rather than
+        repeating the format string. This WAS a second copy: the constant's
+        own docstring says "the Colab writer builds the same string in
+        _context_id", which records the duplication without preventing it.
+        They agreed, but a key that two files build independently is one edit
+        away from silently producing models Stage 5's '*{context_id}*' glob
+        cannot find — and a model that cannot be found fails no test.
+
+        Falls back to the literal if the repo is not importable, which is the
+        Colab-with-booked-GPU case that _load_heavy_models also guards.
         """
-        return f"{ticker}_{timeframe}_{target_col}_{model_type}"
+        try:
+            from src.pipeline.constants import heavy_model_key
+            return heavy_model_key(ticker, timeframe, target_col, model_type)
+        except ImportError:
+            return f"{ticker}_{timeframe}_{target_col}_{model_type}"
 
     def _train_model(self, ticker, timeframe, target_col, model_type, x_df, y_ser, target_type, is_classification, y_scaler):
         """Тренування однієї моделі"""
