@@ -579,6 +579,141 @@ class ModelingStage(BaseStage):
             max_features=default.max_features,
         )
 
+    def _regression_fold_stability(self, frame: "pd.DataFrame", *, target_name: str,
+                                   context_key: str) -> dict[str, Any]:
+        """Fold stability for a continuous target, in its own currency.
+
+        PipelineWalkForwardValidationEvaluator scores with classification
+        metrics, and on a continuous target those are not imprecise but
+        undefined: a shuffled target_return_1d with 511 distinct values
+        returned a balanced accuracy of 1.0 on every fold. Return targets —
+        the ones that matter most — were therefore passing a check that had
+        measured nothing.
+
+        The idea was sound, only the metric was wrong. This reuses the parts
+        that were right: `build_purged_expanding_folds` for the geometry
+        (expanding, purged, horizon-aware) and the same naive opponents the
+        holdout gate uses. Per fold, a reference regressor must beat the
+        better of "predict the training mean" and "tomorrow equals today".
+
+        Deliberately a REFERENCE model rather than the champion, matching the
+        classification path: this asks whether the context holds stable signal
+        at all, not whether one particular winner does.
+        """
+        try:
+            from sklearn.ensemble import RandomForestRegressor
+
+            config = self._walk_forward_config_for(len(frame))
+            folds = build_purged_expanding_folds(len(frame), config=config)
+            if len(folds) < self._MIN_STABLE_FOLDS:
+                return {'passed': True, 'measured': False,
+                        'fold_count': len(folds),
+                        'reason': 'too few folds to measure stability'}
+
+            ordered = frame.sort_index()
+            y_all = pd.to_numeric(ordered[target_name], errors='coerce')
+            numeric = ordered.select_dtypes(include=[np.number])
+            numeric = numeric.drop(columns=[
+                column for column in numeric.columns
+                if is_direct_target_column(column) or column == target_name
+            ], errors='ignore')
+
+            beat_baseline = 0
+            margins: list[float] = []
+            for fold in folds:
+                train = slice(0, fold['train_end'])
+                validate = slice(fold['validation_start'], fold['validation_end'])
+                x_train, y_train = numeric.iloc[train], y_all.iloc[train]
+                x_validate, y_validate = numeric.iloc[validate], y_all.iloc[validate]
+
+                # Rank on rows where the TARGET exists, then demand complete
+                # values only from the columns actually chosen. Requiring
+                # every numeric column to be present first is what made this
+                # find zero usable folds: with ~1,900 columns, of which many
+                # are sparse news and macro series, essentially no row is
+                # complete across all of them.
+                labelled = y_train.notna()
+                if labelled.sum() < 30 or y_validate.notna().sum() < 10:
+                    continue
+                columns = self._top_correlated(
+                    x_train[labelled], y_train[labelled], config.max_features
+                )
+                usable = labelled & x_train[columns].notna().all(axis=1)
+                if usable.sum() < 30:
+                    continue
+                model = RandomForestRegressor(
+                    n_estimators=config.n_estimators,
+                    max_depth=config.max_depth,
+                    min_samples_leaf=config.min_samples_leaf,
+                    random_state=config.random_state,
+                    n_jobs=1,
+                )
+                model.fit(x_train.loc[usable, columns], y_train[usable])
+
+                valid = y_validate.notna() & x_validate[columns].notna().all(axis=1)
+                if valid.sum() < 10:
+                    continue
+                predicted = model.predict(x_validate.loc[valid, columns])
+                actual = y_validate[valid].to_numpy(dtype=float)
+
+                model_r2 = self._r_squared(actual, predicted)
+                baseline_r2 = max(
+                    self._r_squared(actual, np.full(actual.size, float(y_train[usable].mean()))),
+                    self._persistence_r_squared(actual),
+                )
+                margins.append(model_r2 - baseline_r2)
+                if model_r2 > baseline_r2:
+                    beat_baseline += 1
+
+            measured_folds = len(margins)
+            if measured_folds < self._MIN_STABLE_FOLDS:
+                return {'passed': True, 'measured': False,
+                        'fold_count': measured_folds,
+                        'reason': 'too few usable folds to measure stability'}
+
+            required = max(self._MIN_STABLE_FOLDS,
+                           math.ceil(self._STABLE_FOLD_SHARE * measured_folds))
+            return {
+                'passed': beat_baseline >= required,
+                'measured': True,
+                'fold_count': measured_folds,
+                'folds_above_majority': beat_baseline,
+                'folds_required': required,
+                'worst_fold_margin': round(min(margins), 6),
+                'reason': (
+                    f"beat the naive baseline on {beat_baseline} of "
+                    f"{measured_folds} folds; {required} required"
+                ),
+            }
+        except (ImportError, ValueError, TypeError, KeyError, IndexError) as e:
+            logger.debug(f"{context_key}: regression stability not evaluable ({e})")
+            return {'passed': True, 'measured': False, 'reason': str(e)}
+
+    @staticmethod
+    def _top_correlated(x: "pd.DataFrame", y: "pd.Series", budget: int) -> list[str]:
+        """Train-only ranking, so no fold's validation rows pick its features."""
+        if len(x.columns) <= budget:
+            return list(x.columns)
+        ranked = x.corrwith(y).abs().fillna(-1.0).sort_values(
+            ascending=False, kind='mergesort')
+        return list(ranked.index[:budget])
+
+    @staticmethod
+    def _r_squared(actual: "np.ndarray", predicted: "np.ndarray") -> float:
+        residual = float(((actual - predicted) ** 2).sum())
+        total = float(((actual - actual.mean()) ** 2).sum())
+        return 1.0 - residual / total if total > 0 else 0.0
+
+    @classmethod
+    def _persistence_r_squared(cls, actual: "np.ndarray") -> float:
+        """"Tomorrow equals today", the opponent a slow series really has."""
+        if actual.size < 3:
+            return -np.inf
+        persistence = np.empty_like(actual)
+        persistence[0] = actual[0]
+        persistence[1:] = actual[:-1]
+        return cls._r_squared(actual, persistence)
+
     @staticmethod
     def _is_binary_target(frame: "pd.DataFrame", target_name: str) -> bool:
         """Is this a 0/1 label, or a continuous value wearing a target's name?"""
@@ -656,15 +791,9 @@ class ModelingStage(BaseStage):
         # number that does not exist. That leaves return targets without this
         # check, which is a real gap and better stated than papered over.
         if not self._is_binary_target(frame, target_name):
-            logger.debug(
-                f"{context_key}: walk-forward stability not applicable to a "
-                f"continuous target; its metrics are classification-only"
+            return self._regression_fold_stability(
+                frame, target_name=target_name, context_key=context_key,
             )
-            return {
-                'passed': True,
-                'measured': False,
-                'reason': 'continuous target — walk-forward metrics are classification-only',
-            }
 
         try:
             evaluator = PipelineWalkForwardValidationEvaluator(

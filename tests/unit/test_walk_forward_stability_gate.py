@@ -100,6 +100,60 @@ def test_no_fold_may_come_out_worse_than_a_coin():
     assert enough_folds_but_collapsed is False
 
 
+def test_continuous_targets_get_their_own_stability_check():
+    """Classification metrics on a continuous target are undefined, not rough.
+
+    A shuffled target_return_1d with 511 distinct values returned a balanced
+    accuracy of 1.0 on all four folds, so every return context — the ones that
+    matter most — passed a gate that had measured nothing. Regression folds are
+    now scored in their own currency: R2 against the better of "predict the
+    training mean" and "tomorrow equals today".
+    """
+    import numpy as np
+    import pandas as pd
+
+    assert hasattr(ModelingStage, '_regression_fold_stability')
+
+    # A binary column is classification; a continuous one is not.
+    frame = pd.DataFrame({
+        'target_up_1d': [0, 1, 0, 1],
+        'target_return_1d': [0.01, -0.02, 0.005, 0.03],
+    })
+    assert ModelingStage._is_binary_target(frame, 'target_up_1d') is True
+    assert ModelingStage._is_binary_target(frame, 'target_return_1d') is False
+
+
+def test_r_squared_and_persistence_agree_with_their_definitions():
+    import numpy as np
+
+    actual = np.array([1.0, 2.0, 3.0, 4.0])
+
+    # A perfect prediction explains everything.
+    assert ModelingStage._r_squared(actual, actual) == pytest.approx(1.0)
+    # The mean explains nothing.
+    assert ModelingStage._r_squared(
+        actual, np.full(4, actual.mean())
+    ) == pytest.approx(0.0)
+    # Persistence on a trending series is better than the mean but not perfect.
+    persistence = ModelingStage._persistence_r_squared(actual)
+    assert 0.0 < persistence < 1.0
+
+
+def test_feature_ranking_for_folds_uses_training_rows_only():
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    y = pd.Series(rng.normal(size=100))
+    x = pd.DataFrame({f'f{i}': rng.normal(size=100) for i in range(20)})
+    x['signal'] = y * 3 + rng.normal(scale=0.1, size=100)
+
+    chosen = ModelingStage._top_correlated(x, y, budget=3)
+
+    assert 'signal' in chosen
+    assert len(chosen) == 3
+
+
 def test_an_unmeasurable_context_is_passed_through_rather_than_failed():
     """Refusing what could not be measured is the same error as trusting a zero."""
     stage = object.__new__(ModelingStage)
