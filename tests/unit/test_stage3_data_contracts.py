@@ -168,7 +168,20 @@ def test_feature_engineering_restores_service_columns_dropped_by_enricher():
         "interval": ["15m"] * 3,
         "close": [100.0, 101.0, 102.0],
     })
-    enriched = pd.DataFrame({"feature_signal_15m": [0.1, 0.2, 0.3]})
+    # The enriched frame keeps `close`, which is what the real case looked
+    # like: macro_features dropped `datetime` and nothing else. That surviving
+    # column is what proves the rows still line up, so the restore is allowed.
+    #
+    # This test used to hand over a frame with no `close` and no `hash` and
+    # assert the columns came back anyway. That is the behaviour that put
+    # 54,552 bars on the wrong dates -- copying by position with nothing to
+    # show the positions still correspond. Refusal in that case is pinned by
+    # test_service_column_restore_alignment.py; what belongs here is that a
+    # provable restore still works.
+    enriched = pd.DataFrame({
+        "feature_signal_15m": [0.1, 0.2, 0.3],
+        "close": [100.0, 101.0, 102.0],
+    })
 
     restored = stage._restore_service_columns(enriched, source)
 

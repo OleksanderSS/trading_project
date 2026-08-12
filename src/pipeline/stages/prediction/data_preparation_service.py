@@ -20,6 +20,9 @@ from src.pipeline.stages.prediction.lineage import (
 )
 
 
+_MODULE_LOGGER = ProjectLogger.get_logger('DataPreparationService')
+
+
 class DataPreparationService:
     """
     Service for preparing and validating data for prediction.
@@ -393,7 +396,17 @@ class DataPreparationService:
         try:
             names = imputer.get_feature_names_out(fit_columns)
             return [str(name) for name in names]
-        except (AttributeError, ValueError, TypeError):
+        except (AttributeError, ValueError, TypeError) as exc:
+            # get_feature_names_out is the supported answer; reading
+            # statistics_ is a fallback for imputers pickled by an older
+            # sklearn. Worth a line, because if the fallback is what runs then
+            # the column list is being reconstructed by inference rather than
+            # read, and that is where a train/serve mismatch would start.
+            _MODULE_LOGGER.debug(
+                "%s: get_feature_names_out unavailable (%s: %s); "
+                "recovering surviving columns from statistics_",
+                type(imputer).__name__, type(exc).__name__, exc,
+            )
             statistics = getattr(imputer, 'statistics_', None)
             if statistics is None or len(statistics) != len(fit_columns):
                 return list(fit_columns)
