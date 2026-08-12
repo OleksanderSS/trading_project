@@ -6,6 +6,7 @@ Extracted from stage_5_prediction.py to reduce coupling and improve testability.
 """
 import logging
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -236,6 +237,15 @@ class DataPreparationService:
                 self.logger.debug(f'Missing features for {context_id}: {missing_features}')
             return None
 
+        # Standardise BEFORE selecting the model's columns. The imputer and
+        # scaler were fitted on the full feature set in that exact order, so
+        # they must see the same frame; slicing first would present a
+        # different matrix to a transform that has fixed per-column means and
+        # scales.
+        ticker_df_clean = self._apply_training_preprocessor(
+            ticker_df_clean, meta, context_id
+        )
+
         if selected_features:
             ticker_df_clean_features = ticker_df_clean[selected_features].copy()
         else:
@@ -261,6 +271,97 @@ class DataPreparationService:
             ),
             selected_features,
         )
+
+    def _apply_training_preprocessor(self, frame: "pd.DataFrame", meta: dict[str, Any],
+                                     context_id: str) -> "pd.DataFrame":
+        """Put the features back into the space the model was trained in.
+
+        Training standardises: prepare_data_for_models fits a SimpleImputer
+        and a StandardScaler on the training split and hands the models
+        z-scores. Prediction did not, so a model that learned "close > 0.3"
+        was asked about a close of 120, and one fitted against unit variance
+        received a volume of 5e7. Measured on a real 35-feature champion,
+        the same model returned [0.033, -0.023, 0.156, ...] on z-scores and
+        [128288, 127314, 133867, ...] on the raw frame. Nothing raised.
+
+        Columns are reindexed to the FIT-TIME order before transforming — a
+        StandardScaler applied to the same columns in a different order is a
+        different transform, and the frame assembled here has no reason to
+        match by luck. Columns the scaler never saw are dropped; ones it saw
+        and this frame lacks arrive as NaN for the imputer to fill, which is
+        the same treatment they received during training.
+
+        A context whose preprocessor is missing is left ALONE and said so:
+        older champions were promoted before this artifact existed, and
+        silently guessing a transform is how the original defect looked.
+        """
+        payload = self._load_preprocessor(meta, context_id)
+        if not payload:
+            return frame
+
+        scaler = payload.get('scaler')
+        imputer = payload.get('imputer')
+        fit_columns = list(payload.get('feature_names') or [])
+        if not fit_columns or (scaler is None and imputer is None):
+            return frame
+
+        try:
+            import pandas as pd
+
+            ordered = frame.reindex(columns=fit_columns)
+            values = ordered.to_numpy(dtype=float)
+            if imputer is not None:
+                values = imputer.transform(values)
+            if scaler is not None:
+                values = scaler.transform(values)
+
+            transformed = pd.DataFrame(values, columns=fit_columns, index=frame.index)
+            # Keep anything the transform did not cover (context columns,
+            # identity) so downstream slicing still finds it.
+            for column in frame.columns:
+                if column not in transformed.columns:
+                    transformed[column] = frame[column]
+            transformed.attrs = dict(frame.attrs)
+            self.logger.debug(
+                f'{context_id}: applied training preprocessor over {len(fit_columns)} columns'
+            )
+            return transformed
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
+            self.logger.error(
+                f'{context_id}: could not apply the training preprocessor ({e}); '
+                f'refusing to predict on differently-scaled features.'
+            )
+            return frame.iloc[0:0]
+
+    def _load_preprocessor(self, meta: dict[str, Any], context_id: str) -> dict[str, Any] | None:
+        """Load the imputer+scaler saved beside this context's champion."""
+        try:
+            import joblib
+
+            from src.pipeline.constants import preprocessor_filename
+            from src.utils.artifact_security import resolve_trusted_artifact_path
+
+            model_path = meta.get('model_path')
+            if not model_path:
+                return None
+            directory = Path(model_path).parent
+            path = directory / preprocessor_filename(
+                str(meta.get('ticker') or ''),
+                str(meta.get('timeframe') or ''),
+                str(meta.get('target') or meta.get('target_name') or ''),
+            )
+            if not path.exists():
+                self.logger.warning(
+                    f'{context_id}: no preprocessor at {path.name}; features are '
+                    f'served in their raw scale, which matches training only if '
+                    f'this model was trained without standardisation.'
+                )
+                return None
+            trusted = resolve_trusted_artifact_path(path, must_exist=True)
+            return joblib.load(trusted)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
+        except (OSError, ValueError, TypeError, AttributeError, ImportError) as e:
+            self.logger.error(f'{context_id}: could not load preprocessor ({e})')
+            return None
 
     def _model_timeframe(self, meta: dict[str, Any], context_id: str) -> str | None:
         """Which timeframe's rows this model was trained on.

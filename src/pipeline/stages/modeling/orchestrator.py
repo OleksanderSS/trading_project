@@ -521,6 +521,18 @@ class ModelingStage(BaseStage):
             # what caused the original defect.
             "X_holdout": light.get("X_test"),
             "y_holdout": light.get("y_test"),
+            # The transformers the models are fitted BEHIND. prepare_data_for_models
+            # fits these on the training split and hands the models z-scores;
+            # they were returned in `light_data` and collected by nobody, so
+            # Stage 5 fed raw columns to models trained on standardised ones.
+            # `feature_names` is the fit-time COLUMN ORDER and is as essential
+            # as the objects themselves -- a StandardScaler applied to columns
+            # in a different order is a different transform.
+            "preprocessor": {
+                "imputer": light.get("imputer"),
+                "scaler": light.get("scaler"),
+                "feature_names": list(light.get("feature_names") or []),
+            },
             "feature_names": list(light.get("feature_names") or []),
             "target_name": target_name,
             # Reaches BaseTrainer, which names the model file with it. Without

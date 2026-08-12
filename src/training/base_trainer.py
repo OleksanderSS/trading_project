@@ -18,7 +18,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from src.pipeline.constants import champion_filename, model_candidate_filename
+from src.pipeline.constants import (
+    champion_filename,
+    model_candidate_filename,
+    preprocessor_filename,
+)
 from src.config.feature_budget import get_model_max_features
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
@@ -256,6 +260,9 @@ class BaseTrainer(ABC):
             "timeframe": data.get("timeframe", ""),
             "target_name": data.get("target_name", "unknown"),
             "selected_features": list(data.get("feature_names") or []),
+            # Carried through so _finalize_ticker_results can save it beside a
+            # promoted champion; popped there, so it never reaches metadata.
+            "_preprocessor": data.get("preprocessor"),
         }
 
         # 1. Data validation and prep
@@ -721,6 +728,14 @@ class BaseTrainer(ABC):
                     target=str(results.get("target_name") or "unknown"),
                 )
                 results["model_path"] = str(champion_path)
+                preprocessor_path = self._persist_preprocessor(
+                    results.pop("_preprocessor", None),
+                    ticker=str(results.get("ticker") or "unknown"),
+                    timeframe=str(results.get("timeframe") or ""),
+                    target=str(results.get("target_name") or "unknown"),
+                )
+                if preprocessor_path:
+                    results["preprocessor_path"] = str(preprocessor_path)
             else:
                 # No CHAMP_ write. Any champion already on disk for this
                 # (ticker, timeframe, target) stays as it is -- a failed gate
@@ -815,6 +830,53 @@ class BaseTrainer(ABC):
             'blocking': blocking,
             'warnings': warnings,
         }
+
+    def _persist_preprocessor(self, preprocessor: dict[str, Any] | None, *,
+                              ticker: str, timeframe: str, target: str) -> Path | None:
+        """Save the imputer+scaler the champion was fitted behind.
+
+        A model trained on standardised features is unusable without the
+        transform that standardised them, and this pipeline kept the two
+        apart: `prepare_data_for_models` fits a SimpleImputer and a
+        StandardScaler on the training split, returns both in `light_data`,
+        and the prediction path collected neither. Stage 5 sliced raw columns
+        out of the feature frame, so a tree that learned "close > 0.3" in
+        z-space was asked about a close of 120, and a linear model fitted
+        against unit variance was handed a volume of 5e7.
+
+        Measured on a real champion (35 features): z-scored input gave
+        [0.033, -0.023, 0.156, ...]; the identical model on the raw values
+        Stage 5 supplies gave [128288, 127314, 133867, ...]. Nothing crashed.
+
+        The fit-time column ORDER travels with them. A StandardScaler applied
+        to the same columns in a different order is a different transform, and
+        the frame Stage 5 assembles has no reason to match by luck.
+        """
+        if not isinstance(preprocessor, dict):
+            return None
+        scaler = preprocessor.get('scaler')
+        imputer = preprocessor.get('imputer')
+        feature_names = list(preprocessor.get('feature_names') or [])
+        if scaler is None and imputer is None:
+            return None
+        if not feature_names:
+            self.logger.warning(
+                "Refusing to save a preprocessor for %s/%s/%s without the "
+                "fit-time column order: applying it later would be guesswork.",
+                ticker, timeframe, target,
+            )
+            return None
+
+        path = self.output_dir / preprocessor_filename(ticker, timeframe, target)
+        payload = {
+            'imputer': imputer,
+            'scaler': scaler,
+            'feature_names': feature_names,
+        }
+        if not self.artifact_store.save_joblib(payload, path):
+            self.logger.warning(f"Failed to save preprocessor {path.name}")
+            return None
+        return path
 
     def _evaluate_promotion_gate(self, results: dict[str, Any]) -> dict[str, Any]:
         """Decide whether the winner may be written as CHAMP_.

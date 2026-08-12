@@ -62,3 +62,24 @@ def champion_filename(ticker: str, timeframe: str, target: str) -> str:
     """Filename for the promoted winner of one (ticker, timeframe, target)."""
     parts = [p for p in (ticker, timeframe, target) if p]
     return "CHAMP_" + "_".join(parts) + ".joblib"
+
+
+def preprocessor_filename(ticker: str, timeframe: str, target: str) -> str:
+    """Filename for the imputer+scaler a context's models were fitted behind.
+
+    Named to sit beside the champion, because it is half of it. A model
+    trained on standardised features is not usable without the transformer
+    that produced them: prepare_data_for_models fits a SimpleImputer and a
+    StandardScaler on the training split, hands the models z-scores, and
+    returned both objects in `light_data` -- where the prediction path never
+    collected them. Stage 5 sliced raw columns out of the feature frame
+    instead, so a model that learned "close > 0.3" in z-space was asked about
+    a close of 120, and one that learned coefficients against unit variance
+    was given a volume of 5e7.
+
+    Measured on a real champion from the 2026-08-12 run (35 features):
+    z-scored input produced [0.033, -0.023, 0.156, ...]; the same model on the
+    raw values Stage 5 supplies produced [128288, 127314, 133867, ...].
+    """
+    parts = [p for p in (ticker, timeframe, target) if p]
+    return "PREP_" + "_".join(parts) + ".joblib"
