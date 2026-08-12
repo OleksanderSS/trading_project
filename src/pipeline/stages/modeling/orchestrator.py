@@ -2,6 +2,7 @@
 import datetime
 import hashlib
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,7 @@ from src.pipeline.stages.modeling import pipeline_control_artifacts
 from src.pipeline.stages.modeling.walk_forward_validation import (
     PipelineWalkForwardValidationEvaluator,
     WalkForwardValidationConfig,
+    build_purged_expanding_folds,
 )
 from src.pipeline.stages.prediction.lineage import (
     source_lineage_attrs,
@@ -402,6 +404,17 @@ class ModelingStage(BaseStage):
                     if not self._champion_is_allowed(ticker_result, context_key):
                         continue
 
+                    stability = self._walk_forward_stability(
+                        df, ticker=ticker, timeframe=str(timeframe),
+                        target_name=target_name, context_key=context_key,
+                    )
+                    if stability and not stability.get('passed', True):
+                        logger.info(
+                            "No champion recorded for %s: %s",
+                            context_key, stability.get('reason'),
+                        )
+                        continue
+
                     champions[context_key] = {
                         'ticker': ticker,
                         'timeframe': timeframe,
@@ -445,6 +458,126 @@ class ModelingStage(BaseStage):
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Error modeling {ticker}: {e}")
+
+    #: A context must show signal on more than one fold before anything from
+    #: it is promoted. One fold is a coin toss with a decimal point.
+    _MIN_STABLE_FOLDS = 2
+
+    #: Share of folds that must beat their majority baseline. Chosen from the
+    #: arithmetic, not from taste: with no signal at all, each fold clears its
+    #: baseline about half the time, so
+    #:     >= 2 of 4 happens by chance 69% of the time
+    #:     >= 3 of 4                   31%
+    #:        4 of 4                    6%
+    #: A threshold of two would have passed noise more often than not — a
+    #: decoration rather than a filter. Three of four still admits a coin-flip
+    #: context roughly once in three, which is honest to state and far better
+    #: than the alternative of pretending one split proves anything.
+    _STABLE_FOLD_SHARE = 0.75
+
+    #: Floors for a shrunken fold geometry. Below these a fold stops being a
+    #: measurement: a validation window of a dozen rows and a training window
+    #: of eighty tell you about the split, not the market.
+    _MIN_FOLD_VALIDATION_ROWS = 40
+    _MIN_FOLD_TRAIN_ROWS = 150
+
+    @classmethod
+    def _walk_forward_config_for(cls, row_count: int) -> WalkForwardValidationConfig:
+        """Fold geometry that fits the context, instead of one fixed size.
+
+        The defaults (min_train 360, validation 120) need ~485 rows for a
+        single fold. A daily context has about 511, so it produced exactly ONE
+        fold — and one fold cannot show stability, it is a single split with a
+        decimal point. That is 396 of 660 contexts, the majority of the
+        pipeline, silently exempt from the check.
+
+        Shrinking the windows trades "no measurement" for "noisier
+        measurement", which is the better trade: the criterion is only that
+        signal held on at least two folds, and a threshold that coarse
+        tolerates noise far better than it tolerates absence.
+
+        Intraday contexts keep the defaults, because they can afford them.
+        """
+        default = WalkForwardValidationConfig()
+        if len(build_purged_expanding_folds(row_count, config=default)) >= cls._MIN_STABLE_FOLDS:
+            return default
+
+        validation_rows = max(cls._MIN_FOLD_VALIDATION_ROWS, row_count // 8)
+        min_train_rows = max(cls._MIN_FOLD_TRAIN_ROWS, row_count // 2)
+        return WalkForwardValidationConfig(
+            min_train_rows=min_train_rows,
+            validation_rows=validation_rows,
+            step_rows=validation_rows,
+            purge_rows=default.purge_rows,
+            max_folds=default.max_folds,
+            max_features=default.max_features,
+        )
+
+    def _walk_forward_stability(self, frame: "pd.DataFrame", *, ticker: str,
+                                timeframe: str, target_name: str,
+                                context_key: str) -> dict[str, Any] | None:
+        """Does a reference model find signal across folds, not just one split?
+
+        The holdout-versus-baseline check the champion has already passed says
+        "better than nothing, once". It cannot distinguish an edge from a
+        lucky split, which is exactly what four hundred contexts competing for
+        promotion will produce by chance.
+
+        PipelineWalkForwardValidationEvaluator was already in this file,
+        reachable only through `walk_forward_review_only` — a branch that
+        returns before training and was never part of promotion. It builds
+        purged expanding folds with the purge raised to the target's own
+        horizon, and reports how many folds beat their majority baseline.
+
+        Note what it measures: a FIXED reference model on the context, not the
+        champion. So this is a statement about the context — "is there stable
+        signal here at all" — and it is used as a precondition rather than as
+        a verdict on the winner. Run only for champions that already passed
+        the cheap gate, because it fits a model per fold and there is no point
+        paying that for a candidate already refused.
+
+        Returns None when the context is too short to build folds; a context
+        that cannot be measured is not failed for it, it is passed through
+        with that stated.
+        """
+        try:
+            evaluator = PipelineWalkForwardValidationEvaluator(
+                self._walk_forward_config_for(len(frame))
+            )
+            summary = evaluator.evaluate(
+                frame, ticker=ticker, timeframe=timeframe, target_name=target_name,
+            )
+        except (ValueError, TypeError, KeyError, AttributeError) as e:
+            logger.debug(f"{context_key}: walk-forward not evaluable ({e})")
+            return None
+
+        payload = summary.get('metrics', {}) if isinstance(summary, dict) else {}
+        fold_count = int(payload.get('fold_count') or 0)
+        if fold_count < self._MIN_STABLE_FOLDS:
+            logger.debug(
+                f"{context_key}: only {fold_count} walk-forward fold(s); "
+                f"stability not measurable, not held against it"
+            )
+            return {'passed': True, 'fold_count': fold_count,
+                    'reason': 'too few folds to measure stability'}
+
+        above = int(payload.get('validation_above_majority_fold_count') or 0)
+        worst = payload.get('minimum_validation_balanced_accuracy')
+        required = max(
+            self._MIN_STABLE_FOLDS,
+            math.ceil(self._STABLE_FOLD_SHARE * fold_count),
+        )
+        return {
+            'passed': above >= required,
+            'fold_count': fold_count,
+            'folds_above_majority': above,
+            'folds_required': required,
+            'worst_fold_balanced_accuracy': worst,
+            'reason': (
+                f"signal held on {above} of {fold_count} walk-forward folds; "
+                f"{required} required"
+            ),
+        }
 
     @staticmethod
     def _champion_is_allowed(ticker_result: dict[str, Any], context_key: str) -> bool:
