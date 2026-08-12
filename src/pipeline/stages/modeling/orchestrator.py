@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.analytics.analyzers.model_comparison_analyzer import ModelComparisonAnalyzer
@@ -578,6 +579,44 @@ class ModelingStage(BaseStage):
             max_features=default.max_features,
         )
 
+    @staticmethod
+    def _is_binary_target(frame: "pd.DataFrame", target_name: str) -> bool:
+        """Is this a 0/1 label, or a continuous value wearing a target's name?"""
+        if target_name not in frame.columns:
+            return False
+        values = pd.to_numeric(frame[target_name], errors='coerce').dropna()
+        if values.empty:
+            return False
+        return bool(values.isin([0, 1]).all())
+
+    @staticmethod
+    def _chance_margin(fold: dict[str, Any]) -> float:
+        """How far above 0.5 a fold must land before it means anything.
+
+        "Better than chance by any amount" is a bar noise clears about half
+        the time. Measured on a SHUFFLED target with 63-row validation
+        windows, folds scored 0.500, 0.554, 0.597 and 0.523 balanced accuracy
+        — three of four above 0.5, purely from sampling.
+
+        The margin is one standard error of balanced accuracy, computed from
+        the fold's own size and class balance rather than picked:
+
+            se = sqrt( p(1-p)/n_pos + p(1-p)/n_neg ) / 2, with p = 0.5
+
+        which for a 63-row window at a 35% positive rate is about 0.066. So a
+        fold has to reach ~0.57, not 0.501. Small folds demand more, large
+        folds less, and no constant has to be invented.
+        """
+        metrics = fold.get('validation_metrics', {})
+        window = fold.get('validation_window', {})
+        n = int(window.get('sample_count') or 0)
+        positive_rate = float(metrics.get('actual_positive_rate') or 0.0)
+        n_pos = max(1, int(round(n * positive_rate)))
+        n_neg = max(1, n - n_pos)
+        # Recall of each class is a proportion; balanced accuracy averages
+        # two of them, so its variance is a quarter of their sum.
+        return float(np.sqrt(0.25 / n_pos + 0.25 / n_neg) / 2.0)
+
     def _walk_forward_stability(self, frame: "pd.DataFrame", *, ticker: str,
                                 timeframe: str, target_name: str,
                                 context_key: str) -> dict[str, Any] | None:
@@ -605,6 +644,28 @@ class ModelingStage(BaseStage):
         that cannot be measured is not failed for it, it is passed through
         with that stated.
         """
+        # The evaluator scores with CLASSIFICATION metrics. On a continuous
+        # target they are not merely imprecise, they are undefined: measured
+        # on a shuffled target_return_1d with 511 distinct values, all four
+        # folds returned a balanced accuracy of 1.0, so every regression
+        # context would sail through a gate that had measured nothing.
+        # Classification targets on the same data behaved correctly
+        # (target_up_1d, shuffled: 1 of 4 folds, worst 0.5, refused).
+        #
+        # So stability is reported as UNMEASURED here rather than passed on a
+        # number that does not exist. That leaves return targets without this
+        # check, which is a real gap and better stated than papered over.
+        if not self._is_binary_target(frame, target_name):
+            logger.debug(
+                f"{context_key}: walk-forward stability not applicable to a "
+                f"continuous target; its metrics are classification-only"
+            )
+            return {
+                'passed': True,
+                'measured': False,
+                'reason': 'continuous target — walk-forward metrics are classification-only',
+            }
+
         try:
             evaluator = PipelineWalkForwardValidationEvaluator(
                 self._walk_forward_config_for(len(frame))
@@ -626,8 +687,35 @@ class ModelingStage(BaseStage):
             return {'passed': True, 'fold_count': fold_count,
                     'reason': 'too few folds to measure stability'}
 
-        above = int(payload.get('validation_above_majority_fold_count') or 0)
-        worst = payload.get('minimum_validation_balanced_accuracy')
+        # Folds counted HERE, from balanced accuracy, rather than taking the
+        # evaluator's `validation_above_majority_fold_count`. That counter is
+        #     sum(accuracy >= majority_baseline)
+        # — plain accuracy against the majority-class rate, with `>=`. A model
+        # that predicts the majority class everywhere scores EXACTLY the
+        # baseline and is therefore counted as "above" on every fold, so the
+        # most useless possible predictor passes it perfectly.
+        #
+        # The negative control caught it: shuffled targets cleared the
+        # stability gate MORE often than real ones, 86% against 71%, because
+        # a model given noise settles on the majority class and scores the
+        # baseline exactly, while a real model sometimes deviates and lands
+        # just under it.
+        #
+        # Balanced accuracy has no such degeneracy: a constant predictor
+        # scores exactly 0.5 whatever the class balance, so 0.5 is a real
+        # floor rather than a moving target.
+        folds = summary.get('folds') or []
+        fold_scores = [
+            float(fold.get('validation_metrics', {}).get('balanced_accuracy', 0.0))
+            for fold in folds
+        ]
+        above = sum(
+            1 for fold, score in zip(folds, fold_scores)
+            if score > 0.5 + self._chance_margin(fold)
+        )
+        worst = min(fold_scores) if fold_scores else payload.get(
+            'minimum_validation_balanced_accuracy'
+        )
         required = max(
             self._MIN_STABLE_FOLDS,
             math.ceil(self._STABLE_FOLD_SHARE * fold_count),
@@ -641,8 +729,8 @@ class ModelingStage(BaseStage):
         reasons = []
         if not held_often_enough:
             reasons.append(
-                f"signal held on {above} of {fold_count} walk-forward folds; "
-                f"{required} required"
+                f"balanced accuracy beat chance on {above} of {fold_count} "
+                f"walk-forward folds; {required} required"
             )
         if not never_collapsed:
             reasons.append(

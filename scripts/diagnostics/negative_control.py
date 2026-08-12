@@ -86,6 +86,60 @@ def _select_columns(X_train, y_train, budget):
     return list(ranked.index[:budget])
 
 
+def _walk_forward_control(contexts, features, targets, seed):
+    """The same control, aimed at the walk-forward stability gate.
+
+    That gate is doing most of the filtering — 94% of contexts refused on the
+    2026-08-12 run — so whether it measures anything is the question that
+    decides whether the whole result is trustworthy. If a shuffled target
+    holds signal across three quarters of the folds as often as a real one,
+    the gate is counting coincidences.
+    """
+    from src.pipeline.stages.stage_4_modeling import ModelingStage
+
+    stage = object.__new__(ModelingStage)
+    rows = []
+    for ticker, interval, target in contexts:
+        frame = features[
+            (features.ticker == ticker) & (features.interval == interval)
+        ].copy()
+        frame[target] = targets.loc[frame.index, target]
+        frame = frame[frame[target].notna()]
+        if len(frame) < 200:
+            continue
+
+        shuffled = frame.copy()
+        values = shuffled[target].to_numpy().copy()
+        np.random.default_rng(seed).shuffle(values)
+        shuffled[target] = values
+
+        for label, candidate in (('real', frame), ('shuffled', shuffled)):
+            try:
+                verdict = stage._walk_forward_stability(
+                    candidate, ticker=ticker, timeframe=interval,
+                    target_name=target, context_key=f"{ticker}/{interval}",
+                )
+            except Exception as e:                  # noqa: BLE001 - diagnostic
+                print(f"  wf {ticker}/{interval}/{target}/{label}: "
+                      f"{type(e).__name__} {str(e)[:60]}")
+                continue
+            # Contexts the gate declares unmeasurable are excluded: counting
+            # them as passes would flatter it, counting them as failures would
+            # slander it.
+            if not verdict or verdict.get('measured') is False:
+                continue
+            if verdict.get('fold_count', 0) < 2:
+                continue
+            rows.append({
+                'kind': label,
+                'passed': bool(verdict.get('passed')),
+                'folds_above': verdict.get('folds_above_majority'),
+                'fold_count': verdict.get('fold_count'),
+                'worst': verdict.get('worst_fold_balanced_accuracy'),
+            })
+    return rows
+
+
 def run(n_contexts: int, seed: int) -> int:
     rng = random.Random(seed)
     evaluator = MLEvaluator()
@@ -163,6 +217,8 @@ def run(n_contexts: int, seed: int) -> int:
                     'passes_gate': score > baseline,
                 })
 
+    stability_rows = _walk_forward_control(contexts, features, targets, seed)
+
     if not rows:
         print("no contexts produced a result")
         return 1
@@ -174,6 +230,25 @@ def run(n_contexts: int, seed: int) -> int:
         pass_rate=('passes_gate', 'mean'),
         median_score=('score', 'median'),
     ).to_string())
+
+    if stability_rows:
+        wf = pd.DataFrame(stability_rows)
+        print("\n=== walk-forward stability gate ===")
+        print(wf.groupby('kind').agg(
+            runs=('passed', 'size'),
+            passed=('passed', 'sum'),
+            pass_rate=('passed', 'mean'),
+            median_folds_above=('folds_above', 'median'),
+            median_worst_fold=('worst', 'median'),
+        ).to_string())
+        real_rate = float(wf[wf.kind == 'real']['passed'].mean() or 0)
+        noise_rate = float(wf[wf.kind == 'shuffled']['passed'].mean() or 0)
+        if noise_rate >= real_rate and noise_rate > 0:
+            print("\n  WARNING: shuffled contexts clear the stability gate as often "
+                  "as real ones. The gate is counting coincidences.")
+        else:
+            print(f"\n  stability gate separates signal from noise: "
+                  f"real {real_rate:.0%} vs shuffled {noise_rate:.0%}")
 
     shuffled_passes = df[(df.kind == 'shuffled') & df.passes_gate]
     print("\n--- VERDICT ---")
