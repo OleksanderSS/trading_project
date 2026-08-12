@@ -663,17 +663,35 @@ class BaseTrainer(ABC):
                 return out
 
             if is_classif:
-                values, counts = np.unique(y_train[~pd.isna(y_train)], return_counts=True)
-                if values.size == 0:
+                # The BEST constant, not the most common one. F1 with
+                # average='binary' scores the positive class, so "always the
+                # majority class" is always-zero and scores exactly 0.0 — a
+                # bar anything clears by predicting a single true positive.
+                #
+                # The negative control found this within minutes: models
+                # trained on a SHUFFLED target passed the gate at the same
+                # rate as models trained on the real one, 28% each. They
+                # degenerate to predicting almost all ones, and always-ones
+                # scores 2p/(1+p) — 0.61 on a holdout with a 44% positive
+                # rate, against a majority-class bar of zero.
+                #
+                # Scoring every observed class and keeping the strongest makes
+                # the opponent what it should be: the best a model can do
+                # while learning nothing.
+                observed = np.unique(y_train[~pd.isna(y_train)])
+                if observed.size == 0:
                     return out
-                constant = values[int(np.argmax(counts))]
+                candidates = list(observed)
             else:
-                constant = float(np.nanmean(y_train))
+                candidates = [float(np.nanmean(y_train))]
 
-            constant_score = float(
-                self.evaluator.calculate(
-                    y_holdout, np.full(n, constant), task_type=task_type
-                ).get(metric_key, 0.0)
+            constant_score = max(
+                float(
+                    self.evaluator.calculate(
+                        y_holdout, np.full(n, candidate), task_type=task_type
+                    ).get(metric_key, 0.0)
+                )
+                for candidate in candidates
             )
             out['baseline_constant_score'] = constant_score
             out['baseline_score'] = constant_score

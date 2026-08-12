@@ -112,13 +112,16 @@ def test_gate_rejects_a_model_that_cannot_beat_the_naive_baseline():
     data = _classification_data()
     results = {}
 
-    # Predicts the majority class of train — exactly the baseline.
+    # Predicts one constant class. It cannot beat the best constant, which is
+    # what the bar is now — always-zero used to BE the bar and tied with it,
+    # scoring 0.0 against 0.0, until the negative control showed that a bar of
+    # zero is no bar at all.
     host._record_winner_test_score(_ConstantModel(0), data, True, results)
 
     metrics = results['winner_holdout_metrics']
     assert metrics['status'] == 'measured'
     assert metrics['baseline_score'] is not None
-    assert metrics['score'] == pytest.approx(metrics['baseline_score'])
+    assert metrics['score'] <= metrics['baseline_score']
 
     gate = host._evaluate_promotion_gate(results)
     assert gate['passed'] is False
@@ -267,7 +270,7 @@ def test_the_constant_still_wins_when_the_series_has_no_momentum():
     assert scores['baseline_persistence_score'] < scores['baseline_constant_score']
 
 
-def test_classification_keeps_the_majority_class_bar_only():
+def test_classification_keeps_the_constant_bar_only():
     host = _Host()
     data = _classification_data()
 
@@ -275,6 +278,44 @@ def test_classification_keeps_the_majority_class_bar_only():
 
     assert scores['baseline_kind'] == 'constant'
     assert 'baseline_persistence_score' not in scores
+
+
+def test_the_classification_bar_is_the_best_constant_not_the_most_common_one():
+    """The hole the negative control found, in one test.
+
+    F1 with average='binary' scores the POSITIVE class, so "always the
+    majority class" is always-zero and scores exactly 0.0. Any model that
+    predicts a single true positive clears it. Models trained on a SHUFFLED
+    target passed the gate at the same rate as models trained on the real one
+    — 28% each — by degenerating to almost-all-ones, which scores 2p/(1+p):
+    0.61 on a holdout with a 44% positive rate, against a bar of zero.
+    """
+    host = _Host()
+    n = 60
+    y_train = np.array([0] * 40 + [1] * 20)          # majority is 0
+    y_holdout = np.array([0, 1, 1] * (n // 3))       # 2/3 positive
+    data = {
+        'X_train': pd.DataFrame({'f': np.zeros(len(y_train))}),
+        'y_train': y_train,
+        'X_holdout': pd.DataFrame({'f': np.zeros(n)}),
+        'y_holdout': y_holdout,
+    }
+
+    scores = host._score_naive_baselines(data, True, 'classification', 'F1')
+
+    # Always-zero would score 0.0 here; always-one scores 2p/(1+p) = 0.8.
+    assert scores['baseline_score'] > 0.5, (
+        "the bar must be the best a model can do while learning nothing"
+    )
+
+    # And a model that merely predicts everything positive must NOT pass.
+    results = {'winner_holdout_metrics': {
+        'status': 'measured',
+        'score': scores['baseline_score'],
+        'baseline_score': scores['baseline_score'],
+        'holdout_sample_count': n,
+    }}
+    assert host._evaluate_promotion_gate(results)['passed'] is False
 
 
 def test_gate_can_be_disabled_to_restore_the_old_behaviour():
