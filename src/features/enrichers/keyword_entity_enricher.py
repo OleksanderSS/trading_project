@@ -24,7 +24,7 @@ class KeywordEntityEnricher(BaseEnricher):
         """Initialize with optional config from FeatureOrchestrator."""
         super().__init__()
         self.config = config or {}
-        keyword_config = self.config.get('keywords', {})
+        keyword_config = self.config.get('keywords') or self._knowledge_base_keywords()
         self.keyword_extractor = KeywordExtractor(keyword_config)
         entity_config = self.config.get('entities', {'spacy_model':
             'en_core_web_sm', 'disable_components': ['parser', 'lemmatizer',
@@ -140,6 +140,52 @@ class KeywordEntityEnricher(BaseEnricher):
             news_copy[time_col] = news_copy[time_col].dt.tz_localize(None)
         news_copy[time_col] = news_copy[time_col].astype(DATETIME64_NS)
         return news_copy.dropna(subset=[time_col])
+
+    @staticmethod
+    def _knowledge_base_keywords() -> dict[str, list[str]]:
+        """The list this project already keeps, rather than a second one.
+
+        `KeywordExtractor` matches pre-defined terms; it does not discover
+        them. Handed an empty config it matches nothing, and that is what it
+        was handed: `keyword_count` is 0 on all 55,565 rows of the
+        2026-08-13 batch, on every timeframe, with `keyword_entity_available`
+        0 beside it. The enricher still ran for 34-90 seconds per timeframe,
+        because entity extraction does work — so the cost was paid and half
+        the output was structurally zero.
+
+        Meanwhile `knowledge_base.keywords` holds 167 terms in 14 categories
+        (market_terms, finance_economy, sectors_tech, healthcare_biotech and
+        so on), and the collection stage already uses exactly this list to
+        decide which news to keep. Its shape -- category -> list of terms --
+        is the shape KeywordExtractor wants, so the two now read the same
+        source instead of one of them reading nothing.
+        """
+        try:
+            from src.config.unified_config_manager import get_current_config
+            knowledge_base = get_current_config().get_config('knowledge_base') or {}
+        except (ImportError, AttributeError, KeyError, TypeError) as exc:
+            logger.warning(
+                "Could not read knowledge_base keywords (%s: %s); keyword "
+                "counts will be zero for this run.", type(exc).__name__, exc,
+            )
+            return {}
+
+        keywords = knowledge_base.get('keywords') or {}
+        if isinstance(keywords, list):
+            keywords = {'knowledge_base': keywords}
+        if not isinstance(keywords, dict) or not keywords:
+            logger.warning(
+                "knowledge_base declares no keywords; keyword_count will be "
+                "zero for this run."
+            )
+            return {}
+
+        total = sum(len(v) for v in keywords.values() if isinstance(v, list))
+        logger.info(
+            "Keyword extraction using %d terms from %d knowledge_base "
+            "categories.", total, len(keywords),
+        )
+        return keywords
 
     def _extract_features(self, news_copy: pd.DataFrame, text_col: str
         ) ->pd.DataFrame:
