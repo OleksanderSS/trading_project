@@ -222,7 +222,10 @@ class YFCollector(BaseCollector):
 
         for _i, result in enumerate(results_from_threads):
             if isinstance(result, Exception):
-                self.logger.error(f"[YF] Download task failed: {result}")
+                self.logger.error(
+                    f"[YF] Download task failed: {type(result).__name__}: {result}",
+                    exc_info=result,
+                )
             elif isinstance(result, list) and result:
                 all_price_data.extend(result)
 

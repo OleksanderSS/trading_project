@@ -75,7 +75,11 @@ class NewsAPICollector(BaseCollector):
             if isinstance(res, list):
                 all_articles.extend(res)
             elif isinstance(res, Exception):
-                self.logger.error(f"[NewsAPI] Network error for term '{search_terms[i]}': {res}")
+                self.logger.error(
+                    f"[NewsAPI] Failed for term '{search_terms[i]}': "
+                    f"{type(res).__name__}: {res}",
+                    exc_info=res,
+                )
         return all_articles
 
     def _create_article_hash(self, df: pd.DataFrame) -> pd.DataFrame:

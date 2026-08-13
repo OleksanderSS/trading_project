@@ -144,7 +144,10 @@ class FredCollector(BaseCollector):
             if isinstance(res, list):
                 all_series_data.extend(res)
             elif isinstance(res, Exception):
-                self.logger.error(f"Error fetching FRED series: {res}")
+                self.logger.error(
+                    f"Error fetching FRED series: {type(res).__name__}: {res}",
+                    exc_info=res,
+                )
 
         if not all_series_data:
             return None

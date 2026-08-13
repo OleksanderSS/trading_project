@@ -96,7 +96,11 @@ class GoogleNewsCollector(BaseCollector):
         all_articles = []
         for i, res in enumerate(results):
             if isinstance(res, Exception):
-                self.logger.error(f"Logic parse constraints execution mapped index block boundary failure '{all_terms[i]}': {res}")
+                self.logger.error(
+                    f"Failed to fetch Google News for '{all_terms[i]}': "
+                    f"{type(res).__name__}: {res}",
+                    exc_info=res,
+                )
             elif res:
                 all_articles.extend(res)
         return all_articles
