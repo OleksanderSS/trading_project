@@ -90,6 +90,11 @@ def inspect_source_routing(
     warnings = [*material_warnings]
     if collector_inventory_path and inventory is None:
         warnings.append(f"Collector inventory JSON could not be read: {collector_inventory_path}")
+    elif inventory is not None and not collector_records:
+        warnings.append(
+            "Collector inventory carried no 'configured_collectors' entries, so no collector "
+            f"was routed (source: {collector_inventory_path or 'live scan of src/config/collectors.yaml'})."
+        )
 
     recommendations = _recommendations(material_records, collector_records, analyst_inputs, warnings)
     routable_count = len(material_records) + len(collector_records)
@@ -152,13 +157,37 @@ def _load_collector_inventory(
     collector_inventory: dict[str, Any] | None,
 ) -> dict[str, Any] | None:
     if collector_inventory:
-        return collector_inventory
+        return _unwrap_collector_inventory(collector_inventory)
     if not collector_inventory_path:
-        return None
+        # No snapshot requested: scan the live collector config instead of reporting
+        # zero collectors. run_agent_collector_inventory.py no longer exists, so a
+        # saved snapshot is the exception, not the normal input.
+        from dean_os.collector_inventory_scan import inspect_collector_inventory
+
+        return inspect_collector_inventory()
     try:
-        return json.loads(Path(collector_inventory_path).read_text(encoding="utf-8"))
+        payload = json.loads(Path(collector_inventory_path).read_text(encoding="utf-8"))
     except Exception:
         return None
+    return _unwrap_collector_inventory(payload)
+
+
+def _unwrap_collector_inventory(payload: dict[str, Any]) -> dict[str, Any] | None:
+    """Accept either a bare inventory or a saved CLI payload that nests one.
+
+    ``run_agent_collector_inventory.py`` used to save
+    ``{"run_id", "mode", "inputs", "report", "collector_inventory"}``. Reading that
+    envelope as if it were the inventory itself found no ``configured_collectors``
+    and silently routed zero collectors.
+    """
+    if not isinstance(payload, dict):
+        return None
+    if "configured_collectors" in payload:
+        return payload
+    nested = payload.get("collector_inventory")
+    if isinstance(nested, dict) and "configured_collectors" in nested:
+        return nested
+    return payload
 
 
 def _inspect_collectors(inventory: dict[str, Any] | None) -> list[dict[str, Any]]:

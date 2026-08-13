@@ -334,7 +334,10 @@ def _commands(
     refreshed_inbox = "reports/dean_os/analyst_review_inbox_refreshed"
     refreshed_packet = "reports/dean_os/review_decision_packet_refreshed"
     return {
-        "source_routing_snapshot": "python run_agent_source_routing.py MATERIALS_PATH --collector-inventory reports/dean_os/collector_inventory/latest.json",
+        # No --collector-inventory: the agent scans src/config/collectors.yaml live.
+        # The old snapshot path is frozen at whenever the archived
+        # CollectorInventoryAgent last ran, and nothing regenerates it.
+        "source_routing_snapshot": "python run_agent_source_routing.py MATERIALS_PATH",
         "rebuild_evidence_pack_after_sources_added": " ".join(evidence_parts),
         "rerun_profiles_after_pack": (
             f"python run_agent_analyst_profiles.py {refreshed_pack} "

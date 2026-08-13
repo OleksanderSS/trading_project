@@ -10,7 +10,11 @@ from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
 
 DEFAULT_COVERAGE_PLAN_PATH = "reports/dean_os/outcome_price_coverage_plan/latest.json"
-DEFAULT_COLLECTOR_INVENTORY_PATH = "reports/dean_os/collector_inventory/latest.json"
+# Sentinel for collector_inventory_path: scan src/config/collectors.yaml now rather
+# than read a saved snapshot. The snapshot's producer (CollectorInventoryAgent) was
+# archived on 2026-07-24, so any file under reports/dean_os/collector_inventory/ is
+# frozen at whatever the collector config looked like when it was last written.
+LIVE_COLLECTOR_INVENTORY = "live"
 DEFAULT_PRICE_GLOBS = [
     "data/processed/prices_*.parquet",
     "data/processed/prices_*.csv",
@@ -29,15 +33,21 @@ class MarketDataRefreshRunbook:
     def build(
         self,
         coverage_plan_path: str | Path = DEFAULT_COVERAGE_PLAN_PATH,
-        collector_inventory_path: str | Path | None = DEFAULT_COLLECTOR_INVENTORY_PATH,
+        collector_inventory_path: str | Path | None = LIVE_COLLECTOR_INVENTORY,
         price_globs: list[str] | None = None,
         max_price_artifacts: int = 25,
         refreshed_price_placeholder: str = REFRESHED_PRICE_PLACEHOLDER,
         save: bool = True,
+        collector_config_path: str | Path | None = None,
+        collectors_dir: str | Path | None = None,
     ) -> dict[str, Any]:
         coverage_plan = _load_optional_json(coverage_plan_path)
         readiness_artifact = _load_optional_json(coverage_plan.get("inputs", {}).get("readiness_path")) if coverage_plan else {}
-        collector_inventory = _load_optional_json(collector_inventory_path) if collector_inventory_path else {}
+        collector_inventory = _resolve_collector_inventory(
+            collector_inventory_path,
+            collector_config_path=collector_config_path,
+            collectors_dir=collectors_dir,
+        )
         requirements = _requirements(coverage_plan)
         price_feeds = _price_feeds(collector_inventory)
         known_artifacts = _known_price_artifacts(
@@ -54,6 +64,10 @@ class MarketDataRefreshRunbook:
             "inputs": {
                 "coverage_plan_path": str(coverage_plan_path),
                 "collector_inventory_path": str(collector_inventory_path) if collector_inventory_path else None,
+                "collector_inventory_source": collector_inventory.get("inventory_source"),
+                "collector_inventory_config_path": collector_inventory.get("config_path"),
+                "collector_inventory_as_of": collector_inventory.get("scanned_at")
+                or collector_inventory.get("snapshot_written_at"),
                 "price_globs": price_globs or DEFAULT_PRICE_GLOBS,
                 "max_price_artifacts": max_price_artifacts,
                 "refreshed_price_placeholder": refreshed_price_placeholder,
@@ -174,6 +188,51 @@ def _load_optional_json(path: str | Path | None) -> dict[str, Any]:
         return {}
 
 
+def _resolve_collector_inventory(
+    collector_inventory_path: str | Path | None,
+    collector_config_path: str | Path | None = None,
+    collectors_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    """Scan the collector config live, or read an explicitly requested snapshot.
+
+    A snapshot is only as current as the file's mtime, and nothing regenerates it
+    any more, so it is tagged ``inventory_source: snapshot`` and its own age is
+    reported. Live scans carry ``inventory_source: live``.
+    """
+    if not collector_inventory_path:
+        return {}
+    if str(collector_inventory_path) == LIVE_COLLECTOR_INVENTORY:
+        from dean_os.collector_inventory_scan import (
+            DEFAULT_COLLECTORS_DIR,
+            DEFAULT_CONFIG_PATH,
+            inspect_collector_inventory,
+        )
+
+        inventory = inspect_collector_inventory(
+            config_path=collector_config_path or DEFAULT_CONFIG_PATH,
+            collectors_dir=collectors_dir or DEFAULT_COLLECTORS_DIR,
+        )
+        inventory["inventory_source"] = "live"
+        inventory["scanned_at"] = utc_now_iso()
+        return inventory
+
+    inventory = _load_optional_json(collector_inventory_path)
+    if not inventory:
+        return {}
+    inventory = dict(inventory.get("collector_inventory") or inventory)
+    inventory["inventory_source"] = "snapshot"
+    inventory["snapshot_path"] = str(collector_inventory_path)
+    inventory["snapshot_written_at"] = _file_mtime_iso(collector_inventory_path)
+    return inventory
+
+
+def _file_mtime_iso(path: str | Path) -> str | None:
+    try:
+        return datetime.fromtimestamp(Path(path).stat().st_mtime, tz=UTC).isoformat()
+    except OSError:
+        return None
+
+
 def _requirements(coverage_plan: dict[str, Any]) -> dict[str, Any]:
     if not coverage_plan:
         return {
@@ -292,7 +351,18 @@ def _validation(
         return {
             "status": "blocked_missing_collector_inventory",
             "can_plan": True,
-            "reasons": ["Collector inventory is missing; run collector inventory before choosing a refresh path."],
+            "reasons": [
+                "Collector inventory is empty: src/config/collectors.yaml could not be read, "
+                "or collector_inventory_path was set to None."
+            ],
+        }
+    if collector_inventory.get("summary", {}).get("status") == "unavailable":
+        return {
+            "status": "blocked_unreadable_collector_config",
+            "can_plan": False,
+            "reasons": [
+                str(collector_inventory.get("summary", {}).get("reason") or "Collector config is unreadable.")
+            ],
         }
     enabled_price_feeds = [feed for feed in price_feeds if feed.get("enabled") and feed.get("class_found")]
     if not enabled_price_feeds:
@@ -324,8 +394,9 @@ def _tasks(
             _task(
                 "build_collector_inventory",
                 "high",
-                "Build CollectorInventoryAgent output before choosing a local price refresh path.",
-                {"expected_artifact": DEFAULT_COLLECTOR_INVENTORY_PATH},
+                "Make src/config/collectors.yaml readable so the live collector scan can run, "
+                "or pass a saved inventory JSON via collector_inventory_path.",
+                {"expected_input": "src/config/collectors.yaml"},
             )
         )
     if status == "blocked_no_enabled_price_feed":
@@ -465,10 +536,12 @@ def _commands(
     market_freshness_after_refresh.extend(["--output-dir", "reports/dean_os/market_freshness_after_price_refresh"])
 
     return {
+        # There is no run_agent_collector_inventory.py: the agent was archived on
+        # 2026-07-24. The inventory is now scanned in-process on every build, so the
+        # operator has nothing to refresh by hand.
         "refresh_collector_inventory": (
-            f"python run_agent_collector_inventory.py --output {collector_inventory_path}"
-            if collector_inventory_path
-            else "python run_agent_collector_inventory.py --output reports/dean_os/collector_inventory/latest.json"
+            "not required: dean_os.collector_inventory_scan.inspect_collector_inventory() "
+            "runs during this build and reads src/config/collectors.yaml directly"
         ),
         "inspect_refreshed_market_freshness": " ".join(market_freshness_after_refresh),
         "rerun_outcome_readiness_after_refresh": readiness_after_refresh,
@@ -563,7 +636,12 @@ def _collector_inventory_status(collector_inventory: dict[str, Any]) -> str:
     if not collector_inventory:
         return "missing"
     inventory = collector_inventory.get("collector_inventory", collector_inventory)
-    return str(inventory.get("summary", {}).get("status") or "unknown")
+    status = str(inventory.get("summary", {}).get("status") or "unknown")
+    # A snapshot's status describes the config as it was when the file was written,
+    # not as it is now, so never let it read as a current "ok".
+    if collector_inventory.get("inventory_source") == "snapshot":
+        return f"snapshot_{status}"
+    return status
 
 
 def _task(task_id: str, priority: str, description: str, target: dict[str, Any]) -> dict[str, Any]:

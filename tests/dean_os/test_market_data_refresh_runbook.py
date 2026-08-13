@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.market_data_refresh_runbook import MarketDataRefreshRunbook
+from dean_os.market_data_refresh_runbook import LIVE_COLLECTOR_INVENTORY, MarketDataRefreshRunbook
 
 
 def _write_json(path, payload):
@@ -137,6 +137,101 @@ def test_market_data_refresh_runbook_requests_inventory_when_missing(tmp_path):
     task_ids = {task["task_id"] for task in payload["operator_tasks"]}
     assert "build_collector_inventory" in task_ids
     assert "produce_refreshed_price_artifact" in task_ids
+
+
+def test_live_inventory_reads_current_collector_config(tmp_path):
+    """The default path must scan collectors.yaml, not a frozen snapshot.
+
+    The snapshot producer (CollectorInventoryAgent) was archived on 2026-07-24, so a
+    saved artifact reports whatever the config looked like when it was last written.
+    """
+    readiness = _readiness_artifact(tmp_path / "readiness.json")
+    coverage = _coverage_plan(tmp_path / "coverage.json", readiness)
+    config = tmp_path / "collectors.yaml"
+    config.write_text(
+        "collectors:\n"
+        "  yahoo_finance:\n"
+        "    type: yahoo_finance\n"
+        "    enabled: true\n"
+        "    critical: true\n",
+        encoding="utf-8",
+    )
+
+    collectors_dir = tmp_path / "collectors"
+    collectors_dir.mkdir()
+    (collectors_dir / "yf_collector.py").write_text(
+        "class YFCollector:\n"
+        "    collector_type = 'yahoo_finance'\n"
+        "    data_type = 'market_data'\n",
+        encoding="utf-8",
+    )
+
+    payload = MarketDataRefreshRunbook(tmp_path / "reports").build(
+        coverage_plan_path=coverage,
+        collector_inventory_path=LIVE_COLLECTOR_INVENTORY,
+        price_globs=[],
+        save=False,
+        collector_config_path=config,
+        collectors_dir=collectors_dir,
+    )
+
+    assert payload["inputs"]["collector_inventory_source"] == "live"
+    assert payload["inputs"]["collector_inventory_as_of"] is not None
+    assert payload["summary"]["collector_inventory_status"] == "ok"
+    assert payload["summary"]["primary_price_feed"] == "yahoo_finance"
+    assert payload["inputs"]["collector_inventory_config_path"] == str(config)
+
+
+def test_live_inventory_blocks_on_unreadable_collector_config(tmp_path):
+    readiness = _readiness_artifact(tmp_path / "readiness.json")
+    coverage = _coverage_plan(tmp_path / "coverage.json", readiness)
+
+    payload = MarketDataRefreshRunbook(tmp_path / "reports").build(
+        coverage_plan_path=coverage,
+        collector_inventory_path=LIVE_COLLECTOR_INVENTORY,
+        price_globs=[],
+        save=False,
+        collector_config_path=tmp_path / "no_such_collectors.yaml",
+        collectors_dir=tmp_path / "no_such_dir",
+    )
+
+    assert payload["summary"]["runbook_status"] == "blocked_unreadable_collector_config"
+    assert payload["validation"]["can_plan"] is False
+
+
+def test_snapshot_inventory_is_never_reported_as_current(tmp_path):
+    readiness = _readiness_artifact(tmp_path / "readiness.json")
+    coverage = _coverage_plan(tmp_path / "coverage.json", readiness)
+    inventory = _collector_inventory(tmp_path / "inventory.json")
+
+    payload = MarketDataRefreshRunbook(tmp_path / "reports").build(
+        coverage_plan_path=coverage,
+        collector_inventory_path=inventory,
+        price_globs=[],
+        save=False,
+    )
+
+    assert payload["inputs"]["collector_inventory_source"] == "snapshot"
+    assert payload["inputs"]["collector_inventory_as_of"] is not None
+    assert payload["summary"]["collector_inventory_status"] == "snapshot_ok"
+
+
+def test_runbook_no_longer_points_at_the_archived_inventory_agent(tmp_path):
+    readiness = _readiness_artifact(tmp_path / "readiness.json")
+    coverage = _coverage_plan(tmp_path / "coverage.json", readiness)
+    inventory = _collector_inventory(tmp_path / "inventory.json")
+
+    payload = MarketDataRefreshRunbook(tmp_path / "reports").build(
+        coverage_plan_path=coverage,
+        collector_inventory_path=inventory,
+        price_globs=[],
+        save=False,
+    )
+
+    commands = " ".join(str(value) for value in payload["commands"].values())
+    tasks = json.dumps(payload["operator_tasks"])
+    assert "run_agent_collector_inventory.py" not in commands
+    assert "run_agent_collector_inventory.py" not in tasks
 
 
 def test_market_data_refresh_runbook_rechecks_when_coverage_ready(tmp_path):
