@@ -178,15 +178,43 @@ class MacroFeaturesEnricher(BaseEnricher):
         if ('series_id' not in macro_data.columns or 'value' not in
             macro_data.columns):
             return macro_data
+        # Key on when the figure BECAME KNOWN, not on the period it
+        # describes. Indexing by the observation date and merging backward
+        # made every macro series visible from the first day of its reference
+        # period: CPI for July, published on 12 August, reached bars dated 1
+        # July -- six weeks of look-ahead in 44 columns, on every model that
+        # used them, invisible to walk-forward because the leak is identical
+        # in every fold.
+        #
+        # `available_at` is derived in Stage 1 from the vintage's
+        # realtime_start and validated in Stage 2; it was simply never
+        # consulted here. The observation date is kept alongside for
+        # reference and diagnostics.
         date_col = None
-        for col in ['date', 'datetime', 'realtime_start']:
+        for col in ['available_at', 'released_at', 'realtime_start',
+                    'date', 'datetime']:
             if col in macro_data.columns:
                 date_col = col
                 break
         if not date_col:
             logger.warning('No date column found in macro_data for pivoting')
             return macro_data
-        macro_data[date_col] = pd.to_datetime(macro_data[date_col])
+        if date_col in ('date', 'datetime'):
+            logger.warning(
+                "Macro pivot is keyed on '%s' — the period a figure "
+                "describes, not when it was published. Every series will be "
+                "visible from the start of its reference period. Collect "
+                "realtime_start (see FredCollector) to fix this.", date_col,
+            )
+        macro_data[date_col] = pd.to_datetime(
+            macro_data[date_col], errors='coerce', utc=True
+        ).dt.tz_localize(None)
+        macro_data = macro_data[macro_data[date_col].notna()]
+        if macro_data.empty:
+            logger.warning(
+                "No macro rows carry a usable %s; nothing to pivot.", date_col
+            )
+            return macro_data
 
         # aggfunc='last' collapses the duplicates FRED sends -- 8,048
         # (series, date) pairs in the stored table carry up to 10 rows each

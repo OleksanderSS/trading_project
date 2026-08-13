@@ -40,16 +40,27 @@ def _long(rows):
     )
 
 
-def test_the_latest_vintage_wins(enricher):
-    """The regression: row order decided which revision survived."""
+def test_each_vintage_appears_at_its_own_publication_date(enricher):
+    """Rewritten 2026-08-13, when the pivot moved onto publication dates.
+
+    It used to assert that the newest revision won a single row keyed on the
+    observation date. That keying is what made CPI for July visible to bars
+    dated 1 July, six weeks before its release, so the property changed
+    shape: a revision does not overwrite the original, it becomes known
+    later. Which value a bar sees is then decided by the merge, correctly,
+    from when that bar is.
+    """
     frame = _long([
-        ("DGS10", "2026-01-05", 4.10, "2026-03-01"),   # newest, listed first
+        ("DGS10", "2026-01-05", 4.10, "2026-03-01"),   # revision, listed first
         ("DGS10", "2026-01-05", 4.00, "2026-01-06"),   # original print
     ])
 
     pivoted = enricher._pivot_macro_data(frame)
 
-    assert pivoted.loc[pd.Timestamp("2026-01-05"), "FRED_DGS10"] == pytest.approx(4.10)
+    assert pivoted.loc[pd.Timestamp("2026-01-06"), "FRED_DGS10"] == pytest.approx(4.00)
+    assert pivoted.loc[pd.Timestamp("2026-03-01"), "FRED_DGS10"] == pytest.approx(4.10)
+    # Nothing at all is known on the observation date itself.
+    assert pd.Timestamp("2026-01-05") not in pivoted.index
 
 
 def test_the_result_holds_regardless_of_row_order(enricher):
@@ -60,22 +71,39 @@ def test_the_result_holds_regardless_of_row_order(enricher):
     forward = enricher._pivot_macro_data(_long(rows))
     reversed_ = enricher._pivot_macro_data(_long(list(reversed(rows))))
 
-    assert (
-        forward.loc[pd.Timestamp("2026-01-05"), "FRED_DGS10"]
-        == reversed_.loc[pd.Timestamp("2026-01-05"), "FRED_DGS10"]
-    )
+    assert forward["FRED_DGS10"].equals(reversed_["FRED_DGS10"])
 
 
-def test_identical_duplicates_collapse_to_one_row(enricher):
-    """Row multiplication downstream is the thing that must not happen."""
+def test_a_republished_value_never_multiplies_the_bars(enricher):
+    """Row multiplication downstream is the thing that must not happen.
+
+    Under publication-date keying five re-publications of one number are
+    five rows, not one -- each is a real moment at which that number was
+    the current print. What must not follow is bars multiplying, and
+    merge_asof does not multiply: it picks the latest row at or before each
+    bar. That is the property, checked where it lives.
+    """
     frame = _long([
         ("DGS10", "2026-01-05", 4.00, f"2026-0{i}-01") for i in range(1, 6)
     ])
 
     pivoted = enricher._pivot_macro_data(frame)
+    assert pivoted["FRED_DGS10"].tolist() == pytest.approx([4.00] * 5)
 
-    assert len(pivoted) == 1
-    assert pivoted.iloc[0]["FRED_DGS10"] == pytest.approx(4.00)
+    bars = pd.DataFrame({
+        "datetime": pd.date_range("2026-06-01", periods=10, freq="D"),
+        "ticker": ["AAPL"] * 10,
+        "close": range(10),
+    })
+    macro_wide = pivoted.copy()
+    macro_wide.index.name = "datetime"
+    merged = pd.merge_asof(
+        bars.sort_values("datetime"),
+        macro_wide.reset_index().sort_values("datetime"),
+        on="datetime", direction="backward",
+    )
+    assert len(merged) == len(bars)
+    assert merged["FRED_DGS10"].tolist() == pytest.approx([4.00] * 10)
 
 
 def test_several_series_become_several_columns(enricher):

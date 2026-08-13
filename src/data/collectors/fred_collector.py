@@ -189,6 +189,31 @@ class FredCollector(BaseCollector):
             "api_key": api_key,
             "file_type": "json",
             "observation_start": observation_start or self.start_date,
+            # Ask for every vintage, not just today's. Without these two
+            # parameters FRED returns the current revision of each
+            # observation and stamps them all with the request date:
+            #
+            #   date=2025-07-01  realtime_start=2026-08-13  value=322.169
+            #
+            # 7,939 stored rows carried 21 distinct realtime_start values,
+            # all within days of the last collection — so the column that
+            # Stage 1 turns into `available_at`, and that Stage 2's
+            # point-in-time check validates, was recording when we fetched
+            # the number rather than when it was published. The check passed
+            # on a value that did not mean what the check assumed.
+            #
+            # With the vintage window, the same request returns the truth:
+            #
+            #   date=2025-07-01  realtime_start=2025-08-12  value=322.132
+            #   date=2025-07-01  realtime_start=2026-02-13  value=322.169
+            #
+            # July's CPI became public on 12 August, 42 days after the date
+            # it is filed under, and was revised in February. Both facts are
+            # needed: the first to stop macro features from being visible
+            # before they existed, the second so a bar sees the number that
+            # was current then rather than today's restatement.
+            "realtime_start": "1776-07-04",
+            "realtime_end": "9999-12-31",
         }
         if observation_end:
             params["observation_end"] = observation_end
