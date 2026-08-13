@@ -55,6 +55,26 @@ _METRIC_KEY_MAP: dict[str, str] = {
 
 _FRESHNESS_THRESHOLD_HOURS = 24.0
 
+# The minimum a Stage 7 result must actually carry before "clear" means anything.
+# validation_score is the score the verdict is about; sample_count says whether it
+# was measured on enough data; the timestamp is what the staleness check needs, and
+# without it an artifact of unknown age would silently pass as fresh.
+_DECISION_EVIDENCE = ("validation_score", "sample_count", "evaluation_timestamp")
+
+
+def _missing_decision_evidence(
+    *,
+    validation_score: float | None,
+    sample_count: int | None,
+    evaluation_timestamp: Any,
+) -> list[str]:
+    observed = {
+        "validation_score": validation_score is not None,
+        "sample_count": sample_count is not None,
+        "evaluation_timestamp": bool(evaluation_timestamp),
+    }
+    return [name for name in _DECISION_EVIDENCE if not observed[name]]
+
 
 class PipelineBridge:
     """
@@ -215,10 +235,31 @@ class PipelineBridge:
                 failures.append("evaluation_artifact_stale")
             flat["evaluation_age_hours"] = round(age_h, 2)
 
+        # Absence of evidence is not evidence of health. Every threshold above is
+        # guarded by "is not None", so a Stage 7 result carrying no metrics failed
+        # no check and used to arrive as verdict="clear" -- an agent reading that
+        # concluded the model was fine when nothing had been examined. While the
+        # pipeline is under repair, partial and empty Stage 7 output is the normal
+        # case, so this is the shape that would mislead most often.
+        missing = _missing_decision_evidence(
+            validation_score=val_score,
+            sample_count=n_samples,
+            evaluation_timestamp=eval_ts,
+        )
+        if missing:
+            failures.append("missing_evaluation_metrics")
+
+        # verdict stays two-valued because consumers test it literally
+        # (dean_os/agents/tuning.py, dean_os/agents/operations.py both compare
+        # == "caution"); a third value would read as "not caution", i.e. as clear,
+        # to every consumer that has not been updated. evidence_status carries the
+        # distinction those consumers cannot express.
         verdict = "caution" if failures else "clear"
         flat.update({
             "threshold_failures": failures,
             "verdict": verdict,
+            "evidence_status": "insufficient_evidence" if missing else "evaluated",
+            "missing_evidence": missing,
             "performance_score": val_score,
             # Scope fields TuningAgent uses for exact lineage
             "evaluation_scope": {
@@ -286,6 +327,9 @@ class PipelineBridge:
                 "model_performance": {
                     "threshold_failures": ["missing_evaluation_metrics"],
                     "verdict": "caution",
+                    "evidence_status": "insufficient_evidence",
+                    "missing_evidence": list(_DECISION_EVIDENCE),
+                    "performance_score": None,
                 },
                 "source": "pipeline_bridge.empty_fallback",
             },
