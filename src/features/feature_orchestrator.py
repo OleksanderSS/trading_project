@@ -248,6 +248,7 @@ class FeatureOrchestrator:
 
         self._warn_if_row_identity_changed(enricher, df, df_enriched)
         df_enriched = self._restore_input_row_order(enricher, df, df_enriched)
+        df_enriched = self._restore_input_row_labels(enricher, df, df_enriched)
 
         # ✅ Lineage tracking — captures what each enricher adds
         tracker = get_lineage_tracker()
@@ -324,6 +325,47 @@ class FeatureOrchestrator:
                     )
         except (AttributeError, TypeError, ValueError) as e:  # never block the pipeline
             logger.debug(f"Row-identity check skipped for '{getattr(enricher, 'name', '?')}': {e}")
+
+    @staticmethod
+    def _restore_input_row_labels(enricher, before: pd.DataFrame, after: pd.DataFrame) -> pd.DataFrame:
+        """Hand back the row labels the enricher was given.
+
+        Several enrichers set `datetime` as their index on the way through --
+        macro_features is the first, sentiment_features and hype_features
+        follow -- and two tickers share the same timestamps, so a multi-ticker
+        frame comes back with duplicate labels. Measured across a real chain
+        on two tickers: 0 duplicates in, 147 after macro_features, 299 from
+        nlp_features onward.
+
+        ContextMapEnricher reindexes internally and cannot:
+
+            ContextMapEnricher validation error: cannot reindex on an axis
+            with duplicate labels
+            Enricher 'context_map' completed: +0 columns in 0.10s
+
+        191 features lost on every timeframe of the 2026-08-13 rebuild.
+
+        Fixing it in each enricher would be fixing it once per enricher, and
+        the next one written would reintroduce it. The rows here are the same
+        rows in the same order -- _restore_input_row_order has just seen to
+        that -- so the labels can simply be given back. The datetime is
+        rescued into a column first when it lives only in the index, because
+        overwriting the index would otherwise destroy the timestamps.
+        """
+        if len(after) != len(before) or not after.index.has_duplicates:
+            return after
+        if before.index.has_duplicates:
+            return after
+
+        after = after.copy()
+        if 'datetime' not in after.columns and isinstance(after.index, pd.DatetimeIndex):
+            after.insert(0, 'datetime', after.index)
+        after.index = before.index
+        logger.info(
+            "Restored input row labels after enricher '%s': its index was not "
+            "unique (shared timestamps across tickers).", enricher.name,
+        )
+        return after
 
     @staticmethod
     def _restore_input_row_order(enricher, before: pd.DataFrame, after: pd.DataFrame) -> pd.DataFrame:
