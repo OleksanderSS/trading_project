@@ -118,10 +118,17 @@ collectors:
     cache_ttl: 86400
     critical: false
     enabled: true
+    # These named columns the collector does not produce. It emits date,
+    # value, timestamp, fear_greed_category and fear_greed_signal, so the
+    # unique index could not be built and every save failed with
+    #   Binder Error: Table "fear_greed_data" does not have a column
+    #   named "fear_greed_index"
+    # — invisible until the endpoint was repaired on 2026-08-12 and the
+    # collector reached the save path for the first time.
     hash_keys:
     - date
-    - fear_greed_index
-    - classification
+    - value
+    - fear_greed_category
     table_name: fear_greed_data
     type: fear_greed
   fred:

@@ -498,9 +498,6 @@ class DataManager(IDatabaseManager):
             return df
 
         hash_col = unique_cols[0] if unique_cols else 'hash'
-        if hash_col not in df.columns:
-            logger.warning(f"Hash column '{hash_col}' not found in DataFrame for table '{table_name}'. Cannot filter new records.")
-            return df
 
         # The column has to exist on BOTH sides. Only the DataFrame was
         # checked, so a table whose hash column is spelled differently blew up
@@ -517,7 +514,22 @@ class DataManager(IDatabaseManager):
                 [table_name],
             ).fetchall()
         }
-        if hash_col not in table_columns:
+        # The column has to exist on both sides, and the fallback has to apply
+        # to both. It used to cover only the table: a DataFrame missing the
+        # requested column returned early, unfiltered, before this ran.
+        #
+        # wikimedia_attention is the case that showed it. The collector calls
+        # this with unique_cols=['record_hash'], but the orchestrator's own
+        # save path calls it without, so hash_col defaulted to 'hash' — absent
+        # from a frame that carries 'record_hash'. Deduplication was skipped
+        # with a warning, and the insert then died on the unique index:
+        #
+        #   Constraint Error: Duplicate key "record_hash: 3dfe545b..."
+        #
+        # so the collector delivered rows and saved none of them. Note the
+        # shape: the guard reported the problem correctly and then made it
+        # worse, because "cannot filter" was treated as "carry on".
+        if hash_col not in table_columns or hash_col not in df.columns:
             fallback = next(
                 (candidate for candidate in ('record_hash', 'hash')
                  if candidate in table_columns and candidate in df.columns),
@@ -525,15 +537,19 @@ class DataManager(IDatabaseManager):
             )
             if fallback is None:
                 logger.warning(
-                    "Table '%s' has no column '%s' (and no shared fallback); "
-                    "skipping new-record filtering. Incoming rows rely on the "
-                    "table's unique index for protection. Table columns: %s",
+                    "No hash column shared by table '%s' and the incoming "
+                    "frame (wanted '%s'); skipping new-record filtering. "
+                    "Incoming rows rely on the table's unique index for "
+                    "protection, and will fail the insert if any repeat. "
+                    "Table columns: %s | frame columns: %s",
                     table_name, hash_col, sorted(table_columns)[:8],
+                    sorted(df.columns)[:8],
                 )
                 return df
-            logger.warning(
-                "Table '%s' has no column '%s'; falling back to '%s' for "
-                "duplicate filtering.", table_name, hash_col, fallback,
+            logger.info(
+                "Deduplicating '%s' on '%s' rather than '%s': that is the "
+                "column both the table and the incoming frame carry.",
+                table_name, fallback, hash_col,
             )
             hash_col = fallback
 

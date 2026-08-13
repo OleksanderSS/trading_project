@@ -24,8 +24,12 @@ class FearGreedCollector(BaseCollector):
         self.enabled = self.configs.get('enabled', True)
         self.timeout = self.configs.get('timeout', 30)
         self.table_name = self.configs.get('table_name', 'fear_greed_data')
-        self.hash_keys = self.configs.get('hash_keys', ['date',
-            'fear_greed_index', 'classification'])
+        # Default must name columns this collector actually emits -- see
+        # _standardize_columns below. The previous default ('fear_greed_index',
+        # 'classification') named none of them, so the unique index could not
+        # be created and every save raised a Binder Error.
+        self.hash_keys = self.configs.get('hash_keys', ['date', 'value',
+            'fear_greed_category'])
         # production.datapoint.cloud no longer completes a TLS handshake --
         # the host is gone, and the collector's own 404 branch could never
         # report that because the failure happens before any status exists.
