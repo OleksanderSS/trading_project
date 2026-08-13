@@ -110,11 +110,31 @@ def _load_source_tables(limit: int = 20000) -> tuple[pd.DataFrame | None,
 
 
 def _column_shapes(frame: pd.DataFrame, added: list[str]) -> dict[str, int]:
+    """Judge a column on its own terms.
+
+    The first version ran every column through `pd.to_numeric` and called
+    the result empty when it was all NaN. That is right for numbers and
+    wrong for the categorical features this pipeline produces:
+    MARKET_REGIME, volatility_regime, context_fingerprint and
+    context_pattern_seq are strings, so they coerced to NaN and were
+    reported dead while varying perfectly well. Three of the five columns
+    the report first flagged were its own mistake.
+    """
     constant, empty, live = 0, 0, 0
     dead_names = []
     for column in added:
-        values = pd.to_numeric(frame[column], errors="coerce")
-        if values.notna().sum() == 0:
+        series = frame[column]
+        if pd.api.types.is_numeric_dtype(series):
+            values = series
+        else:
+            coerced = pd.to_numeric(series, errors="coerce")
+            # Numeric-looking strings stay numeric; anything else is judged
+            # as a category, where "how many distinct values" is the whole
+            # question anyway.
+            values = coerced if coerced.notna().any() else series
+
+        non_null = values.notna().sum()
+        if non_null == 0:
             empty += 1
             dead_names.append(column)
         elif values.nunique(dropna=True) <= 1:
@@ -190,6 +210,14 @@ def main() -> int:
     print("-" * 64)
     print(f"{'TOTAL':26s} {sum(totals.values()):6d} {totals['live']:6d} "
           f"{totals['constant']:6d} {totals['empty']:6d}")
+
+    if totals["constant"]:
+        # A slice is a slice. `quarter` is constant across 300 fifteen-minute
+        # bars because they fall in one quarter, not because it is broken.
+        # Raise --rows before believing a slow-moving feature is dead.
+        print("\nA constant over a short slice can be the slice: features that "
+              "move slowly (quarter, month, regime) need --rows large enough "
+              "to contain a change.")
 
     if suspect:
         print("\nProduced nothing that varies — every column constant or empty:")
