@@ -25,6 +25,13 @@ _CACHE_PATH = Path("data/cache/sentiment/finbert_scores.parquet")
 _CACHE_MODEL = "ProsusAI/finbert"
 _CACHE_LOADED = False
 _CACHE_DIRTY = False
+#: Rows scored since the last write. A crash costs at most this many.
+_SAVE_EVERY = 500
+_CACHE_SAVED_SIZE = 0
+
+
+def _last_saved_size() -> int:
+    return _CACHE_SAVED_SIZE
 
 
 def _stable_hash(text: str) -> str:
@@ -57,6 +64,7 @@ def load_sentiment_cache() -> int:
             _CACHE[key] = {"text": row.get("text", ""),
                            "label": row.get("label", "neutral"),
                            "score": float(row.get("score", 0.0))}
+    globals()['_CACHE_SAVED_SIZE'] = len(_CACHE)
     logger.info("Sentiment cache: %d texts already scored.", len(_CACHE))
     return len(_CACHE)
 
@@ -80,6 +88,7 @@ def save_sentiment_cache() -> int:
         frame.to_parquet(temporary, index=False)
         temporary.replace(_CACHE_PATH)
         _CACHE_DIRTY = False
+        globals()['_CACHE_SAVED_SIZE'] = len(_CACHE)
         logger.info("Sentiment cache: %d texts stored.", len(frame))
         return len(frame)
     except Exception as exc:                      # noqa: BLE001 - cache only
@@ -175,6 +184,14 @@ def analyze_sentiment(texts: list[str], batch_size: int = 16, device: int = None
         # Process uncached texts
         batch_rows = _process_batch(pipe, uncached_texts, uncached_indices, batch, label_map, i, **kwargs)
         rows.extend(batch_rows)
+
+        # Save as we go, not only at the end. Scoring this project's corpus
+        # takes over two hours on CPU, and a run stopped part-way -- which
+        # has happened three times in one day, between a Windows update and
+        # two deliberate restarts -- lost every score it had computed. The
+        # write is a few hundred kilobytes against ten minutes of work.
+        if len(_CACHE) - _last_saved_size() >= _SAVE_EVERY:
+            save_sentiment_cache()
 
     save_sentiment_cache()
     return pd.DataFrame(rows)

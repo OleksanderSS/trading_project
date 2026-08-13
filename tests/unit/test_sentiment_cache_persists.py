@@ -84,3 +84,40 @@ def test_a_partial_write_cannot_replace_a_good_cache(cache_file, monkeypatch):
     )
     stored = pd.read_parquet(cache_file)
     assert set(stored.columns) == {"hash", "text", "label", "score"}
+
+
+def test_the_cache_is_written_before_the_run_ends(cache_file, monkeypatch):
+    """A run stopped part-way must not lose everything it scored.
+
+    Three runs were interrupted in one day -- a Windows update and two
+    deliberate restarts -- and each lost over two hours of FinBERT because
+    the cache was written once, at the end.
+    """
+    saves = []
+    real_save = models.save_sentiment_cache
+
+    def counting_save():
+        saves.append(len(models._CACHE))
+        return real_save()
+
+    monkeypatch.setattr(models, "save_sentiment_cache", counting_save)
+    monkeypatch.setattr(models, "_SAVE_EVERY", 2)
+    monkeypatch.setattr(models, "get_finbert_pipeline", lambda device=None: "pipe")
+
+    def fake_batch(pipe, uncached, indices, batch, label_map, i, **kwargs):
+        rows = []
+        for idx in indices:
+            row = {"text": batch[idx], "label": "neutral", "score": 0.0}
+            models._CACHE[models._stable_hash(batch[idx])] = row
+            models._CACHE_DIRTY = True
+            rows.append(row)
+        return rows
+
+    monkeypatch.setattr(models, "_process_batch", fake_batch)
+
+    models.analyze_sentiment([f"text {i}" for i in range(8)], batch_size=2)
+
+    assert len(saves) > 1, (
+        "the cache was only written once, at the end — an interrupted run "
+        "loses everything it computed"
+    )
