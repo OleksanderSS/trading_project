@@ -328,18 +328,40 @@ class FeatureEngineeringStage(BaseStage):
                 )
                 return news_df
 
-        text_col = next(
-            (c for c in ('text', 'content', 'title', 'description')
-             if c in news_df.columns and news_df[c].notna().any()),
-            None,
-        )
-        if text_col is None:
+        # Pick by CONTENT, not by presence. `notna().any()` was true for a
+        # `text` column that is 15,274 empty strings -- this database stores
+        # blanks as '' rather than NaN, which is the same trap the empty
+        # `sentiment` column set. FinBERT then scored the word "neutral"
+        # (what _prepare_batch_texts substitutes for an empty string), hit its
+        # cache 15,273 times, and returned all-neutral in 2.8 seconds on CPU:
+        #
+        #   Scored 15274 news items with FinBERT from 'text': 0 non-neutral
+        #
+        # A real forward pass over that many texts takes minutes. The timing
+        # was the tell.
+        filled = {}
+        for candidate in ('content', 'text', 'description', 'title'):
+            if candidate not in news_df.columns:
+                continue
+            values = news_df[candidate].fillna('').astype(str).str.strip()
+            filled[candidate] = int((values != '').sum())
+
+        text_col = max(filled, key=filled.get) if filled else None
+        if text_col is None or filled.get(text_col, 0) == 0:
             logger.error(
-                "News has no text column to score (columns: %s); sentiment "
-                "features will be empty for this run.",
-                list(news_df.columns)[:12],
+                "News carries no usable text to score (non-empty counts: %s); "
+                "sentiment features will be empty for this run.",
+                filled or list(news_df.columns)[:12],
             )
             return news_df
+
+        usable = filled[text_col]
+        if usable < len(news_df):
+            logger.warning(
+                "Scoring sentiment from '%s': %d of %d items have text, the "
+                "rest are blank and will score neutral.",
+                text_col, usable, len(news_df),
+            )
 
         texts = news_df[text_col].fillna('').astype(str).tolist()
         try:

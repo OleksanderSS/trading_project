@@ -76,7 +76,7 @@ def test_news_without_any_text_is_reported_not_guessed(caplog):
         result = FeatureEngineeringStage._score_news_sentiment(frame)
 
     assert (result["sentiment"] == "").all(), "nothing to score, nothing invented"
-    assert any("no text column" in r.message.lower() for r in caplog.records)
+    assert any("no usable text" in r.message.lower() for r in caplog.records)
 
 
 def test_an_empty_frame_passes_through():
@@ -101,3 +101,28 @@ def test_a_length_mismatch_is_refused_rather_than_aligned_by_position(monkeypatc
     # Unchanged: two of the three rows would otherwise have been paired with
     # nothing, or worse, with each other's scores.
     assert (result["sentiment"] == "").all()
+
+
+def test_the_text_column_is_chosen_by_content_not_by_presence():
+    """`notna().any()` was true for a column of 15,274 empty strings.
+
+    This database stores blanks as '' rather than NaN. FinBERT then scored
+    the word "neutral" -- what _prepare_batch_texts substitutes for an empty
+    string -- hit its cache 15,273 times and returned all-neutral for the
+    whole corpus in 2.8 seconds on CPU. A real forward pass over that many
+    texts takes minutes; the timing was the tell.
+    """
+    news = pd.DataFrame({
+        "text": ["", "", ""],
+        "title": HEADLINES,
+        "sentiment": ["", "", ""],
+        "published_at": pd.date_range("2026-08-01", periods=3, tz="UTC"),
+    })
+
+    scored = FeatureEngineeringStage._score_news_sentiment(news)
+
+    values = pd.to_numeric(scored["sentiment"], errors="coerce")
+    assert (values != 0).any(), (
+        "an empty 'text' column was preferred over a populated 'title'"
+    )
+    assert values.iloc[0] > 0 and values.iloc[1] < 0
