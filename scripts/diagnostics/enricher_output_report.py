@@ -22,10 +22,11 @@ next rebuild, not after it.
 
     python scripts/diagnostics/enricher_output_report.py [--rows 400] [--timeframe 15m]
 
-News-dependent enrichers need the news frame. It is read from the batch's
-own source when available; when the database is locked by a running
-pipeline, those enrichers are reported as skipped rather than silently
-producing nothing -- which is the failure this tool exists to catch.
+Enrichers that need news or macro data get both, read from the database.
+When a running pipeline holds it, the report names what was missing instead
+of blaming the enricher -- the first version passed only news and duly
+accused macro_features of 29 empty columns it had never been given the data
+to fill, which is exactly the mistake this tool exists to catch.
 """
 from __future__ import annotations
 
@@ -65,24 +66,47 @@ def _load_bars(timeframe: str, rows: int) -> pd.DataFrame:
     return frame
 
 
-def _load_news(limit: int = 4000) -> pd.DataFrame | None:
+def _load_source_tables(limit: int = 20000) -> tuple[pd.DataFrame | None,
+                                                     pd.DataFrame | None]:
+    """News and macro frames, or None when the database is held elsewhere.
+
+    Both matter. The first version of this script passed only news, so
+    macro_features reported 29 empty columns of 45 — and every one of them
+    was a FRED series the enricher never received. That is the same mistake
+    this tool exists to catch: an input that was never supplied, counted as
+    an output that failed. Whatever is missing has to be named.
+    """
+    news = macro = None
     try:
         from src.config.unified_config_manager import UnifiedConfigManager
         from src.data.management.data_manager import DataManager
         manager = DataManager(UnifiedConfigManager())
-        for table in ("rss_news", "google_news", "news"):
-            try:
-                frame = manager.con.execute(
-                    f'SELECT * FROM "{table}" LIMIT {limit}'
-                ).fetch_df()
-            except Exception:
-                continue
-            if not frame.empty:
-                return frame
     except Exception as exc:                       # noqa: BLE001 - diagnostic
-        print(f"  (news unavailable: {type(exc).__name__} — "
-              f"a running pipeline holds the database)")
-    return None
+        print(f"  (database unavailable: {type(exc).__name__} — "
+              f"a running pipeline holds it)")
+        return None, None
+
+    for table in ("rss_news", "google_news", "news"):
+        try:
+            frame = manager.con.execute(
+                f'SELECT * FROM "{table}" LIMIT {limit}'
+            ).fetch_df()
+        except Exception:
+            continue
+        if not frame.empty:
+            news = frame
+            break
+
+    try:
+        macro = manager.con.execute(
+            f'SELECT * FROM "fred_data" LIMIT {limit}'
+        ).fetch_df()
+        if macro.empty:
+            macro = None
+    except Exception:
+        macro = None
+
+    return news, macro
 
 
 def _column_shapes(frame: pd.DataFrame, added: list[str]) -> dict[str, int]:
@@ -116,8 +140,11 @@ def main() -> int:
     bars = _load_bars(args.timeframe, args.rows)
     print(f"{len(bars)} {args.timeframe} bars of {bars['ticker'].iloc[0]}\n")
 
-    news = _load_news()
-    print(f"news rows available: {0 if news is None else len(news)}\n")
+    news, macro = _load_source_tables()
+    missing = [name for name, frame in (("news", news), ("macro", macro))
+               if frame is None]
+    print(f"news rows: {0 if news is None else len(news)} | "
+          f"macro rows: {0 if macro is None else len(macro)}\n")
 
     orchestrator = FeatureOrchestrator.create_from_config(UnifiedConfigManager())
 
@@ -132,7 +159,11 @@ def main() -> int:
         before = set(frame.columns)
         started = time.perf_counter()
         try:
-            kwargs = {"news": news} if news is not None else {}
+            kwargs = {}
+            if news is not None:
+                kwargs["news"] = news
+            if macro is not None:
+                kwargs["macro_data"] = macro
             result = enricher.enrich(frame, timeframe=args.timeframe, **kwargs)
         except Exception as exc:                   # noqa: BLE001 - diagnostic
             print(f"{enricher.name:26s} {'FAILED':>6s}  "
@@ -171,15 +202,15 @@ def main() -> int:
             # Without news, anything downstream of it is constant by
             # construction and this list cannot separate "broken" from
             # "starved". Re-run when no pipeline holds the database.
-            print("\nNOTE: no news was available, so news-derived enrichers "
-                  "are constant for want of input, not necessarily by defect. "
-                  "Re-run when the database is free to judge them.")
+            print(f"\nNOTE: {' and '.join(missing)} unavailable, so enrichers "
+                  f"derived from them are empty for want of input, not "
+                  f"necessarily by defect. Re-run when the database is free.")
         return 1
 
     print("\nEvery enricher produced at least one column that varies.")
-    if news is None:
-        print("NOTE: news was unavailable; news-derived enrichers were not "
-              "exercised.")
+    if missing:
+        print(f"NOTE: {' and '.join(missing)} unavailable; enrichers derived "
+              f"from them were not exercised.")
     return 0
 
 
