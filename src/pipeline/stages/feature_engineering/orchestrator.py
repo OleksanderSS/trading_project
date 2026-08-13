@@ -60,6 +60,9 @@ class FeatureEngineeringStage(BaseStage):
         enriched_data: dict[str, pd.DataFrame] = {}
         all_targets: dict[str, pd.DataFrame] = {}
 
+        if 'news' in cleaned_data:
+            cleaned_data['news'] = self._score_news_sentiment(cleaned_data['news'])
+
         # 1. Enrichment for each timeframe
         for tf, df in market_data_dict.items():
             # ✅ FIX: pass macro_data and news from cleaned_data to enrichers via kwargs
@@ -282,6 +285,96 @@ class FeatureEngineeringStage(BaseStage):
     #: the same order. `hash` is the collector's per-row SHA-256 and is exact;
     #: the price columns are a strong practical check when it was dropped.
     _ALIGNMENT_ANCHORS = ("hash", "close", "volume", "open")
+
+    @staticmethod
+    def _score_news_sentiment(news_df: pd.DataFrame) -> pd.DataFrame:
+        """Give the news a sentiment before any enricher asks it for one.
+
+        The collectors store a `sentiment` column and leave it empty. On the
+        2026-08-13 batch it held 15,165 empty strings, which the enricher
+        reported plainly --
+
+            News sentiment column 'sentiment': 15165/15165 non-null, values: ['']
+
+        -- and `pd.to_numeric` turned every one into NaN. Every sentiment
+        feature was therefore built from nothing, and `sentiment_available`
+        read 0 on all 55,565 rows.
+
+        FinBERT was running the whole time. It runs inside `news_impact`,
+        which the priority order places AFTER `sentiment_features`, and its
+        scores go into that analyzer rather than back onto the news. The model
+        was loaded, the texts were scored, and the result never reached the
+        frame the other enrichers read.
+
+        Scoring once here, before the per-timeframe loop, means every enricher
+        and all three timeframes see the same values, and the model is loaded
+        once per run instead of per enricher.
+
+        The sign convention is this project's existing one, from
+        `SentimentIntegrator._extract_sentiment_scores`: +score for positive,
+        -score for negative, 0 for neutral. A second convention would be a
+        second answer to a question already answered.
+        """
+        logger = ProjectLogger.get_logger(__name__)
+        if news_df is None or getattr(news_df, 'empty', True):
+            return news_df
+
+        if 'sentiment' in news_df.columns:
+            existing = pd.to_numeric(news_df['sentiment'], errors='coerce')
+            if existing.notna().any():
+                logger.info(
+                    "News already carries %d numeric sentiment values; "
+                    "leaving them.", int(existing.notna().sum()),
+                )
+                return news_df
+
+        text_col = next(
+            (c for c in ('text', 'content', 'title', 'description')
+             if c in news_df.columns and news_df[c].notna().any()),
+            None,
+        )
+        if text_col is None:
+            logger.error(
+                "News has no text column to score (columns: %s); sentiment "
+                "features will be empty for this run.",
+                list(news_df.columns)[:12],
+            )
+            return news_df
+
+        texts = news_df[text_col].fillna('').astype(str).tolist()
+        try:
+            from src.sentiment.sentiment_models import analyze_sentiment
+            scored = analyze_sentiment(texts)
+        except (ImportError, RuntimeError, ValueError, OSError) as exc:
+            logger.error(
+                "Could not score news sentiment (%s: %s); sentiment features "
+                "will be empty for this run.", type(exc).__name__, exc,
+            )
+            return news_df
+
+        if scored is None or len(scored) != len(news_df):
+            logger.error(
+                "Sentiment scoring returned %s rows for %d news items; "
+                "refusing to attach them by position.",
+                'no' if scored is None else len(scored), len(news_df),
+            )
+            return news_df
+
+        labels = scored['label'].to_numpy()
+        scores = scored['score'].to_numpy(dtype=float)
+        signed = np.where(
+            labels == 'positive', scores,
+            np.where(labels == 'negative', -scores, 0.0),
+        )
+
+        news_df = news_df.copy()
+        news_df['sentiment'] = signed
+        logger.info(
+            "Scored %d news items with FinBERT from '%s': %d non-neutral, "
+            "range %.3f..%.3f", len(signed), text_col,
+            int((signed != 0).sum()), float(signed.min()), float(signed.max()),
+        )
+        return news_df
 
     def _restore_service_columns(
         self,
