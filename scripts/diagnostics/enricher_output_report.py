@@ -187,8 +187,16 @@ def main() -> int:
 
     totals = {"live": 0, "constant": 0, "empty": 0}
     suspect = []
+
+    # Chain them, the way the pipeline does. Run in isolation, an enricher
+    # that consumes an earlier one's column sees nothing: advanced_analytics
+    # needs `nlp_sentiment_score`, which nlp_features adds, and reported "0
+    # columns" here while working perfectly in a real run. Measuring each
+    # enricher against the frame it will actually receive is the only reading
+    # that transfers.
+    accumulated = bars.copy()
     for enricher in orchestrator.enrichers:
-        frame = bars.copy()
+        frame = accumulated.copy()
         before = set(frame.columns)
         started = time.perf_counter()
         try:
@@ -204,6 +212,9 @@ def main() -> int:
             continue
         elapsed = time.perf_counter() - started
         added = [c for c in result.columns if c not in before and c not in SERVICE]
+        # Carry the enriched frame forward, exactly as FeatureOrchestrator
+        # does, so the next enricher sees what it will really be handed.
+        accumulated = result
         if not added:
             print(f"{enricher.name:26s} {0:6d} {'':>6s} {'':>6s} {'':>6s} "
                   f"{elapsed:8.1f}")
