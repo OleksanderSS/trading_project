@@ -98,23 +98,52 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
             df_enriched.columns):
             return
         try:
-            if 'nlp_sentiment_score' in df_enriched.columns:
-                sentiment_col = 'nlp_sentiment_score'
-                temp_df = df_enriched[[sentiment_col]].copy()
-            else:
-                sentiment_col = 'sentiment'
-                temp_df = news_df[[sentiment_col]].copy()
-            stats = self.sentiment_calculator.calculate_sentiment_stats(temp_df
-                , sentiment_col)
-            df_enriched['sentiment_mean'] = stats['mean']
-            df_enriched['sentiment_std_stat'] = stats['std']
-            df_enriched['sentiment_pos_threshold'] = stats['positive_threshold'
-                ]
-            df_enriched['sentiment_neg_threshold'] = stats['negative_threshold'
-                ]
-            logger.info(
-                f"Added sentiment statistics: mean={stats['mean']:.3f}, std={stats['std']:.3f}"
+            # These were one mean, one standard deviation and two thresholds
+            # computed over the WHOLE series and written onto every row. Four
+            # columns with a single value each: nothing for a model to learn
+            # from, and computed from news published after most of the bars
+            # they were attached to.
+            #
+            # Expanding statistics say the same thing causally -- "how does
+            # sentiment now compare with its own history up to this bar" --
+            # and they vary, which is the point of a feature. min_periods=2
+            # because a standard deviation of one observation is not a
+            # number.
+            if 'nlp_sentiment_score' not in df_enriched.columns:
+                # Only the news frame carries sentiment, and it has a
+                # different length and ordering than the bars. Per-bar
+                # statistics need a per-bar series; broadcasting a corpus
+                # scalar is what produced the constants.
+                logger.info(
+                    "Sentiment statistics skipped: no per-bar sentiment column "
+                    "on this frame (news-only sentiment cannot be expanded "
+                    "per bar without inventing an alignment)."
                 )
+                return
+
+            sentiment_col = 'nlp_sentiment_score'
+            series = pd.to_numeric(df_enriched[sentiment_col], errors='coerce')
+            if 'ticker' in df_enriched.columns:
+                grouped = series.groupby(df_enriched['ticker'])
+                mean = grouped.transform(
+                    lambda s: s.expanding(min_periods=2).mean())
+                std = grouped.transform(
+                    lambda s: s.expanding(min_periods=2).std())
+            else:
+                mean = series.expanding(min_periods=2).mean()
+                std = series.expanding(min_periods=2).std()
+
+            df_enriched['sentiment_mean'] = mean
+            df_enriched['sentiment_std_stat'] = std
+            df_enriched['sentiment_pos_threshold'] = mean + std
+            df_enriched['sentiment_neg_threshold'] = mean - std
+            logger.info(
+                "Added expanding sentiment statistics over %d bars "
+                "(last mean=%.3f, std=%.3f)",
+                len(series),
+                float(mean.iloc[-1]) if len(mean) and pd.notna(mean.iloc[-1]) else float('nan'),
+                float(std.iloc[-1]) if len(std) and pd.notna(std.iloc[-1]) else float('nan'),
+            )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f'Error calculating sentiment stats: {e}')
 
