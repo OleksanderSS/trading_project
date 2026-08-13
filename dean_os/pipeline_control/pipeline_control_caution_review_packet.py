@@ -127,6 +127,7 @@ def _summary(status: str, readiness: dict[str, Any], instance: dict[str, Any], p
     )
     missing_evidence = [review["plane_id"] for review in plane_reviews if review.get("evidence_status") != "sufficient_to_clear"]
     safe = _safe_pipeline_flags(readiness.get("summary", {})) and _safe_pipeline_flags(instance.get("summary", {}))
+    inputs_read = bool(readiness.get("summary")) and bool(instance.get("summary"))
     return {
         "caution_review_status": status,
         "readiness_status": readiness.get("summary", {}).get("readiness_status"),
@@ -135,8 +136,16 @@ def _summary(status: str, readiness: dict[str, Any], instance: dict[str, Any], p
         "caution_metric_planes": caution,
         "missing_evidence_planes": missing_evidence,
         "caution_plane_count": len(caution),
+        "reviewed_plane_count": len(plane_reviews),
+        "inputs_read": inputs_read,
         "can_propose_reviewed_experiments_after_manual_caution_acceptance": safe and not blocked,
-        "can_clear_cautions_with_current_artifacts": not missing_evidence and not blocked,
+        # missing_evidence and blocked are both empty when every plane cleared AND
+        # when the packet read nothing at all, so their emptiness alone let an empty
+        # review authorise clearing cautions on the strength of nothing. The test is
+        # whether the upstream artifacts were actually read -- not whether
+        # plane_reviews is non-empty, since a genuinely clean state reviews no
+        # planes either.
+        "can_clear_cautions_with_current_artifacts": inputs_read and not missing_evidence and not blocked,
         "can_run_autonomous_tuning_now": False,
         "can_write_production_config": False,
         "can_write_learning_memory": False,

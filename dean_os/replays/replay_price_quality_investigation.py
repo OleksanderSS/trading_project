@@ -449,7 +449,17 @@ def _summary(
 ) -> dict[str, Any]:
     loaded = sum(1 for report in reports if report.get("loaded"))
     extreme = sum(1 for warning in warnings if warning.get("category") == "extreme_benchmark")
-    status = "investigation_required" if warnings or any(window.get("warnings") for window in windows) else "clear"
+    if not loaded and not artifacts and not windows:
+        # Nothing was examined at all: no report loaded, no price artifact, no
+        # window. Nothing could raise a warning, and the absence of warnings was
+        # reported as "clear" -- a price-quality all-clear issued without looking
+        # at a single price. Reports alone are not the test: an investigation
+        # given price artifacts and no reports has still examined something.
+        status = "blocked_no_price_evidence_examined"
+    elif warnings or any(window.get("warnings") for window in windows):
+        status = "investigation_required"
+    else:
+        status = "clear"
     if any(hypothesis.get("severity") == "high" for hypothesis in hypotheses):
         status = "blocked_price_quality"
     return {
