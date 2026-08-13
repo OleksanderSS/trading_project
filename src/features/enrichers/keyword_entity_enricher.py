@@ -97,14 +97,47 @@ class KeywordEntityEnricher(BaseEnricher):
         return True
 
     def _find_text_column(self, news_df: pd.DataFrame) ->str | None:
-        """Find text column in news DataFrame."""
+        """Pick the column that carries text, not the first one that exists.
+
+        This returned `title` because `title` is in TEXT_COLUMNS first and
+        the column is present. Presence is not content: this database stores
+        blanks as '' rather than NaN, and on the 2026-08-13 batch the
+        enricher reported
+
+            Extracting keywords and entities from 15274 news items...
+            ✅ Added keyword/entity features. Avg keywords: 0.0, Avg entities: 0.0
+
+        after 32 seconds of work, on every timeframe. Reproduced directly:
+        with `title` populated the same twenty articles yield 144 keywords
+        and 72 entities across forty bars; with `title` empty and the same
+        body text in `text`, both are zero.
+
+        The identical mistake sat in the sentiment path (fixed 2026-08-13) --
+        `notna().any()` was true for 15,274 empty strings there too. Wherever
+        this news frame is read, "the column exists" has to mean "the column
+        has something in it".
+        """
+        filled = {}
         for col in TEXT_COLUMNS:
-            if col in news_df.columns:
-                return col
-        logger.error(
-            'No text column found in news data. Skipping keyword/entity enrichment.'
+            if col not in news_df.columns:
+                continue
+            values = news_df[col].fillna('').astype(str).str.strip()
+            filled[col] = int((values != '').sum())
+
+        best = max(filled, key=filled.get) if filled else None
+        if best is None or filled[best] == 0:
+            logger.error(
+                'No usable text in news data (non-empty counts: %s). Skipping '
+                'keyword/entity enrichment.', filled or news_df.columns.tolist()[:10],
             )
-        return None
+            return None
+
+        if filled[best] < len(news_df):
+            logger.info(
+                "Keyword/entity extraction reading '%s': %d of %d items carry "
+                "text.", best, filled[best], len(news_df),
+            )
+        return best
 
     def _find_time_column(self, news_df: pd.DataFrame) ->str | None:
         """Find time column in news DataFrame."""

@@ -85,3 +85,46 @@ def test_the_keywords_come_from_the_shared_knowledge_base():
 
     loaded = KeywordEntityEnricher._knowledge_base_keywords()
     assert loaded == declared
+
+
+def test_the_text_column_is_chosen_by_content_not_by_presence(enricher):
+    """`_find_text_column` returned 'title' because 'title' exists.
+
+    Presence is not content. This database stores blanks as '' rather than
+    NaN, and on the 2026-08-13 batch the enricher spent 32 seconds per
+    timeframe to report "Avg keywords: 0.0, Avg entities: 0.0". Reproduced:
+    with `title` populated the same twenty articles yield 144 keywords and
+    72 entities across forty bars; with `title` empty and the body in `text`,
+    both were zero.
+
+    The identical mistake was in the sentiment path, where `notna().any()`
+    was true for 15,274 empty strings.
+    """
+    bars = pd.DataFrame({
+        "ticker": ["AAPL"] * 40,
+        "datetime": pd.date_range("2026-07-01", periods=40, freq="D", tz="UTC"),
+        "close": np.linspace(100, 120, 40),
+    })
+    body = "Apple earnings beat as AI semiconductor demand eases inflation"
+    news = pd.DataFrame({
+        "ticker": ["AAPL"] * 20,
+        "published_at": pd.date_range("2026-07-05", periods=20, freq="D", tz="UTC"),
+        "title": [""] * 20,
+        "text": [body] * 20,
+    })
+
+    enriched = enricher._enrich_impl(bars, news=news)
+
+    assert np.nansum(pd.to_numeric(enriched["keyword_count"], errors="coerce")) > 0
+    assert np.nansum(pd.to_numeric(enriched["entity_count"], errors="coerce")) > 0
+
+
+def test_news_with_no_text_anywhere_is_refused(enricher):
+    news = pd.DataFrame({
+        "ticker": ["AAPL"] * 5,
+        "published_at": pd.date_range("2026-07-05", periods=5, freq="D", tz="UTC"),
+        "title": [""] * 5,
+        "text": [""] * 5,
+    })
+
+    assert enricher._find_text_column(news) is None
