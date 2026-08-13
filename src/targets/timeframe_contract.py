@@ -124,7 +124,7 @@ def resolve_target_timeframe_contract(
         shift_bars = abs(configured_shift)
         expected_elapsed = duration * shift_bars if duration is not None else None
 
-    maximum_elapsed = _maximum_elapsed(timeframe, expected_elapsed)
+    maximum_elapsed = _maximum_elapsed(timeframe, expected_elapsed, shift_bars)
     return resolved, TargetTimeframeContract(
         timeframe=timeframe,
         horizon=str(horizon).lower() if horizon is not None else None,
@@ -195,9 +195,41 @@ def _normalize_timeframe(value: str) -> str:
 def _maximum_elapsed(
     timeframe: str | None,
     expected_elapsed: pd.Timedelta | None,
+    shift_bars: int | None = None,
 ) -> pd.Timedelta | None:
+    """How much wall-clock time a horizon may span before it looks like a gap.
+
+    The daily allowance was a flat three days, which covers one weekend. A
+    horizon of n trading days crosses one weekend when it starts on a Monday
+    and two when it starts on a Thursday, so a constant slack silently
+    removes the later weekdays as n grows.
+
+    Measured on the 2026-08-13 batch, AAPL daily, target_weekly_up_1w
+    (shift 7): expected 7 days, allowance 10 days.
+
+        from Mon/Tue/Wed   7 trading days =  9 calendar days   kept
+        from Thu/Fri       7 trading days = 11 calendar days   blanked
+
+        Mon  93 of 100    Tue  98 of 107    Wed  69 of 104
+        Thu   0 of 101    Fri   0 of 102
+
+    260 labels survived of the 507 the data supports. Recomputing the target
+    directly agrees with every stored value, so nothing was wrong with the
+    labels -- they were simply thrown away, and thrown away by weekday, which
+    left the model unable to learn from a Thursday or Friday at all. That is
+    worse than the missing half: it is a systematic bias.
+
+    `target_up_5d` (shift 5) escaped only by luck of arithmetic -- from a
+    Thursday it spans 7 calendar days against an allowance of 8.
+
+    The slack now scales with the number of weekends the span can contain.
+    A run of n trading days starting on a Friday touches ceil((n + 4) / 5)
+    weekends; three days each keeps the holiday tolerance the original had.
+    """
     if expected_elapsed is None:
         return None
     if timeframe == "1d":
-        return expected_elapsed + pd.Timedelta(days=3)
+        bars = max(int(shift_bars or 1), 1)
+        weekends = -(-(bars + 4) // 5)          # ceil((bars + 4) / 5)
+        return expected_elapsed + pd.Timedelta(days=3 * weekends)
     return expected_elapsed * 1.5
