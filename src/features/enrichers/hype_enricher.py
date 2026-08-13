@@ -198,11 +198,18 @@ class HypeEnricher(BaseEnricher):
                 if per.empty:
                     parts.append(group.assign(news_count=np.nan))
                     continue
-                parts.append(pd.merge_asof(
-                    group.sort_values('datetime'),
+                # Keep each row's original label: merge_asof returns a
+                # fresh RangeIndex, and concatenating per-ticker pieces then
+                # yields duplicates, which breaks any downstream reindex.
+                labelled = group.sort_values('datetime').copy()
+                labelled['__row_label'] = labelled.index
+                merged = pd.merge_asof(
+                    labelled,
                     per.drop_duplicates(subset=['datetime'], keep='last'),
                     on='datetime', direction='backward',
-                ))
+                )
+                merged.index = merged['__row_label'].to_numpy()
+                parts.append(merged.drop(columns=['__row_label']))
             df_enriched = pd.concat(parts).sort_index()
         else:
             df_enriched = pd.merge_asof(

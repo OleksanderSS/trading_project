@@ -73,6 +73,33 @@ class SentimentFeaturesEnricher(BaseEnricher):
         df_enriched = self._prepare_dataframe(working_df, sentiment_col)
         final_df = self._process_ticker_groups(df_enriched, sentiment_col)
 
+        # This enricher sets `datetime` as its index along the way, and two
+        # tickers share the same timestamps -- so a multi-ticker frame came
+        # back with duplicate labels. ContextMapEnricher, which runs later,
+        # then failed with "cannot reindex on an axis with duplicate labels"
+        # and contributed 0 columns instead of 191, in a run where every
+        # other enricher had just started working.
+        #
+        # The rows are the same rows in the same order, so handing back the
+        # labels they arrived with costs nothing and keeps the frame usable
+        # by everything downstream.
+        if len(final_df) == len(df) and final_df.index.has_duplicates:
+            final_df = final_df.copy()
+            # The index holds the datetime by this point. Overwriting it
+            # without rescuing that first destroys the timestamps outright --
+            # the next enricher then finds neither a 'datetime' column nor a
+            # DatetimeIndex and adds nothing. Move it back to a column, then
+            # restore the labels.
+            if 'datetime' not in final_df.columns and isinstance(
+                final_df.index, pd.DatetimeIndex
+            ):
+                final_df.insert(0, 'datetime', final_df.index)
+            final_df.index = df.index
+            logger.debug(
+                "Restored the caller's row labels: this enricher's datetime "
+                "index is not unique across tickers."
+            )
+
         logger.info(f"Sentiment enrichment complete. Added {len(final_df.columns) - len(df.columns)} features.")
         return final_df
 
@@ -391,12 +418,19 @@ class SentimentFeaturesEnricher(BaseEnricher):
                 .drop_duplicates(subset=['datetime'], keep='last')
                 .sort_values('datetime')
             )
-            parts.append(
-                pd.merge_asof(
-                    group.sort_values('datetime'), per_ticker,
-                    on='datetime', direction='backward',
-                )
+            # merge_asof returns a fresh RangeIndex, so concatenating the
+            # per-ticker pieces produced 0,0,1,1,... -- duplicate labels that
+            # made ContextMapEnricher fail with "cannot reindex on an axis
+            # with duplicate labels" and contribute 0 columns instead of 191.
+            # Carry each row's original label through the merge and put it
+            # back.
+            labelled = group.sort_values('datetime').copy()
+            labelled['__row_label'] = labelled.index
+            merged = pd.merge_asof(
+                labelled, per_ticker, on='datetime', direction='backward',
             )
+            merged.index = merged['__row_label'].to_numpy()
+            parts.append(merged.drop(columns=['__row_label']))
         if not parts:
             return df
         return pd.concat(parts).sort_index()
