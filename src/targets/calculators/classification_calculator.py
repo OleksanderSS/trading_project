@@ -73,8 +73,37 @@ class ClassificationCalculator:
                     f"an indicator-crossing target."
                 )
                 raise ValueError(f"Indicator column '{indicator_col}' not found.")
+            # "Does it cross the band WITHIN the next n bars" -- which is what
+            # target_hourly_breakout_1h's own description says and what the
+            # word breakout means -- needs the highest value reached in the
+            # window, not the value at its far end.
+            #
+            # Using close.shift(-n) asked a different question: was it above
+            # the band at exactly bar n. Demonstrated on a series priced at
+            # 100 with a band at 110, spiking to 130 two bars ahead and back
+            # to 101 by the fourth: the label read 0. A 30% breakout, missed,
+            # because the price had already come back. 11 of the 65 champions
+            # on the 2026-08-13 batch sit on this target.
+            #
+            # The window ends where shift ends, so the purge and the
+            # horizon accounting are unchanged.
+            window = abs(int(shift))
             reference = df[indicator_col]
-            excess = (future_price - reference) / reference.replace(0, np.nan)
+
+            def _forward_max(series: pd.Series) -> pd.Series:
+                ahead = series.shift(-1)
+                return (
+                    ahead[::-1]
+                    .rolling(window, min_periods=window)
+                    .max()[::-1]
+                )
+
+            if "ticker" in df.columns:
+                extreme = df.groupby("ticker")[base_col].transform(_forward_max)
+            else:
+                extreme = _forward_max(df[base_col])
+
+            excess = (extreme - reference) / reference.replace(0, np.nan)
             hit = excess > threshold
             invalid = excess.isna()
         else:
