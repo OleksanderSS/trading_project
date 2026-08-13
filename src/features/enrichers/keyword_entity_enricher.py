@@ -266,7 +266,25 @@ class KeywordEntityEnricher(BaseEnricher):
         news_copy = news_copy.set_index(time_col)
         aggregated = news_copy.groupby('_agg_ticker').resample('1h').agg(
             {'keyword_count': 'sum', 'entity_count': 'sum'})
-        return aggregated.rename_axis(index={'_agg_ticker': 'ticker'})
+        aggregated = aggregated.rename_axis(index={'_agg_ticker': 'ticker'})
+
+        # `resample('1h')` labels a bucket with its START, so an article
+        # published at 14:50 is filed under 14:00. `_merge_with_main_df` then
+        # runs merge_asof backward, which hands the bar at 14:00 -- and
+        # 14:15, 14:30, 14:45 -- counts drawn from articles up to 14:59.
+        # Up to 59 minutes of look-ahead on every intraday bar.
+        #
+        # A window covering [H, H+1) is knowable at H+1. Moving the label
+        # there makes it mean "available from", which is what the backward
+        # merge is entitled to assume.
+        levels = list(aggregated.index.names)
+        time_level = levels[-1]
+        aggregated.index = aggregated.index.set_levels(
+            aggregated.index.levels[levels.index(time_level)]
+            + pd.Timedelta(hours=1),
+            level=time_level,
+        )
+        return aggregated
 
     def _merge_with_main_df(self, df: pd.DataFrame, aggregated: pd.
         DataFrame, time_col: str) ->pd.DataFrame:

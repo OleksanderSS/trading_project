@@ -257,12 +257,29 @@ class SentimentFeaturesEnricher(BaseEnricher):
         renames = {}
         if time_col in sentiment_agg.columns and 'datetime' not in sentiment_agg.columns:
             renames[time_col] = 'datetime'
+        _AGGREGATION_PERIOD = pd.Timedelta(hours=1)
         if sentiment_col in sentiment_agg.columns:
             renames[sentiment_col] = 'nlp_sentiment_score'
         if renames:
             sentiment_agg = sentiment_agg.rename(columns=renames)
 
         self._normalize_datetime_column(sentiment_agg, 'datetime')
+
+        # `pd.Grouper(freq='1h')` labels a bucket with its START, so news
+        # published at 14:50 lands under 14:00. The merge below matches a bar
+        # at 14:00 to that label and hands it fifty minutes of news it could
+        # not have read -- up to 59 minutes of look-ahead on every intraday
+        # bar, in every sentiment feature.
+        #
+        # A window covering [H, H+1) is knowable at H+1. Moving the label
+        # there makes the timestamp mean "available from", which is what a
+        # merge on time should be comparing against.
+        if 'datetime' in sentiment_agg.columns and not sentiment_agg.empty:
+            sentiment_agg['datetime'] = (
+                pd.to_datetime(sentiment_agg['datetime'], errors='coerce')
+                + _AGGREGATION_PERIOD
+            )
+
         if 'ticker' not in sentiment_agg.columns:
             sentiment_agg['ticker'] = 'general'
 
@@ -317,8 +334,17 @@ class SentimentFeaturesEnricher(BaseEnricher):
 
             self._normalize_datetime_column(sentiment_agg, 'datetime')
 
-            merge_keys = ['ticker', 'datetime'] if 'ticker' in sentiment_agg.columns else ['datetime']
-            df = df.merge(sentiment_agg, on=merge_keys, how='left')
+            # An exact merge on the timestamp only matched a bar whose clock
+            # reading equalled a news window's label -- so a daily bar at
+            # 00:00 could see news from the 00:00 window and nothing else,
+            # and a 15m bar at 14:15 saw none at all. Sentiment reached a
+            # sliver of bars by coincidence of alignment.
+            #
+            # merge_asof backward is the right comparison: give each bar the
+            # most recent window that had closed by then. Combined with the
+            # label now marking a window's END (see _aggregate_news_sentiment)
+            # that is exactly "the latest news this bar could have read".
+            df = self._merge_asof_per_ticker(df, sentiment_agg)
 
             # Set datetime as index if it exists
             if 'datetime' in df.columns:
@@ -331,6 +357,49 @@ class SentimentFeaturesEnricher(BaseEnricher):
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Error merging sentiment with main DataFrame: {e}")
             return df
+
+    @staticmethod
+    def _merge_asof_per_ticker(
+        df: pd.DataFrame, sentiment_agg: pd.DataFrame
+    ) -> pd.DataFrame:
+        """Attach the latest closed news window, per ticker, without leaking.
+
+        Grouping first keeps one ticker's news out of another's bars, which a
+        single merge_asof on datetime alone would not: `by=` exists for that,
+        but it drops rows whose key is absent from the right side, and the
+        aggregation files unattributed articles under 'general'.
+        """
+        value_columns = [
+            c for c in sentiment_agg.columns if c not in ('ticker', 'datetime')
+        ]
+        if not value_columns or 'datetime' not in sentiment_agg.columns:
+            return df
+
+        right = sentiment_agg.dropna(subset=['datetime']).sort_values('datetime')
+        general = right[right['ticker'] == 'general'] if 'ticker' in right else right
+
+        parts = []
+        for ticker, group in df.groupby('ticker', sort=False):
+            per_ticker = right[right['ticker'] == ticker] if 'ticker' in right else right
+            if per_ticker.empty:
+                per_ticker = general
+            if per_ticker.empty:
+                parts.append(group)
+                continue
+            per_ticker = (
+                per_ticker.drop(columns=['ticker'], errors='ignore')
+                .drop_duplicates(subset=['datetime'], keep='last')
+                .sort_values('datetime')
+            )
+            parts.append(
+                pd.merge_asof(
+                    group.sort_values('datetime'), per_ticker,
+                    on='datetime', direction='backward',
+                )
+            )
+        if not parts:
+            return df
+        return pd.concat(parts).sort_index()
 
     def _prepare_dataframe(self, df: pd.DataFrame, sentiment_col: str) -> pd.DataFrame:
         """Prepares DataFrame for feature calculation."""
