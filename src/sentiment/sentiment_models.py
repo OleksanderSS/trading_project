@@ -1,6 +1,7 @@
 # src/sentiment/sentiment_models.py
 
 import hashlib
+from pathlib import Path
 
 import pandas as pd
 
@@ -12,9 +13,81 @@ _FINBERT_PIPELINE = None
 _TOKENIZER = None
 _CACHE: dict[str, dict[str, str]] = {}  # result cache by text hash
 
+#: Scoring 15,274 articles takes over half an hour of FinBERT on CPU, and
+#: `_CACHE` dies with the process — so every rebuild paid it again, in full,
+#: for articles it had already read. The corpus grows by a few hundred a day
+#: and the rest is identical, so almost all of that work is repeated.
+#:
+#: Keyed by model name as well as text: a different model is a different
+#: answer, and a cache that forgets which one produced a row would serve
+#: FinBERT's verdicts for whatever replaces it.
+_CACHE_PATH = Path("data/cache/sentiment/finbert_scores.parquet")
+_CACHE_MODEL = "ProsusAI/finbert"
+_CACHE_LOADED = False
+_CACHE_DIRTY = False
+
+
 def _stable_hash(text: str) -> str:
     """Short hash of text for caching."""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+    return hashlib.sha256(
+        f"{_CACHE_MODEL}\x00{text}".encode()
+    ).hexdigest()[:16]
+
+
+def load_sentiment_cache() -> int:
+    """Read previously scored texts from disk. Returns how many were loaded."""
+    global _CACHE_LOADED
+    if _CACHE_LOADED:
+        return len(_CACHE)
+    _CACHE_LOADED = True
+    if not _CACHE_PATH.exists():
+        return 0
+    try:
+        stored = pd.read_parquet(_CACHE_PATH)
+    except Exception as exc:                      # noqa: BLE001 - cache only
+        logger.warning(
+            "Could not read the sentiment cache (%s: %s); rescoring from "
+            "scratch this run.", type(exc).__name__, exc,
+        )
+        return 0
+
+    for row in stored.to_dict("records"):
+        key = row.get("hash")
+        if key:
+            _CACHE[key] = {"text": row.get("text", ""),
+                           "label": row.get("label", "neutral"),
+                           "score": float(row.get("score", 0.0))}
+    logger.info("Sentiment cache: %d texts already scored.", len(_CACHE))
+    return len(_CACHE)
+
+
+def save_sentiment_cache() -> int:
+    """Persist newly scored texts. Returns the number of rows written."""
+    global _CACHE_DIRTY
+    if not _CACHE_DIRTY or not _CACHE:
+        return 0
+    try:
+        _CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        frame = pd.DataFrame(
+            [{"hash": key, "text": value.get("text", ""),
+              "label": value.get("label", "neutral"),
+              "score": float(value.get("score", 0.0))}
+             for key, value in _CACHE.items()]
+        )
+        # Write beside the target and replace, so a crash mid-write cannot
+        # leave a truncated cache that reads as "nothing scored yet".
+        temporary = _CACHE_PATH.with_suffix(".parquet.tmp")
+        frame.to_parquet(temporary, index=False)
+        temporary.replace(_CACHE_PATH)
+        _CACHE_DIRTY = False
+        logger.info("Sentiment cache: %d texts stored.", len(frame))
+        return len(frame)
+    except Exception as exc:                      # noqa: BLE001 - cache only
+        logger.warning(
+            "Could not write the sentiment cache (%s: %s); this run's scores "
+            "will have to be recomputed next time.", type(exc).__name__, exc,
+        )
+        return 0
 
 def get_finbert_pipeline(device: int = None):
     """Returns the global FinBERT pipeline. Loads once."""
@@ -83,6 +156,8 @@ def analyze_sentiment(texts: list[str], batch_size: int = 16, device: int = None
     if pipe is None or pipe == "disabled":
         return _create_neutral_dataframe(texts)
 
+    load_sentiment_cache()
+
     rows = []
     label_map = {"positive": "positive", "negative": "negative", "neutral": "neutral"}
 
@@ -101,6 +176,7 @@ def analyze_sentiment(texts: list[str], batch_size: int = 16, device: int = None
         batch_rows = _process_batch(pipe, uncached_texts, uncached_indices, batch, label_map, i, **kwargs)
         rows.extend(batch_rows)
 
+    save_sentiment_cache()
     return pd.DataFrame(rows)
 
 def _create_neutral_dataframe(texts: list[str]) -> pd.DataFrame:
@@ -136,6 +212,7 @@ def _process_batch(pipe, uncached_texts: list[str], uncached_indices: list[int],
             row = _create_sentiment_row(res, original_batch[idx], label_map)
             rows.append(row)
             _CACHE[_stable_hash(original_batch[idx])] = row
+            globals()['_CACHE_DIRTY'] = True
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.exception(f"[WARN] Batch {batch_idx} error: {e}")
         for idx in uncached_indices:
