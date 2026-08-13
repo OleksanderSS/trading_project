@@ -2,6 +2,17 @@
 
 Use these commands to gather useful logs and review state without running the heavy trading pipeline.
 
+> **Which file is authoritative.** This checklist explains *why* and *when* to run
+> a workflow, and what its boundaries are. It is hand-written, so it can go stale.
+> For *what exists and what options it takes*, use `dean_os/COMMAND_INDEX.md` —
+> that file is generated from the `run_agent_*.py` wrappers themselves and cannot
+> drift. Regenerate it with `python run_agent_command_index.py`.
+>
+> On 2026-08-13 this checklist advertised 192 commands, 93 of which did not exist.
+> Commands still named here but absent from disk are recorded, with reasons, in
+> `dean_os/config/retired_commands.yaml`; `tests/dean_os/test_agent_cli_restore.py`
+> fails if a command is named here without either existing or being recorded there.
+
 ## World Model Event Learning Packet (2026-07-09)
 
 Use this path when news/materials should become review-only hypotheses and

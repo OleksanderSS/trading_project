@@ -1,0 +1,136 @@
+# Commands the prose docs reference that have no run_agent_*.py wrapper on disk.
+#
+# Purpose: make every such reference a recorded decision instead of silent drift.
+# tests/dean_os/test_agent_cli_restore.py requires each command named in the prose
+# docs to either exist as a file or appear here, so a NEW phantom command fails the
+# suite while these known gaps stay visible and explained.
+#
+# "candidate" means a module whose NAME resembles the command. It is a lead, not a
+# mapping. On 2026-08-13 an attempt to restore these wrappers by name similarity
+# produced wrappers that ran the wrong builder entirely (a wrapper named
+# pipeline_stage23_regeneration ran PipelineFeatureTimeframeAudit), so a candidate
+# must be verified against the module's actual entrypoint before a wrapper is added.
+# Removing an entry from this file is how a gap gets closed: add the verified
+# wrapper, then delete its line here.
+
+retired_commands:
+  # --- Deliberately retired: the backing agent was archived on purpose ---
+  run_agent_collector_inventory.py: >-
+    Retired. CollectorInventoryAgent was archived 2026-07-24 for never being
+    registered or instantiated. The scan it wrapped now lives in
+    dean_os/collector_inventory_scan.py and runs in-process during
+    MarketDataRefreshRunbook and SourceRoutingAgent, so no wrapper is needed.
+
+  # --- Never implemented: no wrapper and no clear backing module ---
+  run_agent_composite_domain_pipeline.py: >-
+    Never implemented. No backing module found under dean_os/. The composite
+    pipeline_manager agent it implies is default-off in agent_registry.yaml.
+  run_agent_replay_evidence_windows.py: >-
+    Never implemented. No backing module found under dean_os/.
+
+  # --- Unverified candidates: module exists, entrypoint mapping not yet confirmed ---
+  run_agent_accumulation_authorization.py: >-
+    Missing wrapper. Candidate: dean_os/accumulation_authorization_ledger.py (unverified).
+  run_agent_capability_matrix.py: >-
+    Missing wrapper. Candidate: dean_os/agent_capability_matrix.py (unverified).
+  run_agent_context_evidence_review.py: >-
+    Missing wrapper. Candidate: dean_os/packets/context_evidence_review_packet.py (unverified).
+  run_agent_domain_analyst_binding_plan.py: >-
+    Missing wrapper. Candidate: dean_os/analyst_core/domain_analyst_binding_planner.py (unverified).
+  run_agent_domain_analyst_review.py: >-
+    Missing wrapper. Candidates: dean_os/analyst_core/domain_analyst_review_run.py or
+    domain_analyst_thesis_review_packet.py (unverified, and note that
+    run_agent_domain_analyst_thesis_review_packet.py already exists).
+  run_agent_domain_binding_task_dispatch.py: >-
+    Missing wrapper. Candidate: dean_os/domain_binding_task_dispatcher.py (unverified).
+  run_agent_domain_specialist_review_packet.py: >-
+    Missing wrapper. Candidates: dean_os/packets/specialist_context_review_packet.py or
+    dean_os/analyst_core/domain_analyst_review_run.py (unverified).
+  run_agent_full_system_cycle_world_model.py: >-
+    Missing wrapper. Candidate: dean_os/full_system_cycle_world_model_bridge.py (unverified).
+  run_agent_full_system_review_cycle.py: >-
+    Missing wrapper. Candidate: dean_os/full_system_review_cycle.py (unverified).
+  run_agent_orchestrator.py: >-
+    Missing wrapper. Candidate: dean_os/orchestrator.py (unverified). Note
+    run_agent_domain_orchestrator.py exists and may already cover this.
+  run_agent_paper_simulation_result.py: >-
+    Missing wrapper. Candidate: dean_os/paper_simulation_result.py (unverified). Its
+    builder requires a paper_simulation_result_path at construction time.
+  run_agent_pipeline_control_bounded_evidence.py: >-
+    Missing wrapper. Candidate: dean_os/pipeline_control/pipeline_control_bounded_evidence_run.py
+    (unverified). Note run_agent_pipeline_control_bounded_evidence_batch.py exists.
+  run_agent_pipeline_control_feature_causality_audit.py: >-
+    Missing wrapper. Candidate: dean_os/pipeline_control/pipeline_control_feature_causality_audit.py
+    (unverified).
+  run_agent_pipeline_control_walk_forward_validation.py: >-
+    Missing wrapper. Candidate: dean_os/pipeline_control/pipeline_control_walk_forward_validation_run.py
+    (unverified).
+  run_agent_pipeline_stage23_regeneration.py: >-
+    Missing wrapper. Candidate: dean_os/pipeline_stage23_regeneration.py (unverified).
+    Its PipelineStage23Regeneration class has no plain build() signature that a flat
+    CLI can drive, which is why generation was skipped.
+  run_agent_pipeline_stage4_exact_context_review.py: >-
+    Missing wrapper. Candidate: dean_os/pipeline_stage4_exact_context_review.py (unverified).
+  run_agent_real_source_normalized_packet.py: >-
+    Missing wrapper. Candidate: dean_os/packets/real_source_normalized_packet.py (unverified).
+  run_agent_relative_return_direction_policy.py: >-
+    Missing wrapper. Candidate: dean_os/relative_return_direction_policy.py (unverified).
+  run_agent_replay_evidence_refresh.py: >-
+    Missing wrapper. Candidate: dean_os/replays/replay_evidence_refresh_controller.py (unverified).
+  run_agent_replay_lifecycle_journal.py: >-
+    Missing wrapper. Candidate: dean_os/replays/replay_lifecycle_journal_bridge.py (unverified).
+  run_agent_replay_outcome_lifecycle.py: >-
+    Missing wrapper. Candidate: dean_os/replays/replay_outcome_lifecycle_orchestrator.py (unverified).
+  run_agent_research_replay_directionality.py: >-
+    Missing wrapper. Candidate: dean_os/research_replay_directionality_diagnostic.py (unverified).
+  run_agent_sector_to_ticker_bridge.py: >-
+    Missing wrapper. Candidates: dean_os/sector_thesis_to_ticker_basket_bridge.py (the
+    bridge) or dean_os/packets/sector_to_ticker_review_packet.py (the review packet).
+    Unverified, and these are two different things.
+  run_agent_semiconductor_analyst.py: >-
+    Missing wrapper. The semiconductor_analyst agent is registered and enabled in
+    agent_registry.yaml, so it is reachable through the orchestrator rather than a
+    dedicated wrapper. Confirm before adding one.
+  run_agent_specialist_context_review.py: >-
+    Missing wrapper. Candidate: dean_os/packets/specialist_context_review_packet.py (unverified).
+  run_agent_ticker_attribution_audit.py: >-
+    Missing wrapper. Candidate: dean_os/ticker_specific_attribution_audit.py (unverified).
+  run_agent_ticker_focused_notes.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/ticker.py (unverified).
+  run_agent_ticker_focused_replay_bridge.py: >-
+    Missing wrapper. Candidate: dean_os/ticker_focused_replay_exam_bridge.py (unverified).
+  run_agent_world_model_event_learning_packet.py: >-
+    Missing wrapper. Candidate: dean_os/world_model/world_model_event_learning.py
+    (unverified). IMPLEMENTATION_STATUS.md claims this wrapper was added on
+    2026-07-09; it was never committed on any branch.
+  run_agent_world_model_hypothesis_lifecycle.py: >-
+    Missing wrapper. Candidate: dean_os/world_model/world_model_hypothesis_lifecycle_orchestrator.py
+    (unverified).
+  run_agent_world_model_replay_registration_journal.py: >-
+    Missing wrapper. Candidate: dean_os/world_model/world_model_replay_registration_journal.py
+    (unverified). Note run_agent_world_model_replay_registration.py exists and is a
+    different thing (the bridge, not the journal).
+  run_agent_world_model_resolution_journal.py: >-
+    Missing wrapper. Candidate: dean_os/world_model/world_model_resolution_journal.py
+    (unverified). Note run_agent_world_model_review_resolution.py exists and is a
+    different thing.
+
+  # --- SEC evidence producers: modules exist under dean_os/analysts/_producers/sec/ ---
+  run_agent_saved_sec_companyfacts.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/sec/companyfacts.py (unverified).
+  run_agent_saved_sec_derived_ratios.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/sec/ratios.py (unverified).
+  run_agent_saved_sec_filing_index.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/sec/filing_index.py (unverified).
+  run_agent_saved_sec_fundamental_merger.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/sec/merger.py (unverified).
+  run_agent_saved_sec_inline_xbrl.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/sec/inline_xbrl.py (unverified).
+  run_agent_saved_sec_submissions_filing_index.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/sec/submissions_index.py (unverified).
+  run_agent_saved_semiconductor_news_evidence.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/news.py (unverified).
+    SavedSemiconductorNewsEvidenceProducer is referenced by tests, so the producer
+    itself is live; only the CLI is absent.
+  run_agent_saved_ticker_specific_evidence.py: >-
+    Missing wrapper. Candidate: dean_os/analysts/_producers/ticker.py (unverified).
