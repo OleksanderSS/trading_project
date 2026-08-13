@@ -226,6 +226,24 @@ class MacroFeaturesEnricher(BaseEnricher):
         if 'realtime_start' in macro_data.columns:
             macro_data = macro_data.sort_values('realtime_start')
 
+        # FRED sends every observation as a string, and "." for a value it
+        # does not have. Pivoting them unconverted leaves object columns, so
+        # a series whose numbers all happen to be strings stays a string all
+        # the way down -- the macro cache write failed outright on it:
+        #
+        #   Could not convert '2.85' with type str: tried to convert to
+        #   double ... column FRED_BAMLH0A0HYM2 with type object
+        #
+        # Anything that is not a number is a missing observation, not a
+        # category, so coercing is the whole of the fix.
+        macro_data['value'] = pd.to_numeric(macro_data['value'], errors='coerce')
+        unusable = int(macro_data['value'].isna().sum())
+        if unusable:
+            logger.info(
+                "%d macro observations are not numeric (FRED writes '.' for "
+                "a missing print); they become NaN rather than text.", unusable,
+            )
+
         macro_pivoted = macro_data.pivot_table(index=date_col, columns=
             'series_id', values='value', aggfunc='last')
         macro_pivoted.columns = [f'FRED_{col}' for col in macro_pivoted.columns

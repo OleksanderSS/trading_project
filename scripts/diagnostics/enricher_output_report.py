@@ -161,6 +161,19 @@ def main() -> int:
     print(f"{len(bars)} {args.timeframe} bars of {bars['ticker'].iloc[0]}\n")
 
     news, macro = _load_source_tables()
+
+    # Score the news the way Stage 3 does before any enricher sees it.
+    # Without this the report ran the sentiment enricher against a corpus
+    # whose `sentiment` column is 15,000 empty strings and duly reported
+    # "0 columns" -- accusing the enricher of the very defect that was fixed
+    # by moving scoring into the stage. A diagnostic that does not reproduce
+    # the pipeline's own preparation measures a different pipeline.
+    if news is not None:
+        from src.pipeline.stages.stage_3_feature_engineering import (
+            FeatureEngineeringStage,
+        )
+        news = FeatureEngineeringStage._score_news_sentiment(news)
+
     missing = [name for name, frame in (("news", news), ("macro", macro))
                if frame is None]
     print(f"news rows: {0 if news is None else len(news)} | "

@@ -110,3 +110,50 @@ def test_the_collector_requests_every_vintage():
     source = inspect.getsource(FredCollector._fetch_series)
     assert '"realtime_start": "1776-07-04"' in source
     assert '"realtime_end": "9999-12-31"' in source
+
+
+def test_macro_values_arrive_as_numbers(enricher):
+    """FRED sends strings, and "." for a print it does not have.
+
+    Pivoted unconverted they stay object columns, and the macro cache write
+    failed outright on one:
+
+        Could not convert '2.85' with type str: tried to convert to double
+        ... column FRED_BAMLH0A0HYM2 with type object
+
+    Anything that is not a number is a missing observation, not a category.
+    """
+    macro = pd.DataFrame({
+        "series_id": ["BAMLH0A0HYM2"] * 3,
+        "datetime": pd.to_datetime(["2025-06-01", "2025-07-01", "2025-08-01"]),
+        "available_at": pd.to_datetime(["2025-06-02", "2025-07-02", "2025-08-02"]),
+        "realtime_start": pd.to_datetime(["2025-06-02", "2025-07-02", "2025-08-02"]),
+        "value": ["2.85", ".", "3.10"],
+    })
+
+    pivoted = enricher._pivot_macro_data(macro)
+
+    column = pivoted["FRED_BAMLH0A0HYM2"]
+    assert str(column.dtype).startswith("float"), (
+        "an object column here is what broke the cache write"
+    )
+    assert column.tolist() == pytest.approx([2.85, 3.10])
+    # The "." row leaves no entry at all, which is right: nothing was
+    # published on that date, so there is no publication event to record.
+    assert pd.Timestamp("2025-07-02") not in pivoted.index
+
+
+def test_the_pivot_can_be_written_to_parquet(enricher, tmp_path):
+    """The failure that surfaced this: object columns break the cache write."""
+    macro = pd.DataFrame({
+        "series_id": ["CPIAUCSL"] * 2,
+        "datetime": pd.to_datetime(["2025-06-01", "2025-07-01"]),
+        "available_at": pd.to_datetime(["2025-07-15", "2025-08-12"]),
+        "realtime_start": pd.to_datetime(["2025-07-15", "2025-08-12"]),
+        "value": ["321.500", "322.132"],
+    })
+
+    target = tmp_path / "macro.parquet"
+    enricher._pivot_macro_data(macro).to_parquet(target)
+
+    assert target.exists()
