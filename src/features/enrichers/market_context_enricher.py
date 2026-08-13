@@ -5,7 +5,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
 from src.core.logging.logger import ProjectLogger
 
 from .base import BaseEnricher
@@ -50,8 +49,17 @@ class MarketContextEnricher(BaseEnricher):
                 "put_call_ratio",
             ],
         )
-        # Keep the point-in-time analyzer available to callers that need a latest snapshot.
-        self.analyzer = MarketContextAnalyzer(context_features=self.context_features)
+        # `self.analyzer = MarketContextAnalyzer(...)` stood here, described as
+        # "kept available to callers that need a latest snapshot". No caller
+        # ever asked: the attribute was set and never read again, and this
+        # enricher computes its own columns in _build_single_series_context --
+        # a causal, vectorised implementation that supersedes the analyzer's
+        # point-in-time one. Construction cost plus a false impression that
+        # the analyzer participates in feature building.
+        #
+        # The class stays where it is: it still has tests, and tests/
+        # smoke_test_system.py exercises it directly. It simply is not part of
+        # this path.
         logger.info(
             "MarketContextEnricher initialized with %s features",
             len(self.context_features),
@@ -176,13 +184,37 @@ class MarketContextEnricher(BaseEnricher):
             "hour_of_day": 0.0,
             "day_of_week": 0.0,
         }
+        fully_defaulted = []
         for feature in self.context_features:
             if feature not in frame.columns:
                 frame[feature] = defaults.get(feature, 0.0)
-            frame[feature] = (
+            computed = (
                 pd.to_numeric(frame[feature], errors="coerce")
                 .replace([np.inf, -np.inf], np.nan)
-                .fillna(defaults.get(feature, 0.0))
+            )
+            if len(computed) and not computed.notna().any():
+                fully_defaulted.append(feature)
+            frame[feature] = computed.fillna(defaults.get(feature, 0.0))
+
+        if fully_defaulted:
+            # A feature filled entirely by its neutral default is a constant
+            # column: inert for a model, and indistinguishable in the batch
+            # from one that was measured and happened to be neutral. Measured
+            # on 2026-08-13, market_context_put_call_ratio is the constant 1.0
+            # and market_context_dollar_strength the constant 100.0 on all
+            # 25,172 15m rows -- put_call_ratio because CBOE serves 403 and
+            # the collector is off, dollar_strength because no DXY or
+            # FRED_DTWEXBGS column reaches here.
+            #
+            # The default stays: NaN would only move the same problem into the
+            # imputer. What was missing is that nobody said so. The cost of
+            # silence is not today, when the column is constant, but the first
+            # run where the feed starts arriving -- the column then acquires a
+            # discontinuity at the boundary with nothing marking it.
+            logger.warning(
+                "Market context features filled entirely by their default "
+                "(no source column reached this enricher): %s",
+                ", ".join(sorted(fully_defaulted)),
             )
         return frame[self.context_features]
 
