@@ -541,12 +541,19 @@ def _summary(
     for item in block_classifications:
         counts[item["classification"]] += 1
     file_a = sum(1 for item in file_classifications if item["category"] == "A")
+    draft_bundle_found = bool(block_classifications or file_classifications)
     status = "staged_workbench_review_ready"
     if safety["overall_status"] != "review_only_boundaries_preserved":
         status = "staged_workbench_review_safety_warning"
+    elif not draft_bundle_found:
+        # An empty read is not a clean review. draft_bundle_found was already
+        # computed here but never reached review_status, so a missing or emptied
+        # bundle reported "ready" with zero classified blocks -- a reader could
+        # only tell the difference by noticing the counts were 0.
+        status = "staged_workbench_review_blocked_missing_draft_bundle"
     return {
         "review_status": status,
-        "draft_bundle_found": bool(block_classifications or file_classifications),
+        "draft_bundle_found": draft_bundle_found,
         "staged_block_count": len(block_classifications),
         "staged_file_count": len(file_classifications),
         "integrate_candidate_count": counts["integrate_candidate"],

@@ -1,12 +1,64 @@
+"""The draft bundle these tests classify was never committed to git.
+
+`dean_os/draft/dean_os_after_245_full_context_bundle` existed only in the working
+directory of an earlier agent session and is gone. That exposed the real defect:
+the review reported `staged_workbench_review_ready` while reading nothing at all,
+because `draft_bundle_found` was computed and then never allowed to affect
+`review_status`. An empty read looked exactly like a clean review.
+
+So the missing-input behaviour is asserted unconditionally below, and the
+classification assertions skip when the bundle is absent rather than pinning the
+suite to a directory that cannot be restored.
+"""
 from __future__ import annotations
 
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from dean_os.staged_workbench_integration_review import StagedWorkbenchIntegrationReview
 
+DRAFT_BUNDLE = Path(__file__).resolve().parents[2] / "dean_os" / "draft" / "dean_os_after_245_full_context_bundle"
+DROPZONE = Path(__file__).resolve().parents[2] / "docs" / "research"
 
+requires_bundle = pytest.mark.skipif(
+    not DRAFT_BUNDLE.exists(),
+    reason=f"staged draft bundle is not present: {DRAFT_BUNDLE}",
+)
+
+
+def test_missing_draft_bundle_blocks_the_review_instead_of_reporting_ready(tmp_path):
+    payload = StagedWorkbenchIntegrationReview(tmp_path / "reports").build(
+        draft_bundle=tmp_path / "no_such_bundle",
+        dropzone=DROPZONE,
+        save=False,
+    )
+
+    summary = payload["summary"]
+    assert summary["review_status"] == "staged_workbench_review_blocked_missing_draft_bundle"
+    assert summary["draft_bundle_found"] is False
+    assert summary["staged_block_count"] == 0
+    assert summary["can_trade"] is False
+    assert summary["can_create_recommendation"] is False
+
+
+def test_empty_draft_bundle_is_treated_as_missing(tmp_path):
+    empty = tmp_path / "empty_bundle"
+    empty.mkdir()
+
+    payload = StagedWorkbenchIntegrationReview(tmp_path / "reports").build(
+        draft_bundle=empty,
+        dropzone=DROPZONE,
+        save=False,
+    )
+
+    assert payload["summary"]["review_status"] == "staged_workbench_review_blocked_missing_draft_bundle"
+    assert payload["summary"]["draft_bundle_found"] is False
+
+
+@requires_bundle
 def test_staged_workbench_review_classifies_blocks_and_keeps_safety_boundaries(tmp_path):
     repo_root = Path(__file__).resolve().parents[2]
     payload = StagedWorkbenchIntegrationReview(tmp_path / "reports").build(
@@ -35,6 +87,7 @@ def test_staged_workbench_review_classifies_blocks_and_keeps_safety_boundaries(t
     assert payload["safety_boundary_audit"]["overall_status"] == "review_only_boundaries_preserved"
 
 
+@requires_bundle
 def test_staged_workbench_review_marks_vertical_slice_projection_gap(tmp_path):
     repo_root = Path(__file__).resolve().parents[2]
     payload = StagedWorkbenchIntegrationReview(tmp_path / "reports").build(
@@ -53,6 +106,7 @@ def test_staged_workbench_review_marks_vertical_slice_projection_gap(tmp_path):
     assert payload["where_we_looped"]["loop_status"] == "loop_detected"
 
 
+@requires_bundle
 def test_staged_workbench_review_saves_markdown_and_cli_runs(tmp_path):
     repo_root = Path(__file__).resolve().parents[2]
     payload = StagedWorkbenchIntegrationReview(tmp_path / "reports").build(
