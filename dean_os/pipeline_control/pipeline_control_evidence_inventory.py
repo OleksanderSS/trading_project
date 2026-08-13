@@ -169,7 +169,16 @@ def render_pipeline_control_evidence_inventory_markdown(payload: dict[str, Any])
     return "\n".join(lines).strip() + "\n"
 
 
+# Metric evidence is a small, lineage-bearing artifact. Anything this large is a
+# bulk results dump (a Colab accumulation file, a full run log), and flattening it
+# costs more than the inventory can ever learn from it.
+_MAX_VERIFIABLE_ARTIFACT_BYTES = 25 * 1024 * 1024
+
+
 def _inventory_path(path: Path) -> dict[str, Any]:
+    oversized = _oversized_artifact(path)
+    if oversized is not None:
+        return oversized
     artifact = _load_json(path)
     if not artifact["available"]:
         return {
@@ -722,6 +731,37 @@ def _resolve_manifest_path(manifest_path: Path, candidate_path: str) -> Path:
     return path
 
 
+def _oversized_artifact(path: Path) -> dict[str, Any] | None:
+    """Record an unverifiably large artifact instead of trying to parse it.
+
+    Returning a record rather than skipping the path keeps the refusal visible in
+    the inventory, so an artifact that should have been evidence cannot go missing
+    without anyone noticing.
+    """
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return None
+    if size <= _MAX_VERIFIABLE_ARTIFACT_BYTES:
+        return None
+    return {
+        "artifact_id": _artifact_id(path),
+        "path": str(path),
+        "exists": True,
+        "classification": "unverifiable_oversized_artifact",
+        "usable_as_model_evaluation": False,
+        "usable_as_feature_stability": False,
+        "usable_as_supporting_artifact": False,
+        "recognized_fields": {},
+        "notes": [
+            f"Artifact is {size / 1_048_576:.1f} MB, above the "
+            f"{_MAX_VERIFIABLE_ARTIFACT_BYTES / 1_048_576:.0f} MB limit for in-process "
+            "verification. Metric evidence is expected to be a small lineage-bearing "
+            "artifact; point the inventory at one rather than at a bulk results dump."
+        ],
+    }
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {"available": False, "payload": {}, "message": f"Missing file: {path}"}
@@ -749,20 +789,50 @@ def _flatten(payload: Any, prefix: str = "") -> dict[str, Any]:
     return {}
 
 
+# A full traversal is bounded so a pathological artifact degrades into an
+# unverified record instead of stalling the run. On 2026-08-13 the inventory
+# picked up a 66 MB data/colab/accumulated/**/colab_results.json and
+# _is_synthetic_or_fixture ran six independent recursive scans over it, which
+# never finished and froze the whole dean_os test suite.
+_TRAVERSAL_NODE_BUDGET = 400_000
+
+
+def _find_keys(payload: Any, keys: tuple[str, ...]) -> dict[str, Any]:
+    """First non-null value for each key, found in one bounded depth-first pass.
+
+    Callers that need several keys must use this rather than calling _find_key
+    per key: each extra key used to cost another full traversal of the payload.
+    """
+    wanted = {_normalize_key(key) for key in keys}
+    found: dict[str, Any] = {}
+    budget = [_TRAVERSAL_NODE_BUDGET]
+
+    def visit(node: Any) -> None:
+        if budget[0] <= 0 or len(found) == len(wanted):
+            return
+        budget[0] -= 1
+        if isinstance(node, dict):
+            for current_key, value in node.items():
+                normalized = _normalize_key(str(current_key))
+                if normalized in wanted and normalized not in found and value is not None:
+                    found[normalized] = value
+                    if len(found) == len(wanted):
+                        return
+                visit(value)
+                if budget[0] <= 0 or len(found) == len(wanted):
+                    return
+        elif isinstance(node, list):
+            for item in node:
+                visit(item)
+                if budget[0] <= 0 or len(found) == len(wanted):
+                    return
+
+    visit(payload)
+    return found
+
+
 def _find_key(payload: Any, key: str) -> Any:
-    if isinstance(payload, dict):
-        for current_key, value in payload.items():
-            if _normalize_key(str(current_key)) == _normalize_key(key):
-                return value
-            found = _find_key(value, key)
-            if found is not None:
-                return found
-    if isinstance(payload, list):
-        for item in payload:
-            found = _find_key(item, key)
-            if found is not None:
-                return found
-    return None
+    return _find_keys(payload, (key,)).get(_normalize_key(key))
 
 
 def _first_present(flattened: dict[str, Any], aliases: tuple[str, ...]) -> bool:
@@ -787,10 +857,14 @@ def _number(value: Any) -> float | None:
 
 
 def _is_synthetic_or_fixture(payload: Any) -> bool:
-    if _find_key(payload, "fixture_not_evidence") is True or _find_key(payload, "synthetic") is True:
+    found = _find_keys(
+        payload,
+        ("fixture_not_evidence", "synthetic", "mode", "artifact_type", "source_type", "evidence_class"),
+    )
+    if found.get("fixture_not_evidence") is True or found.get("synthetic") is True:
         return True
     for key in ("mode", "artifact_type", "source_type", "evidence_class"):
-        value = _find_key(payload, key)
+        value = found.get(key)
         if value is not None:
             text = str(value).lower()
             if "synthetic" in text or "fixture" in text:

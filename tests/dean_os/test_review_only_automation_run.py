@@ -227,6 +227,10 @@ def test_review_only_automation_cli_runs(tmp_path):
         capture_output=True,
         text=True,
         check=True,
+        # Without a timeout this call froze the entire dean_os suite: the CLI walked a
+        # 66 MB accumulated-results artifact and never returned, so the suite sat at
+        # 79% indefinitely with no indication of which test was responsible.
+        timeout=300,
     )
 
     assert "Automation status:" in result.stdout
