@@ -217,9 +217,36 @@ class NLPFeaturesEnricher(BaseEnricher):
         return final_df
 
     def _get_ticker_features(self, features_to_merge: pd.DataFrame, ticker: str) -> pd.DataFrame:
-        """Get features for specific ticker."""
+        """Features for one ticker, falling back to unattributed news.
+
+        This filtered on an exact ticker match and stopped there. Most of the
+        corpus carries no ticker at all -- RSS feeds and keyword-driven
+        Google News are market-wide -- so `ticker_features` came back empty
+        for every ticker, the caller appended each group unchanged, and the
+        run logged
+
+            [QuickNewsAnalyzer] Clustering complete: 15274 news in 5 clusters
+            NLP enrichment complete. Added features: []
+
+        Fifteen thousand articles analysed, clustered, scored, and dropped at
+        the last step for want of a ticker column nobody filled.
+
+        Reproduced: identical news attached to AAPL bars yields three columns
+        when tagged 'AAPL' and none when its ticker is NaN.
+
+        Unattributed news falls back to every ticker, which is what "general
+        market news" means. Another ticker's news does NOT -- MSFT's article
+        is not evidence about AAPL, and the keyword enricher already draws
+        the line in the same place.
+        """
         if 'ticker' in features_to_merge.columns:
             ticker_features = features_to_merge[features_to_merge['ticker'] == ticker]
+            if ticker_features.empty:
+                tickers = features_to_merge['ticker']
+                ticker_features = features_to_merge[
+                    tickers.isna()
+                    | tickers.astype(str).str.lower().isin({'general', 'nan', ''})
+                ]
         else:
             # Global news applies to all tickers
             ticker_features = features_to_merge.copy()
