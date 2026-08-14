@@ -211,6 +211,18 @@ def main() -> int:
                   f"{type(exc).__name__}: {str(exc)[:40]}")
             continue
         elapsed = time.perf_counter() - started
+
+        # Apply the orchestrator's own post-processing. Calling `enrich`
+        # directly skips it, and skipping the row-label restoration let
+        # duplicate labels reach market_context here -- "cannot reindex on an
+        # axis with duplicate labels" -- in a pipeline where the real run has
+        # no such problem. A diagnostic that runs enrichers differently from
+        # production reports on a pipeline that does not exist.
+        result = FeatureOrchestrator._restore_input_row_order(
+            enricher, frame, result)
+        result = FeatureOrchestrator._restore_input_row_labels(
+            enricher, frame, result)
+
         added = [c for c in result.columns if c not in before and c not in SERVICE]
         # Carry the enriched frame forward, exactly as FeatureOrchestrator
         # does, so the next enricher sees what it will really be handed.
