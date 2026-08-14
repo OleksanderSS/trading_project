@@ -134,17 +134,67 @@ def normalize_metadata_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def parse_mixed_datetimes(values: pd.Series, *, utc: bool = False) -> pd.Series:
+    """Parse a date column whose rows do not all share one format.
+
+    pandas 2 infers a single format from the first non-null value and coerces
+    everything that does not match it to NaT. News arrives here as the
+    concatenation of four tables, each with its own convention:
+
+        newsapi   2026-05-13T18:54:31Z     ISO with time
+        rss       Timestamp(... Europe/Kiev)
+        sec       2026-05-12               date only
+
+    So `pd.to_datetime(col, errors='coerce', utc=True)` locked onto ISO and
+    silently discarded every SEC filing: measured on the live database, 12,252
+    of 35,673 rows survived — exactly newsapi (2,510) plus rss (9,742), with
+    all 23,421 filings turned to NaT. Those filings are the ONLY news rows
+    that carry a ticker, so their loss also decided that the hourly keyword
+    aggregation had nothing but market-wide rows to group.
+
+    `format='mixed'` parses each value on its own terms. It is slower, so it
+    is used only as a retry, and only for an object column: a frame that is
+    already datetime64 has nothing to re-infer.
+
+    Genuinely unparseable values stay NaT under both paths, which is correct —
+    the retry recovers rows lost to format inference, not rows with no date.
+    """
+    parsed = pd.to_datetime(values, errors="coerce", utc=utc)
+    if str(getattr(values, "dtype", "")) != "object":
+        return parsed
+
+    lost = values.notna() & parsed.isna()
+    if not bool(lost.any()):
+        return parsed
+
+    retried = pd.to_datetime(values, errors="coerce", utc=utc, format="mixed")
+    if not pd.api.types.is_datetime64_any_dtype(retried):
+        # Rows carrying different UTC offsets have no single naive
+        # representation, so pandas hands back an object column — and `.dt`
+        # on that raises where the caller expects a date. Normalising to UTC
+        # is well defined and is what every caller here does next anyway.
+        retried = pd.to_datetime(values, errors="coerce", utc=True, format="mixed")
+    recovered = int((parsed.isna() & retried.notna()).sum())
+    if recovered:
+        logger.info(
+            "Recovered %d timestamps that a single inferred format had "
+            "discarded (the column holds more than one date format).",
+            recovered,
+        )
+    return retried
+
+
 def _normalize_datetime_values(
     values: pd.Series,
     *,
     declared_timezone: str | None,
 ) -> pd.Series:
-    parsed = pd.to_datetime(values, errors="coerce")
+    parsed = parse_mixed_datetimes(values)
     timezone = getattr(parsed.dt, "tz", None)
     if timezone is not None:
         return parsed.dt.tz_convert("UTC")
     if str(declared_timezone or "").upper() == "UTC":
-        return pd.to_datetime(values, errors="coerce", utc=True)
+        return parse_mixed_datetimes(values, utc=True)
     return parsed
 
 

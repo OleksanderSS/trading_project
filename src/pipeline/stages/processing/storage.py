@@ -6,6 +6,7 @@ import pandas as pd
 
 from src.core.file_management.file_manager import FileManager
 from src.core.logging.logger import ProjectLogger
+from src.features.utils.datetime_utils import parse_mixed_datetimes
 
 logger = ProjectLogger.get_logger('ProcessingStorage')
 
@@ -27,7 +28,13 @@ class ProcessingStorage:
             try:
                 if isinstance(data, pd.DataFrame):
                     if 'published_at' in data.columns:
-                        data['published_at'] = pd.to_datetime(data['published_at'], utc=True, errors='coerce')
+                        # Four news tables are concatenated here, each with its
+                        # own date convention. A single inferred format kept
+                        # 12,252 of 35,673 rows and turned all 23,421 SEC
+                        # filings into NaT -- the only rows carrying a ticker.
+                        data['published_at'] = parse_mixed_datetimes(
+                            data['published_at'], utc=True
+                        )
                     path = f"data/processed/{key}_{timestamp}.parquet"
                     data.to_parquet(path)
                     saved_paths[key] = path
@@ -106,7 +113,9 @@ class ProcessingStorage:
             nested_key = f"{prefix}_{safe_key}"
             if isinstance(value, pd.DataFrame):
                 if 'published_at' in value.columns:
-                    value['published_at'] = pd.to_datetime(value['published_at'], utc=True, errors='coerce')
+                    value['published_at'] = parse_mixed_datetimes(
+                        value['published_at'], utc=True
+                    )
                 path = f"data/processed/{nested_key}_{timestamp}.parquet"
                 value.to_parquet(path)
                 saved_paths[key] = path

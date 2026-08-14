@@ -180,10 +180,25 @@ class HypeEnricher(BaseEnricher):
                 )
                 return df_enriched
 
-        # merge_asof, not an exact match: a bar takes the most recent closed
-        # window, so 14:15 and 14:30 inherit the 13:00-13:59 count instead of
-        # nothing at all. An exact merge on the hour only ever matched bars
-        # whose clock reading equalled a window label.
+        # A bar takes the count of its OWN most recent closed window, matched
+        # by flooring its clock to that window rather than by comparing raw
+        # timestamps. The original exact merge compared raw timestamps, so
+        # only bars landing exactly on the hour ever matched and 14:15 got
+        # nothing.
+        #
+        # merge_asof was the first repair and it overshot: with no tolerance a
+        # bar inherits the last count for as long as the series runs, so after
+        # the final news window `hype_available` is 1 forever. That is the
+        # constant-flag failure this file's sibling tests were written to stop
+        # -- `sentiment_available` had already been measured as the constant
+        # 1.0 across all three timeframes for the same reason.
+        #
+        # Flooring keeps what merge_asof was for (14:15 and 14:30 inherit the
+        # 13:00-13:59 count, labelled 14:00 after the +1h shift) and drops
+        # what it cost: an hour with no news has its own row of zero from the
+        # Grouper, and a bar past the end of the news has no row at all, so
+        # the flag means "a reading applicable to this bar" as its two
+        # siblings do.
         if 'datetime' not in news_count.columns:
             logger.error(
                 "News counts have no 'datetime' after normalisation (have "
@@ -191,33 +206,26 @@ class HypeEnricher(BaseEnricher):
             )
             return df_enriched
         right = news_count.dropna(subset=['datetime']).sort_values('datetime')
+        window = df_enriched['datetime'].dt.floor('1h')
         if 'ticker' in merge_keys and 'ticker' in right.columns:
-            parts = []
-            for ticker, group in df_enriched.groupby('ticker', sort=False):
-                per = right[right['ticker'] == ticker].drop(columns=['ticker'])
-                if per.empty:
-                    parts.append(group.assign(news_count=np.nan))
-                    continue
-                # Keep each row's original label: merge_asof returns a
-                # fresh RangeIndex, and concatenating per-ticker pieces then
-                # yields duplicates, which breaks any downstream reindex.
-                labelled = group.sort_values('datetime').copy()
-                labelled['__row_label'] = labelled.index
-                merged = pd.merge_asof(
-                    labelled,
-                    per.drop_duplicates(subset=['datetime'], keep='last'),
-                    on='datetime', direction='backward',
-                )
-                merged.index = merged['__row_label'].to_numpy()
-                parts.append(merged.drop(columns=['__row_label']))
-            df_enriched = pd.concat(parts).sort_index()
-        else:
-            df_enriched = pd.merge_asof(
-                df_enriched.sort_values('datetime'),
-                right.drop(columns=['ticker'], errors='ignore')
-                     .drop_duplicates(subset=['datetime'], keep='last'),
-                on='datetime', direction='backward',
+            counts = (right.drop_duplicates(subset=['ticker', 'datetime'],
+                                            keep='last')
+                           .set_index(['ticker', 'datetime'])['news_count'])
+            keys = pd.MultiIndex.from_arrays(
+                [df_enriched['ticker'].to_numpy(), window.to_numpy()]
             )
+        else:
+            counts = (right.drop(columns=['ticker'], errors='ignore')
+                           .drop_duplicates(subset=['datetime'], keep='last')
+                           .set_index('datetime')['news_count'])
+            keys = pd.Index(window.to_numpy())
+        # Index-aligned lookup, not a positional one: the row labels the
+        # caller handed us are preserved exactly, which merge_asof did not do
+        # (it returns a fresh RangeIndex, and concatenating per-ticker pieces
+        # then produced duplicate labels that broke a downstream reindex).
+        df_enriched = df_enriched.assign(
+            news_count=counts.reindex(keys).to_numpy()
+        )
         df_enriched['hype_available'] = df_enriched['news_count'].notna().astype(int)
         df_enriched['hype_score'] = df_enriched['news_count'].where(df_enriched['news_count'].notna(), 0)
         df_enriched = df_enriched.drop(columns=['news_count'])

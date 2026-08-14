@@ -6,6 +6,7 @@ from src.core.logging.logger import ProjectLogger
 from src.features.enrichers.base import BaseEnricher
 from src.features.nlp.extractors.entity_extractor import EntityExtractor
 from src.features.nlp.extractors.keyword_extractor import KeywordExtractor
+from src.features.utils.datetime_utils import parse_mixed_datetimes
 
 logger = ProjectLogger.get_logger('KeywordEntityEnricher')
 DATETIME64_NS = 'datetime64[ns]'
@@ -180,8 +181,12 @@ class KeywordEntityEnricher(BaseEnricher):
         ) ->pd.DataFrame:
         """Prepare news data with normalized datetime."""
         news_copy = news_df.copy()
-        news_copy[time_col] = pd.to_datetime(news_copy[time_col], errors=
-            'coerce', utc=True)
+        # Four news tables, four date conventions. A single inferred format
+        # kept 12,252 of 35,673 rows on the live database and turned all
+        # 23,421 SEC filings into NaT -- and those filings are the only news
+        # rows carrying a ticker, so losing them also decided what the hourly
+        # aggregation below had left to group by.
+        news_copy[time_col] = parse_mixed_datetimes(news_copy[time_col], utc=True)
         if news_copy[time_col].dt.tz is not None:
             news_copy[time_col] = news_copy[time_col].dt.tz_localize(None)
         news_copy[time_col] = news_copy[time_col].astype(DATETIME64_NS)
@@ -383,14 +388,20 @@ class KeywordEntityEnricher(BaseEnricher):
                 list(aggregated_reset.columns)[:8],
             )
             return df_reset
-        general = aggregated_reset[
-            aggregated_reset['ticker'].astype(str).str.lower() == 'general'
-        ].drop(columns=['ticker'])
+        # Both comparisons case-folded. They used to disagree: 'general' was
+        # matched case-insensitively and the ticker exactly, so a news frame
+        # whose tickers differed in case from the bars' matched NEITHER
+        # branch, every group was appended without counts, and the finalizer
+        # died on columns that were never merged in.
+        keyed = aggregated_reset.assign(
+            _key=aggregated_reset['ticker'].astype(str).str.strip().str.lower()
+        )
+        general = keyed[keyed['_key'] == 'general'].drop(columns=['ticker', '_key'])
 
         parts = []
         for ticker, group in df_reset.groupby('ticker'):
-            own = aggregated_reset[aggregated_reset['ticker'] == ticker]
-            own = own.drop(columns=['ticker']) if not own.empty else own
+            own = keyed[keyed['_key'] == str(ticker).strip().lower()]
+            own = own.drop(columns=['ticker', '_key']) if not own.empty else own
             pieces = [frame for frame in (general, own) if not frame.empty]
             if not pieces:
                 parts.append(group)
@@ -463,7 +474,28 @@ class KeywordEntityEnricher(BaseEnricher):
                 df[col] = df[col].astype(DATETIME64_NS)
 
     def _finalize_merge_result(self, df_merged: pd.DataFrame) ->pd.DataFrame:
-        """Finalize merge result."""
+        """Finalize merge result.
+
+        The merge has three paths that legitimately return the bars untouched
+        — no countable columns, no aggregated rows for any ticker, nothing to
+        concatenate — and this method used to index straight into
+        ['keyword_count', 'entity_count'] regardless. The KeyError propagated
+        to `_enrich_impl`'s handler, which returns the ORIGINAL frame, so a
+        missed merge cost not just the counts but the 45-to-137 seconds of
+        extraction that produced them, on every timeframe of three rebuilds.
+
+        A merge that attached nothing is a fact to report, not an exception.
+        """
+        missing = [c for c in ('keyword_count', 'entity_count')
+                   if c not in df_merged.columns]
+        if missing:
+            logger.error(
+                "Keyword/entity counts were extracted but never attached to "
+                "the bars: %s absent after the merge. Frame has %s. The bars "
+                "are returned unchanged.",
+                missing, list(df_merged.columns)[:10],
+            )
+            return df_merged.set_index('datetime') if 'datetime' in df_merged.columns else df_merged
         df_merged = df_merged.set_index('datetime')
         df_merged['keyword_entity_available'] = (
             df_merged[['keyword_count', 'entity_count']].notna().any(axis=1).astype(int)
