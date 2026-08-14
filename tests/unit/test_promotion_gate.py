@@ -204,7 +204,11 @@ def test_holdout_predictions_are_kept_with_their_timestamps():
     assert len(series) == 40
     assert series[0]['datetime'].startswith('2026-03-01')
     assert series[-1]['datetime'].startswith('2026-04-09')
-    assert {'datetime', 'prediction', 'actual'} == set(series[0])
+    # `probability` joined these three once it emerged that a hard 0/1 made a
+    # coin flip and a near-certainty indistinguishable downstream. Still an
+    # exact set: a key silently appearing or vanishing here is the failure
+    # this line exists to catch.
+    assert {'datetime', 'prediction', 'actual', 'probability'} == set(series[0])
     # A real series, not three points.
     assert len({row['datetime'] for row in series}) == 40
 

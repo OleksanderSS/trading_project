@@ -364,6 +364,9 @@ class BaseTrainer(ABC):
             # to build the frame it feeds the model. Without it, prediction
             # hands a 35-column model all 388 columns and is refused.
             results['winner_selected_features'] = list(winner_columns or [])
+            results['winner_feature_importance'] = self._winner_feature_importance(
+                winner_model, winner_columns
+            )
             self._record_winner_test_score(
                 winner_model, data, is_classif, results, columns=winner_columns
             )
@@ -499,6 +502,42 @@ class BaseTrainer(ABC):
             )
             return list(X_train.columns[:budget])
 
+    @staticmethod
+    def _winner_feature_importance(winner_model: Any,
+                                   winner_columns: list[str] | None) -> dict[str, float]:
+        """Which features the winner actually leaned on.
+
+        `extract_native_feature_importance` unwraps the model wrapper and reads
+        `feature_importances_`, `coef_` or `get_feature_importance` — it works,
+        it is covered by tests, and the only caller it ever had lives in
+        src/archive/dead_pipeline_code/modeling/training.py. When the live
+        stage replaced that code it kept the artifact and dropped the call,
+        passing a literal `{}` instead. All 3,207 feature-stability artifacts
+        from the 2026-08-14 batch therefore read
+        "feature_importance_status": "not_available_from_model" with a count of
+        0 — from RandomForest, CatBoost, LightGBM and XGBoost winners, every
+        one of which exposes importances.
+
+        The columns matter as much as the model. A winner is fitted on its own
+        budget (5 to 35 of 388), and `_importance_dict` returns {} on a length
+        mismatch — silently, the same way it reads when the model genuinely has
+        nothing to give. So the names passed here must be the ones the model
+        was FITTED on, not the full prepared frame.
+        """
+        if winner_model is None or not winner_columns:
+            return {}
+        try:
+            from src.pipeline.stages.modeling import pipeline_control_artifacts
+
+            return pipeline_control_artifacts.extract_native_feature_importance(
+                winner_model, list(winner_columns)
+            )
+        except (ImportError, ValueError, TypeError, AttributeError, KeyError) as e:
+            logging.getLogger(__name__).warning(
+                f"Could not read the winner's feature importance ({e})."
+            )
+            return {}
+
     def _record_winner_test_score(self, winner_model: Any, data: dict[str, Any],
                                 is_classif: bool, results: dict[str, Any],
                                 columns: list[str] | None = None) -> None:
@@ -540,12 +579,14 @@ class BaseTrainer(ABC):
             return
 
         task_type = "classification" if is_classif else "regression"
-        preds = winner_model.predict(self._project(X_holdout, columns))
+        projected = self._project(X_holdout, columns)
+        preds = winner_model.predict(projected)
         score = self.evaluator.calculate(y_holdout, preds, task_type=task_type)
         metric_key = 'F1' if is_classif else 'R2'
 
         results['winner_holdout_predictions'] = self._holdout_prediction_series(
-            X_holdout, y_holdout, preds
+            X_holdout, y_holdout, preds,
+            self._holdout_probabilities(winner_model, projected, is_classif),
         )
         results['winner_holdout_metrics'] = {
             'status': 'measured',
@@ -558,7 +599,63 @@ class BaseTrainer(ABC):
         }
 
     @staticmethod
-    def _holdout_prediction_series(X_holdout: Any, y_holdout: Any, preds: Any) -> list[dict[str, Any]]:
+    def _holdout_probabilities(winner_model: Any, X: Any,
+                               is_classif: bool) -> "np.ndarray | None":
+        """The confidence behind each holdout call, not only the call.
+
+        `predict` collapses a probability into 0 or 1, and 0 or 1 is all this
+        stage ever persisted: the 2026-08-14 batch stored exactly two distinct
+        values across 4,844 out-of-sample rows. Everything downstream that
+        could act on confidence — position size, a per-regime cut-off, any
+        ranking of one signal against another — was handed a coin flip and a
+        near-certainty as the same number.
+
+        What that costs is measurable on that same batch. On
+        target_hourly_breakout_1h the winner fired 22 times in NORMAL and was
+        right 91% of the time, and fired 138 times in TRENDING_UP and was
+        right 48% — at balanced accuracies of 0.841 and 0.837. It ranks
+        equally well in both regimes; only the cut-off is wrong for one of
+        them. Raising it is a one-line change that cannot even be attempted
+        while the probability is discarded at this line.
+
+        Every wrapper under src/models already implements `predict_proba`, and
+        SVMModel passes `probability=True` to SVC specifically so that it can.
+        Nothing in the training path had ever asked.
+
+        Returns P(positive class) for a binary target — directly comparable
+        against a threshold — and the probability of the predicted class for a
+        multiclass one. None for regression, or for any model that cannot
+        produce one: an absent confidence must stay absent rather than be
+        invented as 1.0.
+        """
+        if not is_classif or not hasattr(winner_model, 'predict_proba'):
+            return None
+        try:
+            proba = np.asarray(winner_model.predict_proba(X))
+            if proba.ndim != 2 or proba.shape[1] < 2:
+                return None
+            classes = np.asarray(getattr(winner_model, 'classes_', None)
+                                 if getattr(winner_model, 'classes_', None) is not None
+                                 else getattr(getattr(winner_model, 'model', None),
+                                              'classes_', []))
+            if proba.shape[1] == 2:
+                # Binary: the positive class, wherever sklearn ordered it.
+                positive = 1
+                if classes.size == 2:
+                    match = np.flatnonzero(classes == classes.max())
+                    positive = int(match[0]) if match.size else 1
+                return proba[:, positive]
+            return proba.max(axis=1)
+        except (ValueError, TypeError, AttributeError, IndexError, NotImplementedError) as e:
+            logging.getLogger(__name__).warning(
+                f"Winner exposes predict_proba but it failed ({e}); "
+                f"holdout confidence will be absent for this context."
+            )
+            return None
+
+    @staticmethod
+    def _holdout_prediction_series(X_holdout: Any, y_holdout: Any, preds: Any,
+                                   proba: Any = None) -> list[dict[str, Any]]:
         """Keep the winner's holdout predictions, with their timestamps.
 
         These were computed, reduced to a single R2, and thrown away — and
@@ -597,11 +694,22 @@ class BaseTrainer(ABC):
             else:
                 stamps = [None] * n
 
+            confidence = None
+            if proba is not None:
+                flat = np.asarray(proba).ravel()
+                if len(flat) >= n:
+                    confidence = flat
+
             return [
                 {
                     'datetime': stamps[i],
                     'prediction': float(y_pred[i]),
                     'actual': float(y_true[i]),
+                    'probability': (
+                        float(confidence[i])
+                        if confidence is not None and np.isfinite(confidence[i])
+                        else None
+                    ),
                 }
                 for i in range(n)
                 if np.isfinite(y_pred[i]) and np.isfinite(y_true[i])

@@ -272,6 +272,12 @@ class ModelingStage(BaseStage):
                     'model_type': champion.get('model_type'),
                     'datetime': record.get('datetime'),
                     'prediction': record.get('prediction'),
+                    # The confidence behind the call, not just the call. A
+                    # hard 0/1 makes a coin flip and a near-certainty
+                    # indistinguishable downstream, and this column is
+                    # enumerated by name -- so BaseTrainer producing it is not
+                    # enough on its own for it to reach the artifact.
+                    'probability': record.get('probability'),
                     'actual': record.get('actual'),
                 })
         if not rows:
@@ -1125,7 +1131,17 @@ class ModelingStage(BaseStage):
                     context_fingerprint=context_fingerprint,
                     market_regime=market_regime,
                     volatility_regime=volatility_regime,
-                    feature_importance={},
+                    # Was a literal {}. `extract_native_feature_importance`
+                    # sits in the module this call already imports and does
+                    # exactly this job; the live stage simply never called it,
+                    # so every artifact reported the winner as having no
+                    # importances to give. BaseTrainer now reads them where the
+                    # model and the columns it was FITTED on are both in hand —
+                    # a length mismatch there returns {} indistinguishably from
+                    # a genuine absence.
+                    feature_importance=(
+                        ticker_result.get('winner_feature_importance') or {}
+                    ),
                     stability_analysis=stability_analysis,
                 )
             )
