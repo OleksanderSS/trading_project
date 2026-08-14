@@ -24,7 +24,20 @@ class KeywordEntityEnricher(BaseEnricher):
         """Initialize with optional config from FeatureOrchestrator."""
         super().__init__()
         self.config = config or {}
-        keyword_config = self.config.get('keywords') or self._knowledge_base_keywords()
+        # Union, not "config wins". The enricher's own config carries three
+        # groups -- 14 terms after the extractor drops noise and tickers --
+        # and because that is non-empty the fallback added on 2026-08-13
+        # never fired: `config or knowledge_base` took the smaller list every
+        # time, and keyword_count stayed 0 on all 42,541 rows of the next
+        # rebuild.
+        #
+        # knowledge_base.keywords holds 167 terms in 14 categories and is
+        # what the collection stage already filters news with. Anything the
+        # enricher config adds on top is kept; the shared list is not
+        # replaced by it.
+        keyword_config = self._merge_keyword_sources(
+            self.config.get('keywords'), self._knowledge_base_keywords()
+        )
         self.keyword_extractor = KeywordExtractor(keyword_config)
         entity_config = self.config.get('entities', {'spacy_model':
             'en_core_web_sm', 'disable_components': ['parser', 'lemmatizer',
@@ -173,6 +186,31 @@ class KeywordEntityEnricher(BaseEnricher):
             news_copy[time_col] = news_copy[time_col].dt.tz_localize(None)
         news_copy[time_col] = news_copy[time_col].astype(DATETIME64_NS)
         return news_copy.dropna(subset=[time_col])
+
+    @staticmethod
+    def _merge_keyword_sources(
+        configured: dict | None, shared: dict | None
+    ) -> dict[str, list[str]]:
+        """Both lists, by category, with duplicates removed."""
+        merged: dict[str, list[str]] = {}
+        for source in (shared or {}, configured or {}):
+            if not isinstance(source, dict):
+                continue
+            for category, terms in source.items():
+                if isinstance(terms, str):
+                    terms = [terms]
+                if not isinstance(terms, list):
+                    continue
+                existing = merged.setdefault(str(category), [])
+                for term in terms:
+                    if isinstance(term, str) and term not in existing:
+                        existing.append(term)
+        total = sum(len(v) for v in merged.values())
+        logger.info(
+            "Keyword extraction over %d terms in %d categories "
+            "(knowledge base + enricher config).", total, len(merged),
+        )
+        return merged
 
     @staticmethod
     def _knowledge_base_keywords() -> dict[str, list[str]]:
