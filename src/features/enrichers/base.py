@@ -38,6 +38,57 @@ class BaseEnricher(ABC):
         """
         pass
 
+    def choose_text_column(
+        self, news_df: pd.DataFrame, candidates: list[str]
+    ) -> str | None:
+        """Pick the column that carries text, not the first one that exists.
+
+        This database stores blanks as '' rather than NaN, so "the column is
+        present" and "`notna()` is true" are both satisfied by 15,000 empty
+        strings. Three enrichers were fooled by it in turn, each reporting
+        success on nothing:
+
+            sentiment      15,274 items scored in 2.8s, every one "neutral"
+            keyword_entity 32s per timeframe -> "Avg keywords: 0.0"
+            news_impact    "Successfully calculated" -> range [0.000, 0.000]
+
+        The news_impact case shows why an empty read is not a harmless zero:
+        FinBERT labels an empty string "neutral", and enrichment.yaml weights
+        neutral at 0.0 — correctly, for news that really is neutral. So the
+        whole column became zero, a value that reads exactly like "no news
+        mattered today". The weight is right; labelling blanks as neutral is
+        what was wrong.
+
+        Lifted here from KeywordEntityEnricher, whose own comment had already
+        drawn the conclusion: wherever this news frame is read, "the column
+        exists" has to mean "the column has something in it".
+
+        Returns None when nothing has content, so a caller can refuse rather
+        than proceed on blanks.
+        """
+        filled: dict[str, int] = {}
+        for col in candidates:
+            if col not in news_df.columns:
+                continue
+            values = news_df[col].fillna('').astype(str).str.strip()
+            filled[col] = int((values != '').sum())
+
+        best = max(filled, key=filled.get) if filled else None
+        if best is None or filled[best] == 0:
+            self.logger.error(
+                "No usable text in news data (non-empty counts: %s). "
+                "%s is skipped rather than run on blanks.",
+                filled or news_df.columns.tolist()[:10], self.name,
+            )
+            return None
+
+        if filled[best] < len(news_df):
+            self.logger.info(
+                "%s reading '%s': %d of %d items carry text.",
+                self.name, best, filled[best], len(news_df),
+            )
+        return best
+
     def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Template method for DataFrame enrichment with standardized error handling.

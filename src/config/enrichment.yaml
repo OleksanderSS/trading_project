@@ -125,6 +125,41 @@ enrichment:
       high_impact: 0.8
       medium_impact: 0.3
 
+  context_map:
+    # The columns the context fingerprint is built from, in this order --
+    # position i of every fingerprint IS driver i, so reordering this list
+    # re-points every fingerprint ever written.
+    #
+    # This used to be "every state column" and was never expressible. Joining
+    # all 185 of them left 99.9% of fingerprints unique on the 2026-08-14
+    # export: 7 values repeated out of 12,170 on 15m, 6 of 19,175 on 60m,
+    # 3 of 11,350 daily. A fingerprint that occurs once identifies the ROW,
+    # not the situation, so nothing could match against it -- context_velocity
+    # was 1.0 on every bar and context_anxiety_index the constant 1, and the
+    # k-NN similarity path had nothing to search.
+    #
+    # Measured on the same rows with these eight:
+    #
+    #     15m  1,905 distinct, 1,149 repeating groups, 94% of bars have a twin
+    #     60m  2,038 distinct, 1,362 groups,           96%
+    #     1d   1,340 distinct,   960 groups,           97%
+    #
+    # Chosen for spread, not for individual strength. Ranked by entropy the
+    # winners are day_of_year and day_of_month -- a fingerprint keyed on the
+    # calendar matches coincidence -- and among market columns the top eight
+    # are EMA_20, SMA_20, BB_Middle, SMA_200, SMA_10, EMA_10, obv, EMA_50,
+    # seven of which ask "is price above a moving average" and carry about one
+    # bit between them. One driver per axis instead:
+    fingerprint_columns:
+      - state_SMA_200                 # trend, long
+      - state_SMA_20                  # trend, short
+      - state_ATR_14                  # volatility, range-based
+      - state_VOLATILITY_20           # volatility, realised, longer horizon
+      - state_obv                     # volume
+      - state_RSI_14                  # momentum
+      - state_nlp_sentiment_score     # sentiment
+      - state_macro_composite_score   # macro
+
   time_features:
     module: "src.features.enrichers.time_features_enricher"
     class: "TimeFeaturesEnricher"

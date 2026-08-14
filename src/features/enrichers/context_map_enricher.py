@@ -44,6 +44,30 @@ class ContextMapEnricher(BaseEnricher):
         self.velocity_window = self.config.get('velocity_window', 10)
         self.pattern_length = self.config.get('pattern_length', 5) # Довжина послідовності для k-NN логіки
 
+        # Which state columns compose the fingerprint. Empty means all of
+        # them, which is what this did unconditionally and why the fingerprint
+        # was useless: joining 185 columns left 99.9% of values unique on the
+        # 2026-08-14 export -- 7 repeated out of 12,170 on 15m, 3 out of
+        # 11,350 on daily. Nothing downstream can match a pattern that occurs
+        # once, so context_velocity was 1.0 on every bar and
+        # context_anxiety_index the constant 1.
+        #
+        # Measured on those same rows, non-calendar state columns give:
+        #
+        #     width 6  -> 215 repeated groups, median size 23
+        #     width 8  -> 841 repeated groups, median size  5
+        #     width 12 -> 1,611 groups, median size 3
+        #     width 185 ->   7 groups, median size 1
+        #
+        # Width is not the only thing that matters: ranked by entropy the top
+        # non-calendar columns are EMA_20, SMA_20, BB_Middle, SMA_10, EMA_10 --
+        # eight ways of asking "is price above its moving average", which
+        # carries about one bit between them. A useful list spans trend,
+        # volatility, volume and momentum instead. Ranked WITH the calendar in
+        # it, day_of_year wins outright, and a fingerprint keyed on the date
+        # matches nothing but coincidence.
+        self.fingerprint_columns = list(self.config.get('fingerprint_columns') or [])
+
         # Ознаки вищого порядку для включення у фінгерпрінт
         self.higher_order_features = [
             'market_phase', 'macro_composite_score', 'sentiment_momentum',
@@ -198,9 +222,55 @@ class ContextMapEnricher(BaseEnricher):
         if state_col_name not in state_cols:
             state_cols.append(state_col_name)
 
+    def _fingerprint_drivers(self, res_df: pd.DataFrame, state_cols: list[str],
+                             temporal_cols: list[str]) -> list[str]:
+        """The columns the fingerprint is built from.
+
+        Configured names are honoured in the order given -- position i of a
+        fingerprint IS driver i, so the order is part of the schema and must
+        not be re-sorted. Names absent from the frame are reported rather than
+        skipped in silence: a typo in the list would otherwise narrow the
+        fingerprint invisibly, which is the failure mode this whole change
+        exists to end.
+
+        With no list configured the behaviour is unchanged -- every state
+        column, sorted -- because narrowing it by guesswork would silently
+        redefine every fingerprint ever written. The warning says what that
+        costs.
+        """
+        if not self.fingerprint_columns:
+            every = sorted(set(state_cols + temporal_cols))
+            logger.warning(
+                "Context fingerprint uses all %d state columns. Measured on "
+                "the 2026-08-14 export that leaves 99.9%% of fingerprints "
+                "unique (7 repeat out of 12,170), so context_velocity is 1.0 "
+                "on every bar and context_anxiety_index the constant 1. Set "
+                "`fingerprint_columns` to a short list spanning trend, "
+                "volatility, volume and momentum.", len(every),
+            )
+            return every
+
+        available = set(res_df.columns)
+        chosen = [c for c in self.fingerprint_columns if c in available]
+        missing = [c for c in self.fingerprint_columns if c not in available]
+        if missing:
+            logger.error(
+                "Configured fingerprint columns are absent from the frame and "
+                "the fingerprint is narrower than intended: %s", missing,
+            )
+        if not chosen:
+            logger.error(
+                "None of the configured fingerprint columns exist; falling "
+                "back to every state column."
+            )
+            return sorted(set(state_cols + temporal_cols))
+        logger.info("Context fingerprint built from %d drivers: %s",
+                    len(chosen), chosen)
+        return chosen
+
     def _generate_context_features(self, res_df: pd.DataFrame, state_cols: list[str], temporal_cols: list[str]):
         """Створює фінгерпрінт як конкатенацію станів."""
-        all_state_cols = sorted(set(state_cols + temporal_cols))
+        all_state_cols = self._fingerprint_drivers(res_df, state_cols, temporal_cols)
         # Position i of every fingerprint below IS all_state_cols[i]. Nothing
         # recorded that until now, so any analysis of which driver hurts could
         # only name positions -- and the ordering silently shifts whenever the
@@ -241,9 +311,37 @@ class ContextMapEnricher(BaseEnricher):
         df['context_pattern_id'] = sequences.apply(lambda x: hashlib.sha256(x.encode()).hexdigest()[:8])
 
     def _calculate_context_velocity(self, res_df: pd.DataFrame):
-        """Розраховує швидкість зміни режимів."""
-        fingerprint_changed = (res_df['context_fingerprint'] != res_df.groupby('ticker')['context_fingerprint'].shift(1)).astype(int)
-        res_df['context_velocity'] = fingerprint_changed.rolling(window=self.velocity_window, min_periods=1).mean()
+        """Розраховує швидкість зміни режимів.
+
+        Two defects, and the second makes the column a constant.
+
+        The rolling mean ran over the whole frame while the change flag was
+        computed per ticker, so each ticker's first `velocity_window` bars
+        averaged in the tail of whichever ticker preceded it in row order.
+
+        And the flag itself: `context_fingerprint` joins all 185 state
+        columns, which on the 2026-08-14 export left 99.9% of fingerprints
+        unique — 7 values repeat out of 12,170 on 15m, 3 out of 11,350 on
+        daily. A fingerprint that never repeats changes on every bar, so
+        velocity is 1.0 everywhere (measured mean 0.9994) and anxiety, being
+        `velocity > 0.6`, is the constant 1. Neither can inform anything.
+
+        Measured on the same rows, a fingerprint of the 8 most informative
+        NON-calendar state columns yields 841 repeated groups with a median
+        size of 5; of 6 columns, 215 groups with a median of 23. The width is
+        the whole story, so it is configurable via `fingerprint_columns` and
+        no longer silently "all of them".
+        """
+        changed = (
+            res_df['context_fingerprint']
+            != res_df.groupby('ticker')['context_fingerprint'].shift(1)
+        ).astype(int)
+        res_df['context_velocity'] = (
+            changed.groupby(res_df['ticker'])
+                   .rolling(window=self.velocity_window, min_periods=1)
+                   .mean()
+                   .reset_index(level=0, drop=True)
+        )
         res_df['context_anxiety_index'] = (res_df['context_velocity'] > 0.6).astype(int)
 
     def _log_context_statistics(self, res_df: pd.DataFrame, state_cols: list[str], temporal_cols: list[str]):

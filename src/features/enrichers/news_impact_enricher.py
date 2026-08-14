@@ -6,6 +6,7 @@ import pandas as pd
 from src.analytics.analyzers.news_impact_analyzer import NewsImpactAnalyzer
 from src.core.logging.logger import ProjectLogger
 from src.features.enrichers.base import BaseEnricher
+from src.features.utils.datetime_utils import parse_mixed_datetimes
 
 logger = ProjectLogger.get_logger("NewsImpactEnricher")
 
@@ -123,15 +124,21 @@ class NewsImpactEnricher(BaseEnricher):
             return self._add_zero_scores(df)
 
     def _find_text_column(self, df: pd.DataFrame) -> str | None:
-        """Find the text column in DataFrame."""
-        for col in ['news_title', 'news_text', 'title', 'text', 'description']:
-            if col in df.columns:
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"📝 Text column found: {col}")
-                return col
+        """Pick the column that carries text, not the first one that exists.
 
-        logger.warning("⚠️ No text column found in DataFrame. Skipping news impact enrichment.")
-        return None
+        This took `title` because `title` is in the list and the column is
+        present. Blanks are stored as '' here, so presence proved nothing:
+        FinBERT scored 15,661 empty strings as "neutral" in 0.226 seconds
+        (every one a cache hit on the same hash), enrichment.yaml weights
+        neutral at 0.0 as it should, and that collapsed the whole feature to
+
+            ✅ Added news impact features. Impact score range: [0.000, 0.000]
+
+        on all three timeframes — indistinguishable from "no news mattered".
+        """
+        return self.choose_text_column(
+            df, ['news_title', 'news_text', 'title', 'text', 'description']
+        )
 
     def _find_time_column(self, df: pd.DataFrame) -> str | None:
         """Find the time column in DataFrame."""
@@ -145,8 +152,14 @@ class NewsImpactEnricher(BaseEnricher):
         return None
 
     def _extract_news_rows(self, df: pd.DataFrame, text_col: str) -> pd.DataFrame | None:
-        """Extract rows with news data."""
-        news_rows = df[df[text_col].notna()].copy()
+        """Extract rows that actually carry text.
+
+        `notna()` was true for every blank in this database, so all 15,661
+        rows came through and were scored as neutral. A row with no words in
+        it is not a news item with no sentiment; it is not a news item.
+        """
+        has_text = df[text_col].fillna('').astype(str).str.strip() != ''
+        news_rows = df[has_text].copy()
 
         logger.info(f"📰 Found {len(news_rows)} news rows out of {len(df)} total rows")
 
@@ -163,7 +176,9 @@ class NewsImpactEnricher(BaseEnricher):
         # Prepare for analyzer
         news_prepared = news_rows[[text_col, time_col]].copy()
         news_prepared['text'] = news_prepared[text_col].fillna('')
-        news_prepared[time_col] = pd.to_datetime(news_prepared[time_col], errors='coerce')
+        # Four news tables, four date conventions: a single inferred format
+        # discarded all 23,421 SEC filings elsewhere in this pipeline.
+        news_prepared[time_col] = parse_mixed_datetimes(news_prepared[time_col])
         news_prepared = news_prepared.dropna(subset=[time_col])
         news_prepared = news_prepared.set_index(time_col)
         news_prepared = news_prepared.sort_index()

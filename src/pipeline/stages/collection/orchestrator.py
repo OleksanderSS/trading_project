@@ -649,7 +649,32 @@ class CollectionStage(BaseStage):
 
                 if existing_cols:
                     try:
-                        news_df = news_df.drop_duplicates(subset=existing_cols)
+                        # pandas treats NaN as equal to NaN when finding
+                        # duplicates, so every row that carries NO value in any
+                        # key column shares one key and collapses to a single
+                        # survivor. That is not deduplication, it is deletion by
+                        # a key the source does not have: on 2026-08-14 six
+                        # sources totalling ~777,000 records became 15,860, and
+                        # the line below reported it as an ordinary dedup.
+                        #
+                        # A source whose columns are named differently is a
+                        # mapping problem to fix, not rows to discard silently.
+                        # They are still dropped here -- a row with no title,
+                        # no timestamp and no source cannot be attached to a
+                        # bar causally, so keeping it would only inflate the
+                        # FinBERT pass -- but the count is now stated.
+                        keyed = news_df[existing_cols].notna().any(axis=1)
+                        keyless = int((~keyed).sum())
+                        if keyless:
+                            self.logger.warning(
+                                "%d news records carry no %s at all. They cannot "
+                                "be deduplicated or placed in time, and are "
+                                "dropped. If a source is simply naming these "
+                                "columns differently, map them in the collector "
+                                "-- this is where its rows are being lost.",
+                                keyless, existing_cols,
+                            )
+                        news_df = news_df[keyed].drop_duplicates(subset=existing_cols)
                         self.logger.info(f"Deduplicated news by {existing_cols}: {len(news_df)} records")
                     except TypeError as e:
                         self.logger.error(f"TypeError in drop_duplicates: {e}")
