@@ -38,6 +38,34 @@ class BaseEnricher(ABC):
         """
         pass
 
+    @staticmethod
+    def normalise_news_ticker(values: "pd.Series") -> "pd.Series":
+        """Fold a news frame's ticker onto 'general' or a real symbol.
+
+        `fillna('general')` is not enough, because this database writes blanks
+        as '' and not as NaN. On the 2026-08-14 batch every one of the 15,661
+        cleaned news rows carried ticker == '' -- not one NaN -- so the fill
+        did nothing, the hourly aggregation grouped everything under '', and
+        the merge then looked for 'general' and for 'AAPL' and matched
+        neither. Both branches empty means every bar group is passed through
+        without counts, which is why keyword_count and entity_count were
+        absent from the feature set for four rebuilds running.
+
+        The same '' -- not NaN -- distinction had already fooled three
+        enrichers on the TEXT column (see choose_text_column). This is the
+        same mistake on the ticker column.
+
+        NlpFeaturesEnricher already had the right predicate inline
+        (`isin({'general', 'nan', ''})`); this is that rule, named, so the
+        next caller inherits it instead of rediscovering it.
+
+        Case-folded, because the merge compares these against bar tickers and
+        a case difference costs every count just as silently.
+        """
+        folded = values.astype(str).str.strip().str.lower()
+        blank = folded.isin({'', 'nan', 'none', 'null', 'general'})
+        return folded.mask(blank, 'general')
+
     def choose_text_column(
         self, news_df: pd.DataFrame, candidates: list[str]
     ) -> str | None:
