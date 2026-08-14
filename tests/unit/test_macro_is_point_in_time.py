@@ -157,3 +157,41 @@ def test_the_pivot_can_be_written_to_parquet(enricher, tmp_path):
     enricher._pivot_macro_data(macro).to_parquet(target)
 
     assert target.exists()
+
+
+def test_every_publication_moment_carries_all_known_series(enricher):
+    """Keying on release date made the table almost diagonal.
+
+    A release touches one series, so its row held one value and NaN for the
+    other forty-four. merge_asof picks a single row per bar and hands it that
+    one number — which left 15 FRED columns entirely null on the 2026-08-14
+    batch, among them ICSA with 1,190 published observations and GS10 with
+    383.
+
+    Point-in-time means: as of this moment, the latest value published for
+    every series. Nothing is carried before its own first release.
+    """
+    macro = pd.DataFrame({
+        "series_id": ["CPIAUCSL", "GS10", "CPIAUCSL", "GS10"],
+        "datetime": pd.to_datetime(["2025-06-01", "2025-06-02",
+                                    "2025-07-01", "2025-07-02"]),
+        "available_at": pd.to_datetime(["2025-07-15", "2025-06-03",
+                                        "2025-08-12", "2025-07-03"]),
+        "realtime_start": pd.to_datetime(["2025-07-15", "2025-06-03",
+                                          "2025-08-12", "2025-07-03"]),
+        "value": ["321.5", "4.20", "322.1", "4.35"],
+    })
+
+    pivoted = enricher._pivot_macro_data(macro)
+
+    yields = pivoted["FRED_GS10"]
+    assert yields.notna().all(), (
+        "a yield published in June must still be known in August"
+    )
+    assert yields.iloc[-1] == pytest.approx(4.35), "the latest release wins"
+
+    inflation = pivoted["FRED_CPIAUCSL"]
+    before_release = inflation.loc[inflation.index < pd.Timestamp("2025-07-15")]
+    assert before_release.isna().all(), (
+        "carrying a figure backwards would reintroduce the look-ahead"
+    )

@@ -248,6 +248,21 @@ class MacroFeaturesEnricher(BaseEnricher):
             'series_id', values='value', aggfunc='last')
         macro_pivoted.columns = [f'FRED_{col}' for col in macro_pivoted.columns
             ]
+
+        # Carry each series forward across publication moments.
+        #
+        # Keying on publication date instead of observation date made this
+        # table almost diagonal: a release touches ONE series, so its row has
+        # one value and NaN for the other forty-four. merge_asof then picks a
+        # single row per bar and hands it that one number, leaving the rest
+        # empty -- 15 FRED columns entirely null on the 2026-08-14 batch,
+        # among them ICSA with 1,190 published observations and GS10 with 383.
+        #
+        # A forward fill along the publication axis says what point-in-time
+        # actually means: as of this moment, the latest value published for
+        # every series. Nothing is filled before its first release, so a bar
+        # still cannot see a figure that did not exist.
+        macro_pivoted = macro_pivoted.sort_index().ffill()
         logger.info(
             f'Pivoted macro data into {len(macro_pivoted.columns)} FRED columns'
             )
