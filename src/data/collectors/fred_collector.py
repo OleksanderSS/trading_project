@@ -222,6 +222,29 @@ class FredCollector(BaseCollector):
         url = "https://api.stlouisfed.org/fred/series/observations?" + urlencode(params)
         try:
             response = await client.get(url, timeout=self.timeout)
+            if response.status_code == 400 and "realtime_start" in params:
+                # FRED caps how many vintages one request may span. A daily
+                # series revised daily blows past it -- RRPONTSYD answers
+                #   "There are 2580 vintage dates in the specified period"
+                # -- and the whole collection died on it.
+                #
+                # Those are exactly the series where it matters least: a
+                # daily figure is published the next day, so stamping it with
+                # the collection date costs about a day of look-ahead rather
+                # than the six weeks CPI was costing. Falling back keeps the
+                # series, and the log names which ones lost their true
+                # vintages so the cost is visible.
+                self.logger.warning(
+                    "FRED refused the vintage window for %s (%s). Falling "
+                    "back to the current vintage: its availability will be "
+                    "the collection date, not the release date.",
+                    series_id, response.text[:120].replace("\n", " "),
+                )
+                fallback = {k: v for k, v in params.items()
+                            if k not in ("realtime_start", "realtime_end")}
+                url = ("https://api.stlouisfed.org/fred/series/observations?"
+                       + urlencode(fallback))
+                response = await client.get(url, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
             observations = data.get('observations', [])
