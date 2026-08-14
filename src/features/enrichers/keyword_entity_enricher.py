@@ -364,8 +364,25 @@ class KeywordEntityEnricher(BaseEnricher):
         # These are counts of market attention in an hour. A filing about
         # AAPL and a market-wide headline in the same hour are both attention
         # in that hour, so they sum.
-        counted = [c for c in aggregated_reset.columns
-                   if c not in ('ticker', 'datetime')]
+        # Name the columns rather than assume them. The aggregated frame's
+        # time column is whatever `_prepare_aggregated_for_merge` produced,
+        # and taking "everything that is not ticker or datetime" as the
+        # counts swept the time column in when it was called something else:
+        #
+        #   Error during keyword/entity enrichment: "None of
+        #   [Index(['keyword_count', 'entity_count'])] are in the [columns]"
+        #
+        # — 77 seconds of extraction discarded on every timeframe, three
+        # rebuilds running.
+        counted = [c for c in ('keyword_count', 'entity_count')
+                   if c in aggregated_reset.columns]
+        if not counted or 'datetime' not in aggregated_reset.columns:
+            logger.error(
+                "Aggregated news lacks the columns needed to merge (has %s); "
+                "keyword/entity features not attached.",
+                list(aggregated_reset.columns)[:8],
+            )
+            return df_reset
         general = aggregated_reset[
             aggregated_reset['ticker'].astype(str).str.lower() == 'general'
         ].drop(columns=['ticker'])
