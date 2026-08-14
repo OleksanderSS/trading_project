@@ -347,17 +347,46 @@ class KeywordEntityEnricher(BaseEnricher):
     def _merge_per_ticker(self, df_reset: pd.DataFrame, aggregated_reset:
         pd.DataFrame) ->pd.DataFrame:
         """Merge aggregated news features per ticker group (no cross-ticker leakage)."""
+        # General news is ADDED to a ticker's own, not used only when the
+        # ticker has none.
+        #
+        # Of the four news tables, only sec_filings carries a ticker column,
+        # and it names six of them. So in the concatenated frame every RSS,
+        # Google News and NewsAPI headline has ticker NaN -> 'general', while
+        # those six tickers have their filings. The old rule -- take the
+        # ticker's rows, fall back to general only if there are none -- then
+        # handed those six ONLY their 8-K and 10-Q titles, which contain no
+        # market vocabulary, and dropped the 15,000 headlines where every
+        # keyword hit actually lives. Hence "Avg keywords: 0.0" on rebuild
+        # after rebuild, while the same extractor scored 139 hits across 300
+        # of those headlines when run directly.
+        #
+        # These are counts of market attention in an hour. A filing about
+        # AAPL and a market-wide headline in the same hour are both attention
+        # in that hour, so they sum.
+        counted = [c for c in aggregated_reset.columns
+                   if c not in ('ticker', 'datetime')]
+        general = aggregated_reset[
+            aggregated_reset['ticker'].astype(str).str.lower() == 'general'
+        ].drop(columns=['ticker'])
+
         parts = []
         for ticker, group in df_reset.groupby('ticker'):
-            ticker_features = aggregated_reset[aggregated_reset['ticker']
-                == ticker]
-            if ticker_features.empty:
-                ticker_features = aggregated_reset[aggregated_reset[
-                    'ticker'] == 'general']
-            ticker_features = ticker_features.drop(columns=['ticker']
-                ).drop_duplicates(subset=['datetime'], keep='last')
+            own = aggregated_reset[aggregated_reset['ticker'] == ticker]
+            own = own.drop(columns=['ticker']) if not own.empty else own
+            pieces = [frame for frame in (general, own) if not frame.empty]
+            if not pieces:
+                parts.append(group)
+                continue
+            combined = pd.concat(pieces, ignore_index=True)
+            if counted:
+                combined = (
+                    combined.groupby('datetime', as_index=False)[counted].sum()
+                )
+            else:
+                combined = combined.drop_duplicates(subset=['datetime'], keep='last')
             merged_group = pd.merge_asof(group.sort_values('datetime'),
-                ticker_features.sort_values('datetime'), on='datetime',
+                combined.sort_values('datetime'), on='datetime',
                 direction='backward')
             parts.append(merged_group)
         if not parts:

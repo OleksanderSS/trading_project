@@ -128,3 +128,49 @@ def test_news_with_no_text_anywhere_is_refused(enricher):
     })
 
     assert enricher._find_text_column(news) is None
+
+
+def test_general_news_is_added_to_a_tickers_own_not_replaced_by_it(enricher):
+    """Six tickers were starved by having any news of their own.
+
+    Of the four news tables only sec_filings carries a ticker column, and it
+    names six. Every RSS, Google News and NewsAPI headline therefore arrives
+    with ticker NaN -> 'general'. The old rule took a ticker's own rows and
+    fell back to general only when there were none, so those six received
+    nothing but 8-K and 10-Q titles -- no market vocabulary -- while the
+    15,000 headlines carrying every keyword hit went to the other sixteen.
+
+    Counts of attention in an hour add up: a filing about AAPL and a
+    market-wide headline in the same hour are both attention.
+    """
+    bars = pd.DataFrame({
+        "ticker": ["AAPL"] * 20 + ["MSFT"] * 20,
+        "datetime": list(pd.date_range("2026-07-05", periods=20,
+                                       freq="D", tz="UTC")) * 2,
+        "close": np.linspace(100, 120, 40),
+    })
+    market = "Federal Reserve holds rates as AI semiconductor earnings beat"
+    news = pd.concat([
+        pd.DataFrame({                       # market-wide, no ticker
+            "ticker": [None] * 10,
+            "published_at": pd.date_range("2026-07-04", periods=10,
+                                          freq="D", tz="UTC"),
+            "title": [market] * 10,
+        }),
+        pd.DataFrame({                       # AAPL's own filings, no keywords
+            "ticker": ["AAPL"] * 10,
+            "published_at": pd.date_range("2026-07-04", periods=10,
+                                          freq="D", tz="UTC"),
+            "title": ["8-K"] * 10,
+        }),
+    ], ignore_index=True)
+
+    enriched = enricher._enrich_impl(bars, news=news)
+
+    counts = pd.to_numeric(enriched["keyword_count"], errors="coerce").fillna(0)
+    for ticker in ("AAPL", "MSFT"):
+        rows = counts[enriched["ticker"] == ticker]
+        assert rows.sum() > 0, (
+            f"{ticker} saw no market keywords — having filings of its own "
+            f"must not cost it the market-wide corpus"
+        )
