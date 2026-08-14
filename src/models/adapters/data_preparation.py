@@ -14,6 +14,30 @@ from src.pipeline.target_column_utils import is_identity_column, is_target_like_
 
 logger = ProjectLogger.get_logger("DataPreparationAdapter")
 
+
+def _surviving_feature_names(imputer: SimpleImputer, fit_columns: list[str]) -> list[str]:
+    """Which columns the imputer kept.
+
+    A column with no observed value in the training rows has no median to
+    store, so SimpleImputer drops it and records NaN in `statistics_`.
+    `get_feature_names_out` is the supported answer; reading `statistics_`
+    is the fallback for an imputer pickled by an older sklearn.
+    """
+    try:
+        return [str(name) for name in imputer.get_feature_names_out(fit_columns)]
+    except (AttributeError, ValueError, TypeError) as exc:
+        logger.debug(
+            "get_feature_names_out unavailable (%s: %s); recovering the "
+            "surviving columns from statistics_.", type(exc).__name__, exc,
+        )
+        statistics = getattr(imputer, "statistics_", None)
+        if statistics is None or len(statistics) != len(fit_columns):
+            return list(fit_columns)
+        return [
+            column for column, statistic in zip(fit_columns, statistics)
+            if not np.isnan(statistic)
+        ]
+
 def prepare_data_for_models(
     df: pd.DataFrame,
     ticker: str,
@@ -139,6 +163,28 @@ def prepare_data_for_models(
         x_train_scaled_arr = scaler.fit_transform(x_train_imputed)
         x_val_scaled_arr = scaler.transform(x_val_imputed)
         x_test_scaled_arr = scaler.transform(x_test_imputed)
+
+        # SimpleImputer silently drops a column whose training rows are all
+        # NaN -- it has no median to store -- so the imputed matrix can be
+        # narrower than `feature_cols`, and rebuilding a frame with the
+        # original names blows up:
+        #
+        #   Критична помилка підготовки даних:
+        #   Shape of passed values is (335, 388), indices imply ...
+        #
+        # which aborted training after 34 champions on the 2026-08-14 batch.
+        # The same defect was fixed on the prediction path in
+        # DataPreparationService._surviving_columns; this is the training
+        # side of it.
+        surviving_cols = _surviving_feature_names(imputer, feature_cols)
+        if len(surviving_cols) != len(feature_cols):
+            logger.info(
+                "Imputer dropped %d of %d features with no observed value in "
+                "training (%s...); the frame is rebuilt on what survived.",
+                len(feature_cols) - len(surviving_cols), len(feature_cols),
+                ", ".join(sorted(set(feature_cols) - set(surviving_cols))[:3]),
+            )
+            feature_cols = surviving_cols
 
         x_train_scaled_df = pd.DataFrame(x_train_scaled_arr, columns=feature_cols, index=x_train.index)
         x_val_scaled_df = pd.DataFrame(x_val_scaled_arr, columns=feature_cols, index=x_val.index)
