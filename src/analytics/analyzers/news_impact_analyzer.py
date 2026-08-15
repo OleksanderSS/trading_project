@@ -119,19 +119,64 @@ class NewsImpactAnalyzer(IAnalyzer):
 
     def _determine_significance_levels(self, impact_scores: pd.Series
         ) ->pd.Series:
-        """Determine significance levels for impact scores."""
-        significance_thresholds = self.config.get('significance_thresholds', {}
-            )
-        high_impact_threshold = significance_thresholds.get('high_impact', 0.8)
-        medium_impact_threshold = significance_thresholds.get('medium_impact',
-            0.3)
+        """How unusual this impact is, against the impacts seen before it.
 
-        def get_significance(score):
-            abs_score = abs(score)
-            if abs_score >= high_impact_threshold:
-                return 'high'
-            elif abs_score >= medium_impact_threshold:
-                return 'medium'
-            else:
-                return 'low'
-        return impact_scores.apply(get_significance).astype('category')
+        The thresholds were absolute -- 0.8 for high, 0.3 for medium -- and
+        the score never approaches them. Measured on the 2026-08-15 batch it
+        spans 0.058 to 0.102 in magnitude, so every bar was 'low' and the
+        feature reached the models as the constant 0.
+
+        Absolute cut-offs cannot work here whatever numbers are chosen. The
+        impact score is a time-decayed sum of weighted sentiment, so its scale
+        follows how many articles were collected in the window: extending the
+        news history, adding a source or changing the half-life all move it.
+        A threshold calibrated today would be wrong after the next collection.
+
+        So significance is now RELATIVE -- a score is 'high' if it exceeds the
+        90th percentile of the magnitudes seen up to and including it, and
+        'medium' above the 70th. `expanding` is what makes that honest: at row
+        i it reads rows 0..i and never the future, so the label a bar carries
+        could have been computed at that bar. A whole-series `quantile()` would
+        have been simpler and would have leaked the distribution backwards.
+
+        Until there is enough history to say what "usual" is
+        (`min_history`, default 20 observations) everything is 'low', because
+        an unusual value cannot be recognised without a baseline. That is a
+        statement of ignorance, not a measurement of insignificance.
+
+        Absolute thresholds remain available: set `significance_mode: absolute`
+        with `high_impact` / `medium_impact` for the old behaviour.
+        """
+        cfg = self.config.get('significance_thresholds', {}) or {}
+        magnitude = impact_scores.abs()
+
+        if str(cfg.get('significance_mode', 'relative')).lower() == 'absolute':
+            high = float(cfg.get('high_impact', 0.8))
+            medium = float(cfg.get('medium_impact', 0.3))
+            levels = pd.Series(
+                np.where(magnitude >= high, 'high',
+                         np.where(magnitude >= medium, 'medium', 'low')),
+                index=impact_scores.index,
+            )
+            if levels.nunique() <= 1:
+                logger.error(
+                    "Absolute significance thresholds (%.3f / %.3f) produced a "
+                    "single level across %d scores spanning %.4f to %.4f. The "
+                    "feature is a constant and cannot inform anything.",
+                    high, medium, len(magnitude),
+                    float(magnitude.min()), float(magnitude.max()),
+                )
+            return levels.astype('category')
+
+        high_q = float(cfg.get('high_quantile', 0.90))
+        medium_q = float(cfg.get('medium_quantile', 0.70))
+        min_history = int(cfg.get('min_history', 20))
+
+        expanding = magnitude.expanding(min_periods=min_history)
+        high_cut = expanding.quantile(high_q)
+        medium_cut = expanding.quantile(medium_q)
+
+        levels = pd.Series('low', index=impact_scores.index, dtype=object)
+        levels[magnitude >= medium_cut] = 'medium'
+        levels[magnitude >= high_cut] = 'high'
+        return levels.astype('category')

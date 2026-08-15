@@ -122,6 +122,24 @@ enrichment:
       neutral: 0.0
     half_life_hours: 48  # News impact decays with 48h half-life
     significance_thresholds:
+      # Relative, not absolute. The old cut-offs were high_impact 0.8 /
+      # medium_impact 0.3 while the score spans 0.058-0.102 in magnitude, so
+      # every bar was "low" and the feature reached the models as a constant.
+      #
+      # No absolute number can be right here for long: the impact score is a
+      # time-decayed sum of weighted sentiment, so its scale follows how many
+      # articles were collected. Extending the news history, adding a source
+      # or changing half_life_hours all move it.
+      #
+      # A score is "high" if it exceeds the 90th percentile of the magnitudes
+      # seen UP TO AND INCLUDING it -- an expanding window, so the label a bar
+      # carries could have been computed at that bar. A whole-series quantile
+      # would leak the distribution backwards.
+      significance_mode: relative     # or "absolute" for the old behaviour
+      high_quantile: 0.90
+      medium_quantile: 0.70
+      min_history: 20                 # below this, everything is "low"
+      # Honoured only when significance_mode is "absolute":
       high_impact: 0.8
       medium_impact: 0.3
 
