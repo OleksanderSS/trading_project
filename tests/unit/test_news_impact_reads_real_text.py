@@ -93,6 +93,44 @@ def test_the_impact_score_varies_once_real_text_reaches_the_model(enricher, bars
     )
 
 
+def test_the_path_the_pipeline_actually_takes_reads_real_text(enricher):
+    """This enricher has two copies of the chooser, and the fix hit the wrong one.
+
+    Every run log says "Using traditional format with separate news
+    DataFrame", so `_find_news_text_column` is the live one --
+    `_find_text_column` serves the event-centric path that nothing reaches.
+    Fixing the second changed nothing, and the test above passed only because
+    its fixture puts the body in `text`, which is first in the candidate list.
+
+    The live frame is the other way round. On the 2026-08-15 batch:
+
+        text          0 non-empty of 15,836
+        title    15,836
+        content  13,730
+        description 2,042
+
+    so `text` won on presence and 15,836 blanks were scored neutral.
+    """
+    live_shape = pd.DataFrame({
+        "published_at": pd.date_range("2026-07-01", periods=40, freq="h", tz="UTC"),
+        "text": [""] * 40,          # present, entirely empty -- as stored
+        "title": HEADLINES,
+    })
+
+    assert enricher._find_news_text_column(live_shape) == "title"
+
+
+def test_blank_news_rows_are_dropped_before_scoring(enricher):
+    live_shape = pd.DataFrame({
+        "published_at": pd.date_range("2026-07-01", periods=40, freq="h", tz="UTC"),
+        "title": HEADLINES[:20] + [""] * 20,
+    })
+
+    prepared = enricher._prepare_traditional_news(live_shape, "title", "published_at")
+
+    assert len(prepared) == 20, "blanks become neutral, and neutral is weighted zero"
+
+
 def test_the_check_is_shared_rather_than_written_a_third_time():
     """Both enrichers reach the same implementation on BaseEnricher."""
     from src.features.enrichers.base import BaseEnricher

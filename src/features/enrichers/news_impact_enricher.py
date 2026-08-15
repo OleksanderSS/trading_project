@@ -302,13 +302,26 @@ class NewsImpactEnricher(BaseEnricher):
             return df
 
     def _find_news_text_column(self, news_df: pd.DataFrame) -> str | None:
-        """Find the text column in news DataFrame."""
-        for col in ['text', 'title', 'description', 'content']:
-            if col in news_df.columns:
-                return col
+        """Pick the column that carries text, not the first one that exists.
 
-        logger.error("No text column found in news data. Skipping news impact enrichment.")
-        return None
+        This enricher has two paths and the traditional one -- the path the
+        pipeline actually takes, per "Using traditional format" in every run
+        log -- had its own copy of the chooser. Fixing the event-centric copy
+        changed nothing, and a unit test passed only because its fixture put
+        the body in `text`. On the 2026-08-15 batch:
+
+            text          0 non-empty of 15,836
+            title    15,836
+            content  13,730
+            description 2,042
+
+        `text` is first in the list and present, so FinBERT scored 15,836
+        empty strings, labelled every one neutral, and the feature came out
+        [0.000, 0.000] again.
+        """
+        return self.choose_text_column(
+            news_df, ['text', 'title', 'description', 'content']
+        )
 
     def _find_news_time_column(self, news_df: pd.DataFrame) -> str | None:
         """Find the time column in news DataFrame."""
@@ -325,8 +338,18 @@ class NewsImpactEnricher(BaseEnricher):
         try:
             news_prepared = news_df.copy()
             news_prepared['text'] = news_prepared[text_col].fillna('')
-            # ✅ FIX: Normalize timezone and convert to datetime64[ns]
-            news_prepared[time_col] = pd.to_datetime(news_prepared[time_col], errors='coerce', utc=True)
+            # A row with no words in it is not a news item with no sentiment;
+            # it is not a news item. Scoring blanks labels them neutral, and
+            # neutral is weighted 0.0, so they drag the whole feature to zero.
+            has_text = news_prepared['text'].astype(str).str.strip() != ''
+            if not bool(has_text.all()):
+                logger.info("Dropping %d news rows with no text in '%s'.",
+                            int((~has_text).sum()), text_col)
+                news_prepared = news_prepared[has_text]
+            # Four news tables, four date conventions: a single inferred
+            # format discarded all 23,421 SEC filings elsewhere here.
+            news_prepared[time_col] = parse_mixed_datetimes(
+                news_prepared[time_col], utc=True)
             if news_prepared[time_col].dt.tz is not None:
                 news_prepared[time_col] = news_prepared[time_col].dt.tz_localize(None)
             news_prepared[time_col] = news_prepared[time_col].astype('datetime64[ns]')
