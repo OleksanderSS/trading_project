@@ -208,12 +208,31 @@ class HypeEnricher(BaseEnricher):
         right = news_count.dropna(subset=['datetime']).sort_values('datetime')
         window = df_enriched['datetime'].dt.floor('1h')
         if 'ticker' in merge_keys and 'ticker' in right.columns:
-            counts = (right.drop_duplicates(subset=['ticker', 'datetime'],
-                                            keep='last')
-                           .set_index(['ticker', 'datetime'])['news_count'])
-            keys = pd.MultiIndex.from_arrays(
-                [df_enriched['ticker'].to_numpy(), window.to_numpy()]
+            # Market-wide news is ADDED to a ticker's own, not used only when
+            # the ticker has none. Of the news tables only sec_filings names a
+            # ticker, so nearly every headline aggregates under 'general', and
+            # a lookup keyed strictly on 'AAPL' finds nothing at all. Counts of
+            # attention in an hour add up: a filing about AAPL and a
+            # market-wide headline in the same hour are both attention.
+            folded = right.assign(
+                ticker=self.normalise_news_ticker(right['ticker'])
             )
+            general = (folded[folded['ticker'] == 'general']
+                       .groupby('datetime')['news_count'].sum())
+            own = (folded[folded['ticker'] != 'general']
+                   .groupby(['ticker', 'datetime'])['news_count'].sum())
+            bars_ticker = (pd.Series(df_enriched['ticker'].to_numpy())
+                           .astype(str).str.strip().str.lower())
+            own_part = own.reindex(pd.MultiIndex.from_arrays(
+                [bars_ticker.to_numpy(), window.to_numpy()])).to_numpy()
+            general_part = general.reindex(pd.Index(window.to_numpy())).to_numpy()
+            combined = (pd.Series(own_part).fillna(0)
+                        + pd.Series(general_part).fillna(0))
+            seen = ~(pd.Series(own_part).isna() & pd.Series(general_part).isna())
+            df_enriched = df_enriched.assign(
+                news_count=combined.where(seen).to_numpy()
+            )
+            counts = keys = None
         else:
             counts = (right.drop(columns=['ticker'], errors='ignore')
                            .drop_duplicates(subset=['datetime'], keep='last')
@@ -223,9 +242,10 @@ class HypeEnricher(BaseEnricher):
         # caller handed us are preserved exactly, which merge_asof did not do
         # (it returns a fresh RangeIndex, and concatenating per-ticker pieces
         # then produced duplicate labels that broke a downstream reindex).
-        df_enriched = df_enriched.assign(
-            news_count=counts.reindex(keys).to_numpy()
-        )
+        if counts is not None:
+            df_enriched = df_enriched.assign(
+                news_count=counts.reindex(keys).to_numpy()
+            )
         df_enriched['hype_available'] = df_enriched['news_count'].notna().astype(int)
         df_enriched['hype_score'] = df_enriched['news_count'].where(df_enriched['news_count'].notna(), 0)
         df_enriched = df_enriched.drop(columns=['news_count'])
@@ -236,8 +256,18 @@ class HypeEnricher(BaseEnricher):
         return df_enriched
 
     def _aggregate_news_by_ticker(self, news_copy: pd.DataFrame, time_col: str) -> pd.DataFrame:
-        """Aggregate news count by ticker and time."""
-        return news_copy.groupby(['ticker', pd.Grouper(key=time_col, freq='1h')]).size().reset_index(name='news_count')
+        """Aggregate news count by ticker and time.
+
+        The ticker is folded onto 'general' or a real symbol first. Every one
+        of the 15,836 cleaned news rows in the 2026-08-15 batch carries
+        ticker == '' -- blank, never NaN -- so grouping on the raw column keys
+        every bucket under '' and the merge against bars keyed 'AAPL' matches
+        nothing. The whole feature came out empty: hype_score 0 on 26,295 bars
+        of all three timeframes.
+        """
+        folded = news_copy.copy()
+        folded['ticker'] = self.normalise_news_ticker(folded['ticker'])
+        return folded.groupby(['ticker', pd.Grouper(key=time_col, freq='1h')]).size().reset_index(name='news_count')
 
     def _aggregate_news_globally(self, news_copy: pd.DataFrame, time_col: str) -> pd.DataFrame:
         """Aggregate news count globally by time."""

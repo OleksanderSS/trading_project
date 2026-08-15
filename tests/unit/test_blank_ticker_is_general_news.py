@@ -153,3 +153,42 @@ def test_a_named_ticker_still_gets_its_own_news_plus_the_market(enricher):
     enriched = enricher._enrich_impl(bars, news=news)
 
     assert pd.to_numeric(enriched["keyword_count"], errors="coerce").fillna(0).sum() > 0
+
+
+def test_hype_also_folds_the_blank_ticker():
+    """The same '' broke a second enricher, and my own fix hid it as a zero.
+
+    HypeEnricher has its own aggregation, so folding the ticker in
+    KeywordEntityEnricher did nothing for it. Grouping on the raw column keyed
+    every bucket under '' while the bars are keyed 'AAPL', so the lookup
+    matched nothing: hype_score was 0 on all 26,295 bars of every timeframe,
+    and hype_available the constant 0 -- which reads as "no news existed"
+    rather than "the join failed".
+
+    Before the floored-window change the same mismatch produced the constant
+    1 instead, so neither value was ever evidence of anything.
+
+    After: 70.7% of 15m bars carry a non-zero score, 51.5% of 60m, 10.9% of
+    daily -- the last being correct, since daily bars span 758 days and the
+    news history covers about 150.
+    """
+    from src.features.enrichers.hype_enricher import HypeEnricher
+
+    news = pd.DataFrame({
+        "ticker": [""] * 20,                    # blank, as stored
+        "published_at": pd.date_range("2026-07-05", periods=20, freq="h", tz="UTC"),
+        "title": ["market headline"] * 20,
+    })
+    bars = pd.DataFrame({
+        "ticker": ["AAPL"] * 24,
+        "datetime": pd.date_range("2026-07-05", periods=24, freq="h", tz="UTC"),
+        "close": np.linspace(100, 110, 24),
+    })
+
+    enriched = HypeEnricher()._enrich_impl(bars, news=news)
+
+    score = pd.to_numeric(enriched["hype_score"], errors="coerce").fillna(0)
+    assert score.sum() > 0, "market-wide news must reach a named ticker's bars"
+    assert pd.to_numeric(enriched["hype_available"], errors="coerce").nunique() > 1, (
+        "a flag with one value cannot distinguish 'no news' from 'no join'"
+    )
