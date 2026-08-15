@@ -179,17 +179,48 @@ class ContextMapEnricher(BaseEnricher):
         return added_cols
 
     def _process_context_columns(self, res_df: pd.DataFrame, context_columns: list[str]) -> tuple:
-        """Перетворює сирі дані у дискретні стани (-1, 0, 1)."""
+        """Перетворює сирі дані у дискретні стани (-1, 0, 1).
+
+        Calendar features are NOT re-emitted here. The branch that handled
+        them did `res_df[state_col_name] = res_df[col]` — a verbatim copy, no
+        discretisation — so `state_hour_15m` held exactly what `hour_15m`
+        held. Measured on the 2026-08-15 export, 24 such duplicates existed
+        (8 calendar names across 3 timeframes), each entering the feature pool
+        as a second, independently selectable copy of a column already in it.
+
+        They were not harmless. Ranked by entropy, calendar columns beat every
+        market column outright — day_of_year scores H=5.06 against 1.58 for
+        the best price state — so they won selection on having many distinct
+        values rather than on saying anything about the market. In this run's
+        importances, state_day_of_month_1d, state_hour_15m and
+        ctx_60m_hour_cos_60m were among the most frequently chosen context
+        columns. The same pull had already been found distorting the context
+        fingerprint, where a date-keyed print matches nothing but coincidence.
+
+        The information is not lost: `hour_15m`, `day_of_week_15m` and the
+        rest remain in the frame, once each, for any model that wants them.
+        What goes is the duplicate wearing a `state_` prefix, which claimed to
+        be a discretised market state and was not.
+
+        test_pipeline_control_train_validation_experiment already asserted
+        `state_day_of_month_15m` must not reach selection; it no longer needs
+        a downstream filter to arrange that.
+        """
         state_cols, temporal_cols = [], []
+        skipped = []
         for col in context_columns:
             if col not in res_df.columns:
                 continue
-            state_col_name = f"state_{col}"
             if col in self.temporal_features:
-                res_df[state_col_name] = res_df[col]
-                temporal_cols.append(state_col_name)
-            else:
-                self._process_numeric_column(res_df, col, state_col_name, state_cols)
+                skipped.append(col)
+                continue
+            self._process_numeric_column(res_df, col, f"state_{col}", state_cols)
+        if skipped:
+            logger.info(
+                "Calendar features left un-duplicated (%d): %s. The raw "
+                "columns stay in the frame; only the identical `state_` copies "
+                "are gone.", len(skipped), sorted(skipped),
+            )
         return state_cols, temporal_cols
 
     def _process_numeric_column(self, res_df: pd.DataFrame, col: str, state_col_name: str, state_cols: list[str]):
