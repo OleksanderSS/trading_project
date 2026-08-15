@@ -595,8 +595,49 @@ class BaseTrainer(ABC):
             'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
             'mse': float(score.get('MSE', 0.0)) if not is_classif else None,
             'holdout_sample_count': int(len(X_holdout)),
+            # Rows are not evidence; EVENTS are. A binary target with 331
+            # holdout rows and three positives passes every row-count check
+            # trivially, and the precision measured on it means nothing —
+            # measured on the 2026-08-15 batch, 36 of 58 promoted contexts
+            # carried fewer than ten positive events.
+            **self._holdout_event_count(y_holdout, is_classif),
             **self._score_naive_baselines(data, is_classif, task_type, metric_key),
         }
+
+    @staticmethod
+    def _holdout_event_count(y_holdout: Any, is_classif: bool) -> dict[str, Any]:
+        """How many times the thing being predicted actually happened.
+
+        Reported separately from the row count because they answer different
+        questions and only one of them bounds what can be concluded. A
+        precision measured on five positives has a 95% interval roughly thirty
+        points wide; the same figure on a hundred is worth acting on.
+
+        Absent for a regression target, where "event" has no meaning — and
+        absent rather than zero, so the gate can tell "not applicable" from
+        "nothing happened".
+        """
+        if not is_classif or y_holdout is None:
+            return {}
+        try:
+            values = pd.to_numeric(
+                pd.Series(np.asarray(y_holdout).ravel()), errors='coerce'
+            ).dropna()
+            if values.empty:
+                return {}
+            if not set(np.unique(values)) <= {0.0, 1.0}:
+                # Multiclass: the minority class is what limits the estimate.
+                counts = values.value_counts()
+                return {
+                    'holdout_event_count': int(counts.min()),
+                    'holdout_event_rate': float(counts.min() / len(values)),
+                }
+            return {
+                'holdout_event_count': int(values.sum()),
+                'holdout_event_rate': float(values.mean()),
+            }
+        except (ValueError, TypeError, AttributeError):
+            return {}
 
     @staticmethod
     def _holdout_probabilities(winner_model: Any, X: Any,
@@ -1038,6 +1079,11 @@ class BaseTrainer(ABC):
         enabled = bool(cfg.get('enabled', True))
         min_rows = int(cfg.get('min_holdout_rows', 20))
         min_margin = float(cfg.get('min_baseline_margin', 0.0))
+        # Ten is a floor, not a target: below it a proportion carries an
+        # interval about thirty points wide, so the comparison against the
+        # baseline cannot separate skill from chance. Set
+        # `min_holdout_events: 0` to restore the previous behaviour.
+        min_events = int(cfg.get('min_holdout_events', 10))
 
         holdout = results.get('winner_holdout_metrics') or {}
         reasons: list[str] = []
@@ -1057,6 +1103,25 @@ class BaseTrainer(ABC):
             n = int(holdout.get('holdout_sample_count', 0))
             if n < min_rows:
                 reasons.append(f"holdout has {n} rows, minimum is {min_rows}")
+
+            # Rows are not evidence; events are. The gate asked "does it beat
+            # the baseline" and never "are there enough events for the answer
+            # to mean anything", so a context with three positives passed on
+            # the strength of a number with a thirty-point interval around it.
+            #
+            # Measured on the 2026-08-15 batch: 36 of 58 promoted contexts
+            # carried fewer than ten events, and their figures went into every
+            # aggregate beside the ones that meant something. Extending the
+            # hourly history fourfold moved rows per context 86 -> 331 and
+            # events only 5 -> 7, which is why this has to be a gate rather
+            # than something more data will fix.
+            events = holdout.get('holdout_event_count')
+            if events is not None and int(events) < min_events:
+                reasons.append(
+                    f"holdout carries {int(events)} events, minimum is "
+                    f"{min_events}: a score on fewer cannot distinguish skill "
+                    f"from chance"
+                )
 
             score = holdout.get('score')
             baseline = holdout.get('baseline_score')
