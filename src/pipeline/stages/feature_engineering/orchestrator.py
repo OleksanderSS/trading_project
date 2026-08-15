@@ -65,14 +65,50 @@ class FeatureEngineeringStage(BaseStage):
 
         # 1. Enrichment for each timeframe
         for tf, df in market_data_dict.items():
-            # ✅ FIX: pass macro_data and news from cleaned_data to enrichers via kwargs
-            enrich_kwargs = {}
-            if 'macro_data' in cleaned_data:
-                enrich_kwargs['macro_data'] = cleaned_data['macro_data']
-            if 'news' in cleaned_data:
-                enrich_kwargs['news'] = cleaned_data['news']
+            # Every collected table reaches the enrichers, not a list of two.
+            #
+            # This forwarded `macro_data` and `news` and nothing else, which is
+            # the single reason eight enabled collectors produced no feature
+            # column at all. Measured on the 2026-08-15 batch: cftc (2,610 rows,
+            # weekly since 2016), fear_greed (267 daily rows since 2025),
+            # wikimedia_attention (11,417), insider_trades (1,395),
+            # sociological_sentiment_data (737), economic_calendar, sdmx_macro —
+            # all collected, all cleaned, none ever handed to this step. They
+            # were not missing enrichers; they were missing a hand-off.
+            #
+            # A whitelist here fails silently and invisibly: adding a collector
+            # and an enricher is not enough, and nothing says so. Passing the
+            # frames through instead means the enricher's own kwargs decide what
+            # it reads, and an enricher that wants a source it was never given
+            # can say so in its own log.
+            #
+            # Keyed under BOTH the bare stem and the table name, because the
+            # two halves of the codebase disagree: stage inputs arrive as
+            # `cftc_data` / `fear_greed_data`, while enrichers and their tests
+            # ask for `cftc` / `fear_greed`.
+            enrich_kwargs: dict[str, Any] = {}
+            for source in (kwargs, cleaned_data):
+                for key, value in (source or {}).items():
+                    if key == 'prices' or not isinstance(value, pd.DataFrame):
+                        continue
+                    if value.empty:
+                        continue
+                    enrich_kwargs.setdefault(key, value)
+                    if key.endswith('_data'):
+                        enrich_kwargs.setdefault(key[:-5], value)
+            # cleaned_data wins where both carry the same name: stage 2 filtered
+            # and normalised those frames, and `news` in particular has just
+            # been scored with FinBERT above.
+            for key in ('macro_data', 'news'):
+                if key in cleaned_data:
+                    enrich_kwargs[key] = cleaned_data[key]
             if kwargs.get('offline_only'):
                 enrich_kwargs['offline_only'] = True
+            self.logger.info(
+                "Enrichment inputs for %s: %s", tf,
+                sorted(k for k, v in enrich_kwargs.items()
+                       if isinstance(v, pd.DataFrame)),
+            )
 
             enriched_df = self.enricher.enrich_features(df, timeframe=tf, **enrich_kwargs)
             enriched_df = self._restore_service_columns(enriched_df, df)

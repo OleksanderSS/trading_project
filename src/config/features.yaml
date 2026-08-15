@@ -8,6 +8,7 @@ features:
     technical_analysis: true        # Calculates a suite of technical indicators
     derived_features: true          # Calculates features from existing ones (e.g., price ratios) - FIXED NAME
     macro_features: true            # Fetches and integrates macroeconomic data
+    market_wide: true               # Fear & Greed + CFTC positioning, shifted to when each was published
     keyword_entity: true            # Extracts keywords and entities from news (NEW)
     news_quality: true              # News quality metrics - completeness, freshness, diversity (NEW)
     sentiment_features: true        # Analyzes sentiment from news or social media

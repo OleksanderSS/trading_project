@@ -83,7 +83,44 @@ def _load(timeframe: str, rows: int) -> tuple[pd.DataFrame, dict]:
         p = _latest(pattern)
         if p is not None:
             kwargs[key] = pd.read_parquet(p)
+    kwargs.update(_from_database())
     return bars.reset_index(drop=True), kwargs
+
+
+def _from_database() -> dict:
+    """Market-wide tables that stage 2 does not write to data/processed.
+
+    Read-only and best-effort: a pipeline holding the database must not stop
+    this report, and its absence only means those enrichers have nothing to
+    show. Keyed under both spellings for the same reason stage 3 is — the
+    tables are named `cftc_data` while enrichers ask for `cftc`.
+    """
+    wanted = ("cftc_data", "fear_greed_data", "wikipedia_attention_data",
+              "insider_trades", "sociological_sentiment_data",
+              "economic_calendar")
+    out: dict = {}
+    try:
+        import duckdb
+
+        con = duckdb.connect("data/trading_data.duckdb", read_only=True)
+    except Exception as exc:  # noqa: BLE001 - the DB is optional here
+        print(f"  (database not read: {type(exc).__name__} — "
+              f"market-wide enrichers will show nothing)")
+        return out
+    try:
+        present = {r[0] for r in con.execute("show tables").fetchall()}
+        for table in wanted:
+            if table not in present:
+                continue
+            frame = con.execute(f"select * from {table}").df()
+            if frame.empty:
+                continue
+            out[table] = frame
+            if table.endswith("_data"):
+                out.setdefault(table[:-5], frame)
+    finally:
+        con.close()
+    return out
 
 
 def _score_news(kwargs: dict) -> dict:
