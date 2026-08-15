@@ -92,8 +92,14 @@ enrichment:
         - "fed_funds_trend"
         - "fed_funds_velocity"
         - "market_breadth"
-        - "dollar_strength"
-        - "put_call_ratio"
+        # dollar_strength and put_call_ratio removed 2026-08-15.
+        # Their collectors are disabled because the sources deliberately block
+        # automated access (HTTP 403), so MarketContextEnricher filled both
+        # with its neutral default and shipped them as constants: 100.0 and
+        # 1.0 on every bar of every timeframe. A feature that never varies
+        # cannot inform a model, and one that claims to be the dollar index
+        # while being a placeholder is worse than an absent column.
+        # Re-add when a source that permits collection is wired up.
 
   nlp_features:
     n_clusters: 5

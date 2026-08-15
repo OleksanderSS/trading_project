@@ -94,5 +94,6 @@ market_context:
     - "fed_funds_trend"          # Fed Funds rate trend (3 months)
     - "fed_funds_velocity"       # Fed Funds rate velocity (1 month)
     - "market_breadth"           # Advance/decline ratio
-    - "dollar_strength"          # DXY index
-    - "put_call_ratio"           # Put/Call ratio (fear gauge)
+    # dollar_strength / put_call_ratio removed 2026-08-15: their sources block
+    # automated access, so both shipped as constants (100.0 and 1.0) on every
+    # bar. See the note in enrichment.yaml market_context.
