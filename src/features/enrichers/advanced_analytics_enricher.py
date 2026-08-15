@@ -38,14 +38,26 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Failed to initialize MacroScoreCalculator: {e}')
             self.macro_calculator = None
+        # The regime is a WORD, and these rules compared it to 0 and 1.
+        # MARKET_REGIME holds TRENDING_UP, TRENDING_DOWN, RANGING,
+        # MEAN_REVERSION, NORMAL — so all four rules were false on every row,
+        # each fell through to the catch-all, and market_phase was the
+        # constant 'neutral' (code 4) on all three timeframes in every export
+        # this project has produced.
+        #
+        # RANGING and MEAN_REVERSION stay neutral deliberately: they really
+        # are neither bull nor bear, so the catch-all is the right answer for
+        # them rather than a failure to classify.
         phase_config = self.config.get('market_phase', {'indicators': {
             'volatility': 'VOLATILITY_20', 'trend': 'SMA_50', 'regime':
             'MARKET_REGIME'}, 'rules': [{'condition':
-            'volatility < 0.02 and regime == 0', 'phase': 'calm_bull'}, {
-            'condition': 'volatility < 0.02 and regime == 1', 'phase':
+            "volatility < 0.02 and regime == 'TRENDING_UP'", 'phase':
+            'calm_bull'}, {'condition':
+            "volatility < 0.02 and regime == 'TRENDING_DOWN'", 'phase':
             'calm_bear'}, {'condition':
-            'volatility >= 0.02 and regime == 0', 'phase': 'volatile_bull'},
-            {'condition': 'volatility >= 0.02 and regime == 1', 'phase':
+            "volatility >= 0.02 and regime == 'TRENDING_UP'", 'phase':
+            'volatile_bull'}, {'condition':
+            "volatility >= 0.02 and regime == 'TRENDING_DOWN'", 'phase':
             'volatile_bear'}, {'condition': 'True', 'phase': 'neutral'}]})
         try:
             self.phase_analyzer = MarketPhaseAnalyzer(phase_config)

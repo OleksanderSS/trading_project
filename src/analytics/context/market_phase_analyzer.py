@@ -28,7 +28,10 @@ class MarketPhaseAnalyzer(IAnalyzer):
         self.logger = logger
         self.indicators = phase_config.get('indicators', {})
         self.rules = phase_config.get('rules', [])
-        self._CONDITION_ALLOWED = re.compile('^[\\w\\s<>=!.&|()+-]+$')
+        # Quotes are allowed so a rule can name a regime: the market regime is
+        # a WORD -- TRENDING_UP, RANGING, MEAN_REVERSION -- not a number, and
+        # without this the whitelist rejected any rule that said so.
+        self._CONDITION_ALLOWED = re.compile('^[\\w\\s<>=!.&|()+\\-\'"]+$')
         # Order matters: match >= before >, <= before <, != before =, etc.
         self._OPS = {'>=': operator.ge, '<=': operator.le, '==': operator.eq,
             '!=': operator.ne, '>': operator.gt, '<': operator.lt}
@@ -180,6 +183,25 @@ class MarketPhaseAnalyzer(IAnalyzer):
             try:
                 rhs_val = float(rhs)
             except ValueError:
+                # A word on the right, not a number. This returned False and
+                # took every rule mentioning a regime down with it: the four
+                # default rules compared `regime == 0` and `regime == 1`
+                # against MARKET_REGIME, which holds TRENDING_UP, RANGING,
+                # MEAN_REVERSION -- text. All four failed, every row fell
+                # through to the catch-all, and market_phase was the constant
+                # 'neutral' (code 4) on every bar of every timeframe.
+                #
+                # Only equality is defined between words. Asking whether
+                # 'RANGING' > 'NORMAL' has no meaning, so an ordering
+                # comparison on text stays False rather than answering
+                # alphabetically.
+                if op_str not in ('==', '!='):
+                    return False
+                left = str(lhs_val).strip().strip('\'"').upper()
+                right = rhs.strip().strip('\'"').upper()
+                return bool(op_fn(left, right))
+            if isinstance(lhs_val, str):
+                # A number on the right and a word on the left cannot compare.
                 return False
             return bool(op_fn(lhs_val, rhs_val))
         self.logger.warning(f"Unrecognized sub-condition: '{factor}'")
