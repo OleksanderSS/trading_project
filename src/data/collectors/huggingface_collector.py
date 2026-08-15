@@ -28,12 +28,23 @@ class HuggingfaceCollector(BaseCollector):
         self.subset_name = self.configs.get('subset_name')
         self.split = self.configs.get('split', 'train')
         self.hash_keys = self.configs.get('hash_keys', ['text', 'timestamp'])
-        # Get HF_KEY from environment
-        self.hf_key = os.getenv('HF_KEY')
+        # One credential, two names. This read HF_KEY while .env defines
+        # HF_TOKEN — the name Hugging Face's own libraries use and the one
+        # sentiment_models.py reads for FinBERT. So the token was present and
+        # this collector logged "not found in environment" on every run.
+        #
+        # HF_TOKEN is preferred because it is the upstream convention; HF_KEY
+        # stays accepted so an existing local .env keeps working.
+        self.hf_key = os.getenv('HF_TOKEN') or os.getenv('HF_KEY')
         if self.hf_key:
-            self.logger.info('[HuggingFace] HF_KEY found in environment')
+            self.logger.info(
+                '[HuggingFace] token found (%s)',
+                'HF_TOKEN' if os.getenv('HF_TOKEN') else 'HF_KEY',
+            )
         else:
-            self.logger.warning('[HuggingFace] HF_KEY not found in environment')
+            self.logger.warning(
+                '[HuggingFace] no token: set HF_TOKEN (preferred) or HF_KEY'
+            )
 
     async def run(self, tickers: list[str] | None=None, **kwargs
         ) ->pd.DataFrame | None:
