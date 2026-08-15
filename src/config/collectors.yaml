@@ -88,9 +88,25 @@ collectors:
       min_source_quality: 0.4
       require_keywords_in_title: false
     hash_keys:
+    # `actual` joined the key on 2026-08-15. An event is fetched BEFORE its
+    # release, when actual is empty, and again after it prints. With the key
+    # limited to (timestamp, country, event) the second fetch hashed
+    # identically, filter_new_records dropped it as a duplicate, and the
+    # actual figure was never stored at all: all 147 rows in the table carry
+    # an empty `actual` while 101 carry a forecast.
+    #
+    # That made the surprise -- actual minus forecast, the only thing this
+    # source is for -- impossible to compute by construction.
+    #
+    # Keying on actual keeps BOTH snapshots as separate rows, which is the
+    # same decision already taken for FRED vintages: a figure before its
+    # release and the same figure after it are two facts, not one fact stored
+    # twice. Consumers take the row that has an actual; the pre-release row
+    # remains as the record of what was expected.
     - timestamp
     - country
     - event
+    - actual
     headers:
       Accept: application/json, text/plain, */*
       Content-Type: application/x-www-form-urlencoded

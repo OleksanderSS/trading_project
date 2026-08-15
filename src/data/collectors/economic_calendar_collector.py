@@ -46,18 +46,25 @@ class EconomicCalendarCollector(BaseCollector):
     Investing.com-based config (api_url, headers, days_ahead/days_back,
     filter.exclude_title_keywords, backoff_factor, max_retries, timeout)
     that this implementation does not read at all - that config predates
-    the ForexFactory rewrite and is currently inert. Also: hash_keys is
-    (timestamp, country, event), deliberately excluding actual/forecast/
-    previous - once an event is first stored before its release (actual
-    empty), a later fetch with the real actual value hashes identically
-    and is filtered out by DataManager.filter_new_records as a duplicate,
-    so the eventual actual print is never persisted anywhere. This is a
-    real, known gap (not a design choice to preserve point-in-time
-    integrity - DataManager.upsert's insert-if-absent semantics already
-    handle that correctly elsewhere); fixing it needs a data-model change
-    (e.g. a separate collected_at dimension distinguishing the
-    pre-release and post-release snapshots as two legitimate historical
-    facts), not a quick patch - left as-is pending that decision.
+    the ForexFactory rewrite and is currently inert.
+
+    RESOLVED 2026-08-15 - the missing `actual`. hash_keys was (timestamp,
+    country, event), so an event first stored BEFORE its release, with
+    actual empty, hashed identically to the post-release fetch carrying the
+    real print; filter_new_records dropped the second as a duplicate and the
+    actual was never persisted. Measured: all 147 stored rows have an empty
+    `actual` while 101 carry a forecast, which made the surprise -- actual
+    minus forecast, the only thing this source exists for -- impossible to
+    compute by construction.
+
+    The note here said the fix needed a data-model change rather than a
+    patch, and named the shape of it: keep the pre-release and post-release
+    snapshots as two legitimate historical facts. That is exactly the
+    decision already taken for FRED vintages, where realtime_start is part
+    of the key precisely so a revision does not overwrite the first print.
+    So `actual` joined hash_keys: both snapshots are stored, consumers take
+    the row that has an actual, and the pre-release row remains as the
+    record of what the market expected.
     """
     collector_type = 'economic_calendar'
     data_type = 'economic'
