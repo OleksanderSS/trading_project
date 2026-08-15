@@ -11,6 +11,7 @@ features:
     market_wide: true               # Fear & Greed + CFTC positioning, shifted to when each was published
     economic_calendar: true         # Surprise of scheduled releases, standardised point-in-time
     ticker_external: true           # Wikipedia attention + insider filings, joined per ticker
+    peer_context: true              # What the sector did, computed without the ticker itself
     keyword_entity: true            # Extracts keywords and entities from news (NEW)
     news_quality: true              # News quality metrics - completeness, freshness, diversity (NEW)
     sentiment_features: true        # Analyzes sentiment from news or social media
