@@ -125,3 +125,18 @@ reports/dean_os/
 reports/drift/
 reports/hybrid_*.txt
 scratch/
+
+# --- Generated output, untracked 2026-08-15 ---------------------------------
+# /models/ and __pycache__/ were already listed above, but .gitignore only
+# governs UNTRACKED files: these were committed before the rules existed, so
+# git kept carrying them. 16,482 Colab batch descriptors and 127 .pyc files
+# were dropped from the index (they stay on disk — the training manager and
+# the cache scripts still read models/unified locally).
+#
+# Repeated dumps of one audit: two large JSON files per directory, a dozen
+# directories, ~550,000 lines between them.
+reports/audit_v1*/
+# audit/legacy holds 46 .py files that ARE source; only its output is ignored.
+audit/legacy/*.json
+audit/legacy/*.html
+audit/legacy/*.txt
