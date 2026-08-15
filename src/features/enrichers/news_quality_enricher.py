@@ -187,12 +187,57 @@ class NewsQualityEnricher(BaseEnricher):
         # Calculate news freshness
         df_merged['news_freshness_hours'] = self._calculate_news_freshness(df_merged.index, news_timestamps)
 
+        # Whether this bar could have had news at all, as distinct from
+        # happening not to.
+        #
+        # Every other news flag answers "is there a signal on this bar", and
+        # answers 0 both for a quiet hour inside our coverage and for a bar
+        # from before we collected anything. Those are not the same fact, and
+        # nothing in the frame separated them. collectors.yaml cites exactly
+        # this as the reason hourly price history is pinned to 180 days while
+        # Yahoo serves 730: extending it would add ~17 months of bars whose
+        # 144 news features are zero, teaching the models that the past was
+        # newsless.
+        #
+        # The earliest story we hold is a property of our collection, not of
+        # the market, and it is historical — so using it is metadata, not
+        # look-ahead. With it, a zero before coverage is labelled as such and
+        # price history may safely outrun news history.
+        df_merged['news_coverage'] = self._coverage_flag(
+            df_merged.index, news_timestamps
+        )
+
         # Calculate metrics using values for robustness
         avg_quality = df_merged['news_quality_score'].values.mean()
         avg_freshness = df_merged['news_freshness_hours'].values.mean()
 
         logger.info(f"✅ Added news quality features. Avg quality: {avg_quality:.2f}, Avg freshness: {avg_freshness:.1f}h")
         return df_merged
+
+    @staticmethod
+    def _coverage_flag(bar_index: pd.DatetimeIndex,
+                       news_timestamps: pd.Series) -> pd.Series:
+        """1 where the bar falls inside the collected news window, else 0.
+
+        Compared against the EARLIEST story held, not against the nearest one:
+        the question is whether we were collecting at all, and a quiet week
+        inside the window must stay distinguishable from a year before it.
+
+        Returns 0 everywhere when no usable timestamps exist, which is the
+        honest reading — nothing is covered by a collection that produced
+        nothing.
+        """
+        stamps = pd.to_datetime(news_timestamps, errors='coerce').dropna()
+        if stamps.empty:
+            return pd.Series(0, index=bar_index, dtype=int)
+
+        first = stamps.min()
+        bars = pd.Series(bar_index, index=bar_index)
+        if getattr(bars.dt, 'tz', None) is not None and first.tzinfo is None:
+            first = first.tz_localize(bars.dt.tz)
+        elif getattr(bars.dt, 'tz', None) is None and first.tzinfo is not None:
+            first = first.tz_localize(None)
+        return (bars >= first).astype(int)
 
     def _normalize_datetime_column(self, df: pd.DataFrame, col_name: str = 'datetime') -> pd.DataFrame:
         """Нормалізує колонку datetime до timezone-naive та datetime64[ns]."""

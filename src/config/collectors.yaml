@@ -460,23 +460,30 @@ collectors:
       1d:
         period: 2y
       1h:
-        # Bounded by NEWS coverage, not by Yahoo.
+        # Was 180d, bounded by NEWS coverage rather than by Yahoo. That bound
+        # is lifted, and the reason it existed is worth keeping:
         #
-        # Yahoo serves hourly bars for 730 days, and yf_collector's clamp now
-        # allows that (it used to cut every intraday interval to 58 days).
-        # But our news history starts 2026-03-14: rss_news 8,894 rows from
-        # 03-20, google_news 5,194 from 03-14. Asking for 730 days would add
-        # ~17 months of bars whose 144 news/sentiment features are
-        # zero-filled -- teaching the models that the past was newsless,
-        # which is worse than not having the bars.
+        # Our news history starts 2026-03-14. Asking for 730 days adds ~17
+        # months of bars whose 144 news/sentiment features are zero -- and
+        # nothing in the frame distinguished "no news happened" from "no news
+        # collected", so those zeros would have taught the models that the
+        # past was newsless. The old comment cited sentiment_available_* being
+        # the constant 1.0 as proof of that gap.
         #
-        # Nothing currently distinguishes "no news happened" from "no news
-        # collected": sentiment_available_* is the constant 1.0 on all three
-        # timeframes. Until that is trustworthy, price history should not
-        # outrun news history.
+        # Two things changed. The availability flags now mean what they say
+        # (measured: sentiment_available 0.204 on daily, 0.837 on hourly,
+        # 1.000 on 15m where the news genuinely covers every bar), and
+        # NewsQualityEnricher emits `news_coverage` -- 1 where the bar falls
+        # inside the collected news window, computed from the earliest story
+        # held. A zero before coverage is now labelled as such.
         #
-        # Raise this as news accumulates. The ceiling is 728.
-        period: 180d
+        # So price history may outrun news history: the frame says which era
+        # each bar belongs to. 730 is the documented Yahoo ceiling; 728 leaves
+        # room for the request window to drift by a day.
+        #
+        # Expect ~4x the hourly rows (46,433 over 183 days -> ~185,000) and a
+        # correspondingly longer Stage 3.
+        period: 728d
     timeout: 30
     type: yahoo_finance
     benchmark_tickers:

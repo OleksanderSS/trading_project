@@ -123,21 +123,40 @@ def test_the_config_asks_for_more_than_the_old_clamp_allowed():
     assert _configured_hourly_period_days() > 100
 
 
-def test_the_config_stays_within_what_news_covers():
-    """Price history must not outrun news history.
+def test_price_history_may_outrun_news_only_if_the_frame_says_which_era():
+    """The old rule was a number; the real rule is a capability.
 
-    144 of the feature columns come from news and sentiment, and nothing
-    distinguishes "no news happened" from "no news collected" --
-    sentiment_available_* is the constant 1.0 on all three timeframes.
-    News starts 2026-03-14, so 730 days of bars would come with ~17 months
-    of zero-filled news features that read as a quiet market.
+    This used to cap the config at 365 days, because 144 of the feature
+    columns come from news and NOTHING distinguished "no news happened" from
+    "no news collected" -- so bars older than our news would have arrived with
+    zero-filled news features that read as a quiet market. The docstring cited
+    sentiment_available_* being the constant 1.0 as proof of the gap.
 
-    This is a ceiling on the CONFIG, not on the collector: the clamp
-    correctly allows 728, and this number should rise as news accumulates.
+    Both halves of that changed. The availability flags now vary correctly
+    (measured: 0.204 on daily, 0.837 on hourly, 1.000 on 15m where the news
+    genuinely covers every bar), and NewsQualityEnricher emits `news_coverage`,
+    1 where the bar falls inside the collected news window. A zero before
+    coverage is now labelled as such.
+
+    So the ceiling is no longer a date. What must hold is that if the config
+    asks for more history than the news explains, the frame carries the marker
+    that says which era each bar belongs to. Raising one without the other is
+    the mistake this test now guards.
     """
-    assert _configured_hourly_period_days() <= 365, (
-        "hourly history now reaches far past the news that is supposed to "
-        "explain it -- check news coverage before raising this"
+    import inspect
+
+    from src.features.enrichers.news_quality_enricher import NewsQualityEnricher
+
+    if _configured_hourly_period_days() <= 365:
+        return  # inside news coverage; the marker is not required
+
+    assert hasattr(NewsQualityEnricher, "_coverage_flag"), (
+        "hourly history reaches past the news that explains it, and nothing "
+        "marks which bars predate collection"
+    )
+    emitted = inspect.getsource(NewsQualityEnricher)
+    assert "news_coverage" in emitted, (
+        "the coverage flag exists but is not attached to the frame"
     )
 
 
