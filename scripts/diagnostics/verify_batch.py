@@ -53,12 +53,19 @@ def main() -> int:
     #    stamped bars with the publication time of the article they matched,
     #    and 24,143 of 26,295 15m bars came out on somebody else's date while
     #    row count, row order and every hash stayed perfect.
+    # Both sides are coerced the same way rather than one of them. The batch
+    # writes tz-aware UTC and stage 2 writes microsecond-resolution UTC, and
+    # comparing an aware column to a naive one is False on every row -- which
+    # this check reported as 0.00% of bars carrying their own date, on data
+    # that was in fact correct. A verifier that cries wolf is worse than none.
+    def _utc_naive(values: pd.Series) -> pd.Series:
+        return pd.to_datetime(values, utc=True, errors='coerce').dt.tz_localize(None)
+
     for timeframe, path in _latest_stage2().items():
         truth = pd.read_parquet(path, columns=['hash', 'datetime'])
-        truth['datetime'] = pd.to_datetime(
-            truth['datetime'], utc=True, errors='coerce'
-        ).dt.tz_localize(None)
-        rows = frame[frame['interval'] == timeframe][['hash', 'datetime']]
+        truth['datetime'] = _utc_naive(truth['datetime'])
+        rows = frame[frame['interval'] == timeframe][['hash', 'datetime']].copy()
+        rows['datetime'] = _utc_naive(rows['datetime'])
         joined = rows.merge(
             truth.rename(columns={'datetime': 'own'}), on='hash', how='left'
         )

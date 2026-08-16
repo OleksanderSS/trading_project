@@ -74,17 +74,52 @@ class EconomicCalendarCollector(BaseCollector):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
 
+    # This is the only feed the publisher offers. Checked, because the obvious
+    # repair was to fetch last week as well: ff_calendar_lastweek,
+    # _nextweek, _today, _yesterday, _pastweek and _thismonth all return 404.
+    # One week, from today forward.
+    #
+    # Which sets the ceiling on what the calendar can ever tell us. An entry is
+    # published with a forecast and acquires its `actual` on release, so a
+    # surprise feature needs the SAME event seen twice -- before and after. The
+    # feed supports that only within a single week, and only if a run happens
+    # on a weekday after the release. There is no way to recover the actual for
+    # an event whose week has passed.
+    #
+    # State when this was written, so the next reader does not re-derive it:
+    # 216 stored events, 158 with a forecast, 190 with a previous, `actual`
+    # filled on ZERO. That looks like a defect and may not be one. `actual`
+    # only joined hash_keys on 2026-08-15 -- before that the post-release
+    # snapshot hashed identically to the pre-release one and was discarded as a
+    # duplicate -- and the only runs since were 2026-08-15 and 2026-08-16, a
+    # Saturday and a Sunday. The feed on 2026-08-16 covers Sun 16th to Fri
+    # 21st with no actuals, which is correct for a Sunday, not evidence of
+    # anything.
+    #
+    # The first weekday run is therefore the test. If `already released` below
+    # stays at 0 on a Wednesday, the mechanism is broken; until then there is
+    # nothing to fix and a fix would be guesswork.
+    FEED = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json'
+
     async def run(self, tickers: list[str] | None = None, **kwargs) -> list[dict[str, Any]]:
-        # Using ForexFactory free JSON calendar
-        api_url = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json'
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        
+
         try:
             client = await self.http_client_factory.get_http_client()
-            response = await client.get(api_url, headers=headers)
+            response = await client.get(self.FEED, headers=headers)
             response.raise_for_status()
-            
+
             data = response.json()
+            # The number that decides whether the calendar can produce a
+            # surprise feature at all. It was not reported, so three rebuilds
+            # went by with the enricher saying "nothing to be surprised about"
+            # and nobody able to see why.
+            self.logger.info(
+                '[EconCalendar] feed carries %d events, %d already released.',
+                len(data),
+                sum(1 for item in data if str(item.get('actual') or '').strip()),
+            )
+
             records = []
             wanted = _to_currency_codes(
                 self.configs.get('countries', ['US', 'EU', 'GB'])
