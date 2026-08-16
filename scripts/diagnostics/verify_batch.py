@@ -89,11 +89,22 @@ def main() -> int:
     columns = full.columns
     for prefix, label in (
         ('econ_', 'economic calendar'),
+        ('cftc_', 'CFTC positioning'),
+        ('fear_greed_', 'fear & greed'),
+        ('wiki_attention_', 'wikipedia attention'),
+        ('insider_', 'insider filings'),
         ('peer_', 'peer context'),
         ('market_context_', 'market context'),
     ):
-        count = sum(1 for c in columns if str(c).startswith(prefix))
-        report(count > 0, f'{label} reached the batch', f'{count} columns')
+        matched = [c for c in columns if str(c).startswith(prefix)]
+        # Arriving and being informative are different things, and the second
+        # is the one that matters. Every source in this list has at some point
+        # reached the batch as a column of one repeated value while the run
+        # reported it connected, so the constant count is reported beside the
+        # column count rather than instead of it.
+        varying = [c for c in matched if full[c].nunique(dropna=True) > 1]
+        detail = f'{len(matched)} columns, {len(matched) - len(varying)} constant'
+        report(bool(matched), f'{label} reached the batch', detail)
 
     constant = int((full.nunique(dropna=True) <= 1).sum())
     print(f'\n      {len(columns):,} columns, {constant} constant')
