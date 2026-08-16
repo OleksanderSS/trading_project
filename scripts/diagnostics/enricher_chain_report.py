@@ -25,6 +25,15 @@ What it reports per step, and why each column earns its place:
   const       of those, how many never vary. A constant column cannot inform
               a model, and this is how hype, news_impact, market_phase and the
               context features all failed — loudly successful, silently empty.
+              READ THIS ONE WITH THE SAMPLE SIZE IN MIND. `--rows` caps the
+              bars, and a feature computed over an EXPANDING window needs
+              history before it can call anything unusual. On the full batch
+              `news_significance_level` takes 2 values on 15m and 3 on 60m and
+              1d; on a 4,000-row sample it is flat, because nothing has yet
+              exceeded the 90th percentile of what came before it. A constant
+              here is a question, not a verdict — check the column against the
+              real batch before treating it as a defect. That cost two
+              investigations to learn.
   empty       all-NaN columns: attached to nothing at all.
   rows        a change means the enricher filtered; legitimate, but it breaks
               any positional reattachment downstream, so it must be visible.
