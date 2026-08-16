@@ -51,7 +51,13 @@ class TestTargetTypeRegistry:
         assert types["target_up_5d"] == CLASSIFICATION_BINARY_TYPE
         assert types["target_multi_1d"] == CLASSIFICATION_MULTICLASS_TYPE
         assert types["target_return_1d"] == "regression"
-        assert types["target_sma_20_f1"] == "indicator_prediction"
+        # The indicator_prediction family was commented out of targets.yaml on
+        # 2026-08-16: predicting tomorrow's SMA(20) from closes already known
+        # today is arithmetic, and the promotion gate refused all seven anyway
+        # -- but only AFTER training them, once per ticker per timeframe, every
+        # run. What this line now checks is that the loader reads whatever the
+        # file declares rather than carrying its own copy of the list.
+        assert "target_sma_20_f1" not in types
 
     def test_target_type_for_defaults_to_regression_for_unknown_target(self):
         loader = ConfigLoader.__new__(ConfigLoader)

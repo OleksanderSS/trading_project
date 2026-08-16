@@ -345,7 +345,15 @@ collectors:
     cache_duration_minutes: 60
     cache_ttl: 86400
     critical: false
-    enabled: false
+    # Enabled 2026-08-16. NEWS_API_KEY has been present in .env all along
+    # (32 characters) while the collector sat off, and 2,510 of its articles
+    # are already in the database from before it was disabled.
+    #
+    # The free tier allows ~100 articles a day, so this adds roughly 3,000 a
+    # month against the ~13,600 rss and google_news already carry. The effect
+    # is cumulative, not immediate: it will not change the next run's numbers
+    # and should not be expected to.
+    enabled: true
     filter:
       exclude_title_keywords:
       - horoscope
