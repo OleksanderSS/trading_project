@@ -288,7 +288,13 @@ class InsiderCollector(BaseCollector):
             return None
 
         cache_key = f"{self.__class__.__name__}_run"
-        cache_params = {"urls": sorted(urls) if isinstance(urls, list) else [urls]}
+        # The ticker set belongs in the key because it now decides which URLs
+        # are fetched. Keyed on the configured URLs alone, adding a company to
+        # the config would have been served the previous company's cache.
+        cache_params = {
+            "urls": sorted(urls) if isinstance(urls, list) else [urls],
+            "tickers": sorted({str(t).strip().upper() for t in (tickers or []) if str(t).strip()}),
+        }
 
         # 1. Cache Verification
         cached_result = self._check_cache(cache_key, cache_params, table_name)
@@ -298,7 +304,13 @@ class InsiderCollector(BaseCollector):
         # 2. Data Acquisition Target Resolution
         self.logger.info("[Insider] Fetching insider trades...")
         try:
-            raw_data = await self.fetch_raw_data(**kwargs)
+            # `tickers` is a named parameter of `run`, so it is NOT in
+            # `**kwargs`, and this line dropped it one step before the only
+            # place that uses it. The orchestrator passes the list, the
+            # screener query kept `s=` empty, and the run fetched the hundred
+            # most recent filings across the whole market -- with the log
+            # saying "polling across 1 URIs" instead of 22.
+            raw_data = await self.fetch_raw_data(tickers=tickers, **kwargs)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.exception(f"[Insider] Contextual data parse process aborted: {e}")
             raise RuntimeError("Insider collection failed") from e

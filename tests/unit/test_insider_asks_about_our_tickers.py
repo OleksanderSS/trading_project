@@ -72,3 +72,52 @@ def test_a_template_without_the_parameter_still_gets_one():
 def test_several_templates_each_expand():
     urls = build([TEMPLATE, TEMPLATE + '&x=2'], ['AAPL', 'MSFT'])
     assert len(urls) == 4
+
+
+def test_run_hands_the_tickers_to_the_fetch():
+    """The wiring, not the builder.
+
+    `_urls_for_tickers` was correct and unreachable: `run(tickers=..., **kwargs)`
+    takes `tickers` as a NAMED parameter, so it is absent from `**kwargs`, and
+    `fetch_raw_data(**kwargs)` dropped it one step before the only place that
+    uses it. The rebuild logged "polling across 1 URIs" and fetched the market
+    exactly as before. The first version of this test file covered the pure
+    function and would have passed either way.
+    """
+    import asyncio
+    import inspect
+
+    seen = {}
+
+    class Probe(InsiderCollector):
+        def __init__(self):  # no config, no network
+            self.configs = {'urls': [TEMPLATE], 'table_name': 'insider_trades'}
+            self.hash_keys = ['filing_date', 'ticker', 'insider_name']
+            self.logger = __import__('logging').getLogger('probe')
+
+        def _check_cache(self, *a, **k):
+            return None
+
+        async def fetch_raw_data(self, tickers=None, **kwargs):
+            seen['tickers'] = tickers
+            return []
+
+    asyncio.run(Probe().run(tickers=['AAPL', 'MSFT']))
+    assert seen.get('tickers') == ['AAPL', 'MSFT'], (
+        'run() dropped the ticker list before fetch_raw_data could use it'
+    )
+    # And the signature must keep accepting it, so the call above is not a lie.
+    assert 'tickers' in inspect.signature(InsiderCollector.fetch_raw_data).parameters
+
+
+def test_the_cache_key_changes_when_the_tickers_change():
+    """Keyed on the configured URLs alone, adding a company would have been
+    served the previous company's cached result."""
+    import inspect
+
+    source = inspect.getsource(InsiderCollector.run)
+    assert 'cache_params' in source
+    start = source.index('cache_params')
+    assert 'tickers' in source[start:start + 400], (
+        'the ticker set decides which URLs are fetched and must be in the key'
+    )
