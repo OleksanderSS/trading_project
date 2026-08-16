@@ -10,6 +10,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.modeling_context import POOLED_TICKER
 from src.pipeline.target_column_utils import is_identity_column, is_target_like_column
 
 logger = ProjectLogger.get_logger("DataPreparationAdapter")
@@ -126,6 +127,29 @@ def prepare_data_for_models(
         total_len = len(X)
         test_start = int(total_len * (1 - test_size))
         val_start = int(test_start * (1 - val_size / (1 - test_size)))
+
+        # The purge gap is configured in BARS but applied with `.iloc`, so it
+        # only spans the intended amount of time when a frame holds one row per
+        # timestamp. A pooled frame holds one row per ticker per timestamp, so
+        # a 24-bar gap across 22 tickers would purge a single bar -- leaving
+        # the model's training window all but touching its holdout, which is
+        # the exact leak the gap exists to prevent.
+        #
+        # Scaled by the frame's own rows-per-timestamp rather than by a ticker
+        # count, so it needs to know nothing about pooling: a per-ticker frame
+        # measures ~1.0 and comes out unchanged.
+        rows_per_bar = 1.0
+        if X.index.name == "model_datetime":
+            distinct_bars = X.index.nunique()
+            if distinct_bars:
+                rows_per_bar = max(1.0, len(X) / distinct_bars)
+        if rows_per_bar > 1.0:
+            scaled = int(round(gap_size * rows_per_bar))
+            logger.info(
+                "Purge gap scaled %d -> %d bars: %.1f rows per timestamp "
+                "(pooled frame).", gap_size, scaled, rows_per_bar,
+            )
+            gap_size = scaled
 
         # Адаптивний gap_size на основі волатильності
         adaptive_gap_size = gap_size
@@ -300,9 +324,16 @@ def prepare_sequence_data_optimized(x_tr, x_va, x_te, y_tr, y_va, y_te, seq_len)
     }
 
 def filter_data_by_ticker_timeframe(df: pd.DataFrame, ticker: str, timeframe: str) -> pd.DataFrame:
-    """Фільтрація вхідного набору даних."""
+    """Фільтрація вхідного набору даних.
+
+    `POOLED_TICKER` keeps every ticker and narrows by timeframe only. The
+    timeframe filter still applies because features carry a timeframe suffix,
+    so mixing 15m and 1d rows would leave most columns empty on most rows.
+    """
     t_cols = [c for c in df.columns if 'ticker' in c.lower() or 'symbol' in c.lower()]
     tf_cols = [c for c in df.columns if 'timeframe' in c.lower() or 'interval' in c.lower()]
+    if ticker == POOLED_TICKER:
+        return df[df[tf_cols[0]] == timeframe] if tf_cols else df
     if t_cols and tf_cols:
         return df[(df[t_cols[0]] == ticker) & (df[tf_cols[0]] == timeframe)]
     return df

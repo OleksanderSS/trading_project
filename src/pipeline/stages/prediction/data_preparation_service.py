@@ -13,6 +13,10 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.modeling_context import (
+    INSTRUMENT_CODE_COLUMN,
+    instrument_code,
+)
 from src.pipeline.timeframe_lineage import is_timeframe_token, normalize_timeframe
 from src.pipeline.stages.prediction.lineage import (
     apply_lineage_attrs,
@@ -223,8 +227,27 @@ class DataPreparationService:
             [c for c in context_cols if c in ticker_df_clean.columns]
         ].copy()
 
+        # A pooled model is trained on every ticker at once and is told which
+        # instrument a row belongs to. That column is DERIVED from the ticker,
+        # not collected, so it is computed here rather than carried through the
+        # export -- which also means a pooled champion works against feature
+        # sets built before pooling existed, with no rebuild.
+        #
+        # Both ends call `instrument_code`, and the reason a single shared
+        # function is enough is the reason it hashes instead of enumerating:
+        # there is no fitted state to disagree about. A LabelEncoder here would
+        # be the same defect this pipeline has hit repeatedly -- a mapping
+        # built and discarded inside one call, silently different at
+        # prediction time.
+        #
+        # Without this the check below finds `instrument_code` missing and
+        # skips the context, so every pooled context would be dropped and the
+        # run would report no predictions rather than a wrong one.
+        if INSTRUMENT_CODE_COLUMN not in ticker_df_clean.columns:
+            ticker_df_clean[INSTRUMENT_CODE_COLUMN] = instrument_code(ticker)
+
         selected_features = meta.get('selected_features', [])
-        
+
         # Robustly exclude any remaining metadata columns like 'hash' from being expected
         metadata_cols = {'ticker', 'datetime', 'date', 'interval', 'timeframe', 'hash', 'symbol'}
         selected_features = [f for f in selected_features if f not in metadata_cols]
