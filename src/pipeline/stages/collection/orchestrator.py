@@ -34,6 +34,77 @@ from src.data.management.data_manager import DataManager
 from src.pipeline.stages.base_stage import BaseStage
 
 
+# Which family a stored table belongs to decides how stage 2 hands it on:
+# families are concatenated into one shared frame, anything else keeps its own
+# name. Two independent things used to answer that question — the collector's
+# declared type and the table's name — and they were checked in separate
+# branches of one chain, so a source could be claimed by the first branch while
+# the rule meant for it sat unreachable further down. That is exactly what
+# happened to the calendar. Keeping the decision here, as one function with no
+# I/O, is what makes it checkable.
+_FAMILY_BY_COLLECTOR_TYPE = {
+    'google_news': 'news',
+    'rss': 'news',
+    'newsapi': 'news',
+    'sec_filings': 'news',
+    'huggingface': 'news',
+    'hugging_face': 'news',
+    'fred': 'macro_data',
+    'custom_csv': 'macro_data',
+    'yahoo_finance': 'market_data',
+    'free_google_trends': 'google_trends',
+    'reddit': 'reddit_sentiment',
+    'reddit_sentiment': 'reddit_sentiment',
+    # A calendar entry is not a macro observation. FRED publishes a value for a
+    # date; the calendar publishes an actual, a forecast and the gap between
+    # them, which is the only thing that source is for. Folded into the macro
+    # frame it lost its identity, no separate key ever reached stage 3, and the
+    # enricher that looks for one found nothing and said so on every run.
+    'economic_calendar': 'economic_calendar',
+}
+
+_FAMILY_BY_TABLE_NAME = {
+    'fred_data': 'macro_data',
+    # `news_patterns` was listed among the macro tables, but the news branch
+    # ran first and matched it on the 'news' fragment, so it has always been
+    # handled as news. Left as news here: this change is about the calendar,
+    # and quietly re-filing another source under cover of it is how the next
+    # unexplained shift gets introduced.
+    'economic_calendar': 'economic_calendar',
+    'market_data_raw': 'market_data',
+    'market_data': 'market_data',
+}
+
+_FAMILY_BY_NAME_FRAGMENT = (
+    ('news', 'news'),
+    ('trends', 'google_trends'),
+    ('reddit', 'reddit_sentiment'),
+)
+
+
+def classify_source_table(table_name: str, collector_info: dict | None = None) -> str | None:
+    """Say which family a stored table belongs to, or None if nothing claims it.
+
+    An explicit ``data_type`` in the collector's config always wins. Otherwise
+    the collector's own type decides, then the table name, then — last, because
+    it is the loosest rule — a fragment of the name.
+    """
+    info = collector_info or {}
+    declared = info.get('data_type')
+    if declared:
+        return declared
+
+    collector_type = info.get('type', '') or ''
+    if collector_type in _FAMILY_BY_COLLECTOR_TYPE:
+        return _FAMILY_BY_COLLECTOR_TYPE[collector_type]
+    if table_name in _FAMILY_BY_TABLE_NAME:
+        return _FAMILY_BY_TABLE_NAME[table_name]
+    for fragment, family in _FAMILY_BY_NAME_FRAGMENT:
+        if fragment in table_name:
+            return family
+    return None
+
+
 class CollectionStage(BaseStage):
     """Stage for collecting data from various sources."""
 
@@ -502,12 +573,6 @@ class CollectionStage(BaseStage):
 
             table_names = self.db_manager.get_all_table_names()
 
-            news_types = {'google_news', 'rss', 'newsapi', 'sec_filings', 'huggingface', 'hugging_face'}
-            macro_types = {'fred', 'economic_calendar', 'custom_csv'}
-            market_types = {'yahoo_finance'}
-            trends_types = {'free_google_trends'}
-            reddit_types = {'reddit', 'reddit_sentiment'}
-
             # Завантажуємо активні тікери та ключові слова для фільтрації
             if tickers:
                 active_tickers = tickers
@@ -540,36 +605,7 @@ class CollectionStage(BaseStage):
                     continue
 
                 collector_info = table_name_to_info.get(table_name, {})
-                data_type = collector_info.get('data_type')
-                collector_type = collector_info.get('type', '')
-
-                if not data_type:
-                    if collector_type in news_types or 'news' in table_name:
-                        data_type = 'news'
-                    elif collector_type in macro_types or table_name in {'fred_data', 'news_patterns'}:
-                        # `economic_calendar` was in this set, so its rows were
-                        # concatenated into the shared macro frame and lost
-                        # their identity: no separate key ever reached stage 3,
-                        # and EconomicCalendarEnricher — which looks for one —
-                        # found nothing and said so on every run.
-                        #
-                        # A calendar entry is not a macro observation. FRED
-                        # publishes a value for a date; the calendar publishes
-                        # an actual, a forecast and the gap between them, which
-                        # is the only thing that source is for. Concatenating
-                        # the two puts columns that exist in one and not the
-                        # other into the same frame.
-                        data_type = 'macro_data'
-                    elif table_name == 'economic_calendar':
-                        # Its own type, so it reaches stage 3 under its own
-                        # name and the enricher that asks for it can find it.
-                        data_type = 'economic_calendar'
-                    elif collector_type in market_types or table_name in {'market_data_raw', 'market_data'}:
-                        data_type = 'market_data'
-                    elif collector_type in trends_types or 'trends' in table_name:
-                        data_type = 'google_trends'
-                    elif collector_type in reddit_types or 'reddit' in table_name:
-                        data_type = 'reddit_sentiment'
+                data_type = classify_source_table(table_name, collector_info)
 
                 if data_type == 'news':
                     df_filtered = self._filter_news_by_keywords_and_tickers(
