@@ -174,12 +174,30 @@ class TickerExternalEnricher(BaseEnricher):
         # filed, a median of two days later.
         table["_at"] = self._shift(table["filing_date"], 0)
         side = table["trade_type"].astype(str).str.strip().str.upper().str[:1]
-        value = pd.to_numeric(table.get("value"), errors="coerce")
+        # The source stores these the way the page displayed them --
+        # '-$4,962,488', '$522.37', '-9,500' -- so `pd.to_numeric` returned NaN
+        # for all 1,395 rows and the fallback below failed identically, both
+        # halves being the same kind of string. NaN sums to zero, so the
+        # feature read as a confident 0.0 rather than as missing.
+        value = self.parse_money(table.get("value"))
         if value.isna().all():
-            price = pd.to_numeric(table.get("price"), errors="coerce")
-            quantity = pd.to_numeric(table.get("quantity"), errors="coerce")
+            # The price is a magnitude; the quantity carries the direction
+            # ('-9,500' for a sale), so the product is already signed.
+            price = self.parse_money(table.get("price")).abs()
+            quantity = self.parse_money(table.get("quantity"))
             value = price * quantity
-        signed = value.where(side == _PURCHASE, -value.where(side == _SALE, 0.0))
+
+        # Whether to take the sign from the figure or from the trade type is
+        # not a style choice: applying both inverts every sale. This source
+        # writes '-$220,000' for a sale and '+$100,000' for a purchase, and the
+        # old line negated sales on top of that, so a $220k disposal ADDED
+        # $220k to the net. It never showed because the figures were all NaN
+        # until they could be parsed -- one defect masking another, and fixing
+        # the first is what exposed the second.
+        if bool((value.dropna() < 0).any()):
+            signed = value
+        else:
+            signed = value.where(side == _PURCHASE, -value.where(side == _SALE, 0.0))
         table["_signed"] = pd.to_numeric(signed, errors="coerce").fillna(0.0)
         table = table.dropna(subset=["_at"]).sort_values("_at")
         if table.empty:

@@ -39,6 +39,39 @@ class BaseEnricher(ABC):
         pass
 
     @staticmethod
+    def parse_money(values: "pd.Series") -> "pd.Series":
+        """Read a number that a scraper stored the way a page displayed it.
+
+        `pd.to_numeric` is the reflex and it is silently wrong here: it returns
+        NaN for every one of these, and NaN sums to zero, so the feature is a
+        confident 0.0 rather than a missing value anybody would notice.
+
+        Measured on `insider_trades` -- 1,395 rows, all three numeric columns
+        stored as text:
+
+            value     '-$4,962,488'   '+$10,681,309'
+            price     '$522.37'
+            quantity  '-9,500'        '+637,200'
+
+        1,395 of 1,395 became NaN, which is why `insider_net_value_30d` is the
+        constant 0.0 on all three timeframes. The enricher even had a fallback
+        to `price * quantity` -- and that failed the same way, because both
+        halves are the same kind of string.
+
+        Parentheses are read as negative, the accountant's convention some
+        sources use instead of a leading minus.
+        """
+        text = (
+            values.astype(str)
+            .str.strip()
+            .str.replace(r"[,\s$€£¥]", "", regex=True)
+        )
+        negative = text.str.startswith("(") & text.str.endswith(")")
+        text = text.str.strip("()")
+        parsed = pd.to_numeric(text, errors="coerce")
+        return parsed.where(~negative, -parsed)
+
+    @staticmethod
     def normalise_news_ticker(values: "pd.Series") -> "pd.Series":
         """Fold a news frame's ticker onto 'general' or a real symbol.
 
