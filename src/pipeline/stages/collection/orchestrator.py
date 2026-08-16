@@ -546,8 +546,24 @@ class CollectionStage(BaseStage):
                 if not data_type:
                     if collector_type in news_types or 'news' in table_name:
                         data_type = 'news'
-                    elif collector_type in macro_types or table_name in {'fred_data', 'economic_calendar', 'news_patterns'}:
+                    elif collector_type in macro_types or table_name in {'fred_data', 'news_patterns'}:
+                        # `economic_calendar` was in this set, so its rows were
+                        # concatenated into the shared macro frame and lost
+                        # their identity: no separate key ever reached stage 3,
+                        # and EconomicCalendarEnricher — which looks for one —
+                        # found nothing and said so on every run.
+                        #
+                        # A calendar entry is not a macro observation. FRED
+                        # publishes a value for a date; the calendar publishes
+                        # an actual, a forecast and the gap between them, which
+                        # is the only thing that source is for. Concatenating
+                        # the two puts columns that exist in one and not the
+                        # other into the same frame.
                         data_type = 'macro_data'
+                    elif table_name == 'economic_calendar':
+                        # Its own type, so it reaches stage 3 under its own
+                        # name and the enricher that asks for it can find it.
+                        data_type = 'economic_calendar'
                     elif collector_type in market_types or table_name in {'market_data_raw', 'market_data'}:
                         data_type = 'market_data'
                     elif collector_type in trends_types or 'trends' in table_name:

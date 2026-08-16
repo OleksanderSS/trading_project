@@ -46,6 +46,28 @@ class FeatureEngineeringStage(BaseStage):
 
         self.logger.info("✅ FeatureEngineeringStage (Modular) initialized")
 
+    _SCRATCH_MARKERS = ('_backup', 'backup_', 'test_', '_prepurge',
+                        '_orphan', 'snapshot', '__run_')
+
+    @classmethod
+    def _is_scratch_table(cls, name: str) -> bool:
+        """Backups and scratch tables are not sources.
+
+        Forwarding every frame to the enrichers fixed eight collectors that
+        had never reached a feature, but it also handed them
+        market_data_raw_backup_15m_20260805, market_data_raw_prepurge_20260805,
+        experience_diary_backup_20260730, test_table and test_fts_tiny — six
+        frames of hundreds of thousands of rows that no enricher asks for.
+
+        Harmless in the sense that nothing reads them, expensive in the sense
+        that they are held in memory for every timeframe, and dangerous in the
+        one case that matters: a backup of market_data_raw carries the same
+        column names as the live table, so a future enricher matching on
+        columns rather than on key could silently pick the wrong one.
+        """
+        lowered = str(name).lower()
+        return any(marker in lowered for marker in cls._SCRATCH_MARKERS)
+
     async def run(self, **kwargs) -> dict[str, Any]:
         """Runs the feature engineering cycle."""
         self.logger.info('Starting modular feature engineering stage...')
@@ -91,7 +113,7 @@ class FeatureEngineeringStage(BaseStage):
                 for key, value in (source or {}).items():
                     if key == 'prices' or not isinstance(value, pd.DataFrame):
                         continue
-                    if value.empty:
+                    if value.empty or self._is_scratch_table(key):
                         continue
                     enrich_kwargs.setdefault(key, value)
                     if key.endswith('_data'):
