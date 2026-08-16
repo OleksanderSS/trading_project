@@ -35,6 +35,10 @@ from src.features.enrichers.base import BaseEnricher
 logger = ProjectLogger.get_logger("MarketWideEnricher")
 
 # Instrument name in the CFTC table -> the stem used in column names.
+# Where `_asof` reports when the matched reading became available. Named once
+# so the availability flags and the join cannot disagree about the spelling.
+MATCHED_AT = "_matched_at"
+
 _CFTC_INSTRUMENTS = {
     "S&P": "sp500",
     "NASDAQ": "nasdaq",
@@ -138,11 +142,15 @@ class MarketWideEnricher(BaseEnricher):
 
         merged = self._asof(bar_time, table[["_at", "_value"]], ["_value"])
         frame["fear_greed_index"] = merged["_value"].to_numpy()
-        frame["fear_greed_available"] = merged["_value"].notna().astype(int).to_numpy()
-        covered = int(frame["fear_greed_available"].sum())
+        frame["fear_greed_available"] = self._fresh_at_this_bar(
+            bar_time, merged[MATCHED_AT], frame.get("ticker")
+        ).to_numpy()
+        carried = int(merged["_value"].notna().sum())
+        fresh = int(frame["fear_greed_available"].sum())
         logger.info(
-            "fear_greed attached to %d of %d bars (%.0f%%), %d distinct readings.",
-            covered, len(frame), 100 * covered / max(1, len(frame)),
+            "fear_greed reached %d of %d bars (%.0f%%), fresh at %d of them, "
+            "%d distinct readings.",
+            carried, len(frame), 100 * carried / max(1, len(frame)), fresh,
             int(merged["_value"].nunique()),
         )
         return 1
@@ -165,6 +173,9 @@ class MarketWideEnricher(BaseEnricher):
         )
         table = table.dropna(subset=["_at"])
         added = 0
+        # Every COT instrument is published on the same schedule, so any one of
+        # them dates the release; the last merge's stamps answer for all.
+        last_matched: pd.Series | None = None
         for raw_name, stem in _CFTC_INSTRUMENTS.items():
             rows = table[table["instrument"].astype(str).str.upper() == raw_name]
             if rows.empty:
@@ -182,6 +193,7 @@ class MarketWideEnricher(BaseEnricher):
             slim = (slim.sort_values("_at")
                         .drop_duplicates(subset=["_at"], keep="last"))
             merged = self._asof(bar_time, slim, list(keep.values()))
+            last_matched = merged[MATCHED_AT]
             for out, src in keep.items():
                 frame[out] = merged[src].to_numpy()
                 added += 1
@@ -190,11 +202,14 @@ class MarketWideEnricher(BaseEnricher):
             flag_col = f"cftc_{first}_net_pct"
             covered = int(frame[flag_col].notna().sum()) if flag_col in frame else 0
             frame["cftc_available"] = (
-                frame[flag_col].notna().astype(int) if flag_col in frame else 0
+                self._fresh_at_this_bar(bar_time, last_matched, frame.get("ticker")).to_numpy()
+                if last_matched is not None else 0
             )
+            fresh = int(pd.Series(frame["cftc_available"]).sum())
             logger.info(
-                "cftc attached %d columns; %d of %d bars covered (%.0f%%).",
-                added, covered, len(frame), 100 * covered / max(1, len(frame)),
+                "cftc attached %d columns; reached %d of %d bars (%.0f%%), "
+                "fresh at %d of them.",
+                added, covered, len(frame), 100 * covered / max(1, len(frame)), fresh,
             )
         else:
             logger.error(
@@ -258,4 +273,53 @@ class MarketWideEnricher(BaseEnricher):
         )
         out = pd.DataFrame(index=range(len(bar_time)), columns=value_cols, dtype=float)
         out.loc[merged["_pos"].to_numpy(), value_cols] = merged[value_cols].to_numpy()
+        # When the matched reading became available, carried out so the caller
+        # can tell a FRESH value from one this bar merely inherited. Dropping
+        # it is what left both availability flags meaning "some reading exists
+        # by now", which for a source covering the whole history is the
+        # constant 1.
+        stamps = pd.Series(pd.NaT, index=range(len(bar_time)), dtype="datetime64[ns]")
+        stamps.iloc[merged["_pos"].to_numpy()] = merged["_at"].to_numpy()
+        out[MATCHED_AT] = stamps
         return out
+
+    @staticmethod
+    def _fresh_at_this_bar(bar_time: pd.Series, matched_at: pd.Series,
+                           ticker: pd.Series | None = None) -> pd.Series:
+        """1 on the first bar that sees a given release; 0 on those inheriting it.
+
+        The three sibling flags -- hype_available, news_impact_available,
+        sentiment_available -- were deliberately settled on "is there a reading
+        at THIS row", after sentiment_available spent three timeframes as the
+        constant 1.0 by being read off a forward-filled series. These two were
+        left computing `value.notna()` on exactly such a series, so they said
+        the same thing: measured on the v14 batch `cftc_available` is the
+        constant 1.0 on all three timeframes, because CFTC covers the whole bar
+        history and an unbounded backward as-of join carries the last report
+        forever.
+
+        "Fresh" is the FIRST BAR TO SEE the release rather than a bar landing
+        within one bar-width of it, and the difference is not cosmetic: the
+        first version measured as the constant ZERO. A daily figure with a
+        one-day lag becomes readable at midnight, no bar trades within an hour
+        of midnight, and so nothing ever qualified -- swapping one useless
+        constant for another. Anchoring on the release rather than on the clock
+        holds for any publication schedule against any bar size.
+
+        Computed per ticker, because a market-wide release reaches every
+        instrument and each one's earliest bar is its own first sight of it.
+        Nothing is lost: "a value is present" stays derivable from the value
+        columns; "this value is new" is derivable from nothing else.
+        """
+        frame = pd.DataFrame({
+            "bar": pd.to_datetime(pd.Series(bar_time).to_numpy(), errors="coerce"),
+            "at": pd.to_datetime(pd.Series(matched_at).to_numpy(), errors="coerce"),
+            "tk": (pd.Series(ticker).astype(str).to_numpy()
+                   if ticker is not None else ""),
+        })
+        usable = frame["bar"].notna() & frame["at"].notna() & (frame["bar"] >= frame["at"])
+        flag = pd.Series(0, index=frame.index, dtype=int)
+        if usable.any():
+            first = frame[usable].groupby(["tk", "at"])["bar"].transform("min")
+            flag.loc[usable] = (frame.loc[usable, "bar"] == first).astype(int)
+        return flag
