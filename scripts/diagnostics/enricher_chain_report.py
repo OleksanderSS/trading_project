@@ -166,6 +166,38 @@ class _Capture(logging.Handler):
             pass
 
 
+def _bar_dates(frame: pd.DataFrame) -> pd.Series | None:
+    """Each row's own timestamp, keyed by the collector hash."""
+    if "hash" not in frame.columns or "datetime" not in frame.columns:
+        return None
+    stamps = pd.to_datetime(frame["datetime"], errors="coerce", utc=True)
+    series = pd.Series(stamps.dt.tz_localize(None).to_numpy(),
+                       index=frame["hash"].to_numpy())
+    return series[~series.index.duplicated()]
+
+
+def _dates_intact(truth: pd.Series | None, after: pd.DataFrame) -> float | None:
+    """Share of rows whose datetime is still the one their own bar carried.
+
+    The order check beside this one asks whether the rows moved. This asks the
+    question that actually matters, and they are not the same question: an
+    enricher can put every row back in place and still have overwritten the
+    timestamps, which is precisely what happened to 15m on the v14 rebuild --
+    24,143 of 26,295 bars carrying somebody else's time while row count, row
+    order and every hash were perfect. Anchored on the collector hash, so it
+    survives reordering, reindexing and index-to-column rescues alike.
+    """
+    if truth is None:
+        return None
+    current = _bar_dates(after)
+    if current is None or current.empty:
+        return None
+    shared = current.index.intersection(truth.index)
+    if not len(shared):
+        return None
+    return float((current[shared] == truth[shared]).mean())
+
+
 def _profile(before: pd.DataFrame, after: pd.DataFrame) -> dict:
     added = [c for c in after.columns if c not in before.columns]
     const, empty = [], []
@@ -221,8 +253,12 @@ def main() -> int:
     for key, value in kwargs.items():
         print(f"  input {key}: {len(value)} rows")
     print()
+    truth = _bar_dates(frame)
+    if truth is None:
+        print("  (no hash/datetime pair — date integrity cannot be checked)")
     head = (f"{'#':>2} {'enricher':22s} {'prio':>4s} {'+cols':>6s} "
-            f"{'const':>6s} {'empty':>6s} {'rows':>12s} {'order':>6s}  note")
+            f"{'const':>6s} {'empty':>6s} {'rows':>12s} {'order':>6s} "
+            f"{'dates':>6s}  note")
     print(head)
     print("-" * len(head))
 
@@ -263,9 +299,21 @@ def main() -> int:
                 problems.append(f"{enricher.name}: every column constant or empty")
             elif p["const"] or p["empty"]:
                 note = ", ".join((p["const"] + p["empty"])[:3])
+        intact = _dates_intact(truth, frame)
+        if intact is None:
+            dates = "-"
+        elif intact >= 1.0:
+            dates = "ok"
+        else:
+            dates = f"{intact:.1%}"
+            problems.append(
+                f"{enricher.name}: {1 - intact:.1%} of bars now carry a "
+                f"datetime that is not their own"
+            )
         print(f"{i:2d} {enricher.name[:22]:22s} {enricher.priority:4d} "
               f"{len(p['added']):6d} {len(p['const']):6d} {len(p['empty']):6d} "
-              f"{rows:>12s} {'ok' if p['order_kept'] else 'CHANGED':>6s}  {note}")
+              f"{rows:>12s} {'ok' if p['order_kept'] else 'CHANGED':>6s} "
+              f"{dates:>6s}  {note}")
 
     print(f"\nfinal frame: {frame.shape[0]} rows x {frame.shape[1]} columns")
     if problems:

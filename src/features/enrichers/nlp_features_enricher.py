@@ -264,6 +264,24 @@ class NLPFeaturesEnricher(BaseEnricher):
             right_on='datetime',
             direction='backward'
         )
-        # Restore the original index
-        merged_group.set_index('datetime', inplace=True)
-        return merged_group
+        # `left_index=True` already returns the LEFT frame's index -- each
+        # bar's own timestamp -- and `right_on` rides the NEWS publication time
+        # along as a column beside it. So the index needs no restoring, and
+        # `set_index('datetime')` did the opposite of what it said: it threw
+        # every bar's timestamp away and stamped the matched article's
+        # publication time on it instead.
+        #
+        # A backward asof match means many consecutive bars resolve to the same
+        # article, so this also collapsed them onto one timestamp. Measured on
+        # the v14 rebuild: 15m came out of stage 3 with 24,143 of 26,295 bars
+        # on somebody else's date and 16,886 duplicate (ticker, datetime) rows,
+        # from an input that had zero. Row count, row order and every hash were
+        # perfect throughout, which is why nothing downstream noticed --
+        # including the row-order invariant added after the August incident,
+        # because the rows never moved.
+        #
+        # The publication time is dropped rather than kept: news_quality
+        # already publishes `news_freshness_hours`, and an unsuffixed
+        # `datetime` column travelling on with a non-bar meaning is how this
+        # started.
+        return merged_group.drop(columns=['datetime'])
