@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import logging
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
 import pandas as pd
@@ -35,6 +36,42 @@ class InsiderCollector(BaseCollector):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.hash_keys = self.configs.get("hash_keys", ["filing_date", "ticker", "insider_name"])
 
+    @staticmethod
+    def _urls_for_tickers(templates: list[str], tickers: list[str] | None) -> list[str]:
+        """One query per ticker, built from the configured URL as a template.
+
+        The configured screener URL carries `s=` empty -- no symbol filter --
+        with `cnt=100&page=1`, so every run fetched the hundred most recent
+        filings ACROSS THE WHOLE MARKET. `tickers` was accepted by the caller
+        and never used.
+
+        The consequence is not an error, it is a coverage ceiling, and it is
+        why the feature looked broken twice. Of 1,395 accumulated filings just
+        11 concern our 22 companies, and `insider_net_value_30d` reaches 5% of
+        bars. Nothing in the pipeline could have fixed that downstream: the
+        rows were never collected.
+
+        The query shape stays in the config -- only `s` is substituted -- so
+        changing the window or the row count remains a config edit.
+        """
+        if not tickers:
+            return list(templates)
+
+        wanted = sorted({str(t).strip().upper() for t in tickers if str(t).strip()})
+        if not wanted:
+            return list(templates)
+
+        urls: list[str] = []
+        for template in templates:
+            split = urlsplit(str(template))
+            params = parse_qsl(split.query, keep_blank_values=True)
+            for symbol in wanted:
+                rebuilt = [(k, symbol if k == "s" else v) for k, v in params]
+                if not any(k == "s" for k, _ in rebuilt):
+                    rebuilt.append(("s", symbol))
+                urls.append(urlunsplit(split._replace(query=urlencode(rebuilt))))
+        return urls
+
     async def fetch_raw_data(self, tickers: list[str] | None = None, **kwargs) -> list[dict[str, Any]]:
         """
         Asynchronously parses execution lists from HTTP sources passed through configuration payload.
@@ -44,18 +81,36 @@ class InsiderCollector(BaseCollector):
             self.logger.warning(f"No execution URLs specified in '{self.collector_type}' conf. Skipping execution.")
             return []
 
+        urls_to_scrape = self._urls_for_tickers(urls_to_scrape, tickers)
         self.logger.info(f"Initiating asynchronous HTTP polling across {len(urls_to_scrape)} URIs.")
         all_trades: list[dict[str, Any]] = []
 
         # Get async HTTP client from factory (don't use context manager if not supported)
         try:
             client = await self.http_client_factory.get_http_client()
+
+            # One URL became twenty-two when the query gained a symbol filter,
+            # and `gather` would have fired all of them at one small free site
+            # simultaneously. A few at a time costs seconds and is the
+            # difference between using a source and abusing it.
+            gate = asyncio.Semaphore(int(self.configs.get("max_concurrent_requests", 4)))
+
+            async def _limited(coro_factory):
+                async with gate:
+                    return await coro_factory()
+
             # Check if it's async-capable (has httpx client)
             if hasattr(client, 'get') and asyncio.iscoroutinefunction(client.get):
-                tasks = [self._scrape_url(url, client) for url in urls_to_scrape]
+                tasks = [
+                    _limited(lambda u=url: self._scrape_url(u, client))
+                    for url in urls_to_scrape
+                ]
             else:
                 # Fallback: wrap blocking client in thread pool
-                tasks = [asyncio.to_thread(self._scrape_url_sync, url) for url in urls_to_scrape]
+                tasks = [
+                    _limited(lambda u=url: asyncio.to_thread(self._scrape_url_sync, u))
+                    for url in urls_to_scrape
+                ]
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
