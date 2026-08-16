@@ -88,7 +88,13 @@ def main() -> int:
             print('\ndry run — nothing written. Re-run with --apply to rewrite.')
             return 0
 
-        backup = f'{TABLE}_prehash_{datetime.now():%Y%m%d_%H%M%S}'
+        # `_backup` is load-bearing, not decoration. Stage 3 forwards every
+        # non-empty table to the enrichers and filters scratch tables by name
+        # markers -- `_backup`, `backup_`, `test_`, `_prepurge`, `_orphan`.
+        # The first version of this script named the copy `..._prehash_...`,
+        # which matches none of them, so a 285,908-row duplicate of the price
+        # table would have been handed to every enricher as a source.
+        backup = f'{TABLE}_backup_prehash_{datetime.now():%Y%m%d_%H%M%S}'
         con.execute(f'CREATE TABLE {backup} AS SELECT * FROM {TABLE}')
         print(f'\nbacked up to {backup}')
 

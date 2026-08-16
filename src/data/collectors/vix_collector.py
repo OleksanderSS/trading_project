@@ -16,6 +16,11 @@ from .base_collector import BaseCollector
 
 logger = logging.getLogger(__name__)
 
+# Trailing rows behind every derived statistic here: the moving average, the
+# percentiles and the z-score all read the same window, so a given trading day
+# yields the same numbers no matter when it was collected.
+_STAT_WINDOW = 20
+
 def _configure_yfinance_cache() -> None:
     cache_dir = Path("data/cache/yfinance").resolve()
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -45,7 +50,16 @@ class VIXCollector(BaseCollector):
         # from an empty string in that slot, and the same name reaching
         # DataManager as `unique_on` broke this table's unique index and its
         # duplicate check outright.
-        self.hash_keys = self.configs.get('hash_keys', ["date", "vix_close", "volatility_regime"])
+        #
+        # The default is now the DATE alone. VIX is one market-wide series with
+        # one reading per trading day, so the date is the whole identity.
+        # `vix_close` and `volatility_regime` are content, and putting content
+        # in an identity key turns it into a change detector: the regime is
+        # derived from a moving average, it flipped between collections of the
+        # same day, and each flip stored a second row. 22 of 77 dates carried
+        # duplicates. Same defect, different table, as the 273 duplicate bars
+        # in market_data_raw.
+        self.hash_keys = self.configs.get('hash_keys', ["date"])
 
         # Merge parameters from configuration structure
         params = self.configs.get('params', {})
@@ -128,21 +142,42 @@ class VIXCollector(BaseCollector):
                 # Calculate volatility regime using only historical data up to current row
                 # Use .iloc[:idx+1] to get only data up to current row to avoid lookahead
                 hist_up_to_now = hist.iloc[:idx+1]
-                if len(hist_up_to_now) >= 20:
-                    vix_sma = hist_up_to_now['Close'].rolling(window=20).mean().iloc[-1]
+                if len(hist_up_to_now) >= _STAT_WINDOW:
+                    recent = hist_up_to_now['Close'].iloc[-_STAT_WINDOW:]
+                    vix_sma = recent.mean()
+                    # Over the SAME trailing window as the mean, not over all
+                    # the history that happened to be fetched.
+                    #
+                    # `hist` is `history(period="60d")`, so its first row is 60
+                    # days before the COLLECTION date. Taking a quantile over
+                    # everything up to `idx` therefore measured a window whose
+                    # start moved with the collection date, and the same
+                    # trading day came out differently every time it was
+                    # collected. Observed on 2026-06-05: identical vix_close of
+                    # 21.51 from the 2026-07-20 and 2026-08-04 runs, with
+                    # different vix_percentile_20, _80, vix_sma_20, vix_zscore
+                    # and volatility_regime. A feature whose value depends on
+                    # when you happened to fetch it cannot be trained on and
+                    # served consistently, and this one also flipped
+                    # volatility_regime -- which was part of hash_keys, so each
+                    # recollection stored a SECOND row for that day. 22 of 77
+                    # dates were duplicated this way.
+                    vix_percentile_20 = recent.quantile(0.2)
+                    vix_percentile_80 = recent.quantile(0.8)
                 else:
-                    vix_sma = vix_close
-                volatility_regime = 'high' if vix_close > vix_sma else 'low'
-
-                # Calculate VIX percentiles using only historical data up to current row
-                # This prevents lookahead bias where future data influences historical percentiles
-                if len(hist_up_to_now) >= 20:
-                    vix_percentile_20 = hist_up_to_now['Close'].quantile(0.2)
-                    vix_percentile_80 = hist_up_to_now['Close'].quantile(0.8)
-                else:
-                    # Not enough data for meaningful percentiles, use current value
-                    vix_percentile_20 = vix_close
-                    vix_percentile_80 = vix_close
+                    # Substituting the current value for a percentile invents a
+                    # statistic: it made every early row read "today sits
+                    # exactly at the 20th AND the 80th percentile", and made
+                    # volatility_regime 'low' by comparing a value to itself.
+                    # Absent is the honest answer, and downstream already
+                    # distinguishes missing from neutral.
+                    vix_sma = float('nan')
+                    vix_percentile_20 = float('nan')
+                    vix_percentile_80 = float('nan')
+                volatility_regime = (
+                    'unknown' if pd.isna(vix_sma)
+                    else ('high' if vix_close > vix_sma else 'low')
+                )
 
                 # Classify VIX level
                 if vix_close >= 30:

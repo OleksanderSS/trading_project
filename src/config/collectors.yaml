@@ -458,10 +458,13 @@ collectors:
     # "Binder Error: Table vix_data does not have a column named vix_current"
     # -- no unique index was ever created and no duplicate check ever ran.
     # Confirmed against the DB: vix_data has 0 indexes.
+    # Identity only. `volatility_regime` is DERIVED from a moving average,
+    # so it flipped between collections of the same trading day and each
+    # flip stored a second row: 22 of 77 dates were duplicated. A key that
+    # includes content is not an identity, it is a change detector -- the
+    # same defect that put 273 duplicate bars in market_data_raw.
     hash_keys:
     - date
-    - vix_close
-    - volatility_regime
     params:
       interval: 1d
       period: 30d
