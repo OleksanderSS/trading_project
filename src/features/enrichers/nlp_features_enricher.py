@@ -262,7 +262,21 @@ class NLPFeaturesEnricher(BaseEnricher):
             ticker_features.drop(columns=drop_cols) if drop_cols else ticker_features,
             left_index=True,
             right_on='datetime',
-            direction='backward'
+            direction='backward',
+            # Bounded by the bar's own spacing, and this reaches further than
+            # it looks. `SentimentFeaturesEnricher._find_sentiment_column`
+            # takes `nlp_sentiment_score` from the frame if it is already
+            # there, and this enricher runs first -- so that enricher never
+            # performs its own merge, and `sentiment_available` was computed
+            # from THIS carry-forward. Unbounded, one article made every later
+            # bar "available" for as long as the series ran, and the flag came
+            # out equal to the collected news era to four decimal places
+            # (15m 1.0000, 60m 0.2153, 1d 0.2037).
+            #
+            # Bounding it here is the only place that fixes it. Bounding the
+            # sentiment enricher's own join changed nothing, because that join
+            # does not run.
+            tolerance=self.bar_window(pd.Series(group.index)),
         )
         # `left_index=True` already returns the LEFT frame's index -- each
         # bar's own timestamp -- and `right_on` rides the NEWS publication time

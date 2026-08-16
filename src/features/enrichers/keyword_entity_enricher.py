@@ -549,8 +549,26 @@ class KeywordEntityEnricher(BaseEnricher):
             )
             return df_merged.set_index('datetime') if 'datetime' in df_merged.columns else df_merged
         df_merged = df_merged.set_index('datetime')
+        # "Were there articles in this bar's window", not "did a row match".
+        #
+        # The aggregation resamples into buckets and the resampler emits a row
+        # for every bucket in its span, EMPTY ONES INCLUDED, filled with zero.
+        # So a match always exists inside the collected era and `notna()`
+        # reproduced the era exactly -- 0.2153 on 60m against a news-era
+        # fraction of 0.2153, to four decimal places. Bounding the join by the
+        # bar's spacing did not help either, and could not: on a 60m frame the
+        # bucket sits at distance zero from the bar, so the bound never binds.
+        # It only perturbed 15m, where bucket and bar are misaligned, turning a
+        # constant into an artefact of that misalignment rather than into a
+        # measurement of news.
+        #
+        # A zero-filled bucket is the honest answer to "how much news", so the
+        # counts stay. It is the FLAG that must not call zero a reading.
+        counts = df_merged[['keyword_count', 'entity_count']].apply(
+            pd.to_numeric, errors='coerce'
+        )
         df_merged['keyword_entity_available'] = (
-            df_merged[['keyword_count', 'entity_count']].notna().any(axis=1).astype(int)
+            (counts.fillna(0).sum(axis=1) > 0).astype(int)
         )
         df_merged['keyword_count'] = df_merged['keyword_count'].where(
             df_merged['keyword_count'].notna(), 0).astype(int)

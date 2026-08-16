@@ -181,9 +181,17 @@ class NewsQualityEnricher(BaseEnricher):
 
         df_merged = df_merged.set_index('datetime')
 
-        # Explicit availability flag: missing quality means no aligned news signal.
+        # "Were there sources in this bar's window", not "did a row match".
+        #
+        # The aggregation emits a row for every bucket in its span, empty ones
+        # included, so a match always exists inside the collected era and
+        # `notna()` reproduced that era exactly: 0.2153 on 60m against a
+        # news-era fraction of 0.2153, to four decimal places. That made this
+        # flag a copy of `news_coverage`, which is computed six lines below and
+        # is SUPPOSED to mark the era. Two columns, one fact.
         df_merged['news_quality_available'] = (
-            df_merged[['news_quality_score', 'news_source_count']].notna().any(axis=1).astype(int)
+            pd.to_numeric(df_merged['news_source_count'], errors='coerce')
+            .fillna(0).gt(0).astype(int)
         )
         df_merged['news_quality_score'] = df_merged['news_quality_score'].where(
             df_merged['news_quality_score'].notna(), 0.0)
