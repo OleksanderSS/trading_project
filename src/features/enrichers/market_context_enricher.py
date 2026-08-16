@@ -236,16 +236,50 @@ class MarketContextEnricher(BaseEnricher):
 
     @staticmethod
     def _timestamps(df: pd.DataFrame) -> pd.Series:
-        column = next(
-            (
-                candidate
-                for candidate in ("datetime", "timestamp", "date")
-                if candidate in df.columns
-            ),
-            None,
-        )
-        values = df[column] if column else df.index
+        """The bar times, positionally — or all-NaT when there are none to be had.
+
+        Two defects lived in the single expression this replaces, and the
+        second one hid the first.
+
+        `pd.Series(existing_series, index=range(len(df)))` does NOT relabel a
+        series positionally. It REINDEXES: pandas looks up each requested label
+        in the series it was handed. The frame reaching this enricher is the
+        twenty-first in the chain and its index is whatever survived that
+        journey, so the labels 0..n-1 often matched nothing. Measured:
+
+            index 0..n-1        every hour correct
+            index 500..500+n    every hour NaT -> the default 0.0
+            index 0,2,4,...     SOME hours correct and the rest defaulted,
+                                interleaved, with nothing marking which
+
+        That third row is the dangerous one. A wholly constant column is at
+        least inert; a column that is half real and half filler is a feature
+        the model will happily learn from.
+
+        The fallback to `df.index` then made a wrong answer out of a missing
+        one. `to_datetime` on a RangeIndex reads the integers as nanoseconds
+        since the epoch, so a frame with no timestamp at all came out as
+        1970-01-01 -- hour 0 and weekday 3 on every row, non-null, and
+        therefore silently past the check that reports fully-defaulted
+        features. Only a real DatetimeIndex is accepted now, and a column only
+        counts when it actually yields a time: `''` is not NaN and satisfies
+        every existence test in this codebase, which is a trap this pipeline
+        has fallen into six times.
+
+        Returning NaT when there is nothing is deliberate. The caller fills
+        defaults and reports what it filled, which is the honest outcome; the
+        old code denied it that chance.
+        """
+        for candidate in ("datetime", "timestamp", "date"):
+            if candidate not in df.columns:
+                continue
+            stamps = pd.to_datetime(df[candidate], errors="coerce", utc=True)
+            if stamps.notna().any():
+                return stamps.reset_index(drop=True)
+        if isinstance(df.index, pd.DatetimeIndex):
+            return pd.Series(
+                pd.to_datetime(df.index, errors="coerce", utc=True)
+            ).reset_index(drop=True)
         return pd.Series(
-            pd.to_datetime(values, errors="coerce", utc=True),
-            index=range(len(df)),
+            pd.to_datetime(pd.Series([None] * len(df)), errors="coerce", utc=True)
         )
