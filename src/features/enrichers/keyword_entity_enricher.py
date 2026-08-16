@@ -390,12 +390,14 @@ class KeywordEntityEnricher(BaseEnricher):
                 'general'].drop(columns=['ticker'])
             df_merged = pd.merge_asof(df_reset.sort_values('datetime'),
                 general.sort_values('datetime'), on='datetime',
-                direction='backward')
+                direction='backward',
+                tolerance=self.bar_window(df_reset['datetime']))
         return self._finalize_merge_result(df_merged)
 
     def _merge_per_ticker(self, df_reset: pd.DataFrame, aggregated_reset:
         pd.DataFrame) ->pd.DataFrame:
         """Merge aggregated news features per ticker group (no cross-ticker leakage)."""
+        window = self.bar_window(df_reset['datetime'])
         # General news is ADDED to a ticker's own, not used only when the
         # ticker has none.
         #
@@ -457,9 +459,15 @@ class KeywordEntityEnricher(BaseEnricher):
                 )
             else:
                 combined = combined.drop_duplicates(subset=['datetime'], keep='last')
+            # Bounded by the bar's own spacing. Unbounded, the resampler's
+            # zero-filled buckets mean every bar inside the collected era
+            # matches something, so `keyword_entity_available` became the
+            # constant 1 wherever price history sits inside news history --
+            # 1.0000 on 15m against 0.2153 on 60m, which is the era and not
+            # the bar.
             merged_group = pd.merge_asof(group.sort_values('datetime'),
                 combined.sort_values('datetime'), on='datetime',
-                direction='backward')
+                direction='backward', tolerance=window)
             parts.append(merged_group)
         if not parts:
             return df_reset

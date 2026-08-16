@@ -385,9 +385,9 @@ class SentimentFeaturesEnricher(BaseEnricher):
             logger.exception(f"Error merging sentiment with main DataFrame: {e}")
             return df
 
-    @staticmethod
+    @classmethod
     def _merge_asof_per_ticker(
-        df: pd.DataFrame, sentiment_agg: pd.DataFrame
+        cls, df: pd.DataFrame, sentiment_agg: pd.DataFrame
     ) -> pd.DataFrame:
         """Attach the latest closed news window, per ticker, without leaking.
 
@@ -426,8 +426,14 @@ class SentimentFeaturesEnricher(BaseEnricher):
             # back.
             labelled = group.sort_values('datetime').copy()
             labelled['__row_label'] = labelled.index
+            # Bounded by the bar's own spacing. Unbounded, a bar inherits the
+            # last window for as long as the series runs, so
+            # `sentiment_available` answered "have we ever collected news"
+            # rather than "is there sentiment on this bar": it equalled
+            # news_coverage to four decimal places on all three timeframes.
             merged = pd.merge_asof(
                 labelled, per_ticker, on='datetime', direction='backward',
+                tolerance=cls.bar_window(df['datetime']),
             )
             merged.index = merged['__row_label'].to_numpy()
             parts.append(merged.drop(columns=['__row_label']))

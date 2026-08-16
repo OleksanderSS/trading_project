@@ -238,13 +238,21 @@ class NewsImpactEnricher(BaseEnricher):
         df_enriched['_temp_idx'] = df_enriched[time_col]
         df_enriched = df_enriched.set_index('_temp_idx')
 
-        # Merge impact scores (forward fill for time-decaying effect)
-        impact_scores_aligned = impact_scores.reindex(df_enriched.index, method='ffill')
+        # Bounded by the bar's own spacing. An unbounded ffill carries the
+        # last score forward for as long as the series runs, so
+        # `news_impact_available` answered "have we ever collected news"
+        # rather than "is there impact on this bar" -- it equalled
+        # news_coverage to four decimal places on all three timeframes
+        # (15m 1.0000, 60m 0.2153, 1d 0.2037), which is the era, not the bar.
+        _window = self.bar_window(pd.Series(df_enriched.index))
+        impact_scores_aligned = impact_scores.reindex(
+            df_enriched.index, method='ffill', tolerance=_window)
         df_enriched['news_impact_available'] = impact_scores_aligned.notna().astype(int)
         df_enriched['news_impact_score'] = impact_scores_aligned.where(impact_scores_aligned.notna(), 0.0)
 
         if significance_levels is not None:
-            significance_aligned = significance_levels.reindex(df_enriched.index, method='ffill')
+            significance_aligned = significance_levels.reindex(
+                df_enriched.index, method='ffill', tolerance=_window)
             # Convert categorical to numeric for ML models
             significance_map = {'low': 0, 'medium': 1, 'high': 2}
             mapped_significance = significance_aligned.map(significance_map)
@@ -423,15 +431,23 @@ class NewsImpactEnricher(BaseEnricher):
 
     def _merge_traditional_impact_scores(self, df_enriched: pd.DataFrame, impact_scores: pd.Series, significance_levels: pd.Series) -> pd.DataFrame:
         """Merge impact scores for traditional format."""
-        # Reindex to match df's index (forward fill for time-decaying effect)
-        impact_scores_aligned = impact_scores.reindex(df_enriched.index, method='ffill')
+        # Bounded by the bar's own spacing. An unbounded ffill carries the
+        # last score forward for as long as the series runs, so
+        # `news_impact_available` answered "have we ever collected news"
+        # rather than "is there impact on this bar" -- it equalled
+        # news_coverage to four decimal places on all three timeframes
+        # (15m 1.0000, 60m 0.2153, 1d 0.2037), which is the era, not the bar.
+        _window = self.bar_window(pd.Series(df_enriched.index))
+        impact_scores_aligned = impact_scores.reindex(
+            df_enriched.index, method='ffill', tolerance=_window)
 
         # Add features
         df_enriched['news_impact_available'] = impact_scores_aligned.notna().astype(int)
         df_enriched['news_impact_score'] = impact_scores_aligned.where(impact_scores_aligned.notna(), 0.0)
 
         if significance_levels is not None:
-            significance_aligned = significance_levels.reindex(df_enriched.index, method='ffill')
+            significance_aligned = significance_levels.reindex(
+                df_enriched.index, method='ffill', tolerance=_window)
             # Convert categorical to numeric for ML models
             significance_map = {'low': 0, 'medium': 1, 'high': 2}
             mapped_significance = significance_aligned.map(significance_map)

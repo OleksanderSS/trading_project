@@ -39,6 +39,35 @@ class BaseEnricher(ABC):
         pass
 
     @staticmethod
+    def bar_window(bar_time: "pd.Series") -> "pd.Timedelta":
+        """How far apart these bars are, read off the bars themselves.
+
+        The bound a backward `merge_asof` needs. Without a `tolerance` the join
+        carries the last reading forward for as long as the series runs, so a
+        flag built on `value.notna()` answers "have we ever had news" rather
+        than "is there news on this bar". Measured on the v17 batch, and the
+        agreement is exact to four decimal places on every timeframe:
+
+            bars inside the collected news era   15m 1.0000  60m 0.2153  1d 0.2037
+            sentiment_available                  15m 1.0000  60m 0.2153  1d 0.2037
+            news_coverage                        15m 1.0000  60m 0.2153  1d 0.2037
+
+        Three flags reduced to a copy of a fourth. `news_coverage` is supposed
+        to mark the era; these are supposed to mark the bar.
+
+        Inferred rather than configured because these frames hold many tickers
+        at the same timestamps, so counting rows would give a spacing 22 times
+        too small.
+        """
+        stamps = pd.to_datetime(pd.Series(bar_time), errors="coerce").dropna()
+        unique = pd.Series(stamps.unique())
+        if len(unique) < 2:
+            return pd.Timedelta(days=1)
+        gaps = unique.sort_values().diff().dropna()
+        gaps = gaps[gaps > pd.Timedelta(0)]
+        return pd.Timedelta(gaps.median()) if len(gaps) else pd.Timedelta(days=1)
+
+    @staticmethod
     def parse_money(values: "pd.Series") -> "pd.Series":
         """Read a number that a scraper stored the way a page displayed it.
 

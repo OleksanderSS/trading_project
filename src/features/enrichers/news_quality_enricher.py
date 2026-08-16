@@ -165,12 +165,18 @@ class NewsQualityEnricher(BaseEnricher):
             agg_reset = agg_reset.rename(columns={first_col: 'datetime'})
         aggregated_reset = self._normalize_datetime_column(agg_reset)
 
-        # Merge using merge_asof
+        # Bounded by the bar's own spacing. An unbounded backward asof carries
+        # the last aggregate forward for as long as the series runs, so
+        # `news_quality_available` below answered "have we ever collected news"
+        # rather than "is there news on this bar" -- it equalled news_coverage
+        # to four decimal places on all three timeframes (15m 1.0000, 60m
+        # 0.2153, 1d 0.2037), which is the era, not the bar.
         df_merged = pd.merge_asof(
             df_reset.sort_values('datetime'),
             aggregated_reset.sort_values('datetime'),
             on='datetime',
-            direction='backward'
+            direction='backward',
+            tolerance=self.bar_window(df_reset['datetime']),
         )
 
         df_merged = df_merged.set_index('datetime')
