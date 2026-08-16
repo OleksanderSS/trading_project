@@ -29,6 +29,45 @@ logger = logging.getLogger(__name__)
 # frame belonging to another in-flight ticker/timeframe request.
 _YFINANCE_DOWNLOAD_LOCK = threading.Lock()
 
+def bar_identity_hash(timestamp: Any, ticker: Any, interval: Any) -> str:
+    """The identity of one bar: which instrument, which moment, which size.
+
+    This used to be `sha256(timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f%z') +
+    ticker + interval)` -- a hash of a FORMATTED LOCAL-TIME STRING, so it
+    depended on the machine's timezone and on which label the caller happened
+    to use for the timeframe. Two collections of the same bar produced two
+    hashes, and since `filter_new_records` deduplicates on exactly this value,
+    it could not see them as the same row.
+
+    Found on the v14 batch: 540 AAPL 60m bars stored twice between 2026-03-16
+    and 2026-05-08, every column identical except the hash. Both were
+    recoverable:
+
+        2026-03-16T13:30:00.000000+0000AAPL1h   (UTC)
+        2026-03-16T15:30:00.000000+0200AAPL1h   (Europe/Kiev, this machine)
+
+    The same instant, written two ways. A DST boundary, a machine in another
+    timezone, or a config change would each have produced more.
+
+    So the hash is taken of the INSTANT rather than of one rendering of it,
+    and the timeframe label is normalised first -- `1h`, `1H` and `60min` are
+    one bar size and must not be three identities. A naive timestamp is read
+    as UTC, which is what every other datetime path in this pipeline assumes.
+
+    Changing this formula changes every hash, so existing rows must be
+    rehashed before the next collection: otherwise every bar already stored
+    looks new. `scripts/maintenance/rehash_market_bars.py` does that.
+    """
+    stamp = pd.Timestamp(timestamp)
+    stamp = stamp.tz_localize('UTC') if stamp.tzinfo is None else stamp.tz_convert('UTC')
+    parts = (
+        stamp.strftime('%Y-%m-%dT%H:%M:%S.%f') + 'Z',
+        str(ticker).strip().upper(),
+        normalize_timeframe(interval),
+    )
+    return hashlib.sha256('|'.join(parts).encode()).hexdigest()
+
+
 def _configure_yfinance_cache() -> None:
     cache_dir = Path("data/cache/yfinance").resolve()
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -546,8 +585,12 @@ class YFCollector(BaseCollector):
             if col not in df.columns:
                 raise ValueError(f"Missing required column '{col}' for {ticker}/{interval}. Cannot generate hash.")
 
-        # Consistent hash generation using isoformat with microsecond precision
-        df['hash'] = df.apply(lambda row: hashlib.sha256(f"{row['datetime'].strftime('%Y-%m-%dT%H:%M:%S.%f%z')}{row['ticker']}{row['interval']}".encode()).hexdigest(), axis=1)
+        df['hash'] = df.apply(
+            lambda row: bar_identity_hash(
+                row['datetime'], row['ticker'], row['interval']
+            ),
+            axis=1,
+        )
 
         self.logger.info(f"✅ Processed {len(df)} rows for {ticker}/{interval} (after NaT and non-finite removal)")
 
