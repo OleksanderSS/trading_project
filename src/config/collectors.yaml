@@ -475,7 +475,11 @@ collectors:
     cache_duration_minutes: 15
     cache_ttl: 900
     critical: true
-    daily_max_years: 2
+    # `daily_max_years: 2` lived here until 2026-08-17 with ZERO readers in the
+    # code -- a dead key that read like the live limit and cost an afternoon.
+    # The real setting is timeframes.1d.period below. Removed rather than wired,
+    # because two places declaring one number is how every fix in this project
+    # has half-landed.
     enabled: true
     intraday_max_days: 60
     max_retries: 3
@@ -485,7 +489,35 @@ collectors:
       15m:
         period: 60d
       1d:
-        period: 2y
+        # Was 2y, and that two years was the binding constraint on the whole
+        # project without anyone choosing it.
+        #
+        # Measured 2026-08-17: every timeframe held two years or less, so the
+        # data contained roughly ONE bad market episode and one good one. Any
+        # "when not to trade" rule fitted on that is fitting the boundary
+        # between two periods rather than a repeatable relationship -- which is
+        # exactly what happened to a bar-amplitude filter that looked
+        # significant (t=-3.42) and then behaved in perfect reverse across the
+        # two slices.
+        #
+        # Yahoo serves far more, and it is free: AAPL from 1980 (11,511 bars),
+        # SPY from 1993, XOM and KO from 1962. Only the intraday intervals have
+        # a real provider ceiling (60d and 730d, enforced in
+        # yf_collector._INTRADAY_HISTORY_LIMIT_DAYS).
+        #
+        # 30 years rather than everything available: it reaches back to 1996 and
+        # covers the dot-com bust, 2008, 2011, 2015, 2018, 2020 and 2022 -- call
+        # it seven stress episodes against the one we had -- without reaching
+        # into an era whose market structure (fractional pricing before 2001,
+        # no ETFs, different session rules) makes a breakout mean something
+        # else. Tickers younger than that simply return what exists.
+        #
+        # The same reasoning that freed the hourly window applies here: price
+        # history may outrun news history, because the availability flags now
+        # mean "a reading at THIS row" and news_coverage marks the collected
+        # era. A bar from 1998 will correctly carry no news rather than a zero
+        # that reads as "nothing happened".
+        period: 30y
       1h:
         # Was 180d, bounded by NEWS coverage rather than by Yahoo. That bound
         # is lifted, and the reason it existed is worth keeping:
