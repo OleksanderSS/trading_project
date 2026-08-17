@@ -2,6 +2,57 @@
 # /src/config/targets.yaml
 # Defines all possible target variables that can be generated for model training.
 
+# ===========================================================================
+# TRANSACTION COST — one profile, five referents.
+#
+# Until 2026-08-17 these numbers were copied into five separate targets, all
+# reading commission 0.1% + spread 0.05% + slippage 0.1%, doubled = a flat
+# 0.5% subtracted from every return. Five copies of one decision is how a fix
+# lands in one place and dies in the other four, so they are now one anchor.
+#
+# The flat number was also wrong in both directions at once, because the cost
+# of a trade is not a constant. IBKR Pro tiered charges $0.0035 per SHARE with
+# a $0.35 minimum per ORDER, so:
+#   $1,000 order  -> 7.0 bp round trip     (the minimum fee dominates)
+#   $10,000 order -> 0.8 bp
+#   $20 share     -> 3.5 bp at ANY size    (the per-share fee dominates)
+# The old 0.5% is ~30x too high for a $25,000 order in AAPL and too LOW for a
+# $500 one. `order_value` is a real parameter of the strategy: below roughly
+# $2,000 the minimum fee alone exceeds the edge the models have shown.
+#
+# HONESTY NOTE ON `spread_pct`. It is an ASSUMPTION, not a measurement. Two
+# published estimators run on our own 1h bars (Corwin-Schultz 2012,
+# Abdi-Ranaldo 2017) bracket the effective spread from ~0 to ~19 bp, and the
+# measured break-even for the hourly models sits at 5-10 bp -- INSIDE that
+# bracket. So OHLC bars cannot settle the sign of the result. The value below
+# is a modest quoted-spread assumption for liquid US large caps; the real
+# measurement is the fill price from a paper-trading account, and it should
+# replace this the moment we have one.
+#
+# `spread_pct` and `slippage_pct` are PER SIDE — the calculator doubles them.
+# A 2 bp quoted spread is one half-spread per side, i.e. 0.0001.
+# ===========================================================================
+cost_profiles:
+
+  # Realistic: what we would actually pay at $10k per position in a liquid
+  # large cap. Round trip works out at ~4.7 bp on a $230 share.
+  ibkr_pro_tiered: &ibkr_pro_tiered
+    model: per_share
+    per_share_fee: 0.0035          # USD per share, IBKR Pro tiered
+    min_fee_per_order: 0.35        # USD, per order — dominates small orders
+    max_fee_pct_of_order: 0.01     # broker's own cap
+    order_value: 10000             # USD per position — CHANGE THIS to re-price
+    spread_pct: 0.0001             # half of an assumed 2 bp quoted spread
+    slippage_pct: 0.0001           # assumption, pending a paper-trading fill
+
+  # Kept so the old behaviour is reproducible rather than deleted: every
+  # figure produced before 2026-08-17 carries this.
+  legacy_flat_50bp: &legacy_flat_50bp
+    model: flat
+    commission_pct: 0.001
+    spread_pct: 0.0005
+    slippage_pct: 0.001
+
 targets:
   # ===================================================================
   # Targets for "Heavy" Models (LSTM, GRU, Transformer, CNN)
@@ -54,13 +105,9 @@ targets:
       description: "Future return over the next 1 period."
       base_col: "close"
       shift: -1
-      # ✅ Accounting for margin (commission) in target
+      # Round-trip friction, see cost_profiles at the top of this file
       adjust_for_costs: true
-      transaction_costs:
-        commission_pct: 0.001  # 0.1% commission
-        spread_pct: 0.0005     # 0.05% spread
-        slippage_pct: 0.001    # 0.1% slippage
-        # Total margin: ~0.25% per operation (buy+sell = 0.5%)
+      transaction_costs: *ibkr_pro_tiered
 
   target_return_5d:
     type: "regression"
@@ -69,10 +116,7 @@ targets:
       base_col: "close"
       shift: -5
       adjust_for_costs: true
-      transaction_costs:
-        commission_pct: 0.001
-        spread_pct: 0.0005
-        slippage_pct: 0.001
+      transaction_costs: *ibkr_pro_tiered
 
   # --- Indicator Prediction: DISABLED 2026-08-16 ---
   #
@@ -168,10 +212,7 @@ targets:
       base_col: "close"
       shift: -1
       adjust_for_costs: true
-      transaction_costs:
-        commission_pct: 0.001
-        spread_pct: 0.0005
-        slippage_pct: 0.001
+      transaction_costs: *ibkr_pro_tiered
 
   target_intraday_volatility_15m:
     type: "regression"
@@ -208,10 +249,7 @@ targets:
       base_col: "close"
       shift: -4
       adjust_for_costs: true
-      transaction_costs:
-        commission_pct: 0.001
-        spread_pct: 0.0005
-        slippage_pct: 0.001
+      transaction_costs: *ibkr_pro_tiered
 
   target_hourly_volume_spike_1h:
     type: "classification_binary"
@@ -263,10 +301,7 @@ targets:
       base_col: "close"
       shift: -7
       adjust_for_costs: true
-      transaction_costs:
-        commission_pct: 0.001
-        spread_pct: 0.0005
-        slippage_pct: 0.001
+      transaction_costs: *ibkr_pro_tiered
 
   # УВАГА: method/window до 2026-07-30 не читались калькулятором, тож обидві
   # ці цілі рахувались як звичайна одноденна дохідність і були БАЙТ-У-БАЙТ

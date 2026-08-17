@@ -74,21 +74,77 @@ class RegressionCalculator:
         transaction_costs = kwargs.get('transaction_costs', {})
 
         if adjust_for_costs and transaction_costs:
-            commission_pct = transaction_costs.get('commission_pct', 0.0)
-            spread_pct = transaction_costs.get('spread_pct', 0.0)
-            slippage_pct = transaction_costs.get('slippage_pct', 0.0)
-
-            # Total estimated round-trip overhead (buy sequence + sell sequence)
-            total_cost = (commission_pct + spread_pct + slippage_pct) * 2
+            total_cost = self._round_trip_cost(df[base_col], transaction_costs)
 
             # Prune target returns by the cost factor
             target_series = target_series - total_cost
 
-            logger.info(f"Target Sanitization: Adjusted for round-trip friction ({total_cost:.4%})")
+            shown = float(np.nanmean(total_cost)) if hasattr(total_cost, '__len__') \
+                else float(total_cost)
+            logger.info(f"Target Sanitization: Adjusted for round-trip friction ({shown:.4%})")
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(f"Breakdown: Comm={commission_pct:.4%}, Spread={spread_pct:.4%}, Slip={slippage_pct:.4%}")
+                logger.debug(f"Cost config: {transaction_costs}")
 
         return target_series
+
+    @staticmethod
+    def _round_trip_cost(price: pd.Series, costs: dict):
+        """Round-trip friction as a fraction of the position's value.
+
+        Two models, and which one applies is the point of this method.
+
+        `flat` is what this project assumed until 2026-08-17: one
+        `commission_pct` for every trade. Measured against a real schedule it
+        is wrong in both directions at once, because a broker charges per
+        SHARE with a minimum per ORDER. IBKR Pro tiered is $0.0035/share, min
+        $0.35: a $1,000 order pays 7 bp round trip and a $10,000 order in the
+        same stock pays 0.8 bp, so the cost in basis points depends on the
+        order value and on the share price. A $20 stock cannot go below 3.5 bp
+        at any size; a $230 stock reaches 0.3 bp.
+
+        `per_share` computes that per row, from the bar's own price.
+
+        `spread_pct` and `slippage_pct` are PER SIDE, as they have always been
+        here -- the total doubles them. A 2 bp quoted spread costs one
+        half-spread per side, so `spread_pct: 0.0001`.
+
+        Returns a scalar for the flat model and a per-row Series for
+        `per_share`; both subtract correctly from the target series, which
+        shares this frame's index.
+        """
+        spread = float(costs.get('spread_pct', 0.0) or 0.0)
+        slippage = float(costs.get('slippage_pct', 0.0) or 0.0)
+        model = str(costs.get('model', 'flat')).lower()
+
+        if model == 'per_share':
+            order_value = float(costs.get('order_value', 0.0) or 0.0)
+            if order_value <= 0:
+                raise ValueError(
+                    "transaction_costs model 'per_share' requires a positive "
+                    "order_value -- the cost in basis points is a function of "
+                    "it, so a missing value has no safe default."
+                )
+            per_share = float(costs.get('per_share_fee', 0.0) or 0.0)
+            min_fee = float(costs.get('min_fee_per_order', 0.0) or 0.0)
+            max_pct = float(costs.get('max_fee_pct_of_order', 1.0) or 1.0)
+
+            prices = pd.to_numeric(price, errors='coerce')
+            shares = order_value / prices.where(prices > 0)
+            fee = (per_share * shares).clip(lower=min_fee,
+                                            upper=max_pct * order_value)
+            # A bar with no usable price cannot size an order; charging the
+            # per-order minimum is the conservative reading, and a NaN here
+            # would silently void the whole target for that row.
+            commission = (fee / order_value).fillna(min_fee / order_value)
+        elif model == 'flat':
+            commission = float(costs.get('commission_pct', 0.0) or 0.0)
+        else:
+            raise ValueError(
+                f"Unknown transaction_costs model '{model}'. "
+                f"Expected 'flat' or 'per_share'."
+            )
+
+        return (commission + spread + slippage) * 2
 
     # ------------------------------------------------------------------
     # Forward-window methods
