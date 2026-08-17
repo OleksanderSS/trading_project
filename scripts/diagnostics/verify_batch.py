@@ -15,12 +15,53 @@ import glob
 import sys
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 BATCH = Path('data/colab/accumulated/main_database/features.parquet')
+DB = Path('data/trading_data.duckdb')
 KEY = ['ticker', 'datetime', 'interval']
+
+
+def calendar_starved(db_path: Path | str = DB) -> str | None:
+    """Why are there no `econ_` columns: no data, or a broken chain?
+
+    Module level and I/O-parameterised on purpose. The last time a decision in
+    this project lived inside the branch that used it, the rule was correct and
+    unreachable and no test could ask it anything.
+
+    The enricher computes surprise = actual - forecast and adds nothing when no
+    event carries both. ForexFactory's feed is forward-looking and its
+    past-week variants 404, so a release we did not fetch on the day can never
+    be back-filled. That is a fact about the source, not a defect.
+
+    Returns a reason to SKIP only when the calendar provably has nothing to
+    give. A calendar holding usable events while the batch has no columns is
+    the real failure this check was written for, and it returns None so the
+    caller still fails. An unreadable or absent table also returns None: an
+    unknown must never be reported as a benign skip.
+    """
+    try:
+        con = duckdb.connect(str(db_path), read_only=True)
+    except Exception:  # noqa: BLE001 - a busy DB must not decide the verdict
+        return None
+    try:
+        usable = con.execute(
+            "select count(*) from economic_calendar "
+            "where actual is not null and actual <> '' "
+            "and forecast is not null and forecast <> ''"
+        ).fetchone()[0]
+        total = con.execute('select count(*) from economic_calendar').fetchone()[0]
+    except Exception:  # noqa: BLE001 - an absent table is not "starved"
+        return None
+    finally:
+        con.close()
+    if usable:
+        return None
+    return (f'{total} events held, 0 with both actual and forecast — '
+            f'the source is forward-looking, not the chain broken')
 
 
 def _latest_stage2() -> dict[str, Path]:
@@ -40,8 +81,19 @@ def main() -> int:
 
     failures = 0
 
-    def report(ok: bool, label: str, detail: str) -> None:
+    def report(ok: bool, label: str, detail: str, skip: str | None = None) -> None:
+        """SKIP exists so this gate does not cry wolf every single run.
+
+        A check that can never pass teaches its reader to ignore the whole
+        report, which is exactly as bad as having no gate. `skip` is for the
+        case where the pipeline is provably correct and the SOURCE has nothing
+        to give yet -- and it must be earned by a measurement, never assumed,
+        so that a real regression still fails loudly.
+        """
         nonlocal failures
+        if skip is not None:
+            print(f'SKIP  {label:34s} {skip}')
+            return
         if not ok:
             failures += 1
         print(f'{"PASS" if ok else "FAIL"}  {label:34s} {detail}')
@@ -111,7 +163,8 @@ def main() -> int:
         # column count rather than instead of it.
         varying = [c for c in matched if full[c].nunique(dropna=True) > 1]
         detail = f'{len(matched)} columns, {len(matched) - len(varying)} constant'
-        report(bool(matched), f'{label} reached the batch', detail)
+        skip = calendar_starved() if (prefix == 'econ_' and not matched) else None
+        report(bool(matched), f'{label} reached the batch', detail, skip=skip)
 
     constant = int((full.nunique(dropna=True) <= 1).sum())
     print(f'\n      {len(columns):,} columns, {constant} constant')
