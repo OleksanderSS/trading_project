@@ -206,6 +206,49 @@ class CollectionStage(BaseStage):
         self.logger.info("Collection stage finished.")
         return self.fetch_all_data_from_db(tickers=tickers)
 
+    #: Seconds each collector gets before it is cancelled.
+    #:
+    #: One hardcoded 300 stood in for all of them, with a single ad-hoc 600
+    #: for Google Trends. On 2026-08-17 the daily history window went from two
+    #: years to thirty, and the consequence was not "yahoo took longer": TEN
+    #: collectors died at the same instant, exactly 300s after collection
+    #: began, because they share the event loop and one slow member starves
+    #: the rest. yahoo_finance, cftc, fear_greed, fred, insider, newsapi,
+    #: reddit_sentiment, sdmx_macro, sec_filings and wikimedia_attention all
+    #: saved nothing, and the pipeline reported success.
+    #:
+    #: Worse, the loss is total rather than partial. YFCollector downloads
+    #: every ticker, then filters, then upserts once at the end -- so a
+    #: cancellation two thirds of the way through discards ~180,000 rows that
+    #: were already on the machine. The log showed "Successfully downloaded
+    #: 7541 rows for AAPL/1d" and the table did not gain a single row.
+    #:
+    #: Values are measured, not guessed: the 30-year download alone ran 456s
+    #: before the dedup pass even started.
+    _COLLECTOR_TIMEOUT_SECONDS: ClassVar[dict[str, int]] = {
+        'yahoo_finance': 1800,       # 30y x 24 tickers, then dedup ~180k rows
+        'huggingface': 900,          # ~1M rows to scan
+        'free_google_trends': 600,   # was the one hand-tuned exception
+        'sec_filings': 600,
+        'insider': 600,              # one HTTP round trip per ticker
+        'wikimedia_attention': 600,
+    }
+
+    #: Everything not named above. Raised from 300 because that number was
+    #: never chosen for any collector in particular -- it was chosen once, for
+    #: all of them, which is exactly the shape this table exists to remove.
+    _DEFAULT_COLLECTOR_TIMEOUT_SECONDS = 900
+
+    @classmethod
+    def _collector_timeout(cls, collector, collector_name: str) -> int:
+        configured = getattr(collector, 'configs', None) or {}
+        override = configured.get('collector_timeout_seconds')
+        if isinstance(override, (int, float)) and override > 0:
+            return int(override)
+        return cls._COLLECTOR_TIMEOUT_SECONDS.get(
+            collector_name, cls._DEFAULT_COLLECTOR_TIMEOUT_SECONDS
+        )
+
     async def _run_collector(self, collector, tickers: list[str], keywords: list[str]):
         """Запускає колектор з правильними аргументами залежно від його типу."""
 
@@ -213,8 +256,7 @@ class CollectionStage(BaseStage):
         collector_name = getattr(collector, 'collector_name', name)
 
         try:
-            # Додаємо таймаут для кожного колектора
-            timeout = 300  # 5 хвилин максимум
+            timeout = self._collector_timeout(collector, collector_name)
 
             if isinstance(collector, YFCollector):
                 return await asyncio.wait_for(collector.run(tickers=tickers), timeout=timeout)
@@ -230,8 +272,7 @@ class CollectionStage(BaseStage):
                     rss_feeds=kb.get("rss_feeds", []),
                 ), timeout=timeout)
             elif isinstance(collector, FreeGoogleTrendsCollector):
-                # Для Google Trends збільшуємо таймаут через retry
-                return await asyncio.wait_for(collector.run(tickers=tickers, keywords=keywords), timeout=600)
+                return await asyncio.wait_for(collector.run(tickers=tickers, keywords=keywords), timeout=timeout)
             elif isinstance(collector, HuggingfaceCollector):
                 return await asyncio.wait_for(collector.run(), timeout=timeout)
             elif isinstance(collector, (FredCollector, EconomicCalendarCollector, BigQueryCollector,
