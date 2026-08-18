@@ -6,6 +6,8 @@ Hybrid Pipeline Orchestrator:
 """
 from typing import Any
 
+from pathlib import Path
+
 import pandas as pd
 
 from src.config.unified_config_manager import UnifiedConfigManager
@@ -73,6 +75,50 @@ class HybridOrchestrator:
         return self.colab_manager.prepare_colab_batch(features_df, targets_df, config)
 
 
+
+    #: Where `--mode prepare` leaves the batch that `verify_batch` gates and
+    #: Colab consumes. Reading it is the whole point of preparing it.
+    _PREPARED_BATCH_DIR = Path('data/colab/accumulated')
+
+    def _load_prepared_batch(
+        self, batch_name: str | None
+    ) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
+        """Reuse the prepared batch instead of rebuilding stages 0-3.
+
+        `--mode light` rebuilt them on every run, which on 2026-08-18 was not
+        merely wasteful: the batch had already been built AND gate-verified
+        that morning, and rebuilding it a second time died with
+        `MemoryError: unable to allocate 4.17 GiB` in stage 3, so the training
+        it was supposed to precede never ran at all. Two rebuilds, three
+        hours, and zero champions -- for a frame that was sitting on disk the
+        whole time.
+
+        Falls back to rebuilding when nothing is on disk, so a first run on a
+        clean machine still works. `--mode prepare` remains the way to
+        deliberately rebuild.
+        """
+        name = batch_name or 'main_database'
+        base = self._PREPARED_BATCH_DIR / name
+        features, targets = base / 'features.parquet', base / 'targets.parquet'
+        if not (features.exists() and targets.exists()):
+            self.logger.info(
+                "No prepared batch at %s; falling back to rebuilding stages 0-3.",
+                base,
+            )
+            return None, None
+        try:
+            f, t = pd.read_parquet(features), pd.read_parquet(targets)
+        except Exception as exc:  # noqa: BLE001 - a bad file must not kill the run
+            self.logger.warning(
+                "Prepared batch at %s could not be read (%s); rebuilding.", base, exc
+            )
+            return None, None
+        self.logger.info(
+            "Reusing prepared batch %s: features %s, targets %s. "
+            "Run --mode prepare to rebuild it.", name, f.shape, t.shape,
+        )
+        return f, t
+
     async def run_light_models(
         self,
         tickers: list[str] | None = None,
@@ -86,6 +132,9 @@ class HybridOrchestrator:
     ) -> dict[str, Any]:
         """Run local light-model training on prepared feature/target data."""
         effective_tickers = [test_ticker] if test_ticker else tickers
+
+        if features_df is None or targets_df is None:
+            features_df, targets_df = self._load_prepared_batch(batch_name)
 
         if features_df is None or targets_df is None:
             local_result = await self.run_local_pipeline(
