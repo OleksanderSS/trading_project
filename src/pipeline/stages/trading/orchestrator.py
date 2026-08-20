@@ -191,6 +191,15 @@ class TradingExecutionStage(BaseStage):
         'implausible_fire_rate': 0.25,
     }
 
+    #: Used when the batch carries `context_velocity_rank`. Because a rank is
+    #: a percentile of the ticker's own history, these ARE the fire rates:
+    #: 0.70 means the busiest 30% of that ticker's past, 0.90 the busiest 10%.
+    #: Nothing to re-tune when the fingerprint changes width.
+    CONTEXT_GATE_RANK_DEFAULTS: ClassVar[dict[str, float]] = {
+        'reduce_velocity': 0.70,
+        'block_velocity': 0.90,
+    }
+
     def _apply_context_rules(self, predictions: list[dict]) -> list[dict]:
         """Context as a GATE: does the situation permit acting at all?
 
@@ -202,12 +211,25 @@ class TradingExecutionStage(BaseStage):
 
         Two limits worth knowing before trusting it:
 
-        `context_velocity` exists only on 15m rows in the current batch; it is
-        entirely empty on 60m and 1d. So this gate cannot fire at all on the
-        timeframes the daily work uses, and a signal without the column passes
-        through untouched rather than being silently blocked.
+        CORRECTION to what this docstring said an hour ago: I wrote that
+        `context_velocity` exists only on 15m. That was read off a truncated
+        column listing and is wrong. It exists on all three timeframes -- and
+        the calibration is worse the further out you go, exceeding the 0.85
+        "critical" threshold on 64% of 15m bars, 65% of 60m and **82% of
+        daily**, which is where the strongest signal we have lives.
+
+        So the gate prefers a RANK when the batch carries one:
+        `context_velocity_rank` is the expanding percentile of a ticker's own
+        velocity history, which means a threshold of 0.9 is "top decile" by
+        construction and cannot rot when the fingerprint width changes. Absolute
+        velocity remains the fallback for batches built before that column
+        existed, and the run says which one it used.
         """
         cfg = dict(self.CONTEXT_GATE_DEFAULTS)
+        # A rank lives on [0, 1] by construction, so the thresholds mean
+        # "top 30%" and "top 10%" rather than a number someone guessed once.
+        if any(p.get('context_velocity_rank') is not None for p in predictions):
+            cfg.update(self.CONTEXT_GATE_RANK_DEFAULTS)
         configured = getattr(self, 'context_gate_config', None)
         if isinstance(configured, dict):
             cfg.update({k: float(v) for k, v in configured.items()
@@ -218,7 +240,12 @@ class TradingExecutionStage(BaseStage):
         for source_prediction in predictions:
             pred = dict(source_prediction)
             ticker = pred.get('ticker')
-            raw = pred.get('context_velocity')
+            raw = pred.get('context_velocity_rank')
+            if raw is None:
+                raw = pred.get('context_velocity')
+                using_rank = False
+            else:
+                using_rank = True
             velocity = self._safe_float(raw)
             seen += 1
             if raw is None or velocity is None:
@@ -247,18 +274,21 @@ class TradingExecutionStage(BaseStage):
 
             filtered_signals.append(pred)
 
-        self._report_gate_rates(seen, reduced, blocked, missing, cfg)
+        self._report_gate_rates(seen, reduced, blocked, missing, cfg,
+                                using_rank='context_velocity_rank' in (
+                                    predictions[0] if predictions else {}))
         return filtered_signals
 
     def _report_gate_rates(self, seen: int, reduced: int, blocked: int,
-                           missing: int, cfg: dict) -> None:
+                           missing: int, cfg: dict, using_rank: bool = False) -> None:
         """Say how often the gate fired, so a rotted threshold cannot hide."""
         if not seen:
             return
         rates = {'reduce': reduced / seen, 'block': blocked / seen}
         self.logger.info(
-            "Context gate: %d signals, exposure cut on %d (%.1f%%), buys blocked "
+            "Context gate (%s): %d signals, exposure cut on %d (%.1f%%), buys blocked "
             "on %d (%.1f%%), no velocity reading on %d (%.1f%%)",
+            'rank' if using_rank else 'ABSOLUTE velocity, thresholds can rot',
             seen, reduced, rates['reduce'] * 100, blocked, rates['block'] * 100,
             missing, missing / seen * 100)
         limit = cfg['implausible_fire_rate']

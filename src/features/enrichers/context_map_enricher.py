@@ -375,6 +375,41 @@ class ContextMapEnricher(BaseEnricher):
         )
         res_df['context_anxiety_index'] = (res_df['context_velocity'] > 0.6).astype(int)
 
+        # A RANK, so downstream thresholds cannot rot.
+        #
+        # Velocity is the share of recent bars whose fingerprint changed, and
+        # its scale is set by how often the fingerprint repeats -- which is a
+        # property of `fingerprint_columns`, not of the market. Widen that list
+        # and every absolute threshold downstream silently re-points.
+        #
+        # It already happened. Stage 6 blocks buys when velocity exceeds 0.85,
+        # a number chosen when fingerprints were nearly unique and velocity sat
+        # at 1.0 everywhere. Measured on the 2026-08-20 batch it is exceeded on
+        # 64% of 15m bars, 65% of 60m and 82% of daily -- a rule written for a
+        # rare emergency describing four bars in five.
+        #
+        # The percentile is EXPANDING and computed in time order per ticker, so
+        # the value at a bar uses only that ticker's own past. Both halves of
+        # that matter: an expanding statistic computed over the frame's row
+        # order rather than over time put 2026 sentiment into a 1996 bar
+        # earlier today (see AdvancedAnalyticsEnricher). `groupby.transform`
+        # walks row order, and by this point in the chain the frame has been
+        # reordered several times.
+        if 'datetime' in res_df.columns:
+            order = res_df.sort_values(['ticker', 'datetime']).index
+            v = res_df.loc[order, 'context_velocity']
+            res_df['context_velocity_rank'] = (
+                v.groupby(res_df.loc[order, 'ticker'])
+                 .transform(lambda s: s.expanding(min_periods=20).rank(pct=True))
+                 .reindex(res_df.index)
+            )
+        else:
+            logger.warning(
+                "context_velocity_rank skipped: no datetime column, and an "
+                "expanding rank over row order would not be causal."
+            )
+            res_df['context_velocity_rank'] = np.nan
+
     def _log_context_statistics(self, res_df: pd.DataFrame, state_cols: list[str], temporal_cols: list[str]):
         logger.info(f"✅ Context Patterns Generated. Features integrated: {len(self.higher_order_features)}")
 

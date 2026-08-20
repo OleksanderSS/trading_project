@@ -101,3 +101,43 @@ class TestARottedThresholdAnnouncesItself:
         stage.context_gate_config = {'reduce_velocity': 0.95, 'block_velocity': 0.99}
         out = stage._apply_context_rules([signal(velocity=0.9)])
         assert out[0]['confidence'] == 1.0, 'a raised threshold must actually raise it'
+
+
+class TestTheRankIsPreferredAndCannotRot:
+    """An absolute threshold against a feature whose scale is a config choice.
+
+    `context_velocity` is the share of recent bars whose fingerprint changed,
+    so its scale is set by `fingerprint_columns` — a property of our config,
+    not of the market. The shipped 0.85 was chosen when fingerprints were
+    nearly unique. Measured 2026-08-20 it is exceeded on 64% of 15m bars, 65%
+    of 60m and 82% of daily.
+
+    A percentile of the ticker's own history cannot drift that way: 0.90 is the
+    busiest decile by construction, whatever the fingerprint width becomes.
+    """
+
+    def rank_signal(self, rank, confidence=1.0, prediction=0.02):
+        return {'ticker': 'AAA', 'confidence': confidence,
+                'raw_forecast': prediction, 'context_velocity_rank': rank,
+                'context_velocity': 0.99}          # absolute would block
+
+    def test_the_rank_wins_over_absolute_velocity(self, stage):
+        # Absolute velocity 0.99 would block; a calm rank must not.
+        out = stage._apply_context_rules([self.rank_signal(0.10)])
+        assert out[0]['confidence'] == 1.0
+
+    def test_a_busy_rank_still_blocks(self, stage):
+        out = stage._apply_context_rules([self.rank_signal(0.95)])
+        assert out[0]['confidence'] == 0.0
+
+    def test_rank_thresholds_are_fire_rates_by_construction(self, stage):
+        """0.90 must block about a tenth of a uniform rank distribution."""
+        signals = [self.rank_signal(i / 100) for i in range(100)]
+        out = stage._apply_context_rules(signals)
+        blocked = sum(1 for s in out if s['confidence'] == 0.0)
+        assert 8 <= blocked <= 12, f'blocked {blocked} of 100, expected ~10'
+
+    def test_absolute_velocity_is_still_used_when_no_rank_exists(self, stage):
+        # Batches built before the rank column existed must keep working.
+        out = stage._apply_context_rules([signal(velocity=0.95)])
+        assert out[0]['confidence'] == 0.0
