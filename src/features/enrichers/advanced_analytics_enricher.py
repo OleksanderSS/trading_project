@@ -135,15 +135,55 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
 
             sentiment_col = 'nlp_sentiment_score'
             series = pd.to_numeric(df_enriched[sentiment_col], errors='coerce')
-            if 'ticker' in df_enriched.columns:
+
+            # An expanding window is only "the past" if the rows are in time
+            # order. `groupby.transform` walks the FRAME'S order, and by the
+            # time this enricher runs (priority 78) several earlier ones have
+            # reordered it -- nlp_features, keyword_entity, news_quality and
+            # volatility all do.
+            #
+            # Measured 2026-08-20: AAPL's first bar, 1996-08-26, carried
+            # nlp_sentiment_score 0.0 and sentiment_mean 0.011112. Every raw
+            # score before the news era (2026-03-16) is exactly zero on all
+            # 151,640 rows, so an expanding mean over them cannot be anything
+            # but zero. It was reading 2026 sentiment into a 1996 bar, and the
+            # value decayed with time (0.0111 in 1996, 0.0015 in 2010) as the
+            # window filled with zeros -- the signature of a window running in
+            # the wrong direction.
+            #
+            # The orchestrator's row-order invariant does NOT catch this. It
+            # restores order AFTER the enricher, so the rows end up where they
+            # belong carrying values computed over somebody else's sequence.
+            # An order invariant is not a value invariant, which is the same
+            # lesson the August date catastrophe taught in a different costume.
+            if 'ticker' in df_enriched.columns and 'datetime' in df_enriched.columns:
+                order = df_enriched.sort_values(['ticker', 'datetime']).index
+                ordered = series.loc[order]
+                grouped = ordered.groupby(df_enriched.loc[order, 'ticker'])
+                mean = grouped.transform(
+                    lambda s: s.expanding(min_periods=2).mean()).reindex(series.index)
+                std = grouped.transform(
+                    lambda s: s.expanding(min_periods=2).std()).reindex(series.index)
+            elif 'ticker' in df_enriched.columns:
+                logger.warning(
+                    "Sentiment statistics computed WITHOUT a datetime column: "
+                    "the expanding window follows row order, which is not "
+                    "guaranteed to be chronological here."
+                )
                 grouped = series.groupby(df_enriched['ticker'])
                 mean = grouped.transform(
                     lambda s: s.expanding(min_periods=2).mean())
                 std = grouped.transform(
                     lambda s: s.expanding(min_periods=2).std())
             else:
-                mean = series.expanding(min_periods=2).mean()
-                std = series.expanding(min_periods=2).std()
+                if 'datetime' in df_enriched.columns:
+                    order = df_enriched['datetime'].sort_values().index
+                    ordered = series.loc[order]
+                    mean = ordered.expanding(min_periods=2).mean().reindex(series.index)
+                    std = ordered.expanding(min_periods=2).std().reindex(series.index)
+                else:
+                    mean = series.expanding(min_periods=2).mean()
+                    std = series.expanding(min_periods=2).std()
 
             df_enriched['sentiment_mean'] = mean
             df_enriched['sentiment_std_stat'] = std
