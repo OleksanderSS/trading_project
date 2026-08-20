@@ -75,6 +75,53 @@ class WalkForwardOptimizer:
         self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger('WalkForwardOptimizer')
 
+    @staticmethod
+    def _span_months(data: pd.DataFrame) -> float:
+        idx = data.index
+        if not isinstance(idx, pd.DatetimeIndex) or len(idx) < 2:
+            return float('nan')
+        return (idx[-1] - idx[0]).days / 30.44
+
+    @staticmethod
+    def _walk_forward_windows(data: pd.DataFrame, in_sample_months: int,
+                              out_sample_months: int) -> list[tuple[int, int, int, int]]:
+        """Row boundaries for each fold, measured in CALENDAR months.
+
+        Returns [(in_start, in_end, out_start, out_end), ...] as positional
+        slices, so the caller keeps using .iloc and nothing else changes.
+
+        A non-datetime index cannot be cut into months, and guessing a
+        bars-per-month figure is how the previous version produced windows that
+        silently changed size with the amount of history. It returns no windows
+        instead, and the caller reports why.
+        """
+        idx = data.index
+        if not isinstance(idx, pd.DatetimeIndex) or len(idx) < 2:
+            return []
+        if not idx.is_monotonic_increasing:
+            idx = idx.sort_values()
+
+        windows: list[tuple[int, int, int, int]] = []
+        in_start_time = idx[0]
+        last = idx[-1]
+        while True:
+            in_end_time = in_start_time + pd.DateOffset(months=in_sample_months)
+            out_end_time = in_end_time + pd.DateOffset(months=out_sample_months)
+            if in_end_time > last:
+                break
+            in_start = int(idx.searchsorted(in_start_time, side='left'))
+            in_end = int(idx.searchsorted(in_end_time, side='left'))
+            out_end = int(idx.searchsorted(min(out_end_time, last), side='right'))
+            if in_end <= in_start or out_end <= in_end:
+                break
+            windows.append((in_start, in_end, in_end, out_end))
+            if out_end_time >= last:
+                break
+            # Step forward by the OUT-OF-SAMPLE length: each bar is tested
+            # exactly once, which is what makes the folds independent.
+            in_start_time = in_start_time + pd.DateOffset(months=out_sample_months)
+        return windows
+
     def walk_forward_optimization(self, data: pd.DataFrame,
         optimization_func: Callable, in_sample_months: int=12,
         out_sample_months: int=3) ->dict[str, Any]:
@@ -91,15 +138,40 @@ class WalkForwardOptimizer:
         try:
             results = []
             total_rows = len(data)
-            in_sample_size = int(total_rows * (in_sample_months / (
-                in_sample_months + out_sample_months)))
-            step_size = int(total_rows * (out_sample_months / 12))
-            window_idx = 0
-            while in_sample_size + window_idx * step_size < total_rows:
-                in_start = window_idx * step_size
-                in_end = in_start + in_sample_size
-                out_start = in_end
-                out_end = min(out_start + step_size, total_rows)
+
+            # Window sizes come from the DATA'S OWN CALENDAR, not from a
+            # fraction of however much history happened to be passed in.
+            #
+            # They used to be:
+            #     in_sample_size = total_rows * (in / (in + out))
+            #     step_size      = total_rows * (out / 12)
+            #
+            # The first is 80% of the input for the default 12/3 split whatever
+            # "12 months" is supposed to mean, and the second divides by 12 on
+            # the assumption that `total_rows` is always exactly one year. Hand
+            # this 30 years of daily bars and a 12/3 config and it trains on
+            # TWENTY-FOUR YEARS and steps forward by SEVEN AND A HALF, which is
+            # not a walk-forward at all -- and the window sizes change whenever
+            # the caller passes a different amount of history, so no two runs
+            # are comparable.
+            #
+            # Slicing by calendar offset is also timeframe-independent: the
+            # same call is correct for daily, hourly and 15-minute bars, which
+            # a bar count can never be.
+            windows = self._walk_forward_windows(
+                data, in_sample_months, out_sample_months
+            )
+            if not windows:
+                return {
+                    'status': 'insufficient_history',
+                    'reason': (
+                        f'{total_rows} rows spanning '
+                        f'{self._span_months(data):.1f} months cannot hold one '
+                        f'{in_sample_months}+{out_sample_months} month window'
+                    ),
+                    'windows': 0,
+                }
+            for window_idx, (in_start, in_end, out_start, out_end) in enumerate(windows):
                 if out_end - out_start < 10:
                     break
                 in_sample_data = data.iloc[in_start:in_end]
@@ -121,7 +193,6 @@ class WalkForwardOptimizer:
                     self.logger.warning(
                         f'Помилка оптимізації на вікні {window_idx}: {e}')
                     raise
-                window_idx += 1
             return {'windows_completed': len(results), 'windows_results':
                 results, 'average_out_sample_performance': self.
                 _calculate_average_performance(results),
