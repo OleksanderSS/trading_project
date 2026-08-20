@@ -75,3 +75,64 @@ the result is not overread afterwards.
 ## Outcome
 
 *To be completed after the run, without editing anything above.*
+
+---
+
+## Outcome — run 2026-08-20, nothing above edited
+
+    yr    train   trades   selected    passive     excess
+  1999    6,659    1,247   +0.01435   +0.00728   +0.00708
+  2001   16,214    1,474   +0.00759   +0.00343   +0.00416
+  2003   26,180    1,493   +0.01048   +0.00762   +0.00286
+
+    folds positive: 3/3      mean excess +0.00470
+    criterion:      >= 3/3   AND mean > +0.00050
+
+### SUPPORTED
+
+The pre-registered criterion is met, and this is the first result in this
+project confirmed on data that took no part in choosing it.
+
+### What the size means, and it is not what it looks like
+
+The excess is **3.4x the exploratory estimate** (+0.00470 against +0.00138).
+The document above warned that a confirmation reproducing the exploratory size
+exactly would be suspicious; one this much larger is a different warning, and
+it points at the limitation written down before the run rather than at a
+stronger effect.
+
+Measured after the fact, on the same data:
+
+    cross-sectional dispersion (std of relative return)
+      1999-2003 average   558 bp
+      2015-2025 average   345 bp
+      ratio               1.62x
+
+Ranking has far more to work with when names move apart from each other, and
+1999-2003 is the dot-com peak and bust. That accounts for much of the gap.
+
+The rest is almost certainly the cost assumption, also named in advance: this
+run charged 4.8 bp round trip, the modern IBKR figure. US equities were quoted
+in SIXTEENTHS until 2001 — a minimum spread around 6 cents, or roughly 20 bp on
+a $30 stock, four times what was charged. On the 1999 fold that alone would
+consume a large part of +0.00708.
+
+### Standing conclusion
+
+The DIRECTION is confirmed out of sample: a cross-sectional regression target
+beats passive holding on data never used to select it. The MAGNITUDE from this
+window is not transferable to today's market and must not be used for sizing,
+for projections, or in any conversation with an investor. The exploratory
+figure of +0.0014 on 2005-2025 remains the honest estimate of the size, and it
+is itself the sixth of six variants tried.
+
+### What would make this stronger, in order
+
+1. Re-run the confirmatory folds with a period-appropriate cost (20-30 bp
+   before 2001, 10 bp to 2010, 4.8 bp after). If the direction survives that,
+   it is not a cost artifact.
+2. Repeat on tickers outside the 22 in this batch — an axis no variant has
+   touched. Requires enriching them first.
+3. Portfolio construction rather than per-trade means: positions overlap
+   (buy daily, hold five), so the per-trade figure is not what an account
+   would earn.
