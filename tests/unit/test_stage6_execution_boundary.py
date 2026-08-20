@@ -11,6 +11,18 @@ from src.trading.trader import Trader
 
 
 class _Logger:
+    """Stand-in for ProjectLogger while the stateful stack is not initialised.
+
+    Carries every level the real logger has. An incomplete double turns a
+    perfectly ordinary logging call into an AttributeError in production code,
+    which is a failure of the test rather than of the code under test — it
+    happened on 2026-08-20 when the context gate moved its per-signal messages
+    from warning to debug.
+    """
+
+    def debug(self, *args, **kwargs):
+        pass
+
     def info(self, *args, **kwargs):
         pass
 
@@ -18,6 +30,9 @@ class _Logger:
         pass
 
     def error(self, *args, **kwargs):
+        pass
+
+    def exception(self, *args, **kwargs):
         pass
 
 

@@ -15,10 +15,27 @@ class DiaryStub:
 
 
 class LoggerStub:
+    """Every level the real logger has.
+
+    A double that carries only some levels turns an ordinary logging call in
+    production code into an AttributeError, which reports a failure of the
+    stub as a failure of the code. That happened on 2026-08-20 when the
+    context gate moved its per-signal messages to debug.
+    """
+
+    def debug(self, *args, **kwargs):
+        pass
+
+    def info(self, *args, **kwargs):
+        pass
+
     def warning(self, *args, **kwargs):
         pass
 
     def error(self, *args, **kwargs):
+        pass
+
+    def exception(self, *args, **kwargs):
         pass
 
 
