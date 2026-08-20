@@ -106,10 +106,22 @@ class FinancialMetricsLibrary:
         return float((equity_curve.iloc[-1] - initial_equity) / initial_equity)
 
     @staticmethod
-    def calculate_cagr(equity_curve: pd.Series, trading_days_per_year: int = 252) -> float:
-        """Calculates Compound Annual Growth Rate."""
+    def calculate_cagr(equity_curve: pd.Series,
+                       trading_days_per_year: int | None = None) -> float:
+        """Calculates Compound Annual Growth Rate.
+
+        The annualisation factor is INFERRED from the series' own index by
+        default. It used to be a hardcoded 252, which this file's own
+        `infer_periods_per_year` was written to replace -- and then applied to
+        Sharpe alone, leaving every other method assuming daily bars. This
+        project runs 15m, 1h and 1d side by side, so on hourly data the figure
+        was out by sqrt(1764/252) and on 15-minute data by more. Daily results
+        do not move: the inference returns 252 for daily gaps.
+        """
         if equity_curve.empty:
             return 0.0
+        if trading_days_per_year is None:
+            trading_days_per_year = infer_periods_per_year(equity_curve)
         initial_equity = equity_curve.iloc[0]
         # Validate initial equity
         if not np.isfinite(initial_equity) or initial_equity <= 0:
@@ -122,17 +134,30 @@ class FinancialMetricsLibrary:
         return float(total_return_factor ** (1 / years) - 1)
 
     @staticmethod
-    def calculate_annualized_volatility(returns: pd.Series, trading_days_per_year: int = 252) -> float:
-        """Calculates annualized standard deviation of returns."""
+    def calculate_annualized_volatility(
+        returns: pd.Series, trading_days_per_year: int | None = None
+    ) -> float:
+        """Calculates annualized standard deviation of returns.
+
+        The annualisation factor is INFERRED from the series' own index by
+        default. It used to be a hardcoded 252, which this file's own
+        `infer_periods_per_year` was written to replace -- and then applied to
+        Sharpe alone, leaving every other method assuming daily bars. This
+        project runs 15m, 1h and 1d side by side, so on hourly data the figure
+        was out by sqrt(1764/252) and on 15-minute data by more. Daily results
+        do not move: the inference returns 252 for daily gaps.
+        """
         if returns.empty:
             return 0.0
+        if trading_days_per_year is None:
+            trading_days_per_year = infer_periods_per_year(returns)
         return float(returns.std() * np.sqrt(trading_days_per_year))
 
     @staticmethod
     def calculate_sharpe_ratio(
         returns: pd.Series,
         risk_free_rate: float = 0.0,
-        trading_days_per_year: int | None = 252,
+        trading_days_per_year: int | None = None,
         on_error: float = np.nan,
     ) -> float:
         """Calculates annualized Sharpe Ratio.
@@ -171,7 +196,7 @@ class FinancialMetricsLibrary:
     def calculate_deflated_sharpe_ratio(
         returns: pd.Series,
         n_trials: int,
-        trading_days_per_year: int | None = 252,
+        trading_days_per_year: int | None = None,
         variance_of_trial_sharpes: float | None = None,
         on_error: float = np.nan,
     ) -> float:
@@ -244,7 +269,8 @@ class FinancialMetricsLibrary:
 
     @staticmethod
     def calculate_sortino_ratio(
-        returns: pd.Series, risk_free_rate: float = 0.0, trading_days_per_year: int = 252
+        returns: pd.Series, risk_free_rate: float = 0.0,
+        trading_days_per_year: int | None = None
     ) -> float:
         """Annualized Sortino Ratio: excess return over DOWNSIDE DEVIATION.
 
@@ -274,6 +300,8 @@ class FinancialMetricsLibrary:
         clean_returns = pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
         if len(clean_returns) < 2:
             return np.nan
+        if trading_days_per_year is None:
+            trading_days_per_year = infer_periods_per_year(clean_returns)
         periods = max(int(trading_days_per_year), 1)
         target_return = risk_free_rate / periods
 
@@ -362,7 +390,8 @@ class FinancialMetricsLibrary:
             return pd.DataFrame()
 
     @staticmethod
-    def calculate_calmar_ratio(equity_curve: pd.Series, trading_days_per_year: int = 252) -> float:
+    def calculate_calmar_ratio(equity_curve: pd.Series,
+                               trading_days_per_year: int | None = None) -> float:
         """Calculates Calmar Ratio (Annualized Return / Max Drawdown)."""
         cagr = FinancialMetricsLibrary.calculate_cagr(equity_curve, trading_days_per_year)
         mdd = abs(FinancialMetricsLibrary.calculate_max_drawdown(equity_curve))
@@ -386,12 +415,14 @@ class FinancialMetricsLibrary:
         asset_returns: pd.Series,
         market_returns: pd.Series,
         risk_free_rate: float = 0.0,
-        trading_days_per_year: int = 252,
+        trading_days_per_year: int | None = None,
     ) -> float:
         """Calculates the Treynor Ratio."""
         beta = FinancialMetricsLibrary.calculate_beta(asset_returns, market_returns)
         if beta == 0:
             return 0.0
+        if trading_days_per_year is None:
+            trading_days_per_year = infer_periods_per_year(asset_returns)
         annual_excess_return = asset_returns.mean() * trading_days_per_year - risk_free_rate
         return float(annual_excess_return / beta)
 
@@ -418,7 +449,8 @@ class FinancialMetricsLibrary:
 
     @staticmethod
     def calculate_information_ratio(
-        asset_returns: pd.Series, benchmark_returns: pd.Series, trading_days_per_year: int = 252
+        asset_returns: pd.Series, benchmark_returns: pd.Series,
+        trading_days_per_year: int | None = None
     ) -> float:
         """Calculates the annualized Information Ratio."""
         if asset_returns.empty or benchmark_returns.empty:
@@ -430,5 +462,7 @@ class FinancialMetricsLibrary:
         if not np.isfinite(tracking_error) or tracking_error <= 1e-12:
             return np.nan
         ir = active_returns.mean() / tracking_error
+        if trading_days_per_year is None:
+            trading_days_per_year = infer_periods_per_year(asset_returns)
         annualized_ir = ir * np.sqrt(max(int(trading_days_per_year), 1))
         return float(annualized_ir) if np.isfinite(annualized_ir) else np.nan

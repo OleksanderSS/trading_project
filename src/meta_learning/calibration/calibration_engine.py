@@ -15,6 +15,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from src.metrics.financial.financial_metrics_library import infer_periods_per_year
+
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 
@@ -225,6 +227,26 @@ class CalibrationEngine:
                 )
             synthetic_metric = self._evaluate_on_synthetic(model,  # audit-ignore: SYNTHETIC_SECONDARY
                 synthetic_scenarios)
+            # A term that cannot vary with the model must not enter the
+            # objective. `_evaluate_on_synthetic` averages sharpe_ratio values
+            # baked into scenario JSON, and the scenarios are identical across
+            # every Optuna trial -- so `0.7*real + 0.3*C` is `0.7*real` plus a
+            # constant, and Optuna's ranking is unchanged. Blending it in did
+            # nothing except make the log claim a stress test that never ran.
+            #
+            # It now returns None when it cannot score the model, and the
+            # objective drops the term entirely and says so, rather than
+            # reporting a weighted number where one weight is decorative.
+            if synthetic_metric is None:
+                logger.info('📊 Evaluation results:')
+                logger.info(f'   Real Sharpe: {real_metric:.4f} (sole objective)')
+                logger.warning(
+                    '   Synthetic term EXCLUDED: the stored scenarios carry '
+                    'pre-computed metrics only, so they cannot score this '
+                    'model. Regenerate them with features/targets to restore '
+                    'the stress test.'
+                )
+                return float(real_metric)
             combined_metric = 0.7 * real_metric + 0.3 * synthetic_metric  # audit-ignore: SYNTHETIC_SECONDARY — 30% weight only
             logger.info('📊 Evaluation results:')
             logger.info(f'   Real Sharpe: {real_metric:.4f} (70% weight)')
@@ -259,14 +281,40 @@ class CalibrationEngine:
         return self._fallback_evaluation(hyperparams)
 
     def _evaluate_on_synthetic(self, model: Any, synthetic_scenarios: dict[
-        str, list[dict[str, Any]]]) ->float:
-        """Evaluate model on synthetic scenarios."""
+        str, list[dict[str, Any]]]) ->float | None:
+        """Score THIS model on the synthetic scenarios, or admit it cannot.
+
+        This took a `model` argument and never referenced it. It read
+        `sharpe_ratio` out of each scenario's stored metrics and averaged them,
+        which is a property of the scenario files and identical for every
+        Optuna trial. The objective then blended it at 30% weight, so the
+        search was `0.7*real + C` and the "synthetic shock evaluation" was a
+        line in the log rather than a computation.
+
+        A scenario can only score a model if it carries the data to predict
+        on. Where it does, that is what happens now. Where it does not, this
+        returns None so the caller drops the term -- a constant folded into an
+        objective is worse than an absent one, because the log reports a stress
+        test and nobody can tell it did not run.
+        """
         sharpe_ratios = []
+        scored_the_model = False
         for _scenario_type, scenarios in synthetic_scenarios.items():
             if not scenarios:
                 continue
             for scenario in scenarios[:10]:
                 try:
+                    features = scenario.get('features')
+                    targets = scenario.get('targets')
+                    if features is not None and targets is not None:
+                        X = pd.DataFrame(features)
+                        y = pd.Series(targets).astype(float)
+                        if X.empty or len(X) != len(y):
+                            continue
+                        sharpe_ratios.append(abs(self._calculate_sharpe_ratio(
+                            y.to_numpy(), model.predict(X))))
+                        scored_the_model = True
+                        continue
                     metrics = scenario.get('metrics', {})
                     sharpe = metrics.get('sharpe_ratio', 0)
                     sharpe_ratios.append(abs(sharpe))
@@ -274,9 +322,16 @@ class CalibrationEngine:
                     logger.exception(f'Виникла помилка: {e}')
                     logger.warning(f'⚠️ Failed to evaluate scenario: {e}')
                     continue
-        if not sharpe_ratios:
-            logger.warning('⚠️ No synthetic scenarios evaluated, returning 0')
-            return 0.0
+        if not sharpe_ratios or not scored_the_model:
+            # Either nothing was readable, or everything read was a stored
+            # constant. Both mean the same thing to the caller: this cannot
+            # rank one set of hyperparameters above another.
+            logger.warning(
+                '⚠️ Synthetic scenarios cannot score the model '
+                f'(readable={len(sharpe_ratios)}, model_scored={scored_the_model}); '
+                'the synthetic term will be excluded rather than held constant'
+            )
+            return None
         avg_sharpe = np.mean(sharpe_ratios)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'   Evaluated {len(sharpe_ratios)} synthetic scenarios')
@@ -295,7 +350,12 @@ class CalibrationEngine:
             if not np.isfinite(std_return) or std_return <= 1e-08:
                 return 0.0
             risk_free_rate = 0.0
-            sharpe = ((mean_return - risk_free_rate) / std_return) * np.sqrt(252)
+            # sqrt(252) assumes daily bars. This is the third copy of that
+            # assumption in the repository; the canonical implementation
+            # infers the cadence from the series index instead.
+            sharpe = ((mean_return - risk_free_rate) / std_return) * np.sqrt(
+                infer_periods_per_year(pd.Series(returns))
+            )
             sharpe = np.clip(sharpe, -5.0, 5.0)
             return float(sharpe)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
