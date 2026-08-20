@@ -515,6 +515,75 @@ def build_purged_expanding_folds(
     return candidates[-max_folds:]
 
 
+class PurgedTimeSeriesSplit:
+    """A scikit-learn cross-validator that leaves a gap between train and test.
+
+    `sklearn.model_selection.TimeSeriesSplit` puts the validation fold
+    immediately after the training fold. With a forward-looking target that is
+    a leak, not a subtlety: a label attached to the last training row is
+    computed from prices that fall INSIDE the validation window. The model is
+    scored on rows it was partly told the answer to, so the hyperparameters
+    that win are the ones best at exploiting the overlap.
+
+    Measured here: `target_hourly_volume_spike_1h` has a 23-bar horizon while
+    the walk-forward evaluator's configured purge was 5, and the evaluator
+    corrects that automatically — but `BayesianOptimizer` and the overfitting
+    analyzer never went through the evaluator and used the raw sklearn splitter.
+    Every hyperparameter this project has chosen was chosen with that overlap.
+
+    Deliberately delegates the fold arithmetic to
+    `build_purged_expanding_folds`, which is the same function the pipeline's
+    own evaluator uses. A second implementation of a purge is exactly the shape
+    that has left half the fixes in this repository landing in one copy while
+    the other went on being wrong.
+    """
+
+    def __init__(self, n_splits: int = 3, purge_rows: int = 5,
+                 config: WalkForwardValidationConfig | None = None):
+        self.n_splits = max(1, int(n_splits))
+        self.purge_rows = max(1, int(purge_rows))
+        self.config = config
+
+    def _config_for(self, n_rows: int) -> WalkForwardValidationConfig:
+        if self.config is not None:
+            return self.config
+        # Size the folds to the data rather than to a fixed default: a
+        # hardcoded min_train_rows of 360 silently yields ZERO folds on a
+        # context with 300 rows, and cross_val_score would then raise on an
+        # empty split rather than say why.
+        validation = max(1, n_rows // (self.n_splits + 1))
+        return WalkForwardValidationConfig(
+            min_train_rows=max(2, validation + self.purge_rows),
+            validation_rows=validation,
+            step_rows=validation,
+            purge_rows=self.purge_rows,
+            max_folds=self.n_splits,
+        )
+
+    def split(self, X, y=None, groups=None):
+        n = int(len(X))
+        folds = build_purged_expanding_folds(n, config=self._config_for(n))
+        if not folds:
+            raise ValueError(
+                f"PurgedTimeSeriesSplit produced no folds for {n} rows with "
+                f"n_splits={self.n_splits}, purge_rows={self.purge_rows}. "
+                f"Too few rows to leave a gap; do not fall back to an unpurged "
+                f"split, because that is the leak this class exists to remove."
+            )
+        for fold in folds:
+            yield (
+                np.arange(fold["train_start"], fold["train_end"]),
+                np.arange(fold["validation_start"], fold["validation_end"]),
+            )
+
+    def get_n_splits(self, X=None, y=None, groups=None) -> int:
+        if X is None:
+            return self.n_splits
+        return len(build_purged_expanding_folds(
+            int(len(X)), config=self._config_for(int(len(X)))
+        ))
+
+
 def select_initial_train_features(
     train: pd.DataFrame,
     *,

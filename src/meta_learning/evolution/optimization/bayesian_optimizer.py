@@ -2,7 +2,11 @@
 import logging
 
 import numpy as np
-from sklearn.model_selection import TimeSeriesSplit, cross_val_score
+from sklearn.model_selection import cross_val_score
+
+from src.pipeline.stages.modeling.walk_forward_validation import (
+    PurgedTimeSeriesSplit,
+)
 
 try:
     import optuna
@@ -13,7 +17,23 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class BayesianOptimizer:
-    def __init__(self, model_func, param_space, n_trials=50, scoring='neg_mean_squared_error', cv=3):
+    def __init__(self, model_func, param_space, n_trials=50,
+                 scoring='neg_mean_squared_error', cv=3, purge_rows=5):
+        """
+        purge_rows: bars dropped between train and validation in every fold.
+
+            This used to be a plain `TimeSeriesSplit`, which places validation
+            immediately after training. With a forward-looking target that is a
+            leak: the label on the last training row is computed from prices
+            inside the validation window, so the hyperparameters that win are
+            the ones best at exploiting the overlap. Every hyperparameter this
+            project has selected was selected that way.
+
+            Must be at least the target's horizon in bars. The pipeline's own
+            evaluator enforces that automatically (it raises 5 -> 23 for
+            target_hourly_volume_spike_1h); this optimizer never went through
+            it, so the caller has to pass the right number.
+        """
         if not OPTUNA_AVAILABLE:
             raise ImportError("Optuna is required for BayesianOptimizer. Please install it using 'pip install optuna'")
         self.model_func = model_func
@@ -21,6 +41,7 @@ class BayesianOptimizer:
         self.n_trials = n_trials
         self.scoring = scoring
         self.cv = cv
+        self.purge_rows = int(purge_rows)
         self.best_params = None
         self.best_score = -np.inf
 
@@ -38,7 +59,11 @@ class BayesianOptimizer:
         model = self.model_func(**params)
 
         # Using cross-validation to get a robust score
-        scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.cv), scoring=self.scoring)
+        scores = cross_val_score(
+            model, X, y,
+            cv=PurgedTimeSeriesSplit(n_splits=self.cv, purge_rows=self.purge_rows),
+            scoring=self.scoring,
+        )
         return scores.mean()
 
     def optimize(self, X, y):

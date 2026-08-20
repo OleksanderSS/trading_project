@@ -2,7 +2,11 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import TimeSeriesSplit, cross_val_score, learning_curve
+from sklearn.model_selection import cross_val_score, learning_curve
+
+from src.pipeline.stages.modeling.walk_forward_validation import (
+    PurgedTimeSeriesSplit,
+)
 
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
@@ -17,12 +21,27 @@ class OverfittingAnalyzer:
         self.config = config
         self.metrics = metrics_calculator
 
+    def _splitter(self) -> PurgedTimeSeriesSplit:
+        """Folds with a gap between train and validation.
+
+        An analyzer whose entire job is to DETECT overfitting must not leak
+        while measuring it. A plain TimeSeriesSplit puts validation
+        immediately after training, so with a forward-looking target the last
+        training labels are computed from prices inside the validation window
+        -- and the resulting curve reports less overfitting than there is,
+        which is the one direction this tool must never err in.
+        """
+        return PurgedTimeSeriesSplit(
+            n_splits=self.config.cv_folds,
+            purge_rows=int(getattr(self.config, 'purge_rows', 5)),
+        )
+
     async def generate_learning_curve(self, model: Any, X: pd.DataFrame, y: pd.Series) -> dict[str, Any]:
         """Generate learning curve data."""
         try:
             train_sizes, train_scores, test_scores = learning_curve(
                 model, X, y,
-                cv=TimeSeriesSplit(n_splits=self.config.cv_folds),
+                cv=self._splitter(),
                 train_sizes=self.config.train_sizes,
                 scoring=self.config.scoring_metric,
                 n_jobs=-1
@@ -47,8 +66,10 @@ class OverfittingAnalyzer:
     async def perform_cv_analysis(self, model: Any, X: pd.DataFrame, y: pd.Series) -> dict[str, Any]:
         """Perform cross-validation analysis."""
         try:
-            TimeSeriesSplit(n_splits=self.config.cv_folds)
-            scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.config.cv_folds), scoring=self.config.scoring_metric)
+            scores = cross_val_score(
+                model, X, y, cv=self._splitter(),
+                scoring=self.config.scoring_metric,
+            )
 
             if self.config.scoring_metric.startswith('neg_'):
                 scores = -scores
