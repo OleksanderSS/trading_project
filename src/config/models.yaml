@@ -164,6 +164,20 @@ training:
     # report `not_applicable` rather than a fabricated zero.
     require_excess_over_passive: true
     min_excess_over_passive: 0.0
+    # Beating passive on RAW return is not enough. Measured 2026-08-20 by
+    # carrying a cross-sectional model to a real 27-year overlapping portfolio:
+    #
+    #   passive equal weight   CAGR +18.06%  vol 22.77%  Sharpe 0.79  maxDD -51%
+    #   the strategy           CAGR +23.62%  vol 30.72%  Sharpe 0.77  maxDD -68%
+    #
+    # It beat passive in 20 years of 28, median excess +7.15%, and every
+    # per-trade figure said "edge". It was leverage: vol 1.35x, return 1.31x.
+    # The same holding levered to the same volatility returns +23.14%, so the
+    # model added +0.48%/yr and a seventeen-point worse drawdown.
+    #
+    # Concentrating into a top share raises risk mechanically, so a gate
+    # reading only the mean promotes leverage and calls it skill.
+    require_risk_adjusted_excess: true
     # Refuse to promote any fit with at least as many features as training
     # rows. Measured on the 2026-08-06 batch, EVERY context is in that state
     # (AAPL 1d 327 features / ~196 train rows; SPY 60m 605 / ~151; AAPL 15m

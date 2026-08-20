@@ -832,11 +832,38 @@ class BaseTrainer(ABC):
                     'passive_status': 'too_few_selected'}
         passive = float(np.mean(y))
         selected = float(np.mean(y[picked]))
+
+        # Beating passive on RAW return is not enough, and 2026-08-20 showed
+        # exactly how it fools this gate. A cross-sectional model was carried
+        # all the way to a real overlapping portfolio over 27 years:
+        #
+        #   passive equal weight   CAGR +18.06%  vol 22.77%  Sharpe 0.79
+        #   the strategy           CAGR +23.62%  vol 30.72%  Sharpe 0.77
+        #
+        # It beat passive in 20 years of 28 with a median excess of +7.15%,
+        # and every per-trade figure said "edge". It was LEVERAGE: volatility
+        # 1.35x, return 1.31x. The same passive holding levered to the same
+        # volatility returns +23.14%, so the model's contribution was +0.48% a
+        # year -- with a drawdown of -68% against passive's -51%.
+        #
+        # Concentrating into a top share raises risk mechanically, so a gate
+        # that reads only the mean promotes leverage and calls it skill. The
+        # comparison has to be at MATCHED RISK: what would owning the same
+        # thing return if it took the risk this selection takes?
+        passive_std = float(np.std(y, ddof=1))
+        selected_std = float(np.std(y[picked], ddof=1))
+        matched = None
+        if np.isfinite(passive_std) and passive_std > 1e-12:
+            matched = passive * (selected_std / passive_std)
         return {
             'passive_mean': passive,
             'selected_mean': selected,
             'selected_count': int(picked.sum()),
             'excess_over_passive': selected - passive,
+            'passive_std': passive_std,
+            'selected_std': selected_std,
+            'risk_matched_passive': matched,
+            'excess_risk_adjusted': None if matched is None else selected - matched,
             'passive_status': 'measured',
         }
 
@@ -1168,6 +1195,10 @@ class BaseTrainer(ABC):
         # binds where the comparison is measurable -- see
         # _score_passive_holding. Set false to restore the old behaviour.
         require_excess = bool(cfg.get('require_excess_over_passive', True))
+        # Measured 2026-08-20: a model can beat passive in 20 years of 28
+        # while adding +0.48%/yr over the same holding levered to its own
+        # volatility. Raw excess alone promotes leverage as skill.
+        require_risk_adjusted = bool(cfg.get('require_risk_adjusted_excess', True))
         min_excess = float(cfg.get('min_excess_over_passive', 0.0))
 
         holdout = results.get('winner_holdout_metrics') or {}
@@ -1214,7 +1245,21 @@ class BaseTrainer(ABC):
             # exposure. Measured 2026-08-20: without this column an arm that
             # scored positive in 11 of 11 walk-forward folds was earning the
             # market and adding +0.00021 of noise.
+            # Raw excess first: a model that does not even out-return passive
+            # has nothing to argue about.
             excess = holdout.get('excess_over_passive')
+            # Then at matched risk, because raising risk raises raw return for
+            # free and this gate cannot otherwise tell that apart from skill.
+            risk_adj = holdout.get('excess_risk_adjusted')
+            if require_risk_adjusted and risk_adj is not None and risk_adj <= min_excess:
+                reasons.append(
+                    f"at matched risk the model returns {holdout.get('selected_mean'):+.5f} "
+                    f"against {holdout.get('risk_matched_passive'):+.5f} for the same "
+                    f"exposure levered to the same volatility "
+                    f"(selection std {holdout.get('selected_std'):.5f} vs "
+                    f"{holdout.get('passive_std'):.5f}): excess {risk_adj:+.5f}. "
+                    f"Raw out-performance here is leverage, not skill"
+                )
             if require_excess and excess is not None and excess <= min_excess:
                 reasons.append(
                     f"selecting on this model returns {holdout.get('selected_mean'):+.5f} "

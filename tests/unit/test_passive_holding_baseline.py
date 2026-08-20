@@ -107,3 +107,48 @@ class TestItRefusesRatherThanInventsANumber:
         out = score(y, y, is_classif=False)
         assert out['passive_status'] == 'measured'
         assert np.isfinite(out['excess_over_passive'])
+
+
+class TestRiskMatchedComparison:
+    """Beating passive on raw return is not enough, and leverage is why.
+
+    Measured 2026-08-20 on a real 27-year overlapping portfolio: a
+    cross-sectional model beat passive equal weight in 20 years of 28 with a
+    median excess of +7.15%, and every per-trade figure agreed there was an
+    edge. Volatility was 1.35x and return 1.31x — the same holding levered to
+    the same volatility returns +23.14% against the strategy's +23.62%, so the
+    model contributed +0.48% a year and a drawdown of -68% against -51%.
+
+    Concentrating into a top share raises risk mechanically. A gate reading
+    only the mean promotes that and calls it skill.
+    """
+
+    def test_a_pure_leverage_model_shows_no_risk_adjusted_excess(self):
+        # Selection that simply picks the most volatile rows: raw mean rises,
+        # and it must show up as ~nothing once risk is matched.
+        base = RNG.normal(0.001, 0.01, 400)
+        y = np.concatenate([base, base * 2.0])          # same edge, twice the risk
+        preds = np.concatenate([np.zeros(400), np.ones(400)])
+        out = score(y, preds, is_classif=False)
+        assert out['excess_over_passive'] > 0, 'raw excess is what fools the gate'
+        assert abs(out['excess_risk_adjusted']) < abs(out['excess_over_passive'])
+
+    def test_genuine_selection_survives_the_risk_match(self):
+        y = RNG.normal(0, 0.01, 600)
+        y[:180] += 0.02                                  # a real, low-variance edge
+        preds = np.zeros(600); preds[:180] = 1.0
+        out = score(y, preds, is_classif=False)
+        assert out['excess_risk_adjusted'] > 0
+
+    def test_the_matched_benchmark_scales_with_the_selection_risk(self):
+        y = RNG.normal(0.001, 0.01, 500)
+        out = score(y, RNG.normal(0, 1, 500), is_classif=False)
+        ratio = out['selected_std'] / out['passive_std']
+        assert out['risk_matched_passive'] == pytest.approx(
+            out['passive_mean'] * ratio, rel=1e-9)
+
+    def test_it_reports_both_numbers_so_neither_can_hide(self):
+        out = score(RNG.normal(0.001, 0.01, 400), RNG.normal(0, 1, 400), is_classif=False)
+        for key in ('excess_over_passive', 'excess_risk_adjusted',
+                    'passive_std', 'selected_std', 'risk_matched_passive'):
+            assert key in out
