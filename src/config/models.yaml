@@ -178,6 +178,20 @@ training:
     # Concentrating into a top share raises risk mechanically, so a gate
     # reading only the mean promotes leverage and calls it skill.
     require_risk_adjusted_excess: true
+    # Can ONE column and a straight line already do this?
+    #
+    # Measured 2026-08-20 on target_hourly_breakout_1h, the target that
+    # produced more champions than any other. It asks whether price crosses
+    # today's upper Bollinger band within four bars, and the distance from the
+    # close to that band -- one expression, known at forecast time -- scores
+    # AUC 0.9666 on it. Event rate 8.1% overall, 64.0% in the decile nearest
+    # the band. On money at matched selectivity: model top 30% -0.00022,
+    # closest 30% to the band -0.00021. Identical.
+    #
+    # The constant and persistence opponents cannot see this; both are about
+    # the shape of the series. This is the same family as the seven indicator
+    # targets retired as tautologies, wearing a less obvious disguise.
+    require_beat_single_feature: true
     # Refuse to promote any fit with at least as many features as training
     # rows. Measured on the 2026-08-06 batch, EVERY context is in that state
     # (AAPL 1d 327 features / ~196 train rows; SPY 60m 605 / ~151; AAPL 15m

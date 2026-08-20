@@ -603,6 +603,8 @@ class BaseTrainer(ABC):
             **self._holdout_event_count(y_holdout, is_classif),
             **self._score_naive_baselines(data, is_classif, task_type, metric_key),
             **self._score_passive_holding(y_holdout, preds, is_classif),
+            **self._score_single_feature_baseline(
+                data, is_classif, task_type, metric_key, self.evaluator),
         }
 
     @staticmethod
@@ -761,6 +763,74 @@ class BaseTrainer(ABC):
                 f"Could not retain holdout predictions: {e}"
             )
             return []
+
+    @staticmethod
+    def _score_single_feature_baseline(data: dict, is_classif: bool,
+                                       task_type: str, metric_key: str,
+                                       evaluator: Any) -> dict[str, Any]:
+        """Can ONE column and a straight line do what the model does?
+
+        Added 2026-08-20 after measuring `target_hourly_breakout_1h`, the
+        target that produced more champions than any other. It asks whether
+        price crosses today's upper Bollinger band within four bars — and the
+        distance from the close to that band, one arithmetic expression known
+        at the time of the forecast, scores **AUC 0.9666** on it. Event rate
+        goes from 8.1% overall to 64.0% in the decile nearest the band.
+
+        On money, at matched selectivity, on the real holdout:
+
+            model, top 30% by probability     3,494 trades   -0.00022
+            closest 30% to the band, no model 3,495 trades   -0.00021
+
+        Identical. Two thousand two hundred features, a model competition and a
+        promotion gate reproduced a one-line geometric fact.
+
+        The existing opponents cannot see this. A constant predictor and a
+        persistence predictor are both about the SHAPE of the series; neither
+        asks whether a single column already contains the answer. This is the
+        same family as the seven indicator targets retired as tautologies
+        ("tomorrow's SMA_20 is nineteen-twentieths known today") — breakout
+        survived that purge wearing a less obvious disguise.
+
+        The feature is chosen on TRAIN and scored on the holdout, so the
+        baseline cannot cheat in the way the model is forbidden to.
+        """
+        out: dict[str, Any] = {'single_feature_score': None,
+                               'single_feature_name': None}
+        X_tr, y_tr = data.get('X_train'), data.get('y_train')
+        X_ho, y_ho = data.get('X_holdout'), data.get('y_holdout')
+        if any(v is None for v in (X_tr, y_tr, X_ho, y_ho)):
+            out['single_feature_status'] = 'no_train_or_holdout'
+            return out
+        try:
+            xt = pd.DataFrame(X_tr).select_dtypes('number')
+            xh = pd.DataFrame(X_ho).select_dtypes('number')
+            yt = pd.Series(np.asarray(y_tr).ravel()).astype(float)
+            yh = pd.Series(np.asarray(y_ho).ravel()).astype(float)
+            shared = [c for c in xt.columns if c in xh.columns]
+            if not shared or len(xt) != len(yt) or len(xh) != len(yh):
+                out['single_feature_status'] = 'shape_mismatch'
+                return out
+            corr = xt[shared].corrwith(yt).abs().dropna()
+            if corr.empty:
+                out['single_feature_status'] = 'no_usable_feature'
+                return out
+            best = str(corr.idxmax())
+            a, b = np.polyfit(xt[best].fillna(0.0), yt, 1)   # one column, one line
+            pred = a * xh[best].fillna(0.0).to_numpy() + b
+            if is_classif:
+                # Threshold where the train event rate says to, so the baseline
+                # fires as often as the target actually occurs.
+                cut = np.quantile(a * xt[best].fillna(0.0).to_numpy() + b,
+                                  1.0 - float(yt.mean()))
+                pred = (pred >= cut).astype(int)
+            score = evaluator.calculate(yh.to_numpy(), pred, task_type=task_type)
+            out['single_feature_score'] = float(score.get(metric_key, 0.0))
+            out['single_feature_name'] = best
+            out['single_feature_status'] = 'measured'
+        except Exception as exc:  # noqa: BLE001 - a baseline must not kill training
+            out['single_feature_status'] = f'failed: {type(exc).__name__}'
+        return out
 
     #: Share of the holdout the model would actually act on. Matches the
     #: ranking decision the 2026-08-20 walk-forward used, so the number here
@@ -1199,6 +1269,10 @@ class BaseTrainer(ABC):
         # while adding +0.48%/yr over the same holding levered to its own
         # volatility. Raw excess alone promotes leverage as skill.
         require_risk_adjusted = bool(cfg.get('require_risk_adjusted_excess', True))
+        # A model that only reproduces one column has not earned a
+        # promotion. Measured on target_hourly_breakout_1h, 2026-08-20.
+        require_beat_single_feature = bool(
+            cfg.get('require_beat_single_feature', True))
         min_excess = float(cfg.get('min_excess_over_passive', 0.0))
 
         holdout = results.get('winner_holdout_metrics') or {}
@@ -1269,7 +1343,26 @@ class BaseTrainer(ABC):
                 )
 
             score = holdout.get('score')
+            # Can one column and a straight line already do this? Measured
+            # 2026-08-20: distance to the upper Bollinger band scores AUC
+            # 0.9666 on target_hourly_breakout_1h, and at matched selectivity
+            # earns the same money as the model (-0.00021 vs -0.00022). The
+            # constant and persistence opponents cannot see that, because both
+            # are about the shape of the series rather than about whether a
+            # single feature already contains the answer.
+            single = holdout.get('single_feature_score')
+            if (require_beat_single_feature and single is not None
+                    and np.isfinite(single) and score is not None
+                    and np.isfinite(score) and score <= single + min_margin):
+                reasons.append(
+                    f"holdout score {score:.4f} does not beat the SINGLE FEATURE "
+                    f"'{holdout.get('single_feature_name')}' fitted with one "
+                    f"straight line ({single:.4f}): the model reproduces what one "
+                    f"column already says"
+                )
+
             baseline = holdout.get('baseline_score')
+
             if score is None or not np.isfinite(score):
                 reasons.append("holdout score is not finite")
             elif baseline is None:
