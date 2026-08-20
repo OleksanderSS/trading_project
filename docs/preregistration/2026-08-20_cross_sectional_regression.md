@@ -136,3 +136,60 @@ is itself the sixth of six variants tried.
 3. Portfolio construction rather than per-trade means: positions overlap
    (buy daily, hold five), so the per-trade figure is not what an account
    would earn.
+
+---
+
+## Follow-up 1 — period-appropriate costs, and a correction to my own method
+
+The section above said "the cost assumption flatters this period". **That was
+wrong as written.** The confirmatory script computed
+
+    excess = (selected_mean - COST) - (passive_mean - COST)
+
+in which COST cancels exactly. Every excess figure reported that day was
+insensitive to the cost assumption; it did nothing at all.
+
+What that hid matters more than what it claimed. The strategy re-ranks and
+re-enters every five days and pays a round trip each time; buy-and-hold pays
+one round trip across the whole window. Charging both the same per-period cost
+hands the strategy a subsidy equal to its own turnover.
+
+Re-run with each side paying what it actually pays:
+
+    cost      1999      2001      2003      2011      2019      2025   folds+
+     0bp  +0.00708  +0.00416  +0.00286  +0.00051  +0.00207  +0.00519    6/6
+     5bp  +0.00659  +0.00367  +0.00237  +0.00002  +0.00158  +0.00470    6/6
+    10bp  +0.00610  +0.00318  +0.00188  -0.00047  +0.00109  +0.00421    5/6
+    30bp  +0.00414  +0.00122  -0.00008  -0.00243  -0.00087  +0.00225    3/6
+
+Break-even cost per fold, against what US equities actually cost then:
+
+    1999    72.2 bp   vs ~20-30 bp (quoted in sixteenths)   survives
+    2001    42.4 bp   vs ~20 bp                             survives
+    2003    29.2 bp   vs ~10 bp                             survives
+    2011     5.2 bp   vs ~5 bp                              MARGINAL
+    2019    21.1 bp   vs ~5 bp                              survives
+    2025    53.0 bp   vs ~5 bp                              survives
+
+**The suspicion that 1999-2003 rode on an understated cost is not supported.**
+Those folds break even at 72 and 42 bp against era spreads of 20-30. The
+turnover asymmetry itself costs about 5 bp per period, small beside gross edges
+of 200-700 bp — worth measuring rather than assuming in either direction.
+
+## Follow-up 2 — these numbers CANNOT be annualised, and the reason is not minor
+
+Every figure above is per five-day period, and multiplying by ~50 periods a
+year gives 25%+, which would be false.
+
+Positions overlap. Buying daily and holding five days means five concurrent
+books, so roughly a fifth of capital stands behind any one of them. The "50
+rebalances" in the break-even calculation counts re-entries, not independent
+turns of the whole account.
+
+**How much of a 14 bp per-period ranking edge reaches an account is still
+unmeasured.** It is now the largest open question about this result: the
+direction is confirmed twice, once on data that took no part in choosing it,
+and the size has never been expressed as money an account would hold.
+
+Nothing here may be converted to an annual return, quoted to an investor, or
+used for sizing until the portfolio is actually constructed.
