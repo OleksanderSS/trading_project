@@ -193,3 +193,53 @@ and the size has never been expressed as money an account would hold.
 
 Nothing here may be converted to an annual return, quoted to an investor, or
 used for sizing until the portfolio is actually constructed.
+
+---
+
+## Follow-up 3 — the portfolio. This closes the line.
+
+Every figure above is a mean per trade, and a mean has no denominator. The
+portfolio was built: daily rebalance, five concurrent books, weights from
+average membership over the last five selections, cost charged on actual
+turnover (`0.5 * sum|dw| * round trip`), compounding, walk-forward throughout.
+1999-01 to 2026-08, 6,941 trading days, turnover ~30x capital a year costing
+0.72%/yr.
+
+                            CAGR      vol    Sharpe    maxDD
+    passive equal weight  +18.06%   22.77%     0.79    -50.88%
+    strategy, gross       +24.51%   30.72%     0.80    -68.27%
+    strategy, net         +23.62%   30.72%     0.77    -68.47%
+
+    years beating passive: 20/28, median excess +7.15%
+
+**The Sharpe is the same. Slightly worse.**
+
+Volatility 1.35x, return 1.31x -- almost exactly proportional. The same passive
+holding levered to the same volatility returns about **+23.14%** against the
+strategy's +23.62%.
+
+**The model contributes +0.48% a year, with a drawdown of -68% against
+passive's -51%** -- worse than leverage alone would produce.
+
+### What this means for everything above
+
+The per-trade figures were not wrong. +0.00101, +0.00138, +0.00167, the 3/3
+out-of-sample confirmation, the survival of period-appropriate costs -- all of
+it is true and none of it could see this, because a per-trade mean has no
+denominator. Concentrating into a top share raises risk mechanically, and the
+raw excess counts that as skill.
+
+### Standing conclusion for the whole line
+
+A cross-sectional target IS better than an absolute one; that survived every
+test including one it could have failed. But expressed as a portfolio, the
+better target buys about half a percent a year over levering the same holding,
+and pays for it with seventeen points of extra drawdown.
+
+That is not a foundation to trade on. It is an honest close.
+
+### What was changed because of this
+
+`ab6a5075` — the promotion gate now also compares at MATCHED RISK, because the
+gate added the day before would have promoted this. Beating passive on raw
+return is exactly what a levered version of passive does.
