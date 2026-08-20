@@ -7,7 +7,7 @@ trading process using the refactored trading module.
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from src.core.logging.logger import ProjectLogger
 from src.meta_learning.memory.diary_engine import (
@@ -170,34 +170,111 @@ class TradingExecutionStage(BaseStage):
             },
         }
 
+    #: A gate meant for rare conditions that fires on most bars is not a gate.
+    #: Measured 2026-08-20 on the real batch: with the thresholds hardcoded at
+    #: 0.7 and 0.85, `context_velocity_15m` exceeded 0.7 on **81.29%** of bars
+    #: and 0.85 on **64.02%**. The "CRITICAL ANXIETY, block the buy" rule was
+    #: therefore the DEFAULT STATE, not an emergency.
+    #:
+    #: Same defect as `news_significance_level`, whose 0.8/0.3 thresholds were
+    #: set against scores that in fact spanned 0.058 to 0.102: a number
+    #: calibrated to a scale the feature never produced.
+    #:
+    #: These are configurable, and the run reports what share of signals each
+    #: rule touched, so a threshold that has rotted announces itself instead of
+    #: quietly muting the strategy.
+    CONTEXT_GATE_DEFAULTS: ClassVar[dict[str, float]] = {
+        'reduce_velocity': 0.7,
+        'block_velocity': 0.85,
+        'reduce_factor': 0.5,
+        # Above this share, a "rare condition" rule is describing the norm.
+        'implausible_fire_rate': 0.25,
+    }
+
     def _apply_context_rules(self, predictions: list[dict]) -> list[dict]:
+        """Context as a GATE: does the situation permit acting at all?
+
+        This is the cheapest of the three ways context can enter a system. As a
+        FEATURE it must be learned from many examples of each condition, which
+        is what makes conditional signals so expensive in data. As a gate it is
+        asserted from reasoning -- "do not buy into a panic" needs no estimation
+        -- and costs nothing.
+
+        Two limits worth knowing before trusting it:
+
+        `context_velocity` exists only on 15m rows in the current batch; it is
+        entirely empty on 60m and 1d. So this gate cannot fire at all on the
+        timeframes the daily work uses, and a signal without the column passes
+        through untouched rather than being silently blocked.
         """
-        🎯 ANXIETY & EXPERT SYNC:
-        Застосовує правила "тривожності" та синхронізує прогнози з Чемпіонами патернів.
-        """
+        cfg = dict(self.CONTEXT_GATE_DEFAULTS)
+        configured = getattr(self, 'context_gate_config', None)
+        if isinstance(configured, dict):
+            cfg.update({k: float(v) for k, v in configured.items()
+                        if isinstance(v, (int, float))})
+
         filtered_signals = []
+        seen = reduced = blocked = missing = 0
         for source_prediction in predictions:
             pred = dict(source_prediction)
             ticker = pred.get('ticker')
-            velocity = self._safe_float(pred.get('context_velocity')) or 0.0
+            raw = pred.get('context_velocity')
+            velocity = self._safe_float(raw)
+            seen += 1
+            if raw is None or velocity is None:
+                # No reading is not the same as a calm reading, and it is not
+                # the same as a panic either. Passing through unchanged keeps
+                # an absent column from silently muting or silently arming the
+                # gate; the count is reported below.
+                missing += 1
+                filtered_signals.append(pred)
+                continue
 
-            # --- Rule 1: Anxiety Kill-Switch ---
-            # Якщо ринок занадто швидко змінюється (velocity > 0.7), знижуємо впевненість
-            if velocity > 0.7:
-                pred['confidence'] = self._safe_float(pred.get('confidence')) or 0.0
-                self.logger.warning(f"🚨 High Context Velocity ({velocity:.2f}) for {ticker}. Reducing exposure.")
-                pred['confidence'] *= 0.5 # Штраф 50%
+            if velocity > cfg['reduce_velocity']:
+                pred['confidence'] = (self._safe_float(pred.get('confidence')) or 0.0)                     * cfg['reduce_factor']
+                reduced += 1
+                self.logger.debug(
+                    "Context velocity %.2f for %s exceeds %.2f: exposure cut to %.0f%%",
+                    velocity, ticker, cfg['reduce_velocity'], cfg['reduce_factor'] * 100)
 
-            # --- Rule 2: Panic Block ---
-            # Якщо швидкість критична, блокуємо нові BUY (Anxiety Index proxy)
-            if velocity > 0.85:
-                if (self._extract_model_prediction(pred) or 0.0) > 0:
-                     self.logger.error(f"🛑 CRITICAL ANXIETY for {ticker}. Blocking BUY signal.")
-                     pred['confidence'] = 0.0 # Повністю анулюємо сигнал
+            if velocity > cfg['block_velocity'] and (
+                    self._extract_model_prediction(pred) or 0.0) > 0:
+                pred['confidence'] = 0.0
+                blocked += 1
+                self.logger.debug(
+                    "Context velocity %.2f for %s exceeds %.2f: BUY blocked",
+                    velocity, ticker, cfg['block_velocity'])
 
             filtered_signals.append(pred)
 
+        self._report_gate_rates(seen, reduced, blocked, missing, cfg)
         return filtered_signals
+
+    def _report_gate_rates(self, seen: int, reduced: int, blocked: int,
+                           missing: int, cfg: dict) -> None:
+        """Say how often the gate fired, so a rotted threshold cannot hide."""
+        if not seen:
+            return
+        rates = {'reduce': reduced / seen, 'block': blocked / seen}
+        self.logger.info(
+            "Context gate: %d signals, exposure cut on %d (%.1f%%), buys blocked "
+            "on %d (%.1f%%), no velocity reading on %d (%.1f%%)",
+            seen, reduced, rates['reduce'] * 100, blocked, rates['block'] * 100,
+            missing, missing / seen * 100)
+        limit = cfg['implausible_fire_rate']
+        for name, rate in rates.items():
+            if rate > limit:
+                self.logger.warning(
+                    "Context gate rule '%s' fired on %.1f%% of signals, above the "
+                    "%.0f%% that a rare-condition rule should ever reach. The "
+                    "threshold is probably calibrated to a scale this feature "
+                    "does not produce -- measured 2026-08-20, the shipped 0.85 "
+                    "blocked 64%% of bars.", name, rate * 100, limit * 100)
+        if missing == seen:
+            self.logger.warning(
+                "Context gate saw NO velocity readings at all: the column is "
+                "absent on this timeframe (it exists only on 15m in the current "
+                "batch), so no context rule can fire here.")
 
     def _record_transactions_to_diary(
         self,
