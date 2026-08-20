@@ -602,6 +602,7 @@ class BaseTrainer(ABC):
             # carried fewer than ten positive events.
             **self._holdout_event_count(y_holdout, is_classif),
             **self._score_naive_baselines(data, is_classif, task_type, metric_key),
+            **self._score_passive_holding(y_holdout, preds, is_classif),
         }
 
     @staticmethod
@@ -760,6 +761,84 @@ class BaseTrainer(ABC):
                 f"Could not retain holdout predictions: {e}"
             )
             return []
+
+    #: Share of the holdout the model would actually act on. Matches the
+    #: ranking decision the 2026-08-20 walk-forward used, so the number here
+    #: means the same thing as the number that produced the finding.
+    PASSIVE_TOP_QUANTILE = 0.30
+
+    @staticmethod
+    def _score_passive_holding(y_holdout: Any, preds: Any,
+                               is_classif: bool) -> dict[str, Any]:
+        """What the model adds over simply holding everything.
+
+        Added 2026-08-20, because the absence of this one number is what made a
+        worthless result read as a triumph. A walk-forward over eleven
+        independent folds scored positive in ELEVEN OF ELEVEN and looked like
+        success -- until the passive baseline was put beside it:
+
+            absolute target   11/11 folds positive   excess over passive +0.00021, t=0.55
+            relative target    9/11 folds positive   excess over passive +0.00132, t=2.78
+
+        The first arm was earning the MARKET and adding noise. The gate's
+        existing opponents cannot see this: a constant predictor and a
+        persistence predictor are both about the SHAPE of the series, and
+        neither asks the question an investor asks, which is whether acting on
+        the model beats owning the same thing and doing nothing.
+
+        Reported for every regression target whose values look like returns,
+        whether or not it gates, so that no figure is ever read without it.
+
+        The heuristic for "looks like a return" is deliberate and narrow: a
+        finite, signed series whose 99th percentile of absolute value is under
+        0.5. A target measured in prices, volumes or indicator levels is not
+        comparable to holding anything, and says so rather than inventing a
+        benchmark it cannot support.
+        """
+        if is_classif:
+            # A class label carries no payoff. Making this comparison would
+            # need the return column plumbed through training, which it is
+            # not -- and reporting `0.0` here would be a fabricated benchmark.
+            return {'excess_over_passive': None,
+                    'passive_status': 'not_applicable_classification'}
+        try:
+            y = pd.Series(y_holdout).astype(float).to_numpy().ravel()
+            p = pd.Series(preds).astype(float).to_numpy().ravel()
+        except (TypeError, ValueError):
+            return {'excess_over_passive': None,
+                    'passive_status': 'unreadable'}
+        if len(y) != len(p) or len(y) == 0:
+            return {'excess_over_passive': None,
+                    'passive_status': 'length_mismatch'}
+
+        ok = np.isfinite(y) & np.isfinite(p)
+        y, p = y[ok], p[ok]
+        if len(y) < 10:
+            return {'excess_over_passive': None,
+                    'passive_status': 'too_few_rows'}
+        if not (np.nanpercentile(np.abs(y), 99) < 0.5 and (y < 0).any() and (y > 0).any()):
+            return {'excess_over_passive': None,
+                    'passive_status': 'not_a_return_target'}
+        if np.allclose(p, p[0]):
+            # Every row ranks the same, so "the top 30%" is arbitrary and the
+            # comparison would measure the sort order, not the model.
+            return {'excess_over_passive': None,
+                    'passive_status': 'predictions_are_constant'}
+
+        cut = np.quantile(p, 1.0 - BaseTrainer.PASSIVE_TOP_QUANTILE)
+        picked = p >= cut
+        if picked.sum() < 5:
+            return {'excess_over_passive': None,
+                    'passive_status': 'too_few_selected'}
+        passive = float(np.mean(y))
+        selected = float(np.mean(y[picked]))
+        return {
+            'passive_mean': passive,
+            'selected_mean': selected,
+            'selected_count': int(picked.sum()),
+            'excess_over_passive': selected - passive,
+            'passive_status': 'measured',
+        }
 
     def _score_naive_baselines(self, data: dict[str, Any], is_classif: bool,
                                task_type: str, metric_key: str) -> dict[str, Any]:
@@ -1084,6 +1163,12 @@ class BaseTrainer(ABC):
         # baseline cannot separate skill from chance. Set
         # `min_holdout_events: 0` to restore the previous behaviour.
         min_events = int(cfg.get('min_holdout_events', 10))
+        # A model that does not beat owning the same thing and doing
+        # nothing has not earned a promotion, whatever its R2. Only
+        # binds where the comparison is measurable -- see
+        # _score_passive_holding. Set false to restore the old behaviour.
+        require_excess = bool(cfg.get('require_excess_over_passive', True))
+        min_excess = float(cfg.get('min_excess_over_passive', 0.0))
 
         holdout = results.get('winner_holdout_metrics') or {}
         reasons: list[str] = []
@@ -1121,6 +1206,21 @@ class BaseTrainer(ABC):
                     f"holdout carries {int(events)} events, minimum is "
                     f"{min_events}: a score on fewer cannot distinguish skill "
                     f"from chance"
+                )
+
+            # The opponent an investor actually has. The constant and
+            # persistence baselines are both about the SHAPE of the series;
+            # neither asks whether acting on the model beats owning the same
+            # exposure. Measured 2026-08-20: without this column an arm that
+            # scored positive in 11 of 11 walk-forward folds was earning the
+            # market and adding +0.00021 of noise.
+            excess = holdout.get('excess_over_passive')
+            if require_excess and excess is not None and excess <= min_excess:
+                reasons.append(
+                    f"selecting on this model returns {holdout.get('selected_mean'):+.5f} "
+                    f"against {holdout.get('passive_mean'):+.5f} for holding "
+                    f"everything: excess {excess:+.5f} does not clear "
+                    f"{min_excess:+.5f}"
                 )
 
             score = holdout.get('score')

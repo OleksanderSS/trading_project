@@ -149,6 +149,21 @@ training:
     # How far above the naive baseline the winner must score. 0.0 means
     # "strictly better"; raise it to demand a real margin.
     min_baseline_margin: 0.0
+    # The opponent an investor actually has: owning the same exposure and
+    # doing nothing. The constant and persistence baselines are both about the
+    # SHAPE of the series and cannot see this.
+    #
+    # Measured 2026-08-20 on 11 walk-forward folds over 30 years of daily
+    # data. Without this column an arm scoring positive in ELEVEN OF ELEVEN
+    # folds read as a success; beside it, the same arm was earning the market
+    # and adding +0.00021 of its own, t=0.55. The arm trained on a
+    # cross-sectional target added +0.00132, t=2.78.
+    #
+    # Only binds where the comparison is measurable: a regression target whose
+    # values look like returns. Classification targets carry no payoff and
+    # report `not_applicable` rather than a fabricated zero.
+    require_excess_over_passive: true
+    min_excess_over_passive: 0.0
     # Refuse to promote any fit with at least as many features as training
     # rows. Measured on the 2026-08-06 batch, EVERY context is in that state
     # (AAPL 1d 327 features / ~196 train rows; SPY 60m 605 / ~151; AAPL 15m
