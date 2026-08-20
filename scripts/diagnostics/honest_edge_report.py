@@ -274,6 +274,126 @@ def transfer_table(df: pd.DataFrame, cost_col: str) -> None:
         print(f'  {t:6.2f} {fa:>22} {fb:>22}')
 
 
+
+# --------------------------------------------------------------------------
+# what an account holds
+# --------------------------------------------------------------------------
+
+def portfolio_arms(df: pd.DataFrame, cost_col: str, threshold: float,
+                   horizon_bars: int) -> None:
+    """Turn the selection into an equity curve, because a mean has no denominator.
+
+    Added 2026-08-20 after the same omission fooled this project twice in one
+    day. Every arm above reports a MEAN PER TRADE, and a mean cannot show what
+    the return cost in risk. Carried to a real portfolio, a cross-sectional
+    model that beat passive holding in 20 years of 28 with a median excess of
+    +7.15% turned out to be leverage:
+
+        passive equal weight   CAGR +18.06%  vol 22.77%  Sharpe 0.79  maxDD -51%
+        the strategy           CAGR +23.62%  vol 30.72%  Sharpe 0.77  maxDD -68%
+
+    Volatility 1.35x against return 1.31x. The same holding levered to the same
+    volatility returns +23.14%, so the model added half a percent a year and a
+    drawdown seventeen points worse. Nothing per-trade could see that, and I
+    only found it by building the portfolio by hand. This makes the instrument
+    do it instead.
+
+    NON-OVERLAPPING periods. The payoff column already spans `horizon_bars`, so
+    consecutive bars describe overlapping holds and cannot be compounded. Taking
+    every horizon-th timestamp gives a portfolio that rebalances with the whole
+    capital once per holding period, which is a real strategy and an honest
+    curve. An overlapping version holds a fraction of capital per book and needs
+    per-bar returns this report does not carry.
+    """
+    fired_all = df[df['prob'] > threshold]
+    if fired_all.empty:
+        print()
+        print('### ПОРТФЕЛЬ: жодного спрацювання на цьому порозі')
+        return
+
+    stamps = sorted(df['datetime'].unique())
+    keep = set(stamps[::max(1, horizon_bars)])
+    period_rows = df[df['datetime'].isin(keep)]
+    if period_rows['datetime'].nunique() < 8:
+        print()
+        print(f'### ПОРТФЕЛЬ: замало неперекривних періодів '
+              f'({period_rows["datetime"].nunique()}) для кривої')
+        return
+
+    net = period_rows['gross'] - period_rows[cost_col] - period_rows['commission']
+    period_rows = period_rows.assign(net=net)
+
+    def curve(rows: pd.DataFrame, selected: bool) -> pd.Series:
+        if selected:
+            rows = rows[rows['prob'] > threshold]
+        if rows.empty:
+            return pd.Series(dtype=float)
+        return rows.groupby('datetime')['net'].mean()
+
+    strat = curve(period_rows, True)
+    passive = curve(period_rows, False)
+    common = strat.index.intersection(passive.index)
+    if len(common) < 8:
+        print()
+        print(f'### ПОРТФЕЛЬ: стратегія торгує лише в {len(common)} періодах — '
+              f'замало для кривої')
+        return
+    strat, passive = strat.reindex(common).fillna(0.0), passive.reindex(common)
+
+    span_days = (pd.Timestamp(max(common)) - pd.Timestamp(min(common))).days or 1
+    per_year = len(common) * 365.25 / span_days
+
+    def stats(r: pd.Series) -> tuple:
+        eq = (1 + r).cumprod()
+        years = span_days / 365.25
+        cagr = eq.iloc[-1] ** (1 / years) - 1 if years > 0 and eq.iloc[-1] > 0 else np.nan
+        vol = float(r.std(ddof=1) * np.sqrt(per_year))
+        dd = float((eq / eq.cummax() - 1).min())
+        return cagr, vol, (cagr / vol if vol > 1e-9 else np.nan), dd
+
+    s_cagr, s_vol, s_sharpe, s_dd = stats(strat)
+    p_cagr, p_vol, p_sharpe, p_dd = stats(passive)
+
+    print()
+    print(f'### ПОРТФЕЛЬ: {len(common)} неперекривних періодів по {horizon_bars} барів')
+    print(f'    поріг {threshold:.2f} обрано на ранній половині; крива — на пізній')
+    # Annualising is only meaningful over a span long enough to contain the
+    # thing being annualised. Thirty-two four-hour periods is three weeks, and
+    # a CAGR extrapolated from three weeks is arithmetic, not an estimate.
+    if span_days < 365:
+        print(f'    УВАГА: вікно {span_days} днів. Річні величини нижче — '
+              f'екстраполяція, не оцінка. Читати Sharpe і просадку, не CAGR.')
+    print(f'{"":>28} {"CAGR":>9} {"вол-ть":>9} {"Sharpe":>8} {"макс.просадка":>14}')
+    print(f'{"пасив (тримати все)":>28} {p_cagr:+9.2%} {p_vol:9.2%} '
+          f'{p_sharpe:8.2f} {p_dd:14.2%}')
+    print(f'{"стратегія":>28} {s_cagr:+9.2%} {s_vol:9.2%} '
+          f'{s_sharpe:8.2f} {s_dd:14.2%}')
+
+    # The comparison that separates skill from leverage: what would owning the
+    # same thing return, levered to the risk this selection actually takes?
+    # Levering a LOSING benchmark makes it lose more, so any less-bad strategy
+    # "beats leverage" by an arbitrarily flattering margin. The comparison only
+    # carries meaning when owning the thing pays something to begin with.
+    # Caught in this function's own first output: passive -21.38% levered 1.92x
+    # gives -41.27%, and a strategy at -14.48% appeared to add +26.79% a year.
+    if p_cagr is not None and np.isfinite(p_cagr) and p_cagr <= 0:
+        print()
+        print('  порівняння за однаковим ризиком тут НЕ ІНФОРМАТИВНЕ: пасив у '
+              'мінусі, а плече лише поглиблює збиток, тож будь-яка менш '
+              'збиткова стратегія перемагає його механічно.')
+    elif p_vol > 1e-9 and np.isfinite(p_cagr):
+        lev = s_vol / p_vol
+        mu = p_cagr + p_vol ** 2 / 2
+        matched = mu * lev - (p_vol * lev) ** 2 / 2
+        print(f'{f"пасив x{lev:.2f} (той самий ризик)":>28} {matched:+9.2%} '
+              f'{p_vol*lev:9.2%} {"—":>8} {"—":>14}')
+        print()
+        print(f'внесок моделі понад плече: {s_cagr - matched:+.2%} на рік')
+        if s_cagr - matched <= 0:
+            print('  ЦЕ ПЛЕЧЕ, А НЕ ВМІННЯ: та сама експозиція з тим самим '
+                  'ризиком дає стільки ж або більше.')
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--signal', default=DEFAULT_SIGNAL)
@@ -287,6 +407,10 @@ def main() -> int:
                         'switch to the charging profile once the batch has been '
                         'rebuilt after 2026-08-17')
     p.add_argument('--fixed-threshold', type=float, default=0.85)
+    p.add_argument('--horizon-bars', type=int, default=4,
+                   help='bars the payoff spans; consecutive bars overlap '
+                        'and cannot be compounded, so the portfolio '
+                        'samples every Nth timestamp')
     args = p.parse_args()
 
     profile = cost_profile(args.profile)
@@ -303,6 +427,23 @@ def main() -> int:
         print(f'\n### {label}')
         verdicts[col] = arms(df, col, args.fixed_threshold)
     transfer_table(df, 'spread_assumed')
+
+    # A mean per trade has no denominator. Everything above is blind to
+    # what the return cost in risk; this is not.
+    # The threshold must come from the EARLY half and the curve from the LATE
+    # half, exactly as the honest arm does. The first version of this called
+    # pick() on the whole frame and reported a Sharpe of 1.68 while the honest
+    # arm was negative -- the same in-sample leak this report exists to
+    # prevent, rebuilt one section lower.
+    cost_all = (df['spread_assumed'] + df['commission']).values
+    cut = len(df) // 2
+    early = slice(0, cut)
+    late_rows = df.iloc[cut + PURGE_BARS:]
+    honest_threshold = pick(df['gross'].values[early], df['prob'].values[early],
+                            cost_all[early])
+    if honest_threshold is not None:
+        portfolio_arms(late_rows, 'spread_assumed', honest_threshold,
+                       args.horizon_bars)
 
     print('\n### ВЕРДИКТ')
     pess = verdicts['spread_pessimistic'].get('honest', {})
