@@ -8,6 +8,7 @@ This module connects the different components of the trading pipeline:
 - Synchronizes the state of the Virtual Portfolio.
 """
 import logging
+from datetime import datetime
 from typing import Any
 
 import numpy as np
@@ -55,7 +56,8 @@ class TradingOrchestrator:
             )
 
     def process_signals(self, raw_predictions: list[dict[str, Any]],
-        current_prices: dict[str, float], enriched_data: pd.DataFrame | None=None):
+        current_prices: dict[str, float], enriched_data: pd.DataFrame | None=None,
+        as_of: datetime | None=None):
         """
         The main pipeline entry point for processing a batch of new model predictions.
 
@@ -63,6 +65,10 @@ class TradingOrchestrator:
             raw_predictions: A list of prediction dictionaries output from Stage 5.
             current_prices: A map of tickers to their current realized market price.
             enriched_data: Optional full feature dataset for deep analysis.
+            as_of: The time these prices belong to. Live callers leave it None
+                and get the wall clock. A backtest must pass the bar's time --
+                without it every valuation in the run lands on today's date and
+                the daily drawdown limit measures the whole run instead.
         """
         if self.macro_analyzer and enriched_data is not None:
             self.logger.info('Executing Macro Context Analysis...')
@@ -88,7 +94,7 @@ class TradingOrchestrator:
 
         self._handle_risk_exits(current_prices)
         trade_orders = self._generate_trade_orders(filtered_signals,
-            current_prices)
+            current_prices, as_of=as_of)
         if not trade_orders:
             self.logger.info(
                 'Portfolio Manager declined order generation based on risk limits. Cycle finished.'
@@ -98,7 +104,7 @@ class TradingOrchestrator:
             f'Portfolio Manager authorized {len(trade_orders)} new trade orders.'
             )
         self._execute_orders(trade_orders)
-        self.portfolio.update_performance(current_prices)
+        self.portfolio.update_performance(current_prices, as_of=as_of)
         self.logger.info(
             'Trading cycle concluded. Portfolio metrics and state successfully synchronized.'
             )
@@ -387,10 +393,11 @@ class TradingOrchestrator:
             self._execute_orders(exit_orders)
 
     def _generate_trade_orders(self, consensus_signals: list[dict[str, Any]
-        ], current_prices: dict[str, float]) ->list[TradeOrder]:
+        ], current_prices: dict[str, float], as_of: datetime | None=None
+        ) ->list[TradeOrder]:
         """Generate trade orders from consensus signals."""
         return self.portfolio_manager.generate_orders_from_signals(
-            consensus_signals, current_prices)
+            consensus_signals, current_prices, as_of=as_of)
 
     def _remember_critic_action(self, order: TradeOrder) ->None:
         """Note which critic verdict opened this position, so it can be scored.

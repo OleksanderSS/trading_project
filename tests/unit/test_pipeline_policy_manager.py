@@ -170,7 +170,7 @@ class _Portfolio:
     def __init__(self, drawdown):
         self._drawdown = drawdown
 
-    def get_daily_drawdown(self, _prices):
+    def get_daily_drawdown(self, _prices, as_of=None):
         return self._drawdown
 
 

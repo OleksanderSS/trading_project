@@ -6,6 +6,7 @@ trade orders based on signals from the Consensus Engine. It does not manage
 portfolio state directly but queries a VirtualPortfolio instance.
 """
 import logging
+from datetime import date, datetime
 from typing import Any
 
 import numpy as np
@@ -62,6 +63,8 @@ class PortfolioManager:
         self.risk_allocator = RiskParityAllocator(config=risk_config.get(
             'risk_allocator', {}))
         self.kill_switch_active = False
+        # The day the switch tripped, so a *daily* limit lasts a day.
+        self._kill_switch_day: date | None = None
 
     def _effective_daily_drawdown_limit(self) ->float:
         """The configured daily limit, tightened by regime when one is known.
@@ -88,39 +91,56 @@ class PortfolioManager:
             )
             return self.max_daily_drawdown_pct
 
-    def is_trading_allowed(self, current_prices: dict[str, float]) ->bool:
+    def is_trading_allowed(self, current_prices: dict[str, float],
+        as_of: datetime | None=None) ->bool:
         """
         Primary gatekeeper. Checks if any risk rule prevents trading.
+
+        The switch is scoped to the day that tripped it. It used to latch with
+        no way back: a limit described everywhere as *daily* stopped the
+        portfolio permanently, and did so on a drawdown figure that -- until
+        the anchor in `VirtualPortfolio.get_daily_drawdown` was fixed -- was
+        really the loss since inception. A run that drifted 5% below its
+        starting equity was finished for good.
         """
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f'[PORTFOLIO] is_trading_allowed called with {len(current_prices)} prices'
                 )
+        today = (as_of or datetime.now()).date()
+        if self.kill_switch_active and self._kill_switch_day != today:
+            self.logger.warning(
+                f'Kill switch from {self._kill_switch_day} released: new trading day {today}.'
+                )
+            self.kill_switch_active = False
+            self._kill_switch_day = None
         if self.kill_switch_active:
             self.logger.critical('Trading blocked: KILL SWITCH IS ACTIVE.')
             return False
         daily_limit = self._effective_daily_drawdown_limit()
         if hasattr(self.portfolio, 'get_daily_drawdown'
-            ) and self.portfolio.get_daily_drawdown(current_prices
+            ) and self.portfolio.get_daily_drawdown(current_prices, as_of=as_of
             ) < -daily_limit:
             self.logger.critical(
-                f'Trading blocked: Max daily drawdown of {daily_limit:.2%} exceeded.'
+                f'Trading blocked: Max daily drawdown of {daily_limit:.2%} exceeded on {today}.'
                 )
             self.kill_switch_active = True
+            self._kill_switch_day = today
             return False
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug('[PORTFOLIO] is_trading_allowed: TRUE')
         return True
 
     def generate_orders_from_signals(self, signals: list[dict[str, Any]],
-        current_prices: dict[str, float]) ->list[TradeOrder]:
+        current_prices: dict[str, float], as_of: datetime | None=None
+        ) ->list[TradeOrder]:
         """
         Processes signals from the ConsensusEngine and generates executable TradeOrders.
         """
         self.logger.info(
             f'[PORTFOLIO] generate_orders_from_signals called with {len(signals)} signals'
             )
-        if not self.is_trading_allowed(current_prices):
+        if not self.is_trading_allowed(current_prices, as_of=as_of):
             self.logger.warning(
                 '[PORTFOLIO] Trading is NOT allowed by risk protocol!')
             return []

@@ -142,35 +142,58 @@ class VirtualPortfolio:
                 total_value += position['quantity'] * price
         return total_value
 
-    def get_daily_drawdown(self, current_prices: dict[str, float]) -> float:
-        """
-        Calculates the portfolio's daily drawdown by comparing the current value 
-        to the value at the start of the trading day.
+    def get_daily_drawdown(
+        self,
+        current_prices: dict[str, float],
+        as_of: datetime | None = None,
+    ) -> float:
+        """Loss since the start of the trading day named by ``as_of``.
+
+        The day boundary came from the wall clock while ``update_performance``
+        stamped its records with the wall clock too. Inside one backtest or one
+        automated session every record therefore carried today's date, nothing
+        satisfied ``record_date < today``, and the anchor fell through to
+        ``performance_history[0]`` -- the run's opening equity. What the
+        function returned was the loss since the run began, under a name that
+        says daily, to a caller that latches a kill switch on it.
+
+        Callers now pass the bar's own time. Live callers pass nothing and get
+        the clock, exactly as before.
+
+        The no-prior-day fallback now anchors to the day's own first valuation
+        rather than to the first one ever taken. Where every record shares a
+        date those are the same record, so this changes no existing behaviour;
+        it stops the fallback from meaning "since inception" once bar times
+        make the two differ.
         """
         current_value = self.get_total_value(current_prices)
         if current_value == 0:
             return 0.0
 
-        today_date = datetime.now().date()
+        today_date = (as_of or datetime.now()).date()
         start_value = None
 
-        # Look for the last value from previous days
+        # Last valuation from any earlier day: the day's opening equity.
         for record in reversed(self.performance_history):
             record_date = datetime.fromisoformat(record['timestamp']).date()
             if record_date < today_date:
                 start_value = record['total_value']
                 break
-                
-        # Fallback to initial balance or first available record if no history from previous days
+
+        # No earlier day on record: anchor to today's first valuation, not to
+        # the first one ever taken.
         if start_value is None:
-            if self.performance_history:
-                start_value = self.performance_history[0]['total_value']
-            else:
-                start_value = self.initial_balance
-                
+            for record in self.performance_history:
+                if datetime.fromisoformat(record['timestamp']).date() == today_date:
+                    start_value = record['total_value']
+                    break
+
+        if start_value is None:
+            start_value = self.initial_balance
+
         if start_value == 0:
             return 0.0
-            
+
         return (current_value - start_value) / start_value
 
     def buy_stock(self, order_params: dict[str, Any]) ->dict[str, Any]:
@@ -304,12 +327,22 @@ class VirtualPortfolio:
             positions_report, 'metrics': metrics, 'timestamp': datetime.now
             ().isoformat()}
 
-    def update_performance(self, current_prices: dict[str, float]):
-        """Records current portfolio valuation into history."""
+    def update_performance(
+        self,
+        current_prices: dict[str, float],
+        as_of: datetime | None = None,
+    ):
+        """Records current portfolio valuation into history.
+
+        ``as_of`` is the time the valuation belongs to -- the bar's time in a
+        backtest. Stamping the wall clock instead is what collapsed every
+        record in a run onto a single date and made daily drawdown mean
+        something else entirely.
+        """
         total_val = self.get_total_value(current_prices)
-        record = {'timestamp': datetime.now().isoformat(), 'total_value':
-            total_val, 'cash': self.current_balance, 'positions_count': len
-            (self.positions)}
+        record = {'timestamp': (as_of or datetime.now()).isoformat(),
+            'total_value': total_val, 'cash': self.current_balance,
+            'positions_count': len(self.positions)}
         self.performance_history.append(record)
         if len(self.performance_history) > 5000:
             self.performance_history = self.performance_history[-5000:]
