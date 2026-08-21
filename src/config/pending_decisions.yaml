@@ -35,6 +35,18 @@ pending:
     what_resolves_it: >
       A broker chosen and its published schedule read, including the minimum
       per order, any inactivity or custody fee, FX conversion, and market data.
+      Note the order this has to happen in: which brokers are reachable
+      depends on where the account is opened from, and the owner's location is
+      not fixed. Researching tariffs before that is settled would produce a
+      number that has to be thrown away.
+    an_upper_bound_was_considered: >
+      Using a deliberately pessimistic cost ceiling instead of an estimate, so
+      that any edge measured through it is a lower bound. It is a real
+      technique and it is not adopted here, because a ceiling picked without
+      a broker is itself an invented number -- and a wrong ceiling fails in
+      the direction that looks safe, which is the harder kind to notice. If a
+      bound is ever adopted it should be the worst published schedule among
+      the brokers actually reachable, not a round figure.
     affects:
       - "src/config/targets.yaml — cost_profiles, subtracted from every regression target"
       - "scripts/diagnostics/honest_edge_report.py — the net edge and every arm of it"

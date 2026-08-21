@@ -344,6 +344,24 @@ class PipelineWalkForwardValidationEvaluator:
         )
         return {
             "fold": fold_number,
+            # The out-of-sample series itself, not only its summary.
+            #
+            # The champion's holdout artifact is a single contiguous tail --
+            # `x_test = X.iloc[test_start:]` in prepare_data_for_models -- so
+            # everything measured out of sample has been measured on ONE
+            # market episode, whichever one the data happens to end in. These
+            # folds already walk several disjoint windows and already compute
+            # a prediction for each; only the metrics survived, and a metric
+            # cannot be re-aggregated, compared against a cost model, or
+            # turned into an equity curve after the fact.
+            #
+            # Keeping the rows makes "does this hold up in more than one
+            # period" answerable without retraining anything. Four folds of
+            # ~120 validation rows per context is a few hundred rows, which is
+            # nothing next to what the frame already carries.
+            "validation_predictions": _prediction_series(
+                validation, validation_target, validation_prediction,
+            ),
             "train_window": _window_payload(train),
             "purge_window": {
                 "start_position": fold["train_end"],
@@ -700,6 +718,32 @@ def _classification_metrics(
             6,
         ),
     }
+
+
+def _prediction_series(
+    frame: pd.DataFrame,
+    actual: pd.Series,
+    predicted: pd.Series,
+) -> list[dict[str, Any]]:
+    """One row per out-of-sample bar: when, what was said, what happened."""
+    stamps = frame.get("__walk_forward_datetime")
+    if stamps is None:
+        stamps = frame.get("datetime")
+    return [
+        {
+            "datetime": None if stamps is None else _as_iso(stamps.iloc[position]),
+            "prediction": float(predicted.iloc[position]),
+            "actual": float(actual.iloc[position]),
+        }
+        for position in range(len(predicted))
+    ]
+
+
+def _as_iso(value: Any) -> str | None:
+    try:
+        return pd.Timestamp(value).isoformat()
+    except (ValueError, TypeError):
+        return None
 
 
 def _window_payload(frame: pd.DataFrame) -> dict[str, Any]:
