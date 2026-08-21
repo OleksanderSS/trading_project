@@ -6,6 +6,7 @@ import pandas as pd
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.targets.calculators.classification_calculator import ClassificationCalculator
+from src.targets.calculators.cross_sectional_calculator import CrossSectionalCalculator
 from src.targets.calculators.indicator_prediction_calculator import IndicatorPredictionCalculator
 from src.targets.calculators.regression_calculator import RegressionCalculator
 from src.targets.timeframe_contract import (
@@ -34,7 +35,8 @@ class TargetOrchestrator:
         self.CALCULATOR_MAPPING = {'regression': RegressionCalculator,
             'classification_binary': ClassificationCalculator,
             'classification_multiclass': ClassificationCalculator,
-            'indicator_prediction': IndicatorPredictionCalculator}
+            'indicator_prediction': IndicatorPredictionCalculator,
+            'cross_sectional': CrossSectionalCalculator}
         self.METHOD_MAPPING = {'classification_binary': 'calculate_binary',
             'classification_multiclass': 'calculate_multiclass'}
         self.timeframe = timeframe
@@ -215,7 +217,24 @@ class TargetOrchestrator:
         calculator_instance = calculator_class()
         method_name = self.METHOD_MAPPING.get(target_type, 'calculate')
         calculation_method = getattr(calculator_instance, method_name)
-        if 'ticker' in df.columns:
+        # Some targets are a property of the CROSS-SECTION, not of one name.
+        # "Did AAPL beat the average of everything we hold" needs every ticker
+        # at the same instant, and computing it per ticker group would make the
+        # cross-sectional mean of one ticker equal to that ticker -- a column of
+        # exact zeros, emitted silently with no error and no missing values.
+        # See CrossSectionalCalculator.
+        needs_full_frame = getattr(calculator_class, 'REQUIRES_FULL_FRAME', False)
+        if needs_full_frame:
+            if 'ticker' not in df.columns or df['ticker'].nunique() < 2:
+                logger.warning(
+                    "Target '%s' is cross-sectional but the frame carries %d "
+                    "ticker(s); there is no cross-section to measure against, "
+                    "so it is skipped rather than emitted as zeros.",
+                    name, df['ticker'].nunique() if 'ticker' in df.columns else 0,
+                )
+                return
+            target_series = calculation_method(df, **params)
+        elif 'ticker' in df.columns:
             target_series = self._process_by_ticker_groups(df,
                 calculation_method, params)
         else:

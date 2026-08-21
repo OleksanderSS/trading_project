@@ -18,6 +18,10 @@ import yaml
 CLASSIFICATION_BINARY_TYPE = "classification_binary"
 CLASSIFICATION_MULTICLASS_TYPE = "classification_multiclass"
 CLASSIFICATION_TARGET_TYPES = {CLASSIFICATION_BINARY_TYPE, CLASSIFICATION_MULTICLASS_TYPE}
+#: Measured against the other names at the same instant rather than against
+#: the ticker's own past. Regression-shaped, so anything asking "is this a
+#: classification target" must answer no.
+CROSS_SECTIONAL_TYPE = "cross_sectional"
 
 DEFAULT_TARGETS_YAML = Path(__file__).resolve().parent / "targets.yaml"
 

@@ -294,6 +294,46 @@ targets:
       shift: -7  # 7 days = 1 week
       threshold: 0.03
 
+  # --- Cross-sectional: measured against the other names, not against drift ---
+  #
+  # Added 2026-08-20 because it is the one variant measurement preferred, and
+  # the pipeline could not produce it. Walk-forward over 11 independent folds,
+  # excess over passive holding, identical folds/features/model:
+  #
+  #     absolute target   6/11 folds   +0.00021   t 0.55
+  #     relative target   9/11         +0.00132   t 2.78
+  #
+  # Confirmed against a criterion fixed in advance on test years 1999/2001/2003,
+  # the only segment that took no part in choosing it: 3/3 positive. The
+  # follow-up in docs/preregistration/2026-08-20_cross_sectional_regression.md
+  # shows that as a PORTFOLIO it is worth about half a percent a year over
+  # levering the same holding -- better, not a fortune.
+  #
+  # No adjust_for_costs. Harvesting a spread costs one round trip on the name
+  # and another on the hedge if there is one, and which applies is the
+  # strategy's decision. Baking cost into the label is what made the absolute
+  # up-targets fire at 29.9% where the market's drift implies about 53%.
+  target_relative_return_5d:
+    type: "cross_sectional"
+    params:
+      description: "Five-day return minus the mean of every name at the same bar."
+      base_col: "close"
+      shift: -5
+      method: "demean"
+      min_names: 5
+
+  # The decision is a RANKING -- buy the top share at each date -- so this
+  # trains the model on the quantity it is actually judged by, and one outlier
+  # cannot drag the benchmark the way it drags a mean.
+  target_relative_rank_5d:
+    type: "cross_sectional"
+    params:
+      description: "Percentile rank of the five-day return within its own bar."
+      base_col: "close"
+      shift: -5
+      method: "rank"
+      min_names: 5
+
   target_weekly_return_1w:
     type: "regression"
     params:
