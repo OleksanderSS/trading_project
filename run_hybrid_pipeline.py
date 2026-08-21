@@ -251,5 +251,38 @@ async def main():
         sys.exit(1)
 
 
+def _run() -> int:
+    """Run the pipeline and return a truthful exit code.
+
+    A stage that fails must never leave a zero behind. Twice in two days a
+    run ended with `RuntimeError: Stage FeatureEngineeringStage execution
+    failed` and neither "Pipeline completed" nor "Pipeline failed" reached
+    the log, so main() had not got as far as reporting -- and one of those
+    runs still returned 0 to the shell while the other returned 1, from the
+    same invocation shape.
+
+    I could not reproduce which path produces which, and the honest response
+    to an unreproduced mechanism is a guarantee rather than a diagnosis:
+    anything escaping main() is reported here and exits non-zero, whatever
+    the cause turns out to be. The cost of the alternative is measured -- a
+    rebuild that "succeeded" left the batch untouched and the next step was
+    planned on data that had never changed.
+
+    SystemExit is re-raised untouched so `sys.exit(1)` from the reporting
+    block keeps its own code.
+    """
+    try:
+        asyncio.run(main())
+    except SystemExit:
+        raise
+    except BaseException as exc:  # noqa: BLE001 - the whole point is breadth
+        logger.critical(
+            "Pipeline aborted with %s: %s", type(exc).__name__, exc,
+            exc_info=True,
+        )
+        return 1
+    return 0
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(_run())
