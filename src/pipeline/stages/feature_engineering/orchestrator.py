@@ -1,6 +1,9 @@
 from datetime import datetime
 from typing import Any
 
+import contextlib
+import time
+
 import numpy as np
 import pandas as pd
 
@@ -28,6 +31,9 @@ class FeatureEngineeringStage(BaseStage):
     Modular Stage 3: Advanced Feature Engineering Hub.
     Delegates to specialized components for enrichment, target generation, and safety.
     """
+
+    #: Wall time per phase of the last run(), filled by _phase().
+    _phase_seconds: dict[str, float] = {}
 
     def __init__(self, config_manager: UnifiedConfigManager, error_handler: ErrorHandler, **kwargs):
         super().__init__(config_manager, error_handler, **kwargs)
@@ -68,11 +74,62 @@ class FeatureEngineeringStage(BaseStage):
         lowered = str(name).lower()
         return any(marker in lowered for marker in cls._SCRATCH_MARKERS)
 
+    @contextlib.contextmanager
+    def _phase(self, name: str):
+        """Accumulate wall time per phase of stage 3.
+
+        Added 2026-08-21 after a five-hour run was killed on a wrong guess.
+        Asked whether it was behaving abnormally, I had no measurement -- only
+        per-enricher lines and nothing for the phases around them -- so I
+        reasoned from a plausible theory, blamed a change of my own, and had to
+        reconstruct the truth afterwards by diffing timestamps out of a 31 MB
+        log. The run had been normal: the previous SUCCESSFUL rebuild spent
+        3.8 hours in the same pauses against this one's 4.5.
+
+        What the forensics found is worth having printed every run instead:
+
+            TechnicalAnalysisEnricher    99 min
+            RedundancyDetector           88 min
+            smart_selector               51 min
+
+        None of it new, and the largest consumer computes variance-inflation
+        factors across 2,192 columns -- including the 1,494 ctx_/state_ columns
+        measured to contribute nothing to any decision.
+        """
+        start = time.perf_counter()
+        try:
+            yield
+        except BaseException:
+            self._phase_seconds[name] = (
+                self._phase_seconds.get(name, 0.0) + time.perf_counter() - start
+            )
+            # A crash five hours in is exactly when the breakdown is worth
+            # having, so print it on the way out rather than losing it.
+            self._log_phase_breakdown()
+            raise
+        else:
+            self._phase_seconds[name] = (
+                self._phase_seconds.get(name, 0.0) + time.perf_counter() - start
+            )
+
+    def _log_phase_breakdown(self) -> None:
+        """Print where the stage's time went, longest first."""
+        if not self._phase_seconds:
+            return
+        total = sum(self._phase_seconds.values())
+        self.logger.info('⏱️ Stage 3 phase breakdown (total %.1f min):', total / 60)
+        for name, seconds in sorted(self._phase_seconds.items(),
+                                    key=lambda kv: -kv[1]):
+            share = seconds / total * 100 if total else 0.0
+            self.logger.info('    %7.1f min  %5.1f%%  %s', seconds / 60, share, name)
+
     async def run(self, **kwargs) -> dict[str, Any]:
         """Runs the feature engineering cycle."""
+        self._phase_seconds: dict[str, float] = {}
         self.logger.info('Starting modular feature engineering stage...')
 
-        cleaned_data, market_data_dict = self._validate_and_prepare_market_data(**kwargs)
+        with self._phase('validate + prepare market data'):
+            cleaned_data, market_data_dict = self._validate_and_prepare_market_data(**kwargs)
         if not market_data_dict:
             raise ValueError(
                 "FeatureEngineeringStage: No market data available. "
@@ -83,7 +140,8 @@ class FeatureEngineeringStage(BaseStage):
         all_targets: dict[str, pd.DataFrame] = {}
 
         if 'news' in cleaned_data:
-            cleaned_data['news'] = self._score_news_sentiment(cleaned_data['news'])
+            with self._phase('score news sentiment'):
+                cleaned_data['news'] = self._score_news_sentiment(cleaned_data['news'])
 
         # 1. Enrichment for each timeframe
         for tf, df in market_data_dict.items():
@@ -132,7 +190,8 @@ class FeatureEngineeringStage(BaseStage):
                        if isinstance(v, pd.DataFrame)),
             )
 
-            enriched_df = self.enricher.enrich_features(df, timeframe=tf, **enrich_kwargs)
+            with self._phase(f'enrich {tf}'):
+                enriched_df = self.enricher.enrich_features(df, timeframe=tf, **enrich_kwargs)
             enriched_df = self._restore_service_columns(enriched_df, df)
 
             # 2. Target Generation (for all timeframes, not just 1d)
@@ -146,23 +205,29 @@ class FeatureEngineeringStage(BaseStage):
                 enriched_df[col] = targets_df[col].reindex(enriched_df.index)
 
             # 3. Apply Safety Guards
-            enriched_df = self.guards.apply_guards(enriched_df)
+            with self._phase(f'guards {tf}'):
+                enriched_df = self.guards.apply_guards(enriched_df)
             enriched_df = self._restore_service_columns(enriched_df, df)
 
             enriched_data[tf] = enriched_df
 
         # 4. Feature Selection (on the primary timeframe)
-        final_features = self._combine_timeframes(enriched_data)
-        selected_features = self._initial_feature_columns(final_features)
+        with self._phase('combine timeframes'):
+            final_features = self._combine_timeframes(enriched_data)
+        with self._phase('list numeric columns'):
+            selected_features = self._initial_feature_columns(final_features)
         feature_importance: dict[str, float] = {}
         if not final_features.empty:
             target_col = kwargs.get('target_column', 'target_up_1d')
             if target_col in final_features.columns:
-                selected_features, feature_importance = await self._select_features(
-                    final_features,
-                    target_col,
-                    kwargs,
-                )
+                with self._phase('feature selection (VIF + selector)'):
+                    selected_features, feature_importance = await self._select_features(
+                        final_features,
+                        target_col,
+                        kwargs,
+                    )
+
+        self._log_phase_breakdown()
 
         return {
             'status': 'success',
