@@ -317,10 +317,24 @@ class FeatureEngineeringStage(BaseStage):
             "interval",
             "timeframe",
         }
+        # `frame.dtypes`, not `frame.select_dtypes(...)`.
+        #
+        # select_dtypes CONSOLIDATES and copies the matching columns into one
+        # block just to hand back their names. On the 2026-08-21 batch that is
+        # 2,192 columns x 258,397 rows of float64 -- **4.22 GiB allocated to
+        # answer a question about column NAMES**, and it is what failed the
+        # rebuild with MemoryError twice: once at 256,208 rows and once here.
+        #
+        # Deepening the daily history from 2 years to 30 is what pushed it over,
+        # but the allocation was always pointless: dtypes are metadata and cost
+        # nothing to read. Casting to float32 would have halved a number that
+        # should be zero.
         return [
             column
-            for column in frame.select_dtypes(include="number").columns
-            if column not in metadata_columns and not is_target_like_column(column)
+            for column, dtype in frame.dtypes.items()
+            if dtype.kind in "iuf"
+            and column not in metadata_columns
+            and not is_target_like_column(column)
         ]
 
     #: Columns restored onto an enriched frame when an enricher drops them.
