@@ -118,6 +118,24 @@ class StackedEnsemble:
             logger.warning(f"[StackedEnsemble] Unknown method '{self.method}', using stacked")
             return self._predict_stacked(X, context_params)
 
+    def _meta_signal(self, X, preds_matrix: np.ndarray) -> np.ndarray:
+        """The meta-model's own output, for stackers that are not linear.
+
+        A tree ensemble's prediction is not a linear combination of its inputs,
+        so there is no vector of weights that reproduces it. Asking the model
+        is the only defined answer; parsing its importances and doing a dot
+        product produces a number that resembles one.
+        """
+        try:
+            return np.ravel(self.meta_model.predict(X[self.feature_names]))
+        except Exception as exc:  # noqa: BLE001 - a stacker must not kill a run
+            logger.warning(
+                "Meta-model predict() failed (%s); falling back to the equally "
+                "weighted average of base predictions, which is at least a "
+                "defined quantity.", exc,
+            )
+            return preds_matrix.mean(axis=1)
+
     def _predict_stacked(self, X: pd.DataFrame, context_params: dict[str, str] | None = None) -> EnsembleResult:
         """Original stacked ensemble with live performance weighting."""
 
@@ -136,12 +154,24 @@ class StackedEnsemble:
             dummy_preds = {m: 1.0 for m in self.feature_names}
             routing_multipliers = self.dynamic_router.adjust_weights(dummy_preds, context_params)
 
-        # 2. Dynamically Adjust Weights
-        # Get base weights from meta-model (XGBoost feature importances or fallback to equal weights)
-        if self.is_trained and hasattr(self.meta_model, 'feature_importances_'):
-            base_weights = self.meta_model.feature_importances_
-        elif self.is_trained and hasattr(self.meta_model, 'coef_'):
-            base_weights = self.meta_model.coef_
+        # 2. Base weights.
+        #
+        # `feature_importances_` MUST NOT be used here, and that is what this
+        # branch did. A tree's importance is a strictly positive measure of
+        # information gain, not a signed coefficient: a base model that
+        # perfectly ANTI-correlates with the target earns a HIGH importance --
+        # it splits beautifully -- and its prediction would then be added with
+        # a PLUS. The sign is simply absent from the quantity.
+        #
+        # So a tree meta-model is asked for its actual output instead (see
+        # `_meta_signal` below), and only a genuinely linear meta-model
+        # contributes coefficients, which do carry a sign.
+        use_meta_predict = False
+        if self.is_trained and hasattr(self.meta_model, 'coef_'):
+            base_weights = np.ravel(self.meta_model.coef_)
+        elif self.is_trained and hasattr(self.meta_model, 'feature_importances_'):
+            use_meta_predict = True
+            base_weights = np.ones(len(self.feature_names)) / max(1, len(self.feature_names))
         else:
             base_weights = np.ones(len(self.feature_names)) / max(1, len(self.feature_names))
             
@@ -169,14 +199,45 @@ class StackedEnsemble:
 
             active_weights_map[model_name] = float(adjusted_weights[i])
 
-        # Normalize adjusted weights
-        weight_sum = np.sum(np.abs(adjusted_weights))
-        if weight_sum > 0:
-            adjusted_weights /= weight_sum
+        # Normalising by the sum of ABSOLUTE weights is not a normalisation,
+        # it is a shrinkage. Coefficients [1.5, -0.5] carry a net weight of
+        # 1.0; dividing by 2.0 turns them into [0.75, -0.25] and halves the
+        # magnitude of every prediction. KellyCriterion sizes on that
+        # magnitude, so the positions came out arbitrarily small -- smaller the
+        # more the meta-model disagreed with itself.
+        #
+        # A signed combination is normalised by its SIGNED sum when it needs to
+        # be a weighted average at all. Where the sum is near zero the models
+        # genuinely cancel, and scaling that up would manufacture a signal out
+        # of disagreement, so it is left alone.
+        weight_sum = float(np.sum(adjusted_weights))
+        if abs(weight_sum) > 1e-9:
+            adjusted_weights = adjusted_weights / weight_sum
 
         # 3. Generate Prediction
         preds_matrix = X[self.feature_names].to_numpy()
-        final_preds = np.dot(preds_matrix, adjusted_weights)
+        if use_meta_predict:
+            # The meta-model's own output, which is the only mathematically
+            # defined answer for a non-linear stacker. Context weighting cannot
+            # enter a tree's arithmetic, so it scales CONFIDENCE below instead
+            # of silently distorting the signal.
+            final_preds = self._meta_signal(X, preds_matrix)
+        else:
+            final_preds = np.dot(preds_matrix, adjusted_weights)
+            intercept = getattr(self.meta_model, 'intercept_', None)
+            if intercept is not None and self.is_trained:
+                # Dropping the intercept shifts the whole distribution of
+                # predictions, which for a return forecast is a bias, not an
+                # offset nobody notices.
+                final_preds = final_preds + float(np.ravel(intercept)[0])
+
+        # Context weighting for the tree path: it cannot alter a tree's
+        # arithmetic, so it moves confidence rather than the signal.
+        context_scale = 1.0
+        if use_meta_predict and active_weights_map:
+            context_scale = float(np.clip(
+                np.mean(list(active_weights_map.values())) * len(self.feature_names),
+                0.0, 1.0))
 
         # 4. Calculate Divergence and Adjust Confidence
         # Divergence is the standard deviation across model predictions at each step
@@ -185,7 +246,7 @@ class StackedEnsemble:
         # Logic 4: Handle opposite directions with high confidence
         # Simplified: if models disagree strongly (high divergence), reduce overall confidence
         base_confidence = 0.8 # Assume high if models agree
-        final_confidence = np.full(len(X), base_confidence)
+        final_confidence = np.full(len(X), base_confidence) * context_scale
 
         # Identify extreme disagreement (e.g., some models say +1, others say -1)
         # Adaptive Threshold: instead of hardcoded 0.7, use dynamic threshold based on data dispersion
