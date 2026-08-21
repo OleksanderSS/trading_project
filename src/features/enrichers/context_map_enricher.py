@@ -249,6 +249,30 @@ class ContextMapEnricher(BaseEnricher):
             1,
             np.where(returns_vals[valid] < -threshold_vals[valid], -1, 0),
         )
+        # A state that could not be computed is written as 0, and 0 in this
+        # encoding means "flat". For a base column that is zero on most bars
+        # -- insider net value is zero on 62% of them -- pct_change is 0/0,
+        # every row is uncomputable, and the column comes out as an unbroken
+        # run of "no change". Measured on the 18.08 batch: 17 of 615 state_
+        # columns carry a single value, `state_insider_*` among them.
+        #
+        # Most of the rest are honest: `state_FRED_GDP_15m` is flat because a
+        # quarterly figure does not move between 15-minute bars, and pct_change
+        # of a constant is a computable 0. So the encoding is not changed here
+        # -- that would touch 615 columns to fix 17, and the two cases are not
+        # distinguishable after the fact.
+        #
+        # What is fixed is the silence. A column with one value cannot separate
+        # anything, so it is not emitted, and it says which one it was.
+        if len(np.unique(state_vals)) < 2:
+            logger.info(
+                "Context state '%s' came out constant (%d) and is not emitted: "
+                "'%s' offers nothing pct_change can read -- most likely it is "
+                "zero or unchanged on nearly every bar.",
+                state_col_name, int(state_vals[0]) if len(state_vals) else 0, col,
+            )
+            return
+
         res_df[state_col_name] = state_vals
         if state_col_name not in state_cols:
             state_cols.append(state_col_name)
