@@ -11,6 +11,7 @@ from src.targets.calculators.indicator_prediction_calculator import IndicatorPre
 from src.targets.calculators.regression_calculator import RegressionCalculator
 from src.targets.timeframe_contract import (
     mask_targets_across_time_boundaries,
+    resolve_column_for_frame,
     resolve_target_timeframe_contract,
     target_applies_to_timeframe,
 )
@@ -223,6 +224,11 @@ class TargetOrchestrator:
         # cross-sectional mean of one ticker equal to that ticker -- a column of
         # exact zeros, emitted silently with no error and no missing values.
         # See CrossSectionalCalculator.
+        # A target names one indicator and then runs wherever its horizon is
+        # valid. The horizon already resolves per frame; the column has to as
+        # well, or the target dies on frames it was meant to run on.
+        params = self._resolve_column_params(params, df, self.timeframe, name)
+
         needs_full_frame = getattr(calculator_class, 'REQUIRES_FULL_FRAME', False)
         if needs_full_frame:
             if 'ticker' not in df.columns or df['ticker'].nunique() < 2:
@@ -267,6 +273,46 @@ class TargetOrchestrator:
         if not target_series_list:
             return pd.Series(index=df.index, dtype=float)
         return pd.concat(target_series_list).reindex(df.index)
+
+    @staticmethod
+    def _resolve_column_params(
+        params: dict[str, Any],
+        frame: pd.DataFrame,
+        timeframe: str | None,
+        target_name: str,
+    ) -> dict[str, Any]:
+        """Point a target's column names at the frame it is running on.
+
+        The horizon already resolves per frame: a "1h" horizon becomes four
+        bars on 15-minute data and one bar on hourly data, which is why the
+        same target legitimately runs on both. Its columns did not follow.
+        The feature stage suffixes indicators with the frame's own `interval`,
+        so the band is `BB_Upper_15m` on one frame and `BB_Upper_1h` on the
+        other, while the config named `BB_Upper_60m` -- which exists on
+        neither.
+
+        `target_hourly_breakout_1h` and `target_volatility_spike_1h` therefore
+        failed on every frame of every run, and simply did not exist in any
+        batch. The log said so twice per run, under ERROR, for long enough
+        that the lines had become part of the scenery.
+
+        An exact match wins, so a target that deliberately reaches for another
+        timeframe's indicator keeps it.
+        """
+        adjusted = dict(params)
+        for key in ('base_col', 'indicator_col'):
+            configured = adjusted.get(key)
+            if not configured:
+                continue
+            resolved = resolve_column_for_frame(str(configured), frame, timeframe)
+            if resolved is None or resolved == configured:
+                continue
+            logger.info(
+                "Target '%s': %s '%s' resolved to '%s' for the %s frame.",
+                target_name, key, configured, resolved, timeframe or 'unknown',
+            )
+            adjusted[key] = resolved
+        return adjusted
 
     def _sort_group_for_targets(self, group: pd.DataFrame) ->pd.DataFrame:
         """Sort each ticker group chronologically before future-shift target generation."""

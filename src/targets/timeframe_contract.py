@@ -89,6 +89,64 @@ def _target_source_timeframe(
     return None
 
 
+#: Suffixes the feature stage appends to indicator columns. It uses whatever
+#: the frame's `interval` column says, so the hourly frame yields `_1h` while
+#: the target config and the contract both speak `60m`. Both spellings live
+#: here so a column can be found under either.
+_COLUMN_TIMEFRAME_SUFFIXES = ("_15m", "_60m", "_1h", "_1d")
+
+_SUFFIX_FOR_TIMEFRAME = {
+    "15m": ("_15m",),
+    "60m": ("_1h", "_60m"),
+    "1d": ("_1d",),
+}
+
+
+def resolve_column_for_frame(
+    name: str,
+    frame: pd.DataFrame,
+    timeframe: str | None,
+) -> str | None:
+    """Find the column a target means, on the frame it is actually running on.
+
+    A target names one indicator, `BB_Upper_60m`, and then runs wherever its
+    horizon is valid -- a "1h" horizon is valid on 15-minute bars (four of
+    them) and on hourly bars (one). The column is not the same on both: the
+    feature stage suffixes by the frame's own `interval`, so it is
+    `BB_Upper_15m` on one and `BB_Upper_1h` on the other, and
+    `BB_Upper_60m` exists on neither.
+
+    Both `target_hourly_breakout_1h` and `target_volatility_spike_1h` failed
+    on every run of the pipeline for exactly this reason, on both frames, and
+    the two targets simply did not exist in any batch.
+
+    The horizon already resolves against the frame; this is the same idea for
+    the column. An exact match always wins, so a target that deliberately
+    names one timeframe's indicator keeps it.
+    """
+    if not name:
+        return None
+    if name in frame.columns:
+        return name
+
+    stem = name
+    for suffix in _COLUMN_TIMEFRAME_SUFFIXES:
+        if stem.lower().endswith(suffix):
+            stem = stem[: -len(suffix)]
+            break
+
+    candidates: list[str] = []
+    normalized = _normalize_timeframe(timeframe) if timeframe else None
+    for suffix in _SUFFIX_FOR_TIMEFRAME.get(normalized or "", ()):
+        candidates.append(f"{stem}{suffix}")
+    candidates.append(stem)
+
+    for candidate in candidates:
+        if candidate in frame.columns:
+            return candidate
+    return None
+
+
 def resolve_target_timeframe_contract(
     params: dict[str, Any],
     frame: pd.DataFrame,
