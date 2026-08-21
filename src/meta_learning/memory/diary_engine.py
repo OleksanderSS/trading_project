@@ -46,9 +46,32 @@ from src.meta_learning.base import BaseMetaComponent
 # instant -- there is no fromtimestamp/date filtering anywhere -- so the unit
 # only has to be consistent.
 #
-# Sub-second resolution is deliberately not required: the upsert key would
-# collide only if the same agent logged two decisions for the same ticker
-# within one second, and decisions are made per bar (15m at the finest).
+# Sub-second resolution is deliberately not required, but the reason given
+# here used to be incomplete. It said the key collides "only if the same agent
+# logged two decisions for the same ticker within one second, and decisions
+# are made per bar" -- which covers trades and misses the larger writer.
+#
+# Most rows in this table are not decisions. All 1,650 in the 17.07 snapshot
+# are decision_type='training', written per (model, ticker, TARGET), and the
+# key -- agent_id, decision_timestamp, ticker, decision_type -- does not carry
+# the target. Two targets trained for one model and ticker inside one second
+# would collapse into one row, silently, and the table could never show it:
+# the upsert drops the loser, so zero duplicate groups in a uniquely-keyed
+# table is a tautology rather than evidence.
+#
+# So it was measured a different way. Across 126 (model, ticker) pairs in that
+# snapshot, rows == distinct seconds for all 126: no pair ever had two rows in
+# one second, because fitting a model to one target takes longer than that.
+# Five or fourteen distinct targets per pair, 17 across the table, nothing
+# lost. Gemini's audit called this out as "1 of 10 targets survives"; on real
+# training times it does not happen.
+#
+# The condition it depends on is worth stating plainly, because it is not the
+# one the key implies: this is safe only while a single fit takes more than a
+# second. Cached models, a light mode, or a fixture-sized dataset would break
+# it, and the loss would be silent. The target is recoverable from
+# market_context.target on every row, so a future collision is at least
+# diagnosable after the fact.
 # ---------------------------------------------------------------------------
 
 
