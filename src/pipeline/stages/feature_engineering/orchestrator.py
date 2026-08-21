@@ -34,6 +34,8 @@ class FeatureEngineeringStage(BaseStage):
 
     #: Wall time per phase of the last run(), filled by _phase().
     _phase_seconds: dict[str, float] = {}
+    #: Resident memory at each phase boundary, in GiB.
+    _phase_memory: dict[str, float] = {}
 
     def __init__(self, config_manager: UnifiedConfigManager, error_handler: ErrorHandler, **kwargs):
         super().__init__(config_manager, error_handler, **kwargs)
@@ -97,6 +99,7 @@ class FeatureEngineeringStage(BaseStage):
         measured to contribute nothing to any decision.
         """
         start = time.perf_counter()
+        self._note_memory(f'{name} (start)')
         try:
             yield
         except BaseException:
@@ -111,6 +114,35 @@ class FeatureEngineeringStage(BaseStage):
             self._phase_seconds[name] = (
                 self._phase_seconds.get(name, 0.0) + time.perf_counter() - start
             )
+            self._note_memory(f'{name} (end)')
+
+    def _note_memory(self, label: str) -> None:
+        """Record how much memory this process holds, and how much is left.
+
+        The rebuild of 2026-08-21 vanished 3h46m in, mid-line, with no
+        traceback and no MemoryError -- the signature of a process killed
+        from outside rather than one that raised. Nothing in the log said how
+        much memory it was holding at the time, so the cause stayed a guess.
+        This stage has been killed by memory twice before (#23), which makes
+        it a plausible guess and still only a guess.
+
+        Two numbers per phase boundary turn the next one into a measurement.
+        Cheap: one psutil call, and the stage has a few dozen boundaries.
+        """
+        try:
+            import psutil
+
+            process = psutil.Process()
+            held = process.memory_info().rss / 1024 ** 3
+            free = psutil.virtual_memory().available / 1024 ** 3
+        except Exception:  # noqa: BLE001 - never let instrumentation end a run
+            return
+
+        self._phase_memory[label] = held
+        self.logger.info(
+            '🧠 %s: holding %.2f GiB, %.2f GiB free on the machine.',
+            label, held, free,
+        )
 
     def _log_phase_breakdown(self) -> None:
         """Print where the stage's time went, longest first."""
@@ -122,10 +154,17 @@ class FeatureEngineeringStage(BaseStage):
                                     key=lambda kv: -kv[1]):
             share = seconds / total * 100 if total else 0.0
             self.logger.info('    %7.1f min  %5.1f%%  %s', seconds / 60, share, name)
+        if self._phase_memory:
+            peak_label = max(self._phase_memory, key=self._phase_memory.get)
+            self.logger.info(
+                '🧠 Peak memory held: %.2f GiB, at %s.',
+                self._phase_memory[peak_label], peak_label,
+            )
 
     async def run(self, **kwargs) -> dict[str, Any]:
         """Runs the feature engineering cycle."""
         self._phase_seconds: dict[str, float] = {}
+        self._phase_memory: dict[str, float] = {}
         self.logger.info('Starting modular feature engineering stage...')
 
         with self._phase('validate + prepare market data'):

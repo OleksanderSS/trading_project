@@ -28,6 +28,7 @@ def stage():
     inst = FeatureEngineeringStage.__new__(FeatureEngineeringStage)
     inst.logger = _Recorder()
     inst._phase_seconds = {}
+    inst._phase_memory = {}
     return inst
 
 
@@ -60,3 +61,37 @@ def test_breakdown_survives_a_crash(stage):
 def test_silent_when_nothing_was_timed(stage):
     stage._log_phase_breakdown()
     assert stage.logger.lines == []
+
+
+def test_memory_is_recorded_at_every_phase_boundary(stage):
+    """The run that died left no record of what it was holding."""
+    with stage._phase('enrich 1d'):
+        pass
+    assert 'enrich 1d (start)' in stage._phase_memory
+    assert 'enrich 1d (end)' in stage._phase_memory
+    assert all(v > 0 for v in stage._phase_memory.values())
+
+
+def test_the_breakdown_names_the_peak(stage):
+    stage._phase_seconds = {'a': 1.0}
+    stage._phase_memory = {'quiet (start)': 1.5, 'heavy (end)': 9.25}
+    stage._log_phase_breakdown()
+    peak = [line for line in stage.logger.lines if 'Peak memory' in line]
+    assert peak and '9.25 GiB' in peak[0] and 'heavy (end)' in peak[0]
+
+
+def test_instrumentation_never_ends_a_run(stage, monkeypatch):
+    """A measurement that can kill the thing it measures is worse than none."""
+    import builtins
+    real_import = builtins.__import__
+
+    def _no_psutil(name, *args, **kwargs):
+        if name == 'psutil':
+            raise ImportError('gone')
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, '__import__', _no_psutil)
+    with stage._phase('enrich 1d'):
+        pass
+    assert stage._phase_memory == {}
+    assert stage._phase_seconds['enrich 1d'] >= 0.0
