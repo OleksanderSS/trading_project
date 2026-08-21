@@ -97,30 +97,50 @@ def main() -> int:
                        if c not in KEYS]
     print(f"{len(feature_columns)} feature columns, {len(tgt)} target rows\n")
 
-    frame = pd.read_parquet(FEATURES)
-    frame = frame[frame["interval"] == args.interval] if "interval" in frame else frame
-    joined = frame.merge(tgt, on=[k for k in KEYS if k in frame.columns], how="inner")
-    if joined.empty:
+    # Read in column batches. The full frame is 2,203 columns over 256,062
+    # rows and does not need to exist at once -- and this runs while a rebuild
+    # is using the machine, on the box whose memory is the prime suspect for
+    # killing the last one. A diagnostic that can cause the failure it is
+    # investigating is not a diagnostic.
+    schema_names = pq.ParquetFile(FEATURES).schema_arrow.names
+    keys = [k for k in KEYS if k in schema_names]
+    index = pd.read_parquet(FEATURES, columns=keys)
+    if "interval" in index.columns:
+        index = index[index["interval"] == args.interval]
+    if index.empty:
+        print(f"no feature rows at interval {args.interval}")
+        return 1
+
+    index = index.reset_index().rename(columns={"index": "_row"})
+    aligned = index.merge(tgt, on=keys, how="inner")
+    if aligned.empty:
         print("features and targets share no rows at this interval")
         return 1
-    if args.sample and len(joined) > args.sample:
-        joined = joined.sample(args.sample, random_state=0)
-    print(f"{len(joined)} rows aligned\n")
+    if args.sample and len(aligned) > args.sample:
+        aligned = aligned.sample(args.sample, random_state=0)
+    aligned = aligned.sort_values("_row")
+    wanted = aligned["_row"].to_numpy()
+    print(f"{len(aligned)} rows aligned")
 
-    y = pd.to_numeric(joined[target], errors="coerce")
+    y = pd.to_numeric(aligned[target], errors="coerce").reset_index(drop=True)
     rows = []
-    for column in feature_columns:
-        if column not in joined.columns:
-            continue
-        values = pd.to_numeric(joined[column], errors="coerce")
-        present = int(values.notna().sum())
-        rows.append({
-            "column": column,
-            "family": family_of(column),
-            "coverage": present / len(joined),
-            "usable": present > 0 and values.nunique(dropna=True) > 1,
-            "ic": spearman_ic(values, y),
-        })
+    BATCH = 100
+    for start in range(0, len(feature_columns), BATCH):
+        chunk = feature_columns[start:start + BATCH]
+        block = pd.read_parquet(FEATURES, columns=chunk).iloc[wanted]
+        block = block.reset_index(drop=True)
+        for column in chunk:
+            values = pd.to_numeric(block[column], errors="coerce")
+            present = int(values.notna().sum())
+            rows.append({
+                "column": column,
+                "family": family_of(column),
+                "coverage": present / max(1, len(block)),
+                "usable": present > 0 and values.nunique(dropna=True) > 1,
+                "ic": spearman_ic(values, y),
+            })
+        del block
+    print()
 
     report = pd.DataFrame(rows)
     price_median = report.loc[report["family"] == "price/other", "ic"].median()
