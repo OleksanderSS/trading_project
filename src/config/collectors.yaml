@@ -340,6 +340,9 @@ collectors:
     table_name: local_market_data
     type: local_file
   newsapi:
+    # UnifiedConfigManager substitutes secrets on load, so what the collector
+    # receives here is the resolved 32-character key, not the string
+    # "NEWS_API_KEY". Read it as a variable name and os.getenv() returns None.
     api_key_env: NEWS_API_KEY
     base_url: https://newsapi.org/v2/everything
     cache_duration_minutes: 60

@@ -179,21 +179,38 @@ async def test_a_partial_day_spends_only_what_is_left(collector, monkeypatch):
     assert len(collector.asked) == 3
 
 
-def test_the_configs_own_key_name_is_honoured(monkeypatch):
-    """collectors.yaml writes `api_key_env`; the code read `api_key_name`.
+def test_a_resolved_secret_in_the_config_is_used_as_the_key(monkeypatch):
+    """`api_key_env` arrives already substituted -- it holds the key, not a name.
 
-    It worked only because the default happened to equal the configured value,
-    so pointing the config at a different variable did nothing at all.
+    The earlier version of this test asserted the opposite, because I had
+    assumed it without checking, and it passed while the collector was taking
+    itself off the run with "No API key available". Verified against the live
+    config: api_key_env is 32 characters and names nothing in the environment.
     """
-    monkeypatch.setenv("SOME_OTHER_NEWS_KEY", "from-config")
     monkeypatch.delenv("NEWS_API_KEY", raising=False)
+    built = NewsAPICollector(
+        configs={"api_key_env": "93f709f413c843758c89327e8b99d182"},
+        http_client_factory=None,
+        db_manager=None,
+    )
+    assert built._get_api_key() == "93f709f413c843758c89327e8b99d182"
 
+
+def test_a_config_naming_an_environment_variable_still_works(monkeypatch):
+    """Both readings are supported: whichever one the environment confirms."""
+    monkeypatch.setenv("SOME_OTHER_NEWS_KEY", "from-environment")
     built = NewsAPICollector(
         configs={"api_key_env": "SOME_OTHER_NEWS_KEY"},
         http_client_factory=None,
         db_manager=None,
     )
-    assert built._get_api_key() == "from-config"
+    assert built._get_api_key() == "from-environment"
+
+
+def test_the_default_variable_is_used_when_the_config_says_nothing(monkeypatch):
+    monkeypatch.setenv("NEWS_API_KEY", "the-default-one")
+    built = NewsAPICollector(configs={}, http_client_factory=None, db_manager=None)
+    assert built._get_api_key() == "the-default-one"
 
 
 def test_a_missing_key_is_still_reported_as_missing(monkeypatch):

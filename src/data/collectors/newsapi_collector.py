@@ -70,17 +70,24 @@ class NewsAPICollector(BaseCollector):
         self.exclude_title_keywords = [
             kw.lower() for kw in filter_cfg.get("exclude_title_keywords", [])
         ]
-        # The config file writes `api_key_env`; this read `api_key_name` and
-        # worked only because the default happened to equal the configured
-        # value. Pointing the config at a different variable would have been
-        # silently ignored. Both names are accepted, config's own spelling
-        # first.
-        api_key_var = (
-            self.configs.get("api_key_env")
-            or self.configs.get("api_key_name")
-            or "NEWS_API_KEY"
-        )
-        self._api_key: str | None = os.getenv(api_key_var)
+        # `api_key_env` arrives already RESOLVED. UnifiedConfigManager
+        # substitutes secrets on load, so what reaches the collector is the
+        # 32-character key itself, not the name of a variable holding it.
+        #
+        # I got this backwards earlier today: read `api_key_env` as a variable
+        # name and called os.getenv() on the key, which returned None and took
+        # the collector off the run entirely with "No API key available". The
+        # test I wrote alongside it asserted my assumption instead of checking
+        # the config, so it passed. Verified against the running config this
+        # time: api_key_env is 32 characters, api_key_name is absent, and
+        # os.getenv("NEWS_API_KEY") is what actually holds the key.
+        resolved = self.configs.get("api_key_env")
+        if isinstance(resolved, str) and resolved and os.getenv(resolved) is None:
+            # Not the name of anything in the environment, so it is the value.
+            self._api_key: str | None = resolved
+        else:
+            variable = resolved or self.configs.get("api_key_name") or "NEWS_API_KEY"
+            self._api_key = os.getenv(variable)
 
         self.daily_budget = int(
             self.configs.get("daily_request_budget", self.DEFAULT_DAILY_BUDGET)
