@@ -172,6 +172,17 @@ async def main():
     # Check versions
     _check_versions(config_manager)
 
+    # Say which numbers in this run are placeholders rather than choices. A
+    # value nobody selected is indistinguishable from one that was, and this
+    # pipeline has been caught by that repeatedly -- a 0.5% trade cost copied
+    # into five files, a CIK resolving to the wrong company, a risk gate
+    # reporting "checks passed" from two invented inputs.
+    try:
+        from src.config.pending_decisions import log_pending_decisions
+        log_pending_decisions(logger)
+    except Exception as exc:  # noqa: BLE001 - never let a notice end a run
+        logger.warning("Could not read pending decisions: %s", exc)
+
     # Validate arguments
     ArgumentValidator.validate_arguments(args, config_manager)
 

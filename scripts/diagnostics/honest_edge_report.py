@@ -413,6 +413,18 @@ def main() -> int:
                         'samples every Nth timestamp')
     args = p.parse_args()
 
+    # Every number below is priced with a broker tariff nobody has chosen yet.
+    # Say so above the figures, not in a footnote nobody reads: an edge quoted
+    # net of costs is only as decided as the cost schedule behind it.
+    try:
+        from src.config.pending_decisions import as_report_header
+        header = as_report_header()
+        if header:
+            print(header)
+            print()
+    except Exception:  # noqa: BLE001 - a notice must not stop a report
+        pass
+
     profile = cost_profile(args.profile)
     built_with = cost_profile(args.built_with)
     df = load(args.signal, args.payoff, args.interval, args.db_interval,

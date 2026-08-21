@@ -1,0 +1,78 @@
+# Numbers that are in the code but are NOT decisions yet.
+#
+# Every value here is currently being used by something. That is the problem
+# this file exists to solve: a placeholder in a config is indistinguishable
+# from a choice, and this project has already been bitten by exactly that
+# shape more than once -- a cost of 0.5% copied into five places, a CIK that
+# resolved to the wrong company, a risk gate answering "checks passed" from
+# two invented inputs.
+#
+# A number here is a stand-in. Anything computed from it is provisional too,
+# and reports that use it are required to say so.
+#
+# Fields, all required:
+#   value_in_use      what the system is running on right now
+#   why_provisional   why it is not a decision
+#   what_resolves_it  the concrete thing that would turn it into one
+#   affects           what downstream reads it, so the blast radius is known
+#   blocks_real_money whether this must be settled before money moves
+#
+# Resolving one means deleting its entry here and recording the decision in
+# docs/REGISTER.md with what it was based on.
+
+pending:
+
+  broker_cost_profile:
+    value_in_use: "ibkr_pro_tiered — $0.0035/share, $0.35 minimum, 1% of trade value cap"
+    why_provisional: >
+      The broker has not been chosen. IBKR's published tariff was used because
+      it is public, tiered, and realistic enough to stop the pipeline pricing
+      trades at a flat 0.5%, which was the previous state. Whether an IBKR
+      account is available on these terms from Ukraine is unconfirmed, and a
+      different broker changes both the level and the SHAPE of the cost: a
+      per-share tariff and a per-trade tariff reward completely different
+      position sizes.
+    what_resolves_it: >
+      A broker chosen and its published schedule read, including the minimum
+      per order, any inactivity or custody fee, FX conversion, and market data.
+    affects:
+      - "src/config/targets.yaml — cost_profiles, subtracted from every regression target"
+      - "scripts/diagnostics/honest_edge_report.py — the net edge and every arm of it"
+      - "backtest net returns, and therefore every promotion decision"
+    blocks_real_money: true
+
+  position_size_rule:
+    value_in_use: >
+      Nominally eight risk multipliers over a 2% base; in practice a constant
+      0.5% of the portfolio, because the product always falls under the
+      minimum-size clamp. Measured on a 100,000 portfolio: 122, 65 and 40
+      dollars computed for calm, typical and 12%-drawdown states, all clipped
+      up to 500.
+    why_provisional: >
+      Three things have to be true before a sizing rule can be chosen, and
+      none of them are yet. The pipeline has not run end to end into trading,
+      so there is no realised distribution of outcomes to size against. The
+      broker is unknown, and the cost shape decides whether small positions
+      are viable at all. And the edge itself is still being measured -- the
+      last honest figure was +0.48%/yr over levering the same holding, which
+      is not a number to lever into.
+    what_resolves_it: >
+      A complete run through to paper trading, with realised per-trade
+      outcomes, against a known cost schedule.
+    affects:
+      - "src/algorithms/adaptive_position_sizer.py — every order's size"
+      - "src/trading/portfolio_manager.py — generate_orders_from_signals"
+      - "every backtest return series, since size scales them"
+    blocks_real_money: true
+
+  starting_capital:
+    value_in_use: "100,000 in examples and defaults"
+    why_provisional: >
+      A round number for arithmetic, not a funding decision. The owner has
+      stated there is no capital available at present and that paper trading
+      comes first in any case.
+    what_resolves_it: "An actual funded amount, or a decision to stay on paper."
+    affects:
+      - "src/trading/virtual_portfolio.py — initial_balance"
+      - "position sizes, which are a percentage of it"
+    blocks_real_money: true

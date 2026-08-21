@@ -15,27 +15,71 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("FeatureDriftMonitor")
 
-# Evidently AI. The 0.7 line moved the classic Report/preset API under
-# `evidently.legacy`; importing only the pre-0.7 paths made an INSTALLED
-# Evidently look absent and logged "not installed", which is why this monitor
-# was dead on a machine that had the package (0.7.21).
-try:  # Evidently >= 0.7
-    from evidently.legacy.metric_preset import DataDriftPreset
-    from evidently.legacy.metrics import DatasetDriftMetric
-    from evidently.legacy.report import Report
-    EVIDENTLY_AVAILABLE = True
-except ImportError:
-    try:  # Evidently < 0.7
-        from evidently.metric_preset import DataDriftPreset
-        from evidently.metrics import DatasetDriftMetric
-        from evidently.report import Report
-        EVIDENTLY_AVAILABLE = True
-    except ImportError:
-        EVIDENTLY_AVAILABLE = False
-        logger.warning(
-            "⚠️ Evidently AI unavailable (neither the >=0.7 `evidently.legacy` "
-            "paths nor the pre-0.7 ones import). Install with: pip install evidently"
-        )
+# Evidently AI, imported on first use rather than on import of this module.
+#
+# The 0.7 line moved the classic Report/preset API under `evidently.legacy`;
+# importing only the pre-0.7 paths made an INSTALLED Evidently look absent and
+# logged "not installed", which is why this monitor was dead on a machine that
+# had the package (0.7.21). Both spellings are still tried, just later.
+#
+# Later matters. This module sits under src.monitoring, which the pipeline
+# orchestrator imports at module level, so every entry point paid for
+# Evidently whether or not it ever ran a drift check. Measured with
+# `python -X importtime run_hybrid_pipeline.py --help`:
+#
+#     evidently                    13.2 s
+#     src.monitoring.health_hub    18.0 s
+#     run_hybrid_pipeline --help   24.8 s total
+#
+# Thirteen seconds to print a help message for a library the help message does
+# not use -- and the smoke test that runs `--help` has a 30-second timeout, so
+# it passes or fails on machine load.
+_DRIFT_API: dict[str, Any] | None = None
+
+
+def _evidently() -> dict[str, Any] | None:
+    """Report/DataDriftPreset/DatasetDriftMetric, or None if unavailable."""
+    global _DRIFT_API
+    if _DRIFT_API is not None:
+        return _DRIFT_API or None
+
+    for module_root in ("evidently.legacy", "evidently"):
+        try:
+            preset = __import__(f"{module_root}.metric_preset", fromlist=["DataDriftPreset"])
+            metrics = __import__(f"{module_root}.metrics", fromlist=["DatasetDriftMetric"])
+            report = __import__(f"{module_root}.report", fromlist=["Report"])
+            _DRIFT_API = {
+                "DataDriftPreset": preset.DataDriftPreset,
+                "DatasetDriftMetric": metrics.DatasetDriftMetric,
+                "Report": report.Report,
+            }
+            return _DRIFT_API
+        except ImportError:
+            continue
+
+    _DRIFT_API = {}
+    logger.warning(
+        "⚠️ Evidently AI unavailable (neither the >=0.7 `evidently.legacy` "
+        "paths nor the pre-0.7 ones import). Install with: pip install evidently"
+    )
+    return None
+
+
+def evidently_available() -> bool:
+    """Whether a drift check can run. Costs the import the first time only."""
+    return _evidently() is not None
+
+
+def __getattr__(name: str):
+    """Keep `from ... import EVIDENTLY_AVAILABLE` working, lazily.
+
+    One caller still reads the old module-level flag. Answering it through
+    PEP 562 means the import happens when someone actually asks, instead of
+    when this module is loaded -- which is the whole point of the change.
+    """
+    if name == "EVIDENTLY_AVAILABLE":
+        return evidently_available()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class FeatureDriftMonitor:
@@ -77,7 +121,7 @@ class FeatureDriftMonitor:
             'last_drift_score': None
         }
 
-        if not EVIDENTLY_AVAILABLE:
+        if not evidently_available():
             logger.warning("⚠️ Evidently AI not available. Drift monitoring disabled.")
 
     def set_reference_data(self, reference_data: pd.DataFrame):
@@ -100,7 +144,7 @@ class FeatureDriftMonitor:
         Returns:
             Dict with drift results
         """
-        if not EVIDENTLY_AVAILABLE:
+        if not evidently_available():
             raise DataProcessingError("Evidently AI not installed")
 
         if self.reference_data is None:
@@ -183,9 +227,10 @@ class FeatureDriftMonitor:
 
         # Create Evidently report
         try:
-            report = Report(metrics=[
-                DataDriftPreset(),
-                DatasetDriftMetric()
+            api = _evidently()
+            report = api["Report"](metrics=[
+                api["DataDriftPreset"](),
+                api["DatasetDriftMetric"]()
             ])
 
             report.run(reference_data=ref_data, current_data=cur_data)
