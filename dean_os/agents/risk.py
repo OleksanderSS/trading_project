@@ -23,6 +23,7 @@ class RiskAgent(BaseAgent):
             self.evidence("metric", "risk", "max_drawdown", risk["max_drawdown"]),
             self.evidence("metric", "risk", "daily_var_95", risk["daily_var_95"]),
             self.evidence("metric", "risk", "gross_exposure", risk["gross_exposure"]),
+            self.evidence("metric", "risk", "return_sample_count", risk["sample_count"]),
             self.evidence(
                 "metric",
                 "risk",
@@ -58,6 +59,29 @@ class RiskAgent(BaseAgent):
                 verdict = "caution"
                 reasons = ["No returns or positions supplied to RiskAgent"]
                 risks = ["Risk gate cannot validate drawdown, VaR, or exposure before pipeline execution"]
+                signal_strength = 0.0
+                confidence = 0.65
+                quality = 0.35
+        elif not risk["returns_measurable"]:
+            # Positions exist but the return history is too short to say
+            # anything about drawdown or tail risk. Previously this state was
+            # written as 0.0 and read as "no risk", which is the one reading
+            # the evidence does not support.
+            shortfall = (
+                f"{risk['sample_count']} return observations, "
+                f"{risk['min_return_samples']} needed"
+            )
+            if context.phase == "pre_trade":
+                verdict = "blocked"
+                reasons = [f"Drawdown and VaR are unmeasurable before trade execution: {shortfall}"]
+                risks = ["Risk gate cannot validate drawdown or tail risk - hard block"]
+                signal_strength = -1.0
+                confidence = 1.0
+                quality = 0.0
+            else:
+                verdict = "caution"
+                reasons = [f"Drawdown and VaR are unmeasurable: {shortfall}"]
+                risks = ["Exposure was checked; drawdown and tail risk were not"]
                 signal_strength = 0.0
                 confidence = 0.65
                 quality = 0.35
@@ -111,37 +135,56 @@ class RiskAgent(BaseAgent):
             risk_context=risk,
         )
 
+    #: A 95th-percentile tail needs enough observations that the quantile lands
+    #: on real data rather than interpolating between the only two points there
+    #: are. Twenty is the smallest sample where the 5% tail touches an
+    #: observation at all.
+    MIN_RETURN_SAMPLES = 20
+
     def _risk_snapshot(self, returns: Any, positions: dict[str, float]) -> dict[str, Any]:
+        """Measure drawdown, tail risk and exposure -- or report that we cannot.
+
+        The gate used to answer every question with 0.0. Handed the single
+        placeholder return the orchestrator supplies (``{"SPY": 0.0}``) it
+        reported a drawdown of 0%, a VaR-95 of 0%, and a verdict of "Risk
+        checks passed" at 0.85 confidence -- a clean bill of health computed
+        from one invented number. A quantile over one observation is not a
+        measurement, and a zero that means "nothing was measured" is
+        indistinguishable here from a zero that means "no risk", except that
+        the second one opens the gate.
+
+        So the unmeasurable metrics come back as None and the caller has to
+        decide what to do about not knowing.
+        """
+        min_samples = int(self.config.get("min_return_samples", self.MIN_RETURN_SAMPLES))
         series = self._to_return_series(returns)
         gross_exposure = float(sum(abs(value) for value in positions.values())) if positions else 0.0
-        if series is None or series.empty:
-            return {
-                "has_inputs": bool(positions),
-                "max_drawdown": 0.0,
-                "daily_var_95": 0.0,
-                "gross_exposure": gross_exposure,
-                "sample_count": 0,
-            }
 
-        series = series.replace([float('inf'), float('-inf')], float('nan')).dropna()
-        if series.empty:
+        if series is not None and not series.empty:
+            series = series.replace([float('inf'), float('-inf')], float('nan')).dropna()
+        sample_count = 0 if series is None else int(series.shape[0])
+
+        if sample_count < min_samples:
             return {
                 "has_inputs": bool(positions),
-                "max_drawdown": 0.0,
-                "daily_var_95": 0.0,
+                "returns_measurable": False,
+                "max_drawdown": None,
+                "daily_var_95": None,
                 "gross_exposure": gross_exposure,
-                "sample_count": 0,
+                "sample_count": sample_count,
+                "min_return_samples": min_samples,
             }
 
         equity = (1.0 + series).cumprod()
         drawdown = equity / equity.cummax() - 1.0
-        daily_var_95 = abs(float(series.quantile(0.05)))
         return {
             "has_inputs": True,
+            "returns_measurable": True,
             "max_drawdown": float(drawdown.min()),
-            "daily_var_95": daily_var_95,
+            "daily_var_95": abs(float(series.quantile(0.05))),
             "gross_exposure": gross_exposure,
-            "sample_count": int(series.shape[0]),
+            "sample_count": sample_count,
+            "min_return_samples": min_samples,
         }
 
     def _to_return_series(self, returns: Any) -> pd.Series | None:
