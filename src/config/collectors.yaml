@@ -349,10 +349,19 @@ collectors:
     # (32 characters) while the collector sat off, and 2,510 of its articles
     # are already in the database from before it was disabled.
     #
-    # The free tier allows ~100 articles a day, so this adds roughly 3,000 a
-    # month against the ~13,600 rss and google_news already carry. The effect
-    # is cumulative, not immediate: it will not change the next run's numbers
-    # and should not be expected to.
+    # The developer tier allows 100 REQUESTS per 24 hours, not 100 articles --
+    # an earlier note here said articles and set the wrong expectation. Each
+    # request returns up to page_size (20), so the ceiling is ~1,800 articles
+    # a day, and the binding constraint is how many distinct queries the day
+    # buys. The collector had 552 terms and fired all of them at once with
+    # three retries each: 1,656 requests, 1,129 refusals, zero articles.
+    #
+    # daily_request_budget is the number of requests to spend per UTC day. It
+    # sits under the account's 100 so a manual query is not locked out, and it
+    # is remembered in budget_state_path across runs -- three runs a day were
+    # each starting from zero and re-spending a quota that was already gone.
+    daily_request_budget: 90
+    budget_state_path: data/state/newsapi_budget.json
     enabled: true
     filter:
       exclude_title_keywords:

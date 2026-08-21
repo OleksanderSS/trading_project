@@ -1,8 +1,10 @@
 # src/data/collectors/newsapi_collector.py
 
-import asyncio
 import hashlib
+import json
 import os
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -14,11 +16,37 @@ from src.data.management.data_manager import DataManager
 from .base_collector import BaseCollector
 
 
+class NewsApiQuotaExhausted(RuntimeError):
+    """NewsAPI refused because the account's daily allowance is spent."""
+
+
 class NewsAPICollector(BaseCollector):
-    """Collector for fetching news streams from NewsAPI endpoints."""
+    """Collector for fetching news streams from NewsAPI endpoints.
+
+    NewsAPI developer accounts allow **100 requests per 24 hours**. The
+    collector used to build one query per ticker and per keyword -- 552 terms
+    on the current preset -- and fire all of them at once through
+    `asyncio.gather`, each retried up to three times on failure. One run of
+    2026-08-21 issued 1,656 requests, received 1,129 rate limits, and brought
+    back zero articles. The first hundred requests spend the day's entire
+    allowance; everything after that is refused, and the refusals are counted
+    too, so the retries make the next day worse rather than recovering the
+    current one.
+
+    The key was never the problem. Asked directly, the service answers
+    `code: rateLimited` with the quota spelled out.
+
+    So: a budget that survives restarts, terms ordered so the allowance buys
+    the most useful queries first, requests issued one at a time, and a stop
+    the moment the service says the day is spent.
+    """
 
     collector_type = "newsapi"
     data_type = "news"
+
+    #: Requests to spend per calendar day (UTC). Deliberately under the
+    #: account's 100 so a manual query or another tool is not locked out.
+    DEFAULT_DAILY_BUDGET = 90
 
     def __init__(
         self,
@@ -42,9 +70,77 @@ class NewsAPICollector(BaseCollector):
         self.exclude_title_keywords = [
             kw.lower() for kw in filter_cfg.get("exclude_title_keywords", [])
         ]
-        # api_key_name contains the env var name (e.g. "NEWS_API_KEY"), resolve it
-        api_key_var = self.configs.get("api_key_name", "NEWS_API_KEY")
+        # The config file writes `api_key_env`; this read `api_key_name` and
+        # worked only because the default happened to equal the configured
+        # value. Pointing the config at a different variable would have been
+        # silently ignored. Both names are accepted, config's own spelling
+        # first.
+        api_key_var = (
+            self.configs.get("api_key_env")
+            or self.configs.get("api_key_name")
+            or "NEWS_API_KEY"
+        )
         self._api_key: str | None = os.getenv(api_key_var)
+
+        self.daily_budget = int(
+            self.configs.get("daily_request_budget", self.DEFAULT_DAILY_BUDGET)
+        )
+        self._budget_file = Path(
+            self.configs.get("budget_state_path", "data/state/newsapi_budget.json")
+        )
+
+    # ------------------------------------------------------------------ budget
+
+    def _today(self) -> str:
+        """The quota window is 24h rolling; a UTC date is the honest approximation."""
+        return datetime.now(UTC).strftime("%Y-%m-%d")
+
+    def _read_budget(self) -> dict[str, Any]:
+        try:
+            state = json.loads(self._budget_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"date": self._today(), "spent": 0, "exhausted": False}
+        if state.get("date") != self._today():
+            return {"date": self._today(), "spent": 0, "exhausted": False}
+        return state
+
+    def _write_budget(self, spent: int, exhausted: bool) -> None:
+        state = {"date": self._today(), "spent": int(spent), "exhausted": bool(exhausted)}
+        try:
+            self._budget_file.parent.mkdir(parents=True, exist_ok=True)
+            self._budget_file.write_text(
+                json.dumps(state, indent=2), encoding="utf-8"
+            )
+        except OSError as exc:
+            # A budget we cannot persist is a budget that resets every run,
+            # which is how the quota was being spent three times a day.
+            self.logger.warning(
+                "[NewsAPI] Could not record request budget at %s: %s. "
+                "The next run will not know what this one spent.",
+                self._budget_file, exc,
+            )
+
+    def _remaining_requests(self) -> int:
+        state = self._read_budget()
+        if state.get("exhausted"):
+            return 0
+        return max(0, self.daily_budget - int(state.get("spent", 0)))
+
+    @staticmethod
+    def _prioritise(tickers: list[str], keywords: list[str]) -> list[str]:
+        """Tickers first: a named holding beats a generic market word.
+
+        With ninety requests against five hundred terms the order decides what
+        the day buys, so it is chosen rather than left to set iteration.
+        """
+        ordered: list[str] = []
+        seen: set[str] = set()
+        for term in [*tickers, *keywords]:
+            key = term.strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                ordered.append(term)
+        return ordered
 
     def _get_api_key(self) -> str | None:
         if self._api_key is None:
@@ -119,10 +215,29 @@ class NewsAPICollector(BaseCollector):
             return None
 
         table_name = self.configs.get("table_name", "newsapi_articles")
-        search_terms = list(set((tickers or []) + (keywords or [])))
+        search_terms = self._prioritise(tickers or [], keywords or [])
         if not search_terms:
             self.logger.warning("[NewsAPI] No search terms provided. Skipping execution.")
             return None
+
+        remaining = self._remaining_requests()
+        if remaining <= 0:
+            self.logger.warning(
+                "[NewsAPI] Daily allowance of %d requests is already spent "
+                "(state: %s). Skipping without issuing a request -- refused "
+                "requests count against the quota too.",
+                self.daily_budget, self._budget_file,
+            )
+            return None
+
+        if len(search_terms) > remaining:
+            self.logger.info(
+                "[NewsAPI] %d terms, %d requests left today. Querying the "
+                "first %d (tickers before generic keywords); the rest wait "
+                "for tomorrow's allowance.",
+                len(search_terms), remaining, remaining,
+            )
+            search_terms = search_terms[:remaining]
 
         cache_key = f"{self.__class__.__name__}_run"
         cache_params = {"terms": sorted(search_terms)}
@@ -132,12 +247,40 @@ class NewsAPICollector(BaseCollector):
         if cached_result is not None:
             return cached_result
 
-        # 2. Sequential Data Acquisition
-        self.logger.info(f"[NewsAPI] Issuing collection requests for {len(search_terms)} terms...")
-        tasks = [self._fetch_for_term(term, api_key) for term in search_terms]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # 2. Sequential acquisition, so the run can stop the moment the
+        #    service says the day is spent. Firing every term at once through
+        #    asyncio.gather left nothing to stop: all 552 were already in
+        #    flight before the first refusal came back.
+        self.logger.info(
+            "[NewsAPI] Issuing up to %d requests (%d of today's %d allowance "
+            "already spent)...",
+            len(search_terms), self.daily_budget - remaining, self.daily_budget,
+        )
+        results: list[Any] = []
+        attempted: list[str] = []
+        spent = self.daily_budget - remaining
+        quota_hit = False
 
-        all_articles = self._process_fetch_results(results, search_terms)
+        for term in search_terms:
+            attempted.append(term)
+            spent += 1
+            try:
+                results.append(await self._fetch_for_term(term, api_key))
+            except NewsApiQuotaExhausted:
+                quota_hit = True
+                self.logger.warning(
+                    "[NewsAPI] Allowance exhausted after %d of %d terms. "
+                    "Stopping; the remaining %d wait for the next window.",
+                    len(attempted), len(search_terms),
+                    len(search_terms) - len(attempted),
+                )
+                results.append([])
+                break
+            except Exception as exc:  # noqa: BLE001 - one bad term must not end the run
+                results.append(exc)
+
+        self._write_budget(spent, exhausted=quota_hit)
+        all_articles = self._process_fetch_results(results, attempted)
 
         if not all_articles:
             self.logger.info("[NewsAPI] Zero articles retrieved from external queries.")
@@ -167,6 +310,13 @@ class NewsAPICollector(BaseCollector):
     async def _fetch_for_term(
         self, term: str, api_key: str
     ) -> list[dict[str, Any]]:
+        """One query. Raises NewsApiQuotaExhausted when the day is spent.
+
+        The client is asked for zero retries: this endpoint's 429 means a
+        24-hour allowance is gone, and a second attempt half a second later
+        cannot succeed. It can only spend another request from the allowance
+        it is waiting on -- which is what turned 552 queries into 1,656.
+        """
         params = {
             "q": f'"{term}"',
             "language": self.language,
@@ -174,8 +324,18 @@ class NewsAPICollector(BaseCollector):
             "apiKey": api_key,
         }
         try:
-            client = await self.http_client_factory.get_http_client()
+            client = await self.http_client_factory.get_http_client(retries=0)
             response = await client.get(self.base_url, params=params)
+
+            if response.status_code == 429:
+                detail = ""
+                try:
+                    body = response.json()
+                    detail = f"{body.get('code')}: {body.get('message')}"
+                except ValueError:
+                    detail = response.text[:200]
+                raise NewsApiQuotaExhausted(detail)
+
             response.raise_for_status()
             articles = response.json().get("articles", [])
 
@@ -186,6 +346,8 @@ class NewsAPICollector(BaseCollector):
                     a["search_term"] = term
                     filtered.append(a)
             return filtered
+        except NewsApiQuotaExhausted:
+            raise
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f"[NewsAPI] HTTP context error for '{term}': {e}"
