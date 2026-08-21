@@ -20,12 +20,24 @@ from pathlib import Path
 import aiofiles
 
 from src.cli.argument_parser import create_argument_parser
-from src.cli.argument_validator import ArgumentValidator
-from src.cli.batch_manager import BatchManager
-from src.cli.pipeline_executor import PipelineExecutor
-from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
-from src.pipeline.hybrid_orchestrator import HybridOrchestrator
+
+# Everything else is imported inside main(), AFTER the arguments are parsed.
+#
+# `--help` exits inside parse_args and needs none of it, but these were at
+# module level, so printing a help message loaded the entire pipeline. From
+# `python -X importtime run_hybrid_pipeline.py --help`:
+#
+#     src.pipeline.hybrid_orchestrator    the whole stage chain
+#     sklearn                             via normalization_manager
+#     evidently                           13.2 s, until it was made lazy today
+#
+# The smoke test that runs `--help` has a 30-second timeout and the command
+# took 15 to 44 seconds depending on machine load, so it passed or failed on
+# weather rather than on anything about the code.
+#
+# A parse error or a bad argument now also fails in a second instead of after
+# half a minute of imports it was never going to use.
 
 # Configure console encoding for Windows
 if sys.platform == 'win32':
@@ -162,9 +174,14 @@ def _is_test_mode(args):
 
 async def main():
     """Main entry point with improved cohesion."""
-    # Parse arguments
+    # Parse arguments FIRST: --help and argument errors exit here, before any
+    # of the pipeline is loaded.
     parser = create_argument_parser()
     args = parser.parse_args()
+
+    from src.cli.argument_validator import ArgumentValidator
+    from src.cli.batch_manager import BatchManager
+    from src.config.unified_config_manager import UnifiedConfigManager
 
     # Initialize Config Manager
     config_manager = UnifiedConfigManager()
@@ -193,6 +210,10 @@ async def main():
 
     # Save runtime parameters
     await _save_runtime_params(args, args.batch_name)
+
+    # The pipeline itself, loaded only once there is a run to make.
+    from src.cli.pipeline_executor import PipelineExecutor
+    from src.pipeline.hybrid_orchestrator import HybridOrchestrator
 
     # Log test mode info
     PipelineExecutor.log_test_mode_info(args)
