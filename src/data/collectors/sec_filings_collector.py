@@ -105,7 +105,18 @@ class SECFilingsCollector(BaseCollector):
                 all_filings.extend(res)
             elif isinstance(res, Exception):
                 ticker = list(valid_ciks.keys())[i]
-                logger.exception(f"Error fetching filings for {ticker}: {res}")
+                if isinstance(res, httpx.HTTPStatusError) and res.response.status_code == 404:
+                    # A data fact, not a failure: SEC has no submissions file
+                    # for that number. IWM sat on 0001112953, which is not in
+                    # SEC's own ticker map at all.
+                    logger.warning(
+                        "[SEC] No submissions for %s at CIK%s. The number in "
+                        "assets.yaml does not identify a filer -- check it "
+                        "against https://www.sec.gov/files/company_tickers.json",
+                        ticker, valid_ciks[ticker],
+                    )
+                else:
+                    logger.exception(f"Error fetching filings for {ticker}: {res}")
         return all_filings
 
     def _create_filing_hash(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -211,6 +222,18 @@ class SECFilingsCollector(BaseCollector):
             response = await client.get(url, headers=headers)
             response.raise_for_status()
             data = response.json()
+
+            # Say whose filings these are. A CIK that resolves is not a CIK
+            # that is right: SPY was configured as 0000896976, which returns
+            # HTTP 200 for 'VAN KAMPEN AMERICAN CAPITAL EQUITY OPPORTUNITY
+            # TRUST SER 14' -- 24 filings, all between 1995 and 2001. Nothing
+            # fell inside the collection window, so the collector reported no
+            # error and contributed nothing, silently, on every run. Printing
+            # the entity makes the next such mismatch visible in the log
+            # instead of requiring an audit against SEC to find it.
+            entity = data.get("name")
+            if entity:
+                logger.info("[SEC] %s -> CIK%s %r", ticker, cik, entity)
 
             recent = data.get("filings", {}).get("recent", {})
             if not recent or "accessionNumber" not in recent:

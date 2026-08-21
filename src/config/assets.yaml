@@ -91,11 +91,24 @@ assets:
   details:
     TSLA: {cik: 1318605}
     NVDA: {cik: 1045810}
-    SPY: {cik: 896976}
+    # Was 896976 until 2026-08-21. That number resolves -- HTTP 200 -- to
+    # 'VAN KAMPEN AMERICAN CAPITAL EQUITY OPPORTUNITY TRUST SER 14', an
+    # unrelated entity whose 24 filings all fall between 1995 and 2001.
+    # Nothing landed inside the collection window, so the collector reported
+    # no error and SPY contributed zero filings on every run since. A CIK that
+    # resolves is not a CIK that is right.
+    # 884394 is 'SPDR S&P 500 ETF TRUST' per SEC's own ticker map, 274
+    # filings, latest 2026-05-29.
+    SPY: {cik: 884394}
     QQQ: {cik: 1067839}
     AMD: {cik: 2488}
     KO: {cik: 21344}
     WMT: {cik: 104169}
+    # 34088 is 'EXXON MOBIL CORP', 1000 filings, latest 2026-08-07 -- correct
+    # and still filing. Noted 2026-08-21: SEC's ticker map now points XOM at
+    # 2115436, 'ExxonMobil Holdings Corp', 28 filings since 2026-07-01. If
+    # filings under 34088 stop, the holdco is where they moved. Not switched
+    # now: it would drop the history and this one still files.
     XOM: {cik: 34088}
     JPM: {cik: 19617}
     GS: {cik: 886982}
@@ -105,5 +118,9 @@ assets:
     AMZN: {cik: 1018724}
     INTC: {cik: 50863}
     TSM: {cik: 1046179}
-    IWM: {cik: 1112953}
+    # IWM has no CIK entry here on purpose. 1112953 returned 404 on every
+    # run, and IWM is absent from https://www.sec.gov/files/company_tickers.json
+    # entirely: the iShares Russell 2000 ETF is a series of a trust rather
+    # than its own filer, so there is no per-ticker submissions file to fetch.
+    # A wrong number that errors every run is worse than no number.
     BAC: {cik: 70858}
