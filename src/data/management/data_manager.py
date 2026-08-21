@@ -1,4 +1,5 @@
 import logging
+import warnings
 import os
 import re
 import time
@@ -400,9 +401,11 @@ class DataManager(IDatabaseManager):
 
                     # Create composite keys from all unique_on columns
                     if len(valid_unique_in_table) == 1:
-                        # Single column: use simple set
-                        existing_keys_set = {str(k) for k in existing_keys_df[valid_unique_in_table[0]].tolist()}
-                        df_insert_keys = df_insert[valid_unique_in_table[0]].astype(str)
+                        column = valid_unique_in_table[0]
+                        existing_keys_set = set(
+                            self._comparable_key(existing_keys_df[column]).tolist()
+                        )
+                        df_insert_keys = self._comparable_key(df_insert[column])
                     else:
                         # Multiple columns: use tuple composite keys
                         existing_keys_set = set(tuple(row) for row in existing_keys_df[valid_unique_in_table].values)
@@ -438,6 +441,58 @@ class DataManager(IDatabaseManager):
             df_insert = df_insert[common_cols]
 
         return df_insert
+
+    @staticmethod
+    def _comparable_key(values: pd.Series) -> pd.Series:
+        """One value, one key -- whatever shape it arrived in.
+
+        Deduplication compared `str(value)` on both sides. For a date column
+        that is not one key but three: DuckDB hands back a Timestamp whose
+        str() is "2026-06-01 00:00:00", a collector may hand over a
+        datetime.date printing as "2026-06-01", and numpy's datetime64 prints
+        "2026-06-01T00:00:00". Same day, three strings, none equal to another.
+
+        So a row already in the table was not recognised as already in the
+        table, survived the filter, and hit the unique index on insert:
+
+            Constraint Error: Duplicate key "date: 2026-06-01 00:00:00"
+
+        `vix_data` failed outright on every single run this way. The fallback
+        insert failed for the same reason, and the collector was reported dead
+        while its data was in fact already stored.
+
+        Datetime-like columns are compared as instants, everything else as
+        strings, and the index is preserved so the caller can align it against
+        a frame whose index is not a fresh range.
+        """
+        if pd.api.types.is_datetime64_any_dtype(values):
+            normalized = values
+        else:
+            # Most tables deduplicate on `hash`. pandas parses unrecognised
+            # strings one at a time through dateutil, so calling to_datetime
+            # on a million sha256 keys costs minutes to learn they are not
+            # dates. A sample answers the same question for the price of
+            # twenty.
+            sample = values.dropna().head(20)
+            if sample.empty:
+                return values.astype(str)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                probe = pd.to_datetime(sample, errors='coerce', utc=False)
+            if probe.isna().any():
+                return values.astype(str)
+
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                normalized = pd.to_datetime(values, errors='coerce', utc=False)
+            # Partly parseable: fall back to text rather than quietly turning
+            # some of the keys into NaT and collapsing them onto each other.
+            if normalized.isna().any():
+                return values.astype(str)
+
+        if getattr(normalized.dt, 'tz', None) is not None:
+            normalized = normalized.dt.tz_convert('UTC').dt.tz_localize(None)
+        return normalized.astype('datetime64[ns]').astype('int64').astype(str)
 
     def _execute_upsert_insert(self, table_name: str, df_insert: pd.DataFrame, existing_cols: set):
         self.con.register('df_to_upsert', df_insert)
