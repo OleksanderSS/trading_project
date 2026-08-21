@@ -429,8 +429,21 @@ class EnhancedConsensusEngine(ConsensusEngine):
         weights = self.regime_weights.get(regime, self.regime_weights['ranging'])
         ensemble_score = 0.0
         total_weight = 0.0
-        for arch_type, arch_pred in predictions_dict.items():
-            weight = weights.get(arch_type, 0.0)
+        unmatched: list[str] = []
+        for raw_name, arch_pred in predictions_dict.items():
+            # `predictions_dict` is keyed by the model IDs the system actually
+            # produces -- 'LGBM_5m', 'Transformer_v1' -- while `regime_weights`
+            # lists bare architecture names. A direct lookup therefore misses
+            # everything, every weight is 0.0, and the engine returns an
+            # ensemble score of exactly 0.0 for every regime-aware call.
+            #
+            # Worse, three of the five names it does list (transformer, lstm,
+            # cnn) were moved to the archive and are not produced at all any
+            # more, so even an exact match could not save it.
+            arch_type = self._architecture_of(raw_name, weights)
+            weight = weights.get(arch_type, 0.0) if arch_type else 0.0
+            if not weight:
+                unmatched.append(str(raw_name))
             if weight > 0:
                 try:
                     score_val = float(arch_pred)
@@ -445,6 +458,33 @@ class EnhancedConsensusEngine(ConsensusEngine):
                     raise
         if total_weight > 0:
             ensemble_score = ensemble_score / total_weight
+        elif predictions_dict:
+            # Nothing participated. Returning 0.0 here makes "the models agree
+            # on no move" and "no model was recognised" the same number, and
+            # downstream reads both as HOLD -- so a silenced ensemble looks
+            # exactly like a calm one, forever.
+            self.logger.error(
+                "Regime ensemble recognised NONE of %d predictions (%s) against "
+                "the weights for regime '%s' (%s). Returning no prediction "
+                "rather than 0.0, which downstream cannot tell from agreement.",
+                len(predictions_dict), ', '.join(unmatched[:6]), regime,
+                ', '.join(sorted(weights)),
+            )
+            return {
+                'ensemble_prediction': None,
+                'regime': regime,
+                'active_weights': weights,
+                'participating_architectures': [],
+                'unmatched_models': unmatched,
+                'status': 'no_recognised_architecture',
+            }
+        if unmatched:
+            self.logger.warning(
+                "Regime ensemble ignored %d prediction(s) with no known "
+                "architecture: %s. A new model type is silenced rather than "
+                "weighted until it is added to regime_weights.",
+                len(unmatched), ', '.join(unmatched[:6]),
+            )
         return {
             'ensemble_prediction': ensemble_score,
             'regime': regime,
@@ -452,4 +492,34 @@ class EnhancedConsensusEngine(ConsensusEngine):
             'participating_architectures': [
                 arch for arch, w in weights.items() if w > 0
             ],
+            'unmatched_models': unmatched,
         }
+
+    @staticmethod
+    def _architecture_of(model_name: str, weights: dict) -> str | None:
+        """Infer the architecture category from a real model id.
+
+        Models arrive named as the system builds them -- 'LGBM_5m',
+        'CatBoost_AAPL_1d', 'Transformer_v1' -- and the regime weights are
+        keyed by bare architecture. Matching them by equality silently drops
+        every model, which is how this engine came to return 0.0 for every
+        regime-aware ensemble it has ever computed.
+
+        Longest match first, so 'lightgbm' is not shadowed by a shorter key
+        that happens to be a substring of it.
+        """
+        if not model_name:
+            return None
+        name = str(model_name).lower()
+        aliases = {
+            'lgbm': 'lightgbm', 'lgb': 'lightgbm',
+            'xgb': 'xgboost', 'rf': 'random_forest',
+            'gru': 'lstm',
+        }
+        for key in sorted(weights, key=len, reverse=True):
+            if key.lower() in name:
+                return key
+        for alias, canonical in sorted(aliases.items(), key=lambda kv: -len(kv[0])):
+            if alias in name and canonical in weights:
+                return canonical
+        return None
