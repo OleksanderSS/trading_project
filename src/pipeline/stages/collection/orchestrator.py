@@ -82,6 +82,15 @@ _FAMILY_BY_NAME_FRAGMENT = (
 )
 
 
+#: Column names a news source may use for its publication time. The gate that
+#: admits a table into the news frame and the rename that normalises it read
+#: the same list, so a source can never pass one and fail the other.
+NEWS_DATE_ALIASES = (
+    'published_at', 'publishedAt', 'published_date', 'filing_date',
+    'date', 'timestamp',
+)
+
+
 def classify_source_table(table_name: str, collector_info: dict | None = None) -> str | None:
     """Say which family a stored table belongs to, or None if nothing claims it.
 
@@ -641,12 +650,18 @@ class CollectionStage(BaseStage):
                 if table_name == 'cache_metadata':
                     continue
 
+                collector_info = table_name_to_info.get(table_name, {})
+                data_type = classify_source_table(table_name, collector_info)
+
+                # Classify before reading. A news table with no publication
+                # time is 999,396 rows we would filter for fourteen minutes
+                # and then drop whole, and until now that is what happened.
+                if data_type == 'news' and not self._news_table_can_be_dated(table_name):
+                    continue
+
                 df = self.db_manager.fetch_data_from_table(table_name)
                 if df is None or df.empty:
                     continue
-
-                collector_info = table_name_to_info.get(table_name, {})
-                data_type = classify_source_table(table_name, collector_info)
 
                 if data_type == 'news':
                     df_filtered = self._filter_news_by_keywords_and_tickers(
@@ -704,7 +719,7 @@ class CollectionStage(BaseStage):
                     df = df.copy()
                     # Знаходимо колонку, яка містить дату публікації (різні варіанти)
                     date_col = None
-                    for possible_name in ['published_at', 'publishedAt', 'published_date', 'filing_date', 'date', 'timestamp']:
+                    for possible_name in NEWS_DATE_ALIASES:
                         if possible_name in df.columns:
                             date_col = possible_name
                             break
@@ -807,6 +822,49 @@ class CollectionStage(BaseStage):
             if col in df.columns:
                 return col
         return None
+
+    def _news_table_can_be_dated(self, table_name: str) -> bool:
+        """Can rows from this table be placed in time at all?
+
+        `huggingface_data` holds 999,396 rows of two columns, ``text`` and
+        ``hash``. Every run read all of them, ran them through the keyword and
+        ticker filter for fourteen and a half minutes, contributed the 728,862
+        survivors to the news frame, and dropped every one of them at the
+        deduplication step for carrying no title, no timestamp and no source.
+        The net contribution to the pipeline was zero, and the only visible
+        trace was a warning that 762,436 news records had been discarded --
+        which read like lost data rather than like a source that was never
+        news.
+
+        A row with no publication time cannot be attached to a bar without
+        looking ahead, so it is not admissible however many of them there are.
+        Deciding that from the schema costs one query instead of a gigabyte.
+
+        Fails open: if the schema cannot be read, the table is admitted and
+        the old behaviour applies.
+        """
+        try:
+            columns = set(self.db_manager.get_table_schema(table_name))
+        except Exception as exc:  # noqa: BLE001 - fail open, never lose a source
+            self.logger.warning(
+                "Could not read the schema of news table '%s' (%s); "
+                "admitting it and letting the usual path decide.",
+                table_name, exc,
+            )
+            return True
+
+        if columns & set(NEWS_DATE_ALIASES):
+            return True
+
+        self.logger.warning(
+            "News table '%s' carries no publication time (columns: %s). Its "
+            "rows cannot be placed against a bar, so it is skipped here "
+            "instead of being read, filtered and then discarded. Expected one "
+            "of %s -- if this source names its date column something else, "
+            "add it to NEWS_DATE_ALIASES.",
+            table_name, sorted(columns), list(NEWS_DATE_ALIASES),
+        )
+        return False
 
     def _filter_news_by_keywords_and_tickers(
         self, df: pd.DataFrame, keywords: list[str], tickers: list[str]
