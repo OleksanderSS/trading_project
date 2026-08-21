@@ -176,10 +176,22 @@ class RedundancyDetector:
         A column with no values at all has ``var() == NaN``, and every
         comparison against NaN is False, so ``NaN < threshold`` kept it. A
         CONSTANT column was removed and an EMPTY one survived -- the emptier
-        the column, the safer it was from the filter meant to catch it. Those
-        survivors then went on into correlation clustering and the
-        variance-inflation pass, which is the most expensive step in the
-        stage.
+        the column, the safer it was from the filter meant to catch it.
+
+        Measured on the daily slice of the 18.08 batch, which is the slice
+        feature selection actually runs on (the default target is `_1d`, so
+        only daily rows survive the index intersection):
+
+            1,759 columns empty     var() == NaN, kept
+               15 columns constant  var() == 0, removed
+              426 columns varying
+
+        Fifteen removed out of 1,774 that carry nothing. Those 1,759 then went
+        into correlation clustering -- a 2,185-square correlation matrix and
+        its clustering, over 154,000 rows -- to be compared against each
+        other. They did NOT reach the VIF regressions: that step fills NaN
+        with zero and drops the resulting constants itself, which is why this
+        was invisible in its timings.
 
         And the removal itself dropped one column at a time, copying the whole
         frame on each. Measured on random data:
