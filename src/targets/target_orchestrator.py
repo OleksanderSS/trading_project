@@ -291,10 +291,13 @@ class TargetOrchestrator:
         other, while the config named `BB_Upper_60m` -- which exists on
         neither.
 
-        `target_hourly_breakout_1h` and `target_volatility_spike_1h` therefore
-        failed on every frame of every run, and simply did not exist in any
-        batch. The log said so twice per run, under ERROR, for long enough
-        that the lines had become part of the scenery.
+        `target_hourly_breakout_1h` and `target_volatility_spike_1h` failed
+        this way on the 15-minute frame on every run. They survived on the
+        hourly frame, whose label happened to match the hardcoded suffix --
+        checked against the 18.08 batch, which carries 64,203 and 64,206
+        values for them at interval `60m`. So what was lost is the 15-minute
+        slice of two targets, and what this removes is the dependence on a
+        label that has since changed to `1h`.
 
         An exact match wins, so a target that deliberately reaches for another
         timeframe's indicator keeps it.

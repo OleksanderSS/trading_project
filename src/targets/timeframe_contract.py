@@ -116,9 +116,16 @@ def resolve_column_for_frame(
     `BB_Upper_15m` on one and `BB_Upper_1h` on the other, and
     `BB_Upper_60m` exists on neither.
 
-    Both `target_hourly_breakout_1h` and `target_volatility_spike_1h` failed
-    on every run of the pipeline for exactly this reason, on both frames, and
-    the two targets simply did not exist in any batch.
+    `target_hourly_breakout_1h` and `target_volatility_spike_1h` failed this
+    way on the 15-minute frame on every run, two ERROR lines each time.
+
+    Corrected after checking the 18.08 batch rather than trusting the log:
+    they are NOT absent from it. They carry 64,203 and 64,206 values -- all at
+    interval `60m`, where the hardcoded `_60m` suffix happens to match. So the
+    loss was the 15-minute slice of two targets, not the targets themselves,
+    and the config comment claiming the hourly frame is labelled 60m was right
+    about that batch. What this removes is the dependence on that label:
+    whether the frame calls itself `60m` or `1h`, the column is found.
 
     The horizon already resolves against the frame; this is the same idea for
     the column. An exact match always wins, so a target that deliberately
