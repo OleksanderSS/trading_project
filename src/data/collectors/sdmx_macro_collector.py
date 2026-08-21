@@ -114,10 +114,25 @@ class SDMXMacroCollector(BaseCollector):
                     if agency_data:
                         all_data.extend(agency_data)
                 except TimeoutError:
+                    # Do not assert a cause. This line used to say the request
+                    # was "probably unkeyed", which sent the reader off to add
+                    # a key that WB_WDI already has: the request is
+                    # A.<indicator>.USA+CHN+EMU+JPN+DEU+GBR. Measured
+                    # 2026-08-21, after that timeout, both configured WDI
+                    # indicators returned 396 rows in under a second -- so the
+                    # 90s was a one-off, most likely the first request of the
+                    # process paying for dataflow-structure discovery that is
+                    # cached afterwards. A wrong diagnosis in an error message
+                    # costs more than no diagnosis.
                     self.logger.error(
-                        f"Timed out after {self.request_timeout}s fetching {ind} "
-                        f"from {agency}. The request is probably unkeyed and "
-                        f"pulling a whole dataflow -- give it an explicit key."
+                        "Timed out after %ss fetching %s from %s. Two causes "
+                        "are worth checking, in this order: whether the "
+                        "request carries an explicit key (an unkeyed dataflow "
+                        "pull streams every country and series), and whether "
+                        "this was simply the first request of the run, which "
+                        "also fetches the dataflow structure. The stage "
+                        "continues without this indicator.",
+                        self.request_timeout, ind, agency,
                     )
                 except Exception as e:
                     self.logger.error(f"Failed to fetch {ind} from {agency}: {e}")
