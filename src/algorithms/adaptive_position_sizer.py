@@ -173,8 +173,33 @@ class AdaptivePositionSizer:
             position_size = (base_size * var_adjustment * kelly_adjustment *
                 conf_adjustment * vol_adjustment * dd_adjustment *
                 pos_adjustment * regime_adjustment * liquidity_adjustment)
+            unclipped_size = position_size
             position_size = self._apply_position_limits(position_size,
                 params.portfolio_value)
+            limit_binding = self._which_limit_binds(unclipped_size, position_size)
+            if limit_binding:
+                # When a limit binds, the eight risk adjustments above stopped
+                # affecting the answer -- the size is the limit, whatever they
+                # said. Measured on a 100,000 portfolio with plausible inputs,
+                # the floor binds in every case tested:
+                #
+                #   calm, confidence 0.85    product 0.0611 -> 122 -> 500
+                #   typical                  product 0.0324 ->  65 -> 500
+                #   drawdown 12%, 8 open     product 0.0201 ->  40 -> 500
+                #
+                # A 12% drawdown with eight positions open therefore sizes
+                # exactly like a calm market at 85% confidence. That is worth
+                # saying out loud on every call rather than being visible only
+                # to someone who reproduces the arithmetic.
+                self.logger.warning(
+                    "Position size hit the %s limit: %.2f computed, %.2f used. "
+                    "The risk adjustments did not affect this size "
+                    "(effective multiplier %.4f).",
+                    limit_binding, unclipped_size, position_size,
+                    var_adjustment * kelly_adjustment * conf_adjustment
+                    * vol_adjustment * dd_adjustment * pos_adjustment
+                    * regime_adjustment * liquidity_adjustment,
+                )
             position_size_pct = position_size / params.portfolio_value
             expected_risk = params.volatility * position_size_pct
             risk_adjusted_return = params.confidence * position_size_pct
@@ -196,6 +221,8 @@ class AdaptivePositionSizer:
                 risk_adjusted_return / expected_risk) if expected_risk > 0 else
                 0.0, 'market_regime': params.market_regime,
                 'liquidity_constrained': liquidity_adjustment < 1.0,
+                'unclipped_size': float(unclipped_size),
+                'limit_binding': limit_binding,
                 'kelly_fraction_used': self.kelly_fraction,
                 'var_based_sizing': params.historical_returns is not None}
         except (ValueError, TypeError, ZeroDivisionError, AttributeError) as e:
@@ -290,6 +317,15 @@ class AdaptivePositionSizer:
         """Compute final liquidity adjustment"""
         liquidity_adjustment = max_safe_position / position_value
         return np.clip(liquidity_adjustment, 0.1, 1.0)
+
+    @staticmethod
+    def _which_limit_binds(computed: float, used: float) -> str | None:
+        """Which clamp decided the answer, if either did."""
+        if used > computed:
+            return "minimum"
+        if used < computed:
+            return "maximum"
+        return None
 
     def _apply_position_limits(self, position_size: float, portfolio_value:
         float) ->float:
