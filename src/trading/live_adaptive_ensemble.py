@@ -298,10 +298,36 @@ class LiveAdaptiveEnsemble:
                 except (TypeError, ValueError):
                     self.logger.warning(f"Invalid prediction for {model_type}: {prediction}")
 
-        # Renormalize active weights
+        # Renormalise the weights AND the prediction they produced.
+        #
+        # Only the weights were renormalised here, and the prediction was left
+        # as the raw sum of `weight * value`. When a model drops out -- no
+        # prediction this bar, or a weight below the 0.001 floor -- the
+        # surviving weights no longer sum to 1, so the returned number is that
+        # fraction of what it should be. A 25% model missing turns every
+        # forecast into 0.75x its own magnitude.
+        #
+        # For a regression signal that is a shrinkage toward zero, and
+        # KellyCriterion sizes on magnitude, so positions got smaller whenever
+        # a model was unavailable -- an availability accident expressed as
+        # reduced conviction.
         if used_weights:
             total = sum(used_weights.values())
-            used_weights = {k: v / total for k, v in used_weights.items()}
+            if total > 0:
+                ensemble_pred /= total
+                used_weights = {k: v / total for k, v in used_weights.items()}
+        else:
+            # Nothing participated. The number below is 0.0, which downstream
+            # cannot tell from "the models agree on no move" -- the same
+            # confusion that made the regime ensemble return a permanent HOLD.
+            # The empty weights dict IS the signal, and the caller is now
+            # required to check it; this makes the reason findable.
+            self.logger.error(
+                "Live ensemble recognised none of %d prediction(s) for regime "
+                "'%s'. Returning 0.0 with EMPTY weights: callers must treat an "
+                "empty contribution map as absence, not as agreement on zero.",
+                len(predictions_dict), regime,
+            )
 
         return ensemble_pred, used_weights
 

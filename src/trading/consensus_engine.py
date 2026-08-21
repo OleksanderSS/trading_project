@@ -131,8 +131,23 @@ class ConsensusEngine:
         elif self.live_ensemble:
             raw_score, contributions = (self.live_ensemble.
                 get_weighted_ensemble_prediction(model_predictions, regime))
-            self.logger.info(
-                f'[CONSENSUS] Using Live-Adaptive weights for {regime}')
+            if model_predictions and not contributions:
+                # An empty contribution map means NO model was recognised, and
+                # the score beside it is 0.0 by construction. Reading that as
+                # "the models agree on no move" is what let the regime
+                # ensemble issue a permanent HOLD; falling back to the
+                # weighted aggregation at least uses the predictions that
+                # exist rather than acting on an absence.
+                self.logger.error(
+                    '[CONSENSUS] Live-Adaptive ensemble recognised none of %d '
+                    'prediction(s) for regime %s. Falling back to weighted '
+                    'aggregation rather than treating 0.0 as agreement.',
+                    len(model_predictions), regime)
+                raw_score, contributions = self._predict_with_weighted_aggregation(
+                    model_predictions, fingerprint)
+            else:
+                self.logger.info(
+                    f'[CONSENSUS] Using Live-Adaptive weights for {regime}')
         else:
             raw_score, contributions = self._predict_with_weighted_aggregation(
                 model_predictions, fingerprint)
