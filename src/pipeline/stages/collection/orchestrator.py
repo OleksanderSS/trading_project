@@ -46,7 +46,18 @@ _FAMILY_BY_COLLECTOR_TYPE = {
     'google_news': 'news',
     'rss': 'news',
     'newsapi': 'news',
-    'sec_filings': 'news',
+    # A filing is an event, not an article. Filed under 'news' it went into
+    # the news frame, where the alias list said `filing_date` and the table
+    # says `filingDate`, so 24,365 dated ticker-tagged filings were dropped
+    # every run over one capital letter -- counted into a lump warning about
+    # 762,436 "lost news records" that hid which source they came from.
+    #
+    # Renaming the column would have been the wrong fix: what a filing carries
+    # is `form` and `primaryDocDescription`, codes like "10-Q", not prose.
+    # CorporateFilingsEnricher reads them as events instead -- when, how often,
+    # what kind -- and stage 3 already forwards every collected frame, so the
+    # only thing needed here was to stop calling them news.
+    'sec_filings': 'corporate_filings',
     'huggingface': 'news',
     'hugging_face': 'news',
     'fred': 'macro_data',

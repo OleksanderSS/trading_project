@@ -112,6 +112,19 @@ enrichment:
     class: "EconomicCalendarEnricher"
     params: {}
 
+  # SEC filings, read as events rather than as prose. They used to be
+  # classified as a news source and dropped whole: the table names its date
+  # column `filingDate` and the news path's alias list said `filing_date`, so
+  # 24,365 dated ticker-tagged filings died every run over one capital letter.
+  #
+  # window_days sets the look-back for the count features. 30 covers a
+  # reporting month without spanning two quarters.
+  corporate_filings:
+    module: "src.features.enrichers.corporate_filings_enricher"
+    class: "CorporateFilingsEnricher"
+    params:
+      window_days: 30
+
   keyword_entity:
     keywords:
       tickers: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "AMD", "INTC"]

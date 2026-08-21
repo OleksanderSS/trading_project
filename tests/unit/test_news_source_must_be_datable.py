@@ -125,3 +125,38 @@ def test_an_unreadable_schema_fails_open():
     stage = _Stage(_Broken({}), _Logger())
     assert stage._news_table_can_be_dated('anything') is True
     assert 'admitting it' in stage.logger.warnings[0]
+
+
+def test_sec_filings_are_no_longer_classified_as_news():
+    """They are events. Filed as news they were dropped whole, every run."""
+    from src.pipeline.stages.collection.orchestrator import classify_source_table
+
+    assert classify_source_table('sec_filings', {'type': 'sec_filings'}) == 'corporate_filings'
+    assert classify_source_table('google_news', {'type': 'google_news'}) == 'news'
+    assert classify_source_table('newsapi_articles', {'type': 'newsapi'}) == 'news'
+
+
+def test_the_filings_enricher_is_registered_and_loadable():
+    """A source with no enricher wired to it is a source that does nothing."""
+    import importlib
+    import io as _io
+
+    import yaml
+
+    cfg = yaml.safe_load(_io.open('src/config/enrichment.yaml', encoding='utf-8'))
+
+    def _find(node, key):
+        if isinstance(node, dict):
+            if key in node:
+                return node[key]
+            for value in node.values():
+                found = _find(value, key)
+                if found is not None:
+                    return found
+        return None
+
+    entry = _find(cfg, 'corporate_filings')
+    assert entry is not None, 'corporate_filings not registered in enrichment.yaml'
+    module = importlib.import_module(entry['module'])
+    enricher = getattr(module, entry['class'])(entry.get('params', {}))
+    assert enricher.name == 'corporate_filings'
