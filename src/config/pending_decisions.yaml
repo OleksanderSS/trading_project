@@ -39,6 +39,35 @@ pending:
       depends on where the account is opened from, and the owner's location is
       not fixed. Researching tariffs before that is settled would produce a
       number that has to be thrown away.
+    what_is_already_decided_by_calculation: >
+      The broker does not have to be chosen to state the requirement it must
+      meet. Computed 2026-08-22 from this repo's own cost profile and 153,852
+      daily bars across 22 tickers:
+
+        median absolute 1-day move   0.948%
+        median absolute 5-day move   2.204%
+        spread + slippage, round trip 0.040%  -- present at ANY position size
+
+      Round-trip cost against position size, at $0.35 per order:
+
+        $500     0.180%      $2,500   0.068%
+        $1,000   0.110%      $10,000  0.047%
+
+      Two requirements follow, and neither depends on whether a signal exists:
+
+      1. A per-order MINIMUM imposes a floor on viable position size. At $0.35
+         and a 14bp gross edge -- the figure last measured here -- that floor
+         is $700, or 0.70% of a $100,000 account. A broker charging a flat
+         percentage with no minimum has no such floor at all, which matters
+         more than its headline rate.
+
+      2. Spread plus slippage of 0.040% cannot be traded away. Any edge below
+         roughly 4bp is unreachable at any size, so a venue whose friction is
+         materially worse than this can be rejected before an account is
+         opened.
+
+      What is still genuinely open is only which brokers are reachable, and
+      that depends on where the account is opened from.
     an_upper_bound_was_considered: >
       Using a deliberately pessimistic cost ceiling instead of an estimate, so
       that any edge measured through it is a lower bound. It is a real
@@ -68,6 +97,29 @@ pending:
       are viable at all. And the edge itself is still being measured -- the
       last honest figure was +0.48%/yr over levering the same holding, which
       is not a number to lever into.
+    what_is_already_decided_by_calculation: >
+      The SCALE of a position -- how aggressive to be -- needs an edge and
+      cannot be chosen yet. Its FLOOR does not, and the current one is wrong.
+
+      The rule currently delivers a constant 0.5% of the account, because the
+      product of eight risk multipliers always lands under the minimum-size
+      clamp. On $100,000 that is a $500 position, whose round-trip cost is
+      0.180% against a gross edge last measured at 0.14%. Every position the
+      system opens is therefore below break-even before any question of skill
+      arises. Break-even at that edge is $700; at 10bp it is $1,167; at 7bp,
+      $2,333.
+
+      So three things are decided by arithmetic rather than by opinion:
+
+      1. The minimum position size must be derived from the cost model, not
+         picked as a round number. 0.5% was chosen with no reference to costs.
+      2. `kelly_f` is a share of CAPITAL used as a dimensionless multiplier on
+         a base size. That is a unit error, not a tuning choice, and it is
+         wrong independently of any edge.
+      3. A sizing rule that ignores volatility is wrong whether or not the
+         edge exists, because it makes the SIZE constant instead of the RISK.
+
+      What still waits on data is only the scale.
     what_resolves_it: >
       A complete run through to paper trading, with realised per-trade
       outcomes, against a known cost schedule.
