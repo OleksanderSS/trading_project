@@ -15,6 +15,64 @@ _HORIZON_DURATION = {
     "1h": pd.Timedelta(hours=1),
     "1d": pd.Timedelta(days=1),
 }
+#: How far forward each target-name suffix looks. Wider than
+#: `_HORIZON_DURATION`, which only covers the horizons a target may be
+#: DECLARED with; these are the suffixes target columns actually carry.
+_SUFFIX_HORIZON = {
+    "15m": pd.Timedelta(minutes=15),
+    "60m": pd.Timedelta(hours=1),
+    "1h": pd.Timedelta(hours=1),
+    "1d": pd.Timedelta(days=1),
+    "5d": pd.Timedelta(days=5),
+    "1w": pd.Timedelta(days=5),
+}
+
+
+def target_horizon_bars(target_name: str, timeframe: str | None) -> int | None:
+    """How many bars forward a target looks, on a frame of this cadence.
+
+    Needed wherever something must know whether a target OVERLAPS itself. A
+    5-day forward return on daily bars shares four of its five days with the
+    previous bar's value, so consecutive values are correlated by construction
+    -- measured at 0.778 on the 2026-08-22 batch, against the 0.800 the overlap
+    alone predicts.
+
+    That matters most for naive baselines. `y[t-1]` for a 5-bar target is only
+    knowable at `t+3`, so a persistence baseline built from it is not a
+    forecast at all; see `_score_naive_baselines`.
+
+    Returns None when the horizon cannot be read from the name, which callers
+    must treat as "do not know" rather than as 1.
+    """
+    if not target_name or not timeframe:
+        return None
+    bar = _TIMEFRAME_DURATION.get(_normalize_timeframe(str(timeframe)))
+    if bar is None:
+        return None
+    for suffix, span in _SUFFIX_HORIZON.items():
+        if not str(target_name).lower().endswith(f"_{suffix}"):
+            continue
+        # Refuse to cross the intraday/daily boundary. The arithmetic here is
+        # CALENDAR time, which is exact within a side -- 1h is four 15m bars,
+        # 5d is five 1d bars -- and wrong across one, because a trading day is
+        # 6.5 hours and not 24. A daily target on 15-minute bars would come out
+        # as 480 rather than 130.
+        #
+        # Such a pair does not occur: measured on the 2026-08-22 batch, the
+        # daily targets carry 153,959 values on 1d and exactly zero on 15m and
+        # 60m. So this is a guard, and it answers "do not know" rather than
+        # confidently wrong -- callers already have to handle None, and a bad
+        # number here would silently weaken a baseline.
+        if (span >= pd.Timedelta(days=1)) != (bar >= pd.Timedelta(days=1)):
+            return None
+        ratio = span / bar
+        # A target coarser than the frame is the normal case (a 1h target on
+        # 15m bars is 4). A target FINER than the frame cannot be resolved
+        # into bars and is not one of ours.
+        return int(ratio) if ratio >= 1 and float(ratio) == int(ratio) else None
+    return None
+
+
 _PARTITION_COLUMNS = (
     "partition_id",
     "source_partition",

@@ -24,6 +24,7 @@ from src.pipeline.constants import (
     preprocessor_filename,
 )
 from src.config.feature_budget import get_model_max_features
+from src.targets.timeframe_contract import target_horizon_bars
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
@@ -1025,15 +1026,64 @@ class BaseTrainer(ABC):
             if is_classif or n < 3:
                 return out
 
+            # The persistence opponent has to be a FORECAST, and this one was
+            # not. It predicted y[t] from y[t-1] -- but for a target with a
+            # horizon of h bars, y[t-1] is the outcome measured from t-1 to
+            # t+h-2, which nobody can know at t. For h=5 it needs four more
+            # days of prices.
+            #
+            # Because such a target overlaps itself, that unknowable value is
+            # also an excellent predictor. Measured on the 2026-08-22 batch:
+            # lag-1 autocorrelation 0.778 on target_relative_return_5d, so the
+            # baseline scored R^2 0.5564 -- and the gate, which takes the best
+            # opponent, then demanded every model beat 0.56 instead of the
+            # 0.0000 the constant baseline set. No return or direction target
+            # has ever been promoted in this project, across 4,613 models.
+            #
+            # Lagging by the horizon fixes the arrow of time: y[t-h] is the
+            # most recent value actually observable at t. Measured, the same
+            # baseline then scores -1.0879 -- worse than the mean, so the
+            # constant becomes the opponent, which is the standard bar.
+            #
+            # This does NOT hand out champions. The models on those targets
+            # scored -0.09 and -0.01, still below the constant's 0.0. It only
+            # stops them being compared against an oracle.
+            #
+            # h=1 targets are unaffected: there y[t-1] IS known at t, and the
+            # measurement confirms it (lag-1 and lag-h agree exactly on
+            # target_return_1d). Backward-window targets are also left alone --
+            # their smoothness is real and known in time.
+            # Unresolved means lag 1, deliberately. The first instinct was to
+            # skip the opponent instead, and that was wrong: the targets whose
+            # names carry no horizon are the INDICATOR ones, and for a
+            # backward-looking window shifted forward by a single bar, y[t-1]
+            # genuinely IS known at t. Persistence there is both legitimate and
+            # the most valuable opponent in the set -- it scores R2 0.9994 on
+            # target_sma_20_f1, which is how a model that merely retraces a
+            # moving average gets caught. Skipping it would have weakened the
+            # gate exactly where it works.
+            #
+            # So the only behaviour that changes is for targets proven to look
+            # more than one bar forward.
+            horizon = target_horizon_bars(
+                str(data.get('target_name') or ''), data.get('timeframe')
+            ) or 1
+            if n <= horizon:
+                return out
+
             persistence = np.empty(n, dtype=float)
-            persistence[0] = y_true[0]
-            persistence[1:] = y_true[:-1]
+            # No y_true[0]: seeding with the truth handed the opponent one
+            # exactly-right prediction for free. The train mean is what is
+            # actually known before the holdout starts.
+            persistence[:horizon] = float(np.nanmean(y_train))
+            persistence[horizon:] = y_true[:-horizon]
             persistence_score = float(
                 self.evaluator.calculate(
                     y_holdout, persistence, task_type=task_type
                 ).get(metric_key, 0.0)
             )
             out['baseline_persistence_score'] = persistence_score
+            out['baseline_persistence_lag_bars'] = horizon
 
             if np.isfinite(persistence_score) and persistence_score > constant_score:
                 out['baseline_score'] = persistence_score
