@@ -243,7 +243,9 @@ def partition_market_frame_by_timeframe(
             "Market data has no declared timeframe and cadence cannot "
             "be inferred unambiguously"
         )
-    selected = frame.copy()
+    # One column and two attrs are set; `attrs` on a shallow copy is its own
+    # dict that inherits the original's entries, so this stays isolated.
+    selected = frame.copy(deep=False)
     selected["interval"] = inferred
     selected.attrs["timeframe_lineage"] = report
     selected.attrs["timeframe_source"] = (

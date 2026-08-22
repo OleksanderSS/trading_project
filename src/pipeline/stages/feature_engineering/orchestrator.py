@@ -565,7 +565,8 @@ class FeatureEngineeringStage(BaseStage):
             np.where(labels == 'negative', -scores, 0.0),
         )
 
-        news_df = news_df.copy()
+        # One whole column is added, so the news blocks can stay shared.
+        news_df = news_df.copy(deep=False)
         news_df['sentiment'] = signed
         logger.info(
             "Scored %d news items with FinBERT from '%s': %d non-neutral, "
@@ -608,7 +609,12 @@ class FeatureEngineeringStage(BaseStage):
         if len(enriched_df) != len(source_df):
             return enriched_df
 
-        result = enriched_df.copy()
+        # Whole columns are assigned below and nothing is written into a slice,
+        # so the copy only needs its own column index, not its own data. At the
+        # stage-3 width this is the difference between 4.25 GiB and nothing --
+        # and on the `not missing` path below the frame is returned unchanged,
+        # so the deep copy bought literally nothing.
+        result = enriched_df.copy(deep=False)
         missing = [
             column
             for column in self._SERVICE_COLUMNS

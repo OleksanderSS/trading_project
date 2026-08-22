@@ -217,7 +217,9 @@ class PipelineWalkForwardValidationEvaluator:
     ) -> pd.DataFrame:
         if target_name not in frame.columns:
             raise ValueError(f"Target column is missing: {target_name}.")
-        result = frame.copy()
+        # The next statement narrows to one ticker, so copying every row's data
+        # first is work thrown away; the shallow copy is rebound immediately.
+        result = frame.copy(deep=False)
         if "ticker" not in result.columns:
             raise ValueError("Walk-forward frame is missing ticker.")
         result = result.loc[

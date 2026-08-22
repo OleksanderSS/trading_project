@@ -138,7 +138,8 @@ class BackwardTimeframeContextAssembler:
         frame: pd.DataFrame,
         timeframe: str,
     ) -> pd.DataFrame:
-        result = frame.copy()
+        # Only whole columns are written, so the data blocks can stay shared.
+        result = frame.copy(deep=False)
         datetime_column = _datetime_column(result)
         if "ticker" not in result.columns:
             raise ValueError(f"{timeframe} frame is missing ticker.")
@@ -291,7 +292,8 @@ class BackwardTimeframeContextAssembler:
         frame: pd.DataFrame,
         timeframe: str,
     ) -> tuple[pd.DataFrame, list[str]]:
-        result = frame.copy()
+        # Only whole columns are written, so the data blocks can stay shared.
+        result = frame.copy(deep=False)
         datetime_column = _datetime_column(result)
         if "ticker" not in result.columns:
             raise ValueError(f"{timeframe} context frame is missing ticker.")

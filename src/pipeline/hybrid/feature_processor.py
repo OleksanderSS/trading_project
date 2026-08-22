@@ -27,7 +27,9 @@ class FeatureProcessor:
             self.logger.error("Stage 3 did not return enriched_data!")
             return None
 
-        enriched_df = enriched_data.copy()
+        # Rebound on the very next line by a function that returns a new frame,
+        # so the deep copy's data is discarded before anything reads it.
+        enriched_df = enriched_data.copy(deep=False)
         enriched_df = self.normalize_datetime_index(enriched_df)
         datetime_col = self.get_datetime_column(enriched_df)
 

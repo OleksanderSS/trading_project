@@ -44,7 +44,9 @@ class TargetGenerator:
         if not target_cols:
             return df
 
-        result = df.copy()
+        # Whole-column assignment only, so a shallow copy is safe; see
+        # `_restore_service_columns` for the measurement.
+        result = df.copy(deep=False)
         for col in target_cols:
             result[col] = targets_df[col].reindex(result.index)
         return result
