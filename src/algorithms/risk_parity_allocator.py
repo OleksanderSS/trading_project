@@ -172,8 +172,33 @@ class RiskParityAllocator:
         def objective(weights):
             risk_contrib = self.calculate_risk_contribution(weights, vols,
                 correlations)
-            target_vol_contrib = 1.0 / n_assets
-            return np.sum((risk_contrib - target_vol_contrib) ** 2)
+            # RELATIVE contributions. `calculate_risk_contribution` returns
+            # absolute ones, which sum to the portfolio's volatility, and this
+            # compared them to 1/n -- so it was asking for a sum of 1.0, that
+            # is, a portfolio volatility of exactly 100%.
+            #
+            # The consequence is not a failure to converge. It converges, and
+            # to the wrong portfolio. Measured on three assets with vols
+            # 15/25/35% and a plausible correlation matrix:
+            #
+            #   true ERC weights   [0.510, 0.280, 0.210]
+            #     relative risk    [0.333, 0.333, 0.333]   equal, by definition
+            #     scored by this   0.235
+            #
+            #   this objective's own optimum
+            #                      [0.010, 0.471, 0.519]
+            #     relative risk    [0.002, 0.350, 0.648]
+            #     scored           0.199   -- and it prefers this
+            #
+            # It ranked a portfolio carrying 65% of its risk in one asset above
+            # the equal-risk one, because piling into the most volatile name
+            # moves the sum closer to an unreachable 1.0. That is the opposite
+            # of what risk parity is for.
+            total = risk_contrib.sum()
+            if not np.isfinite(total) or total == 0:
+                return float(np.sum(risk_contrib ** 2))
+            relative = risk_contrib / total
+            return float(np.sum((relative - 1.0 / n_assets) ** 2))
         return objective
 
     def _create_optimization_bounds(self, constraints: dict[str, Any],

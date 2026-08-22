@@ -84,7 +84,8 @@ class WalkForwardOptimizer:
 
     @staticmethod
     def _walk_forward_windows(data: pd.DataFrame, in_sample_months: int,
-                              out_sample_months: int) -> list[tuple[int, int, int, int]]:
+                              out_sample_months: int,
+                              embargo_bars: int = 0) -> list[tuple[int, int, int, int]]:
         """Row boundaries for each fold, measured in CALENDAR months.
 
         Returns [(in_start, in_end, out_start, out_end), ...] as positional
@@ -94,6 +95,25 @@ class WalkForwardOptimizer:
         bars-per-month figure is how the previous version produced windows that
         silently changed size with the amount of history. It returns no windows
         instead, and the caller reports why.
+
+        `embargo_bars` is the gap between the two windows, and it defaults to
+        zero only so existing callers keep their behaviour until they say what
+        their horizon is.
+
+        Why it has to exist: the out-of-sample window began at `in_end`, the
+        very row training ended on. A label attached to the last training bar
+        is computed from prices that fall INSIDE the validation window, so an
+        optimiser tuned on these folds is rewarded for exploiting the overlap.
+        With a 5-bar target the last five training labels are contaminated;
+        with `target_hourly_volume_spike_1h`, twenty-three of them.
+
+        This is the second walk-forward implementation in the repository. The
+        one in `src/pipeline/stages/modeling` purges, and raises its gap to the
+        target horizon automatically. This one did not, which is the shape this
+        codebase keeps repeating: a fix landing in one of two copies.
+
+        Pass `embargo_bars` >= the target's lookahead. `_get_target_horizon_rows`
+        in walk_forward_validation computes it from a target name.
         """
         idx = data.index
         if not isinstance(idx, pd.DatetimeIndex) or len(idx) < 2:
@@ -111,10 +131,11 @@ class WalkForwardOptimizer:
                 break
             in_start = int(idx.searchsorted(in_start_time, side='left'))
             in_end = int(idx.searchsorted(in_end_time, side='left'))
+            out_start = in_end + max(0, int(embargo_bars))
             out_end = int(idx.searchsorted(min(out_end_time, last), side='right'))
-            if in_end <= in_start or out_end <= in_end:
+            if in_end <= in_start or out_end <= out_start:
                 break
-            windows.append((in_start, in_end, in_end, out_end))
+            windows.append((in_start, in_end, out_start, out_end))
             if out_end_time >= last:
                 break
             # Step forward by the OUT-OF-SAMPLE length: each bar is tested
@@ -124,7 +145,7 @@ class WalkForwardOptimizer:
 
     def walk_forward_optimization(self, data: pd.DataFrame,
         optimization_func: Callable, in_sample_months: int=12,
-        out_sample_months: int=3) ->dict[str, Any]:
+        out_sample_months: int=3, embargo_bars: int=0) ->dict[str, Any]:
         """
         Виконує Walk-Forward Optimization
 
@@ -158,8 +179,20 @@ class WalkForwardOptimizer:
             # Slicing by calendar offset is also timeframe-independent: the
             # same call is correct for daily, hourly and 15-minute bars, which
             # a bar count can never be.
+            # The gap between training and validation. Zero is the old
+            # behaviour and it leaks: the label on the last training bar is
+            # computed from prices inside the validation window. Callers with a
+            # forward-looking target must pass their horizon.
+            if not embargo_bars:
+                logger.warning(
+                    "Walk-forward optimisation running with NO embargo gap. "
+                    "Validation begins on the bar training ended on, so labels "
+                    "at the boundary are computed from prices inside the "
+                    "validation window. Pass embargo_bars >= the target's "
+                    "lookahead horizon."
+                )
             windows = self._walk_forward_windows(
-                data, in_sample_months, out_sample_months
+                data, in_sample_months, out_sample_months, embargo_bars
             )
             if not windows:
                 return {
