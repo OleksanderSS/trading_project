@@ -303,8 +303,28 @@ class CollectionStage(BaseStage):
                 self.logger.warning(f"No specific run args for {name}, trying generic run().")
                 return await asyncio.wait_for(collector.run(tickers=tickers, keywords=keywords), timeout=timeout)
 
-        except TimeoutError as e:
-            self.logger.error(f"Collector {name} перевищив таймаут {timeout} секунд")
+        except TimeoutError:
+            # Say what a timeout costs, not just that one happened.
+            #
+            # asyncio.wait_for CANCELS the coroutine. Collectors accumulate
+            # rows in a local list and upsert once at the end, so a collector
+            # cancelled after fetching and before writing loses everything it
+            # had. That is how a run could log "завантажено 7541 рядок"
+            # thirteen times and leave the table empty -- the fetch was real,
+            # the write never happened, and the only trace was a timeout line
+            # that read like a stall rather than a loss.
+            #
+            # Per-collector timeouts removed the trigger and this has not
+            # reproduced since; the shape is still there, so the message now
+            # names it. The real repair is incremental persistence inside each
+            # collector, which is a change to sixteen of them.
+            self.logger.error(
+                "Collector %s exceeded its %s-second timeout and was CANCELLED. "
+                "Anything it had already fetched but not yet written is lost: "
+                "collectors persist once at the end, so a cancellation between "
+                "those two points leaves no rows and no error from the write.",
+                name, timeout,
+            )
             # Re-raise (not return None) so this reaches
             # process_and_save_results as an Exception via
             # asyncio.gather(..., return_exceptions=True) - that method
