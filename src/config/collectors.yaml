@@ -493,7 +493,17 @@ collectors:
     - date
     params:
       interval: 1d
-      period: 30d
+      # Both of these were dead keys: the collector read them into
+      # `self.period`/`self.interval`, printed them in its startup line, and
+      # then called `history(period="60d", interval="1d")` regardless. The log
+      # said 30d, the fetch was 60 days, and neither number was chosen. Wired
+      # on 2026-08-22, so this file is now the one place that decides.
+      #
+      # 2y to match the daily frame, for the same reason as sec_filings above.
+      # It also fills the collector's own blind spot: statistics need 20 prior
+      # rows, so the oldest 20 trading days of every fetch carry none -- about
+      # half of a 60-day window, about 4% of a two-year one.
+      period: 2y
     table_name: vix_data
     ticker: ^VIX
     type: vix

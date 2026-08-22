@@ -119,3 +119,94 @@ def test_generate_hash_depends_only_on_the_key(collector):
     flipped['volatility_regime'] = 'low'
     flipped['vix_close'] = 99.0
     assert collector.generate_hash(row) == collector.generate_hash(flipped)
+
+
+def test_the_configured_window_is_the_one_actually_fetched():
+    """The config decided nothing: it was read, logged, and then ignored.
+
+    `__init__` set `self.period` and `self.interval` from the config and the
+    startup line printed them, but the fetch said `history(period="60d",
+    interval="1d")` outright. So `collectors.yaml` declared 30d while 60 days
+    were collected, and neither number had been chosen by anyone -- editing
+    the config moved the log line and nothing else.
+
+    This drives the fetch and records what the client was handed, rather than
+    testing the value of an attribute nobody reads. Three fixes in this project
+    were correct and unreachable, and each had a passing test of the function
+    it fixed.
+    """
+    import asyncio
+    import io
+    import logging
+
+    import yaml
+
+    config = yaml.safe_load(io.open("src/config/collectors.yaml", encoding="utf-8"))
+    params = config.get("collectors", config)["vix"]["params"]
+
+    seen = {}
+
+    class _Ticker:
+        def __init__(self, symbol):
+            seen["ticker"] = symbol
+
+        def history(self, period, interval):
+            seen["period"] = period
+            seen["interval"] = interval
+            index = pd.date_range("2026-01-01", periods=3, freq="D")
+            return pd.DataFrame(
+                {name: [20.0, 21.0, 22.0] for name in
+                 ("Open", "High", "Low", "Close", "Volume")},
+                index=index,
+            )
+
+    collector = object.__new__(module.VIXCollector)
+    collector.logger = logging.getLogger("vix-probe")
+    collector.period = params["period"]
+    collector.interval = params["interval"]
+    collector.ticker = "^VIX"
+
+    import yfinance
+
+    original = yfinance.Ticker
+    yfinance.Ticker = _Ticker
+    try:
+        rows = asyncio.run(collector._fetch_vix_data())
+    finally:
+        yfinance.Ticker = original
+
+    assert rows, "the probe should have produced rows"
+    assert seen["period"] == params["period"], (
+        f"config declares period {params['period']!r} but the fetch asked for "
+        f"{seen.get('period')!r}"
+    )
+    assert seen["interval"] == params["interval"]
+    assert seen["ticker"] == "^VIX"
+
+
+def test_the_window_is_long_enough_to_carry_statistics():
+    """20 rows of every fetch have no statistics, so a short window is mostly blind.
+
+    `_STAT_WINDOW` is 20: the first 20 rows of whatever is fetched get NaN for
+    the mean and both percentiles. Over 60 days -- about 41 trading days --
+    that is roughly half of everything collected. It is also the same mismatch
+    as sec_filings: the daily frame spans about two years.
+    """
+    import io
+
+    import yaml
+
+    config = yaml.safe_load(io.open("src/config/collectors.yaml", encoding="utf-8"))
+    period = config.get("collectors", config)["vix"]["params"]["period"]
+
+    unit = period[-1] if period[-1].isalpha() else period[-2:]
+    amount = int(period[: -len(unit)])
+    days = amount * {"d": 1, "wk": 7, "mo": 30, "y": 365}[unit]
+    trading_days = days * 252 / 365
+
+    blind = module._STAT_WINDOW / trading_days
+    assert blind < 0.10, (
+        f"period {period!r} is about {trading_days:.0f} trading days, and the "
+        f"first {module._STAT_WINDOW} of them carry no statistics -- "
+        f"{blind:.0%} of the rows collected"
+    )

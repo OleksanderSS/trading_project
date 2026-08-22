@@ -123,9 +123,26 @@ class VIXCollector(BaseCollector):
 
             self.logger.info("Fetching VIX data from Yahoo Finance")
 
-            # Download VIX data for last 60 days
-            vix_ticker = yf.Ticker("^VIX")
-            hist = vix_ticker.history(period="60d", interval="1d")
+            # These came from the config until now only in appearance:
+            # `self.period` and `self.interval` were read in __init__, printed
+            # in the "VIXCollector initialized" line, and then never used --
+            # the call below said "60d" and "1d" outright. So the log
+            # announced 30d while 60 days were fetched, and changing the
+            # config changed nothing but the log.
+            #
+            # The window matters because `_STAT_WINDOW` is 20: the first 20
+            # rows of whatever is fetched have no statistics at all. Over 60
+            # days (~41 trading days) that is roughly half the rows collected;
+            # over two years (~502) it is about 4%.
+            #
+            # Widening is safe for the VALUES because the statistics below use
+            # a fixed trailing window (`iloc[-_STAT_WINDOW:]`), not "everything
+            # that happened to be fetched" -- which is the defect the long
+            # comment further down records as already fixed. More history
+            # therefore adds rows that have statistics; it does not change the
+            # statistics of any row that already had them.
+            vix_ticker = yf.Ticker(self.ticker)
+            hist = vix_ticker.history(period=self.period, interval=self.interval)
 
             if hist.empty:
                 self.logger.warning("No VIX data from Yahoo Finance")
