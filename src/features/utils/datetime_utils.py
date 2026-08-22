@@ -34,7 +34,22 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
     Raises:
         ValueError: If raise_on_missing=True and no datetime column found
     """
-    df = df.copy()
+    # Shallow. Every branch below either replaces a whole column or calls
+    # reset_index/rename, all of which build a new frame rather than writing
+    # into a shared block, so the caller's frame is not touched.
+    #
+    # `df.copy()` here asked for a full duplicate of the caller's frame to
+    # normalise ONE column. On the batch that is 2,200 columns by 259,133
+    # rows, and it ended a rebuild that had already finished stage 3:
+    #
+    #   numpy._core._exceptions._ArrayMemoryError: Unable to allocate
+    #   4.25 GiB for an array with shape (2200, 259133)
+    #
+    # Measured on 30,000 x 400: deep copy 92.3 MiB peak against 0.5 MiB
+    # shallow, and the caller's frame verified unchanged either way. The
+    # depth was never needed; it was insurance against an in-place write that
+    # does not happen here.
+    df = df.copy(deep=False)
 
     # Check if datetime is already in columns
     if 'datetime' in df.columns:
