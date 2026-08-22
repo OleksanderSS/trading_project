@@ -766,16 +766,34 @@ class FeatureEngineeringStage(BaseStage):
     ) -> tuple[list[str], dict[str, float]]:
         target_cols = [col for col in final_features.columns if is_target_like_column(col)]
         metadata_cols = {'datetime', 'date', 'timestamp', 'ticker', 'interval'}
-        candidate_features = final_features.drop(columns=target_cols, errors='ignore')
-        candidate_features = candidate_features.drop(
-            columns=[col for col in metadata_cols if col in candidate_features.columns],
-            errors='ignore',
-        )
-        candidate_features = candidate_features.select_dtypes(include='number')
+
+        # Pick the columns by NAME first, and materialise nothing until the
+        # rows are also chosen.
+        #
+        # This built `candidate_features` by dropping columns and then calling
+        # `select_dtypes(include='number')`, which consolidates every numeric
+        # column into one block -- and then used only the training rows of it.
+        # On 2026-08-22 that asked for a single (2151, 259133) float64 array,
+        # 4.15 GiB, on a machine with 3.45 free, and took the whole rebuild
+        # down after 164 minutes of work:
+        #
+        #   RuntimeError: Stage FeatureEngineeringStage execution failed:
+        #   Unable to allocate 4.15 GiB for an array with shape
+        #   (2151, 259133) and data type float64
+        #
+        # The same defect was found and fixed in `_initial_feature_columns` on
+        # 2026-08-19 (#23) and this second copy went on allocating, which is
+        # the failure mode this codebase keeps having: a fix landing in one of
+        # two places.
+        #
+        # `dtypes` is metadata and costs nothing to read.
+        excluded = set(target_cols) | metadata_cols | {target_col}
+        numeric_columns = [
+            name for name, dtype in final_features.dtypes.items()
+            if name not in excluded and dtype.kind in 'iuf'
+        ]
         target_series = final_features[target_col]
-        # Ensure we do not leak the target into features
-        candidate_features = candidate_features.drop(columns=[target_col], errors='ignore')
-        valid_index = candidate_features.index.intersection(target_series.dropna().index)
+        valid_index = final_features.index.intersection(target_series.dropna().index)
 
         # LEAKAGE FIX: restrict the index used for selection to a chronological
         # train-only prefix. Selecting against the full dataset (including the
@@ -787,28 +805,35 @@ class FeatureEngineeringStage(BaseStage):
             # to the full valid_index rather than failing selection outright.
             train_only_index = valid_index
 
-        if candidate_features.empty or len(valid_index) < 5 or target_series.loc[valid_index].nunique() < 2:
-            fallback = list(candidate_features.columns)
-            return fallback, dict.fromkeys(fallback, 1.0)
+        if not numeric_columns or len(valid_index) < 5 or target_series.loc[valid_index].nunique() < 2:
+            return numeric_columns, dict.fromkeys(numeric_columns, 1.0)
+
+        # Rows and columns together, once: this is the only copy made, and it
+        # is the training prefix rather than the whole frame.
+        candidate_features = final_features.loc[train_only_index, numeric_columns]
+        self.logger.info(
+            "Feature selection frame: %d rows x %d columns (from %d rows)",
+            len(candidate_features), len(numeric_columns), len(final_features),
+        )
 
         self._last_causal_evidence = self._diagnose_external_predictor_causality(
-            candidate_features.loc[train_only_index],
+            candidate_features,
             target_series.loc[train_only_index],
             target_col,
         )
 
         try:
             selection_result = await self.selector.select_with_full_analysis(
-                candidate_features.loc[train_only_index],
+                candidate_features,
                 target_series.loc[train_only_index],
                 context_id=kwargs.get('context_id', f'stage3_{target_col}'),
                 market_data=final_features.loc[train_only_index],
                 max_features=kwargs.get('max_features'),
             )
             selected = selection_result.get('selected_features') or []
-            selected = [feature for feature in selected if feature in candidate_features.columns]
+            selected = [feature for feature in selected if feature in numeric_columns]
             if not selected:
-                selected = list(candidate_features.columns)
+                selected = list(numeric_columns)
             importance = {
                 feature: 1.0 / (rank + 1)
                 for rank, feature in enumerate(selected)
@@ -816,5 +841,4 @@ class FeatureEngineeringStage(BaseStage):
             return selected, importance
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Feature selection failed critically: {e}', exc_info=True)
-            fallback = list(candidate_features.columns)
-            return fallback, dict.fromkeys(fallback, 1.0)
+            return numeric_columns, dict.fromkeys(numeric_columns, 1.0)

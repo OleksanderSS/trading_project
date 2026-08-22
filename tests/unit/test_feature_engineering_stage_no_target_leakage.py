@@ -22,7 +22,15 @@ async def test_feature_selection_never_sees_target_columns():
 
     stage = object.__new__(FeatureEngineeringStage)
     stage.selector = _SelectorStub()
-    stage.logger = type("L", (), {"warning": lambda *args, **kwargs: None})()
+    # A logger double has to answer the whole interface, not the one method
+    # the code happened to call when the test was written. This carried only
+    # `warning`, so adding an `info` line to _select_features broke the test
+    # rather than the code -- the third time a partial logger double has done
+    # that here.
+    stage.logger = type("L", (), {
+        name: (lambda *args, **kwargs: None)
+        for name in ("debug", "info", "warning", "error", "exception", "critical")
+    } | {"isEnabledFor": lambda *args, **kwargs: False})()
 
     df = pd.DataFrame(
         {
