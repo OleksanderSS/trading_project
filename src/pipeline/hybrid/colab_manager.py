@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from src.core.logging.logger import ProjectLogger
 from src.features.utils.datetime_utils import ensure_datetime_column
@@ -123,7 +125,33 @@ class ColabManager:
             requested_timeframes=config.timeframes,
         )
 
+        # Accumulation is worth doing only when the file on disk actually holds
+        # rows this batch does not. It usually holds none, because
+        # `pipeline_runner` has ALREADY written this run's output to these very
+        # paths by the time this runs -- so "existing" is the new batch, and the
+        # concat below was the batch joined to itself.
+        #
+        # On 2026-08-22 that ended the run: 259,133 rows became 518,266 x 2,238,
+        # and `drop_duplicates` -- which takes a fresh copy through boolean
+        # indexing -- died with "Unable to allocate 437. MiB", five minutes
+        # after the batch had already been safely written. The dedup would then
+        # have removed precisely the rows the concat had just added.
+        #
+        # So the keys are read first. Three columns instead of 2,238 costs a
+        # few MiB, and when nothing new is found the whole load-concat-dedup is
+        # skipped. This keeps real accumulation working -- a previous batch with
+        # other tickers or older bars still merges -- while the ordinary case
+        # stops paying 9 GiB to rediscover that it has nothing to do.
         if config.accumulate and features_path.exists() and targets_path.exists():
+            carried_over = self._rows_not_already_present(features_path, features_df)
+        else:
+            carried_over = 0
+
+        if config.accumulate and carried_over:
+            logger.info(
+                "Accumulating: %d row(s) on disk are not in this batch.",
+                carried_over,
+            )
             # Load existing
             existing_f = self._validate_batch_frame(
                 pd.read_parquet(features_path),
@@ -162,6 +190,41 @@ class ColabManager:
             logger.info(f"Created new batch: {len(features_df)} rows")
 
         return features_path, targets_path
+
+    @staticmethod
+    def _rows_not_already_present(
+        existing_path: Path,
+        incoming: pd.DataFrame,
+    ) -> int:
+        """How many rows on disk this batch does not already carry.
+
+        Reads the identity columns ONLY -- three of 2,238 -- so asking the
+        question costs a few MiB instead of the 4.6 GiB the whole frame needs.
+        The answer decides whether the expensive path is worth entering at all.
+
+        Returns 0 when it cannot tell, which keeps the old behaviour: an
+        unreadable or differently-keyed file falls through to the full
+        accumulate rather than silently dropping rows.
+        """
+        keys = [k for k in ("datetime", "ticker", "interval") if k in incoming.columns]
+        if not keys:
+            return 0
+        try:
+            available = set(pq.ParquetFile(existing_path).schema_arrow.names)
+            if not set(keys).issubset(available):
+                return 0
+            on_disk = pd.read_parquet(existing_path, columns=keys)
+        except (OSError, ValueError, pa.ArrowInvalid):
+            # Not readable as parquet, or the schema moved. Say "cannot tell".
+            return 0
+
+        merged = on_disk.merge(
+            incoming[keys].drop_duplicates(),
+            on=keys,
+            how="left",
+            indicator=True,
+        )
+        return int((merged["_merge"] == "left_only").sum())
 
     def _deduplicate_df(self, df: pd.DataFrame) -> pd.DataFrame:
         """Remove duplicate rows without collapsing separate timeframes."""
