@@ -382,7 +382,14 @@ class FeatureEngineeringStage(BaseStage):
                 # an entire timeframe silently emptying.
                 normalized_tf = normalize_timeframe(tf)
                 matches = df['interval'].map(normalize_timeframe) == normalized_tf
-                filtered_df = df[matches].copy()
+                # No `.copy()`: boolean-mask indexing already returns a fresh
+                # frame that shares nothing with `df`. Measured on pandas
+                # 2.3.3 -- `np.shares_memory` is False, and the extra call
+                # doubled the peak of the operation (6.9 -> 13.8 MiB on a
+                # 9.2 MiB frame). This loop runs once per timeframe inside
+                # `combine timeframes`, the phase where the run's memory goes
+                # from 1.56 GiB to 4.58 GiB.
+                filtered_df = df[matches]
                 self.logger.info(f"Filtered {tf} timeframe: {len(df)} -> {len(filtered_df)} rows")
                 if filtered_df.empty and not df.empty:
                     self.logger.error(
