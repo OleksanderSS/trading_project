@@ -664,10 +664,14 @@ class PipelineExecutor:
         tickers = PipelineExecutor._resolve_tickers(args, colab_results, features_df)
         
         # Filter DataFrames to only include the resolved tickers
+        # No `.copy()`: `df[boolean]` already returns a frame that shares no
+        # memory with the source (measured on pandas 2.3.3), so the call was a
+        # second full duplicate. On the features frame -- 259,133 rows by 2,238
+        # columns, 4.6 GiB as float64 -- that is not a rounding error.
         if tickers and hasattr(features_df, 'empty') and not features_df.empty and 'ticker' in features_df.columns:
-            features_df = features_df[features_df['ticker'].isin(tickers)].copy()
+            features_df = features_df[features_df['ticker'].isin(tickers)]
         if tickers and hasattr(targets_df, 'empty') and not targets_df.empty and 'ticker' in targets_df.columns:
-            targets_df = targets_df[targets_df['ticker'].isin(tickers)].copy()
+            targets_df = targets_df[targets_df['ticker'].isin(tickers)]
             
         logger.info(f"Resolved tickers for continue mode: {tickers}")
         logger.info("About to run light training for continue mode...")

@@ -37,6 +37,30 @@ copy DOES leak back into the original -- verified on pandas 2.3.3, where
 assignment, new or existing, does not. Anything with a partial write is left
 alone, because there the deep copy is load-bearing.
 
+WHAT THIS DOES NOT CATCH, and it is not a small gap. The receiver has to be a
+bare parameter name, so `.copy()` on an EXPRESSION is invisible to it. That
+missed a real one: `_combine_timeframes` filtered each timeframe as
+`df[matches].copy()`, and boolean-mask indexing already returns a frame
+sharing nothing with the source -- measured, `np.shares_memory` is False --
+so the `.copy()` was a second full duplicate, inside the phase where v7's
+held memory went from 1.56 GiB to 4.58 GiB.
+
+Measured afterwards, and it narrowed the gap: on pandas 2.3.3 NONE of
+`df[mask]`, `df[[columns]]` or `df.loc[mask]` shares memory with the source,
+even for a single-dtype frame. All three already copy, so a `.copy()` after
+any of them is redundant.
+
+What still cannot be decided from the source alone is whether a subscript
+yields a FRAME or a SERIES. `df[col].copy()` with a scalar key returns a
+Series that genuinely can be a view, so that one is load-bearing -- and a bare
+`df[key]` gives no way to know which it is without running the code. That is
+the whole of the remaining imprecision, and it is why the rule stays as it is
+rather than being widened into something that would fire on correct code.
+
+Hand-searching `].copy()` across src/ found 52 occurrences on 2026-08-22. The
+one that mattered was in `pipeline_executor`, filtering the full features
+frame -- 4.6 GiB as float64 -- by ticker and then copying the result.
+
 Runnable standalone:  python tests/contracts/_frame_copy_scan.py
 """
 from __future__ import annotations
