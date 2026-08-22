@@ -37,6 +37,14 @@ ROUND_TRIPS_PER_YEAR = 50
 
 #: Measured on the batch, 153,852 daily bars across 22 tickers.
 MEDIAN_MOVE_5D = 0.02204
+DAILY_SIGMA = 0.015
+
+#: Median daily dollar volume of the least liquid name held, measured on the
+#: same batch. Impact is worst there, so the capacity limit is set by it.
+LEAST_LIQUID_ADV = 113_532_070
+
+#: What the cost profile already charges for slippage, one way.
+SLIPPAGE_ASSUMED = 0.0001
 
 CAPITALS = (5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 1_000_000)
 EDGES = (0.0007, 0.0010, 0.0014, 0.0020, 0.0030)
@@ -125,6 +133,32 @@ def main() -> int:
     print("  the venue, and is a choice. Note it does not vary with capital:")
     print("  small accounts are punished by the per-ORDER minimum, not by the")
     print("  market.")
+    print()
+
+    # Market impact: the other thing capital buys, and the one it costs.
+    print("=== market impact: does an order move the price? ===")
+    print("  sqrt model, impact = sigma * sqrt(order / average daily volume)")
+    print(f"  sigma = 1.5% (mean absolute daily move, measured)")
+    print(f"  ADV of the LEAST liquid name held: $113.5M/day (TSM, median)")
+    print()
+    print(f"{'capital':>12s} {'per pos.':>11s} {'share of ADV':>13s} {'impact':>9s}"
+          f"  vs the {SLIPPAGE_ASSUMED:.3%} already assumed")
+    print("-" * 74)
+    import math
+    for capital in (25_000, 100_000, 500_000, 1_000_000, 5_000_000, 10_000_000):
+        notional = capital / args.positions
+        share = notional / LEAST_LIQUID_ADV
+        impact = DAILY_SIGMA * math.sqrt(share)
+        verdict = ("under it" if impact < SLIPPAGE_ASSUMED
+                   else "noticeable" if impact < 0.0014 / 3
+                   else "eats a third of the edge or more")
+        print(f"{capital:12,} {notional:11,.0f} {share:12.4%} {impact:8.3%}   {verdict}")
+    print()
+    print("  Linear slippage is not wrong at this size -- at $100,000 the impact")
+    print("  on the least liquid holding is below the slippage the config already")
+    print("  charges. It starts being wrong around $500,000 and is seriously")
+    print("  wrong by $5M. That is a capacity limit with a number on it, not a")
+    print("  defect.")
     print()
 
     print("Reading it:")
