@@ -76,13 +76,38 @@ class PaperPortfolioSimulator:
         aggregate_gross_exposure = 0.0
         aggregate_net_exposure = 0.0
 
+        # Compounding needs two things the loop did not have: an order, and a
+        # running balance.
+        #
+        # Records arrived in whatever order the store returned them, and every
+        # one was sized from `initial_cash`. So a run that doubled its equity
+        # kept opening the same positions it opened on day one, and the result
+        # a backtest exists to show -- what the money does over time -- was
+        # missing by construction.
+        #
+        # Chronological by `created_at`, which is what `_simulate_record`
+        # already uses as a position's `start_at`. Only REALISED profit
+        # compounds: a position still open has not paid for anything yet, and
+        # sizing against a mark would let an unclosed winner fund the next
+        # trade. That is the conservative reading and it is deliberate; the
+        # alternative is to mark open positions at each entry, which
+        # `_marked_position_pnl` could do if this is ever wanted.
+        records = sorted(records, key=lambda item: parse_datetime(item.created_at))
+        closed_pnl: list[tuple[datetime, float]] = []
+
         for record in records:
+            record_start = parse_datetime(record.created_at)
+            realised = sum(
+                amount for closed_at, amount in closed_pnl if closed_at <= record_start
+            )
+            capital_at_entry = float(initial_cash) + realised
+
             simulated = _simulate_record(
                 frame=frame,
                 record=record,
                 requested_tickers=requested_tickers,
                 as_of=as_of_dt,
-                initial_cash=float(initial_cash),
+                capital_at_entry=capital_at_entry,
                 position_size_pct=float(position_size_pct),
                 include_watchlist=include_watchlist,
                 watchlist_position_size_pct=float(watchlist_position_size_pct),
@@ -98,6 +123,9 @@ class PaperPortfolioSimulator:
             for position in simulated["positions"]:
                 aggregate_gross_exposure += abs(float(position["notional"]))
                 aggregate_net_exposure += float(position["notional"]) * float(position["side_multiplier"])
+                closed_pnl.append(
+                    (parse_datetime(position["exit_at"]), float(position["pnl"]))
+                )
 
             positions.extend(simulated["positions"])
             skipped.extend(simulated["skipped"])
@@ -152,7 +180,7 @@ def _simulate_record(
     record: PaperTradeRecord,
     requested_tickers: list[str],
     as_of: datetime,
-    initial_cash: float,
+    capital_at_entry: float,
     position_size_pct: float,
     include_watchlist: bool,
     watchlist_position_size_pct: float,
@@ -204,9 +232,18 @@ def _simulate_record(
             "skipped": [{**base_payload, "tickers": record_tickers, "status": "as_of_before_record", "reason": "as_of is earlier than record creation."}],
         }
 
+    # `capital_at_entry`, not the starting balance.
+    #
+    # This read `initial_cash`, so a run that doubled its equity went on
+    # opening positions as though it had not. Money earned never worked, and
+    # any simulation long enough to compound understated its own growth --
+    # which is the half of a strategy's result that a backtest exists to show.
+    #
+    # The exposure limits below are measured against the same figure, for the
+    # same reason: a 100% gross cap has to mean 100% of what is there.
     size_pct = watchlist_position_size_pct if record.action == "watchlist" else position_size_pct
     confidence_multiplier = clamp(record.confidence, 0.0, 1.0) if confidence_weighting else 1.0
-    notional_per_ticker = initial_cash * size_pct * confidence_multiplier / max(len(record_tickers), 1)
+    notional_per_ticker = capital_at_entry * size_pct * confidence_multiplier / max(len(record_tickers), 1)
     if notional_per_ticker <= 0:
         return {
             "positions": [],
@@ -224,7 +261,7 @@ def _simulate_record(
     new_gross_exposure = current_gross_exposure + (abs(notional_per_ticker) * len(record_tickers))
     new_net_exposure = current_net_exposure + (notional_per_ticker * side * len(record_tickers))
 
-    if new_gross_exposure > initial_cash * max_gross_exposure:
+    if new_gross_exposure > capital_at_entry * max_gross_exposure:
         return {
             "positions": [],
             "skipped": [
@@ -232,12 +269,12 @@ def _simulate_record(
                     **base_payload,
                     "tickers": record_tickers,
                     "status": "exceeds_gross_exposure_limit",
-                    "reason": f"Position would exceed gross exposure limit: {new_gross_exposure:.2f} > {initial_cash * max_gross_exposure:.2f}",
+                    "reason": f"Position would exceed gross exposure limit: {new_gross_exposure:.2f} > {capital_at_entry * max_gross_exposure:.2f}",
                 }
             ],
         }
 
-    if abs(new_net_exposure) > initial_cash * max_net_exposure:
+    if abs(new_net_exposure) > capital_at_entry * max_net_exposure:
         return {
             "positions": [],
             "skipped": [
@@ -245,7 +282,7 @@ def _simulate_record(
                     **base_payload,
                     "tickers": record_tickers,
                     "status": "exceeds_net_exposure_limit",
-                    "reason": f"Position would exceed net exposure limit: {abs(new_net_exposure):.2f} > {initial_cash * max_net_exposure:.2f}",
+                    "reason": f"Position would exceed net exposure limit: {abs(new_net_exposure):.2f} > {capital_at_entry * max_net_exposure:.2f}",
                 }
             ],
         }
