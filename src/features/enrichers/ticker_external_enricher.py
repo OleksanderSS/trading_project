@@ -49,7 +49,17 @@ class TickerExternalEnricher(BaseEnricher):
         self.wiki_publication_lag_days = int(
             self.config.get("wiki_publication_lag_days", 1)
         )
-        self.attention_window = int(self.config.get("attention_window", 20))
+        # `attention_window` lived here and was read by nothing. The attention
+        # baseline is EXPANDING, chosen deliberately so the value a bar uses
+        # could have been computed at that bar (see _attach_attention), and no
+        # config file ever set the key -- so it was a 20 that decided nothing.
+        # Removed rather than wired, on the precedent of `daily_max_years`:
+        # two places declaring one number is how fixes here half-land.
+        #
+        # Whether a trailing window would beat the expanding baseline is a real
+        # question -- an expanding one grows less sensitive as history
+        # accumulates, so the same spike scores differently in month two and
+        # month six -- but that is a measurement, not a leftover default.
         self.insider_window_days = int(self.config.get("insider_window_days", 30))
 
     @property
