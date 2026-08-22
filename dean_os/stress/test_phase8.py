@@ -3,13 +3,49 @@
 Перевірка Phase 8: Risk Engine, Kill Switch, Maturity Gates, Execution Gateway, Stress Scenarios.
 """
 import sys
-import io
 import tempfile
 import json
 from pathlib import Path
 
-# Встановлюємо UTF-8 для виводу в Windows
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+def _use_utf8_console() -> None:
+    """UTF-8 output on a Windows console, for when this file is RUN.
+
+    This used to happen at import time, as:
+
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+    Under pytest that is destructive. `sys.stdout` is then a wrapper around a
+    temporary file that pytest owns; taking its `.buffer`, wrapping it again
+    and rebinding `sys.stdout` drops the last reference to the original
+    wrapper, whose finaliser closes the underlying file -- pytest's capture
+    file, for the rest of the session.
+
+    The cost was not local. `tests/dean_os/test_builders_refuse_empty_input`
+    imports this module by name, and after it did, every remaining test in the
+    directory failed at setup with "I/O operation on closed file". Running
+    `pytest tests/dean_os/` reported 293 passed and 2,004 setup/teardown
+    errors: roughly 1,002 tests never ran, and a directory that looked like it
+    had a green tail was not testing two thirds of itself.
+
+    So: only when this file is the program, and `reconfigure` in preference,
+    because it changes the encoding of the existing stream instead of
+    replacing the object.
+    """
+    stream = sys.stdout
+    reconfigure = getattr(stream, "reconfigure", None)
+    if callable(reconfigure):
+        try:
+            reconfigure(encoding="utf-8")
+            return
+        except (ValueError, OSError):
+            pass
+
+    buffer = getattr(stream, "buffer", None)
+    if buffer is not None:
+        import io as _io
+
+        sys.stdout = _io.TextIOWrapper(buffer, encoding="utf-8")
 
 from dean_os.risk.risk_engine import RiskEngine, RiskLimits, PortfolioState
 from dean_os.execution.maturity_gates import (
@@ -218,6 +254,7 @@ def test_stress_scenarios():
 
 
 if __name__ == "__main__":
+    _use_utf8_console()
     try:
         test_risk_engine()
         test_maturity_gates()
