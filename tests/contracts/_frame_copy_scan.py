@@ -16,8 +16,11 @@ This is not a micro-optimisation. The defect killed three separate runs:
        killed rebuild v6 with "Unable to allocate 4.25 GiB".
 
 Three instances of one shape, each found only when a run died. Measured on a
-2200 x 5000 stand-in and scaled to the real stage-3 width of 259,133 columns,
-one such copy costs ~4.25 GiB and ~4.9 s.
+2200 x 5000 stand-in and scaled to the real stage-3 frame -- 259,133 ROWS by
+2,238 columns, confirmed against the batch -- one such copy costs ~4.25 GiB
+and ~4.9 s. (Numpy prints the failing BLOCK, which is transposed, so the
+tracebacks read `shape (2200, 259133)`: columns first, then rows. The bytes
+are the same either way.)
 
 The scan is deliberately conservative. A function is reported ONLY when the
 deep copy is provably unnecessary:

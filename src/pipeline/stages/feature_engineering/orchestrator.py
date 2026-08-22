@@ -617,8 +617,8 @@ class FeatureEngineeringStage(BaseStage):
             return enriched_df
 
         # Whole columns are assigned below and nothing is written into a slice,
-        # so the copy only needs its own column index, not its own data. At the
-        # stage-3 width this is the difference between 4.25 GiB and nothing --
+        # so the copy only needs its own column index, not its own data. On the
+        # stage-3 frame this is the difference between 4.25 GiB and nothing --
         # and on the `not missing` path below the frame is returned unchanged,
         # so the deep copy bought literally nothing.
         result = enriched_df.copy(deep=False)

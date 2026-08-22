@@ -5,7 +5,7 @@ frame deeply when a shallow copy would do; each is cheap to fix but not all
 are worth touching, because most run on frames small enough for it never to
 matter. The ceiling exists so the shape stops spreading into the hot path,
 where it has already killed three runs -- see `_frame_copy_scan` for the
-three and for what one such copy costs at the stage-3 width (~4.25 GiB).
+three and for what one such copy costs on the stage-3 frame (~4.25 GiB).
 
 The scan only reports copies it can prove are unnecessary: a parameter frame,
 copied without `deep=False`, in a function that never writes into a slice. If
@@ -55,7 +55,7 @@ def test_the_hot_path_carries_none(findings):
     ]
     assert not offenders, (
         "Deep frame copy on the stage-3 hot path, where the frame is "
-        "2200 x 259,133 and the copy costs ~4.25 GiB:\n"
+        "259,133 rows by 2,238 columns and the copy costs ~4.25 GiB:\n"
         + "\n".join(f"  {finding}" for finding in offenders)
     )
 
