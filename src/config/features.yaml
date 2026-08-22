@@ -10,6 +10,14 @@ features:
     macro_features: true            # Fetches and integrates macroeconomic data
     market_wide: true               # Fear & Greed + CFTC positioning, shifted to when each was published
     economic_calendar: true         # Surprise of scheduled releases, standardised point-in-time
+    # Registering an enricher in enrichment.yaml is NOT what turns it on.
+    # `_is_enricher_enabled` reads features.enabled_enrichers (or the older
+    # features.enrichers.<id>.enabled); enrichment.yaml only supplies module,
+    # class and params. corporate_filings was added to enrichment.yaml on
+    # 2026-08-21 and did not run: the rebuild's log lists twenty-one enrichers
+    # and none of them is it, while `sec_filings` sits in stage 3's inputs
+    # waiting for a reader that never loaded.
+    corporate_filings: true         # SEC filings as events: recency, counts, 8-K apart from 10-Q
     ticker_external: true           # Wikipedia attention + insider filings, joined per ticker
     peer_context: true              # What the sector did, computed without the ticker itself
     keyword_entity: true            # Extracts keywords and entities from news (NEW)

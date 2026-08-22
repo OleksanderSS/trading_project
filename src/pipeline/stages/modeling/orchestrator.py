@@ -135,6 +135,8 @@ class ModelingStage(BaseStage):
 
     async def run(self, **kwargs) -> dict[str, Any]:
         """Runs the full training cycle with Pattern-Aware logic."""
+        # Why a context produced no champion, kept rather than logged away.
+        self._gate_refusals: list[dict[str, Any]] = []
         enriched_data = kwargs.get('enriched_data')
         if enriched_data is None or (isinstance(enriched_data, pd.DataFrame) and enriched_data.empty):
             logger.error('Enriched data not found. Skipping Modeling Stage.')
@@ -236,12 +238,14 @@ class ModelingStage(BaseStage):
             }
         )
         holdout_path = self._write_holdout_predictions(champions)
+        refusals_path = self._write_gate_refusals(self._gate_refusals)
         return {
             'models_metadata': champions,
             'processed_data': enriched_data,
             'pipeline_control_metric_artifacts': metric_artifacts,
             'pipeline_control_metric_artifact_manifests': manifests,
             'holdout_predictions_path': str(holdout_path) if holdout_path else None,
+            'gate_refusals_path': str(refusals_path) if refusals_path else None,
         }
 
     @staticmethod
@@ -458,12 +462,17 @@ class ModelingStage(BaseStage):
                     # already on disk -- which today means a model trained on
                     # the corrupted batch.
                     if not self._champion_is_allowed(ticker_result, context_key):
+                        self._collect_gate_refusal(ticker_result, context_key)
                         continue
 
                     if self._is_indicator_prediction(target_name):
                         logger.info(
                             "No champion recorded for %s: indicator_prediction "
                             "targets are measured but not promoted", context_key,
+                        )
+                        self._collect_gate_refusal(
+                            ticker_result, context_key,
+                            note="indicator_prediction targets are measured but not promoted",
                         )
                         continue
 
@@ -924,6 +933,60 @@ class ModelingStage(BaseStage):
                 "not filtering indicator targets this run.", e,
             )
             return False
+
+    def _collect_gate_refusal(
+        self,
+        ticker_result: dict[str, Any],
+        context_key: str,
+        note: str | None = None,
+    ) -> None:
+        """Keep the gate's reason, not only its verdict.
+
+        The gate logs why it refused and persists nothing. Answering "why did
+        no return target ever produce a champion" therefore meant finding the
+        run's log and parsing 446 lines out of it -- which worked only because
+        that log happened to still exist.
+
+        What it found is worth having as an artifact rather than an
+        excavation: 342 of the 446 were "does not beat the naive baseline",
+        24 were "too few events", and the numbers in each line are what
+        separate "no edge" from "not enough data to tell".
+        """
+        gate = ticker_result.get("promotion_gate") or {}
+        self._gate_refusals.append({
+            "context": context_key,
+            "ticker": ticker_result.get("ticker"),
+            "timeframe": ticker_result.get("timeframe"),
+            "target": ticker_result.get("target_name") or ticker_result.get("target"),
+            "model_type": ticker_result.get("model_type"),
+            "reasons": "; ".join(gate.get("reasons") or ([note] if note else [])),
+            "holdout_score": gate.get("holdout_score"),
+            "baseline_score": gate.get("baseline_score"),
+            "holdout_rows": gate.get("holdout_rows"),
+            "holdout_events": gate.get("holdout_events"),
+        })
+
+    @staticmethod
+    def _write_gate_refusals(refusals: "list[dict[str, Any]]") -> "Path | None":
+        """One row per context that produced no champion, and why."""
+        if not refusals:
+            logger.info("Every context produced a champion; no refusals to record.")
+            return None
+        frame = pd.DataFrame(refusals)
+        directory = Path("data/results")
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / (
+            f"gate_refusals_{datetime.datetime.now():%Y%m%d_%H%M%S}.parquet"
+        )
+        frame.to_parquet(path, index=False)
+        by_target = frame.groupby("target").size().sort_values(ascending=False)
+        logger.info(
+            "Recorded %d promotion-gate refusals across %d targets to %s. "
+            "Most refused: %s",
+            len(frame), frame["target"].nunique(), path.name,
+            ", ".join(f"{name} x{count}" for name, count in by_target.head(3).items()),
+        )
+        return path
 
     @staticmethod
     def _champion_is_allowed(ticker_result: dict[str, Any], context_key: str) -> bool:
