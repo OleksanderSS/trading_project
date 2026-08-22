@@ -402,6 +402,17 @@ class ModelingStage(BaseStage):
                 )
 
                 if not prepared_data:
+                    # The most invisible way to produce no champion: the split
+                    # never happened, so there was no model to refuse and the
+                    # context simply vanished from the artifact. Counting it
+                    # matters because it is the one category that means "not
+                    # enough data to tell" rather than "no edge" -- the
+                    # distinction the whole artifact exists to draw.
+                    self._record_unprepared_context(
+                        ticker=str(ticker),
+                        timeframe=str(timeframe),
+                        target_name=str(target_name),
+                    )
                     continue
 
                 # Запускаємо уніфіковане тренування
@@ -484,6 +495,16 @@ class ModelingStage(BaseStage):
                         logger.info(
                             "No champion recorded for %s: %s",
                             context_key, stability.get('reason'),
+                        )
+                        # This path logged and persisted nothing while the two
+                        # above it recorded, so the artifact built to answer
+                        # "why did nothing get promoted" was silently missing a
+                        # whole category -- the one that reads "balanced
+                        # accuracy beats chance on only some folds", 66 of the
+                        # 446 refusals in the run that was parsed by hand.
+                        self._collect_gate_refusal(
+                            ticker_result, context_key,
+                            note=stability.get('reason'),
                         )
                         continue
 
@@ -964,6 +985,39 @@ class ModelingStage(BaseStage):
             "baseline_score": gate.get("baseline_score"),
             "holdout_rows": gate.get("holdout_rows"),
             "holdout_events": gate.get("holdout_events"),
+        })
+
+    def _record_unprepared_context(
+        self,
+        ticker: str,
+        timeframe: str,
+        target_name: str,
+    ) -> None:
+        """A context that never reached training still produced no champion.
+
+        `prepare_data_for_models` returns nothing when the split cannot be
+        built -- too few rows, no usable target values, the purge gap eating
+        what was left. The loop simply moved on, so these contexts appeared
+        nowhere: not among the champions, not among the refusals.
+
+        That is the reverse of the mistake the artifact was built to fix. Every
+        other row here says "a model was trained and judged not good enough";
+        this one says "there was never enough to train on", and reading the
+        first as the second is exactly how "no edge" and "no data" get
+        confused. The pattern is absent from the key because training, which
+        selects it, never ran.
+        """
+        self._gate_refusals.append({
+            "context": f"{ticker}_{timeframe}_{target_name}",
+            "ticker": ticker,
+            "timeframe": timeframe,
+            "target": target_name,
+            "model_type": None,
+            "reasons": "no usable train/test split was built; training never ran",
+            "holdout_score": None,
+            "baseline_score": None,
+            "holdout_rows": None,
+            "holdout_events": None,
         })
 
     @staticmethod
