@@ -454,7 +454,21 @@ collectors:
     - accessionNumber
     - cik
     params:
-      period: 60d
+      # 60d threw away data that was already in hand. The collector makes ONE
+      # request per ticker for `filings.recent` -- the SEC returns up to 1000
+      # filings there, years of history -- and then filters by date in Python
+      # (_fetch_filings_for_ticker). So the window costs nothing in requests;
+      # it only decides how much of the response is discarded.
+      #
+      # 60d covered the 15m frame (58 days, Yahoo's intraday limit) completely
+      # and the 1d and 1h frames by about 8%, which is backwards: a 10-Q means
+      # something on a daily bar and nothing on a 15-minute one. 2y matches the
+      # 1d window and covers the 728-day 1h window.
+      #
+      # This is a ceiling, not a promise: `recent` holds up to 1000 filings, so
+      # a heavy filer may not reach back a full two years. Going deeper needs
+      # `filings.files`, the older batches, which this collector does not read.
+      period: 2y
     submissions_url_template: https://data.sec.gov/submissions/CIK{cik}.json
     table_name: sec_filings
     type: sec_filings

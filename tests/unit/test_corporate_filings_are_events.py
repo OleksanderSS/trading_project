@@ -128,3 +128,42 @@ def test_the_feature_names_it_declares_are_the_ones_it_adds(enricher):
     out = enricher._enrich_impl(bars, sec_filings=_filings([("AAPL", "2026-03-01", "8-K")]))
     for name in enricher.get_feature_names():
         assert name in out.columns, name
+
+
+def test_the_collection_window_reaches_the_daily_frame():
+    """A feature that is enabled but empty is worth no more than one switched off.
+
+    The collector was set to `period: 60d`. That covered the 15m frame
+    completely -- Yahoo serves only 58 days of intraday bars -- and the 1d and
+    1h frames by roughly 8%, which is exactly backwards: a 10-Q moves a daily
+    bar and means nothing on a 15-minute one.
+
+    The window costs nothing to widen. `_fetch_filings_for_ticker` makes one
+    request per ticker for `filings.recent`, which the SEC fills with up to
+    1000 filings, and then discards the ones outside the window in Python. So
+    60d was throwing away rows already downloaded.
+
+    This pins the window against the daily frame so the two cannot drift apart
+    again without a test saying so.
+    """
+    import io
+    from datetime import datetime
+
+    import yaml
+
+    from src.data.collectors.sec_filings_collector import SECFilingsCollector
+
+    config = yaml.safe_load(io.open("src/config/collectors.yaml", encoding="utf-8"))
+    collectors = config.get("collectors", config)
+    period = collectors["sec_filings"]["params"]["period"]
+
+    run_date = datetime(2026, 8, 22)
+    start = SECFilingsCollector._calculate_start_date(None, period, run_date)
+    days = (run_date - start).days
+
+    assert days >= 365, (
+        f"SEC filings are collected for {days} days ({period!r}). The daily "
+        "frame spans about two years, so filing features would be null for "
+        f"{100 * (1 - days / 730):.0f}% of it. Widening the window costs no "
+        "extra requests -- the response is already fetched and then filtered."
+    )
