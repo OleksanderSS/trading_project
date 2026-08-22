@@ -171,7 +171,9 @@ class PortfolioManager:
         cognitive_scenarios = signal.get('cognitive_scenarios')
         if action == 'BUY':
             return self._create_buy_order(ticker, price, confidence,
-                signal.get('report'), model_id=model_id, cognitive_scenarios=cognitive_scenarios)
+                signal.get('report'), model_id=model_id,
+                cognitive_scenarios=cognitive_scenarios,
+                current_prices=current_prices)
         if action == 'SELL':
             return self._create_sell_order(ticker, price)
         if action:
@@ -180,13 +182,17 @@ class PortfolioManager:
         return None
 
     def _create_buy_order(self, ticker: str, price: float, confidence:
-        float, report: (Any | None), model_id: str | None = None, cognitive_scenarios: list[dict] | None = None) ->(TradeOrder | None):
+        float, report: (Any | None), model_id: str | None = None,
+        cognitive_scenarios: list[dict] | None = None,
+        current_prices: dict[str, float] | None = None) ->(TradeOrder | None):
         """Create a BUY order with calculated position sizing."""
         regime = 'NORMAL'
         if report and hasattr(report, 'market_regime'):
             regime = str(report.market_regime)
         shares = self._calculate_position_size(ticker, price, confidence,
-            regime=regime, model_id=model_id, cognitive_scenarios=cognitive_scenarios)
+            regime=regime, model_id=model_id,
+            cognitive_scenarios=cognitive_scenarios,
+            current_prices=current_prices)
         if shares > 0:
             return TradeOrder(ticker=ticker, quantity=shares, price=price,
                 action='BUY', reason=
@@ -230,16 +236,50 @@ class PortfolioManager:
                     'SELL', reason='Take-Profit Triggered'))
         return exit_orders
 
+    def _estimated_cost_rate(self) -> float:
+        """A conservative allowance for execution costs, as a fraction.
+
+        Read from the portfolio's own cost model where it exposes one, so the
+        sizing and the execution cannot disagree. The fallback is deliberately
+        generous rather than accurate: sizing slightly under the maximum is a
+        smaller order, while sizing over it is no order at all.
+        """
+        model = getattr(self.portfolio, 'transaction_cost_model', None)
+        for attribute in ('total_cost_pct', 'cost_pct', 'commission_pct'):
+            value = getattr(model, attribute, None)
+            if isinstance(value, int | float) and value > 0:
+                return float(value)
+        return 0.005
+
     def _calculate_position_size(self, ticker: str, price: float,
         confidence: float, regime: str = 'NORMAL',
         model_id: str | None = None,
-        cognitive_scenarios: list[dict] | None = None) -> int:
+        cognitive_scenarios: list[dict] | None = None,
+        current_prices: dict[str, float] | None = None) -> int:
         """
         Calculates optimal position size using available sizing algorithms.
         Passes model_id, diary and adaptive_selector to EliteRiskSizer so
         Kelly sizing uses real win_rate instead of a binary heuristic.
         """
-        total_equity = self.portfolio.get_total_value({ticker: price})
+        # Every price, not just this one.
+        #
+        # `get_total_value` skips any position whose ticker is missing from the
+        # map -- `price = current_prices.get(ticker)` then `if price:` -- so
+        # passing `{ticker: price}` valued every OTHER open position at zero.
+        # With ten positions open, nine were invisible and the equity that
+        # sizing was computed from was cash plus one holding.
+        #
+        # The caller has the whole map; it simply was not passed down.
+        prices = dict(current_prices) if current_prices else {}
+        prices.setdefault(ticker, price)
+        missing = [t for t in self.portfolio.positions if t not in prices]
+        if missing:
+            self.logger.warning(
+                "Sizing %s without prices for %d open position(s) %s: they "
+                "count as zero in equity and the size will be understated.",
+                ticker, len(missing), missing[:5],
+            )
+        total_equity = self.portfolio.get_total_value(prices)
         try:
             market_regime = regime.upper()
             portfolio_volatility = 0.15
@@ -305,7 +345,15 @@ class PortfolioManager:
                 'quantity'] * price
         allowed_capital = max(0, max_position_value - current_position_value)
         shares_from_exposure = allowed_capital / price
-        shares_from_cash = self.portfolio.current_balance / price
+        # Cash has to cover the commission too.
+        #
+        # This was `current_balance / price`, so an order sized to the whole
+        # balance costs more than the balance once VirtualPortfolio adds
+        # execution costs -- and `buy_stock` refuses it outright with
+        # "Insufficient funds including transaction costs". The order is not
+        # trimmed, it is rejected, so the trade simply does not happen.
+        cost_rate = float(getattr(self, 'estimated_cost_rate', 0.0)) or self._estimated_cost_rate()
+        shares_from_cash = self.portfolio.current_balance / (price * (1.0 + cost_rate))
         final_shares = int(min(shares_from_risk, shares_from_exposure,
             shares_from_cash))
         if self.logger.isEnabledFor(logging.DEBUG):
