@@ -62,6 +62,17 @@ def create_argument_parser() -> argparse.ArgumentParser:
         help='Force execution even if validation fails'
     )
     parser.add_argument(
+        '--skip-training',
+        action='store_true',
+        help=(
+            'Continue mode only: run stages 5-7 on the champions already on '
+            'disk instead of training again. Verifying twenty minutes of '
+            'final-stage work cost ten hours of re-training without this, '
+            'which is why those stages stayed the least-tested part of the '
+            'system.'
+        )
+    )
+    parser.add_argument(
         '--n-trials',
         type=int,
         default=50,

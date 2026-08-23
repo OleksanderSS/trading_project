@@ -674,11 +674,14 @@ class PipelineExecutor:
             targets_df = targets_df[targets_df['ticker'].isin(tickers)]
             
         logger.info(f"Resolved tickers for continue mode: {tickers}")
-        logger.info("About to run light training for continue mode...")
-        light_results = await PipelineExecutor._run_light_training_for_continue(
-            orchestrator, features_df, targets_df, tickers, args
-        )
-        logger.info(f"Light training results: {light_results}")
+        if getattr(args, 'skip_training', False):
+            light_results = PipelineExecutor._reuse_trained_champions(colab_results)
+        else:
+            logger.info("About to run light training for continue mode...")
+            light_results = await PipelineExecutor._run_light_training_for_continue(
+                orchestrator, features_df, targets_df, tickers, args
+            )
+            logger.info(f"Light training results: {light_results}")
 
         # 4. Run final stages (5-7) after light training
         logger.info("Running final stages (5-7) after light training...")
@@ -701,6 +704,42 @@ class PipelineExecutor:
             'light_results': light_results,
             'final_results': final_results
         }
+
+    @staticmethod
+    def _reuse_trained_champions(colab_results: dict) -> dict:
+        """Stages 5-7 on the champions already on disk, without training again.
+
+        Continue mode always retrained. That is right when the batch is new,
+        and wrong when the question is whether the FINAL stages work: on
+        2026-08-23 they ran for the first time in this project's history, died
+        three minutes in on one context with no rows, and finding the next
+        defect would have cost another ten hours of retraining to reach twenty
+        minutes of work.
+
+        That cost is why those stages were the least-tested part of the
+        system. `models_metadata` is loaded from disk moments earlier anyway --
+        `_prefer_latest_local_run` takes the newest run out of
+        light_models_results.json -- so the champions are already in hand.
+
+        The shape returned here matches what run_light_models produces, so
+        nothing downstream can tell the difference.
+        """
+        metadata = (colab_results or {}).get('models_metadata') or {}
+        if not metadata:
+            logger.error(
+                '--skip-training was given but no champions are on disk. Run '
+                'without it once to train, or check that '
+                'light_models_results.json holds a run with models_metadata.'
+            )
+            return {'status': 'failed', 'reason': 'no_champions_on_disk',
+                    'models_metadata': {}, 'metrics': {}}
+
+        logger.info(
+            'Reusing %d champions already trained; skipping training and going '
+            'straight to stages 5-7.', len(metadata),
+        )
+        return {'status': 'light_models_complete', 'models_metadata': metadata,
+                'metrics': {}, 'reused_from_disk': True}
 
     @staticmethod
     async def _run_light_training_for_continue(orchestrator, features_df, targets_df, tickers, args):
