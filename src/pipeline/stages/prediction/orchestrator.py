@@ -368,6 +368,17 @@ class PredictionStage(BaseStage):
 
         request_meta = dict(meta)
         request_meta["timeframe"] = resolved_timeframe
+        # The price comes from the FULL frame, not from the model's own slice.
+        # `ticker_df_clean` here is `ticker_df_clean[selected_features]` -- it
+        # carries the columns that model was fitted on, and `close` is only
+        # among them by accident. On 2026-08-23 it never was: stage 5 logged
+        # "51 predictions, 0 prices", so every downstream consumer lost its
+        # prices, `current_prices` came out empty, the signals had no `price`
+        # column, and stage 7 refused the backtest with "Insufficient numeric
+        # price data" -- the first time those stages had ever run.
+        request_meta["_last_price"] = self._last_price_from_full_frame(
+            features_df, ticker, resolved_timeframe
+        )
         request_meta["_timeframe_lineage"] = timeframe_lineage
         request_meta["_timeframe_lineage_source"] = (
             "model_and_feature_cadence_verified"
@@ -483,7 +494,11 @@ class PredictionStage(BaseStage):
             or prediction_timeframe(request.ticker_df_clean)
         )
         target_name = request.meta.get('target_name') or request.meta.get('target')
-        last_price = self._get_last_price(request.ticker_df_clean, request.ticker)
+        # Prefer the price taken from the full frame; fall back to the model
+        # slice only when the caller did not supply one.
+        last_price = request.meta.get("_last_price")
+        if last_price is None:
+            last_price = self._get_last_price(request.ticker_df_clean, request.ticker)
         self._record_prediction_for_calibration(
             ticker=request.ticker,
             target_name=target_name,
@@ -539,6 +554,31 @@ class PredictionStage(BaseStage):
                     )
                 ),
             }}
+
+    def _last_price_from_full_frame(
+        self, features_df: pd.DataFrame, ticker: str,
+        timeframe: str | None,
+    ) -> float | None:
+        """The most recent close for this ticker, from the unnarrowed frame.
+
+        The batch carries `close` on every bar. It is the model-specific slice
+        that loses it, so the lookup has to happen before the narrowing rather
+        than after.
+        """
+        if features_df is None or getattr(features_df, "empty", True):
+            return None
+        if "ticker" not in features_df.columns:
+            return None
+        rows = features_df[features_df["ticker"].astype(str) == str(ticker)]
+        if timeframe and "interval" in rows.columns:
+            same = rows[rows["interval"].astype(str) == str(timeframe)]
+            # A timeframe with no rows means the label disagrees with the data,
+            # not that the ticker has no price; keep the ticker's own bars.
+            if not same.empty:
+                rows = same
+        if rows.empty:
+            return None
+        return self._get_last_price(rows, ticker)
 
     def _get_last_price(self, ticker_df: pd.DataFrame, ticker: str) ->float | None:
         if ticker_df.empty:

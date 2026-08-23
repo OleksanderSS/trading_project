@@ -105,3 +105,48 @@ def test_one_failing_context_does_not_end_the_stage():
             f"the per-context loop catches {name}; anything outside that list "
             "ends stages 5, 6 and 7 for every remaining context"
         )
+
+
+def test_the_price_comes_from_the_full_frame_not_the_model_slice():
+    """Stage 5 logged "51 predictions, 0 prices" the first time it ever ran.
+
+    `ticker_df_clean` reaching `_create_prediction_result` is
+    `ticker_df_clean[selected_features]` -- the columns that model was fitted
+    on. `close` is among them only by accident, and on 2026-08-23 it never was.
+
+    Everything downstream then loses its prices: `current_prices` came out
+    empty, the signals had no `price` column, and stage 7 refused the backtest
+    with "Insufficient numeric price data for backtest". The batch carries
+    `close` on all 259,133 rows the whole time.
+    """
+    from src.pipeline.stages.prediction.orchestrator import PredictionStage
+
+    stage = PredictionStage.__new__(PredictionStage)
+    full = pd.DataFrame({
+        "ticker": ["AAPL"] * 3 + ["MSFT"] * 2,
+        "interval": ["1d"] * 5,
+        "close": [10.0, 11.0, 12.0, 20.0, 21.0],
+        "some_feature": [1.0] * 5,
+    })
+
+    assert stage._last_price_from_full_frame(full, "AAPL", "1d") == 12.0
+    assert stage._last_price_from_full_frame(full, "MSFT", "1d") == 21.0
+    assert stage._last_price_from_full_frame(full, "NOPE", "1d") is None
+
+    # The narrowed slice a model actually sees has no close at all, which is
+    # exactly why the lookup cannot happen there.
+    model_slice = full[["some_feature"]]
+    assert stage._get_last_price(model_slice, "AAPL") is None
+
+
+def test_a_timeframe_with_no_rows_does_not_erase_the_price():
+    """A label disagreeing with the data is not the same as having no price."""
+    from src.pipeline.stages.prediction.orchestrator import PredictionStage
+
+    stage = PredictionStage.__new__(PredictionStage)
+    full = pd.DataFrame({
+        "ticker": ["AAPL"] * 2,
+        "interval": ["1d", "1d"],
+        "close": [10.0, 11.0],
+    })
+    assert stage._last_price_from_full_frame(full, "AAPL", "15m") == 11.0
