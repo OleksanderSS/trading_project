@@ -623,7 +623,19 @@ collectors:
     enabled: true
     frequency: daily
     table_name: wikipedia_attention_data
-    days_back: 30
+    # 30 threw away nine and a half years. The pageviews API serves daily
+    # counts from 2015-07-01 and returns the WHOLE range in one request per
+    # article -- measured on Tesla, 3,487 points from 2017-02-02 to
+    # 2026-08-20 in 526 KiB, the same single request a 30-day window costs.
+    #
+    # It matters more here than almost anywhere else. Attention is one of the
+    # few LEADING series this project has: it is produced by people looking
+    # something up, not computed from the price it is meant to predict. With a
+    # 30-day window it could never be trained on, because the daily frame
+    # spans decades and the column would be empty for all but the last month.
+    #
+    # Same defect as sec_filings' 60d, found the same day.
+    days_back: 4000
     project: en.wikipedia
     type: wikimedia_attention
   sdmx_macro:
