@@ -584,7 +584,51 @@ class ColabManager:
         }
 
         self._load_files_from_directory(batch_dir, files_to_load, results)
+        self._prefer_latest_local_run(batch_dir, results)
         return results
+
+    def _prefer_latest_local_run(self, batch_dir: Path, results: dict[str, Any]) -> None:
+        """Local training writes somewhere none of the names above look.
+
+        `--mode light` appends each run to `light_models_results.json` as
+        `runs[]`, newest last. Nothing in `files_to_load` reads that name, so
+        `--mode continue` fell through to `colab_results.json` -- which is
+        written once and then never again.
+
+        On 2026-08-23 that meant the freshest champions, 97 of them from the
+        run that had just finished, sat in the directory while continue mode
+        would have carried 660 models from 2026-08-08 into stages 5 to 7. Two
+        weeks of drift, no error, and a result that reads as current.
+
+        Preference is decided by the run's own timestamp rather than by which
+        key was assigned last. Dict ordering deciding which artifact wins is
+        the kind of mechanism that breaks silently when someone reorders a
+        literal.
+        """
+        path = batch_dir / "light_models_results.json"
+        if not path.exists():
+            return
+        try:
+            with open(path, encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except (OSError, ValueError) as error:
+            self.logger.warning("Could not read %s: %s", path.name, error)
+            return
+
+        runs = [run for run in (payload.get("runs") or [])
+                if isinstance(run, dict) and run.get("models_metadata")]
+        if not runs:
+            return
+        latest = max(runs, key=lambda run: str(run.get("timestamp") or ""))
+        metadata = latest["models_metadata"]
+
+        displaced = len(results.get("models_metadata") or {})
+        results["models_metadata"] = metadata
+        self.logger.info(
+            "Using models_metadata from the latest local run %s (%d models)%s.",
+            latest.get("timestamp"), len(metadata),
+            f", replacing {displaced} loaded from an older artifact" if displaced else "",
+        )
 
     def _load_files_from_directory(self, batch_dir: Path, files_to_load: dict[str, str], results: dict[str, Any]) -> None:
         """Helper to load files."""
