@@ -25,13 +25,23 @@ def stage():
     return instance
 
 
-def _result(target, reasons, **extra):
+def _result(target, reasons, **numbers):
+    """Shaped like the real thing, which is the whole point.
+
+    The first version of this helper put the numbers inside `promotion_gate`,
+    because that is where the code looked for them. Both were wrong together,
+    so the tests passed and the 2026-08-23 artifact came out with 497 rows and
+    every numeric column null. The gate carries `passed` and `reasons`; the
+    figures live in `winner_holdout_metrics`, under `score`,
+    `holdout_sample_count` and `holdout_event_count`.
+    """
     return {
         "ticker": "AAPL",
         "timeframe": "1d",
         "target_name": target,
-        "model_type": "catboost",
-        "promotion_gate": {"passed": False, "reasons": reasons, **extra},
+        "winner": "catboost",
+        "promotion_gate": {"passed": False, "reasons": reasons},
+        "winner_holdout_metrics": {"status": "measured", **numbers},
     }
 
 
@@ -57,8 +67,10 @@ def test_several_reasons_are_all_kept(stage):
 
 def test_the_numbers_that_separate_no_edge_from_no_data_are_kept(stage):
     stage._collect_gate_refusal(
-        _result("target_return_5d", ["x"], holdout_rows=18, holdout_events=4,
-                holdout_score=-0.02, baseline_score=0.58),
+        _result("target_return_5d", ["x"], holdout_sample_count=18,
+                holdout_event_count=4, score=-0.02, baseline_score=0.58,
+                baseline_kind="persistence", baseline_constant_score=0.0,
+                baseline_persistence_score=0.58),
         "AAPL_1d_target_return_5d",
     )
     kept = stage._gate_refusals[0]
@@ -66,6 +78,12 @@ def test_the_numbers_that_separate_no_edge_from_no_data_are_kept(stage):
     assert kept["holdout_events"] == 4
     assert kept["holdout_score"] == -0.02
     assert kept["baseline_score"] == 0.58
+    assert kept["model_type"] == "catboost"
+    # Which opponent won matters now that persistence was found to have been
+    # reading the future on every multi-bar target.
+    assert kept["baseline_kind"] == "persistence"
+    assert kept["baseline_constant_score"] == 0.0
+    assert kept["baseline_persistence_score"] == 0.58
 
 
 def test_a_note_is_recorded_when_the_gate_itself_said_nothing(stage):
@@ -162,3 +180,55 @@ def test_every_path_that_abandons_a_context_records_why():
         "these `continue` statements abandon a context without recording why, "
         f"so it will be missing from gate_refusals: lines {unrecorded}"
     )
+
+
+def test_a_note_is_added_to_the_gate_reasons_not_swallowed_by_them(stage):
+    """Written as `reasons or [note]`, the note lost whenever the gate spoke.
+
+    The walk-forward stability refusal passes its reason as a note. If the
+    promotion gate had also filled in `reasons`, the note was dropped and the
+    row was labelled with the gate's text instead -- and in the 2026-08-23
+    artifact that text was `holdout_measured_and_beats_baseline` for 99 of 497
+    rows. A refusal whose stated reason is that the model beat its baseline
+    tells the reader nothing and actively misleads them.
+    """
+    stage._collect_gate_refusal(
+        _result("target_up_5d", ["holdout_measured_and_beats_baseline"]),
+        "AAPL_1d_target_up_5d",
+        note="balanced accuracy beats chance on only 2 of 4 folds",
+    )
+    reasons = stage._gate_refusals[0]["reasons"]
+    assert "2 of 4 folds" in reasons, "the real reason was dropped"
+    assert "beats_baseline" in reasons, "the gate's own text was dropped"
+
+
+def test_a_refusal_with_nothing_to_say_says_so(stage):
+    """An empty string in `reasons` reads as a missing value, not as a fact."""
+    stage._collect_gate_refusal(
+        {"ticker": "AAPL", "timeframe": "1d", "target_name": "target_return_1d"},
+        "AAPL_1d_target_return_1d",
+    )
+    assert stage._gate_refusals[0]["reasons"] == "no reason given"
+
+
+def test_the_keys_read_here_are_the_keys_the_trainer_writes():
+    """The two were wrong together once; this makes them fail together instead.
+
+    `_collect_gate_refusal` reads `winner_holdout_metrics` by key name. Nothing
+    connected those names to the ones `BaseTrainer` actually writes, so when
+    they disagreed the result was silence: null columns, no error, and a test
+    suite that agreed with the mistake because the fixture had been built from
+    the same assumption.
+    """
+    import inspect
+
+    from src.training import base_trainer
+
+    source = inspect.getsource(base_trainer)
+    for key in ("'score'", "'baseline_score'", "'holdout_sample_count'",
+                "'holdout_event_count'", "'baseline_kind'",
+                "'baseline_constant_score'", "'baseline_persistence_score'"):
+        assert key in source, (
+            f"{key} is read from winner_holdout_metrics but BaseTrainer no "
+            "longer writes it; the refusal artifact would silently go null"
+        )

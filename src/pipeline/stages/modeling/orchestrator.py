@@ -973,18 +973,44 @@ class ModelingStage(BaseStage):
         24 were "too few events", and the numbers in each line are what
         separate "no edge" from "not enough data to tell".
         """
+        # Read from where the numbers ARE. The first version of this asked the
+        # gate for holdout_score, holdout_rows and holdout_events; the gate
+        # carries only `passed` and `reasons`, so all four numeric columns came
+        # out null in the 2026-08-23 artifact -- 497 rows of text and not one
+        # figure, in the file built specifically to keep the figures. The same
+        # for the winner, which is `winner` and not `model_type`.
         gate = ticker_result.get("promotion_gate") or {}
+        holdout = ticker_result.get("winner_holdout_metrics") or {}
+
+        # The note has to be ADDED, not used as a fallback. Written as
+        # `reasons or [note]`, a refusal that came from the walk-forward
+        # stability check was labelled with whatever the promotion gate happened
+        # to say -- and for 99 of 497 rows that was
+        # "holdout_measured_and_beats_baseline", a refusal explaining that the
+        # model beat its baseline.
+        reasons = list(gate.get("reasons") or [])
+        if note:
+            reasons.append(note)
+
         self._gate_refusals.append({
             "context": context_key,
             "ticker": ticker_result.get("ticker"),
             "timeframe": ticker_result.get("timeframe"),
             "target": ticker_result.get("target_name") or ticker_result.get("target"),
-            "model_type": ticker_result.get("model_type"),
-            "reasons": "; ".join(gate.get("reasons") or ([note] if note else [])),
-            "holdout_score": gate.get("holdout_score"),
-            "baseline_score": gate.get("baseline_score"),
-            "holdout_rows": gate.get("holdout_rows"),
-            "holdout_events": gate.get("holdout_events"),
+            "model_type": ticker_result.get("winner"),
+            "reasons": "; ".join(reasons) or "no reason given",
+            "holdout_score": holdout.get("score"),
+            "baseline_score": holdout.get("baseline_score"),
+            # Which opponent actually won, and by how much each. Worth keeping
+            # separately since the persistence baseline was found on
+            # 2026-08-22 to have been reading the future on every multi-bar
+            # target: a refusal that lost to `persistence` means something
+            # different from one that lost to `constant`.
+            "baseline_kind": holdout.get("baseline_kind"),
+            "baseline_constant_score": holdout.get("baseline_constant_score"),
+            "baseline_persistence_score": holdout.get("baseline_persistence_score"),
+            "holdout_rows": holdout.get("holdout_sample_count"),
+            "holdout_events": holdout.get("holdout_event_count"),
         })
 
     def _record_unprepared_context(
@@ -1016,6 +1042,11 @@ class ModelingStage(BaseStage):
             "reasons": "no usable train/test split was built; training never ran",
             "holdout_score": None,
             "baseline_score": None,
+            # Same columns as a real refusal, so the two kinds of row stack into
+            # one frame instead of parquet inventing nulls for a ragged schema.
+            "baseline_kind": None,
+            "baseline_constant_score": None,
+            "baseline_persistence_score": None,
             "holdout_rows": None,
             "holdout_events": None,
         })
