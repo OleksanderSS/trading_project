@@ -445,6 +445,37 @@ collectors:
     table_name: rss_news
     timeout: 500
     type: rss
+  sec_fundamentals:
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
+    critical: false
+    enabled: true
+    # Identity only, and `accession` is what makes it one. The same quarter is
+    # reported many times -- 1,972 of AAPL's 2,939 facts repeat a period that
+    # an earlier filing already carried -- so without the accession every
+    # restatement would collide with the original and the point-in-time view
+    # would be lost. The value itself is NOT a key: a key built from content is
+    # a change detector, which is how 22 of 77 vix dates were duplicated.
+    hash_keys:
+    - cik
+    - concept
+    - unit
+    # period_start is not decoration. ONE filing reports NetIncomeLoss for the
+    # quarter AND for the nine months, both ending the same day, same accession,
+    # different numbers -- 471 of AAPL's 2,939 facts collided without it.
+    - period_start
+    - period_end
+    - accession
+    facts_url_template: https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json
+    params:
+      # One request returns the company's whole reported history -- AAPL's is
+      # 3.6 MiB covering 2006 to 2026 -- so there is no period to set here.
+      # What is filtered is which concepts to keep, since the document carries
+      # hundreds and a value screen needs sixteen.
+      max_concurrency: 4
+      taxonomies: [us-gaap, dei]
+    table_name: sec_fundamentals
+    type: sec_fundamentals
   sec_filings:
     cache_duration_minutes: 240
     cache_ttl: 14400
