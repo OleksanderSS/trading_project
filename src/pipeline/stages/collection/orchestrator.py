@@ -251,7 +251,15 @@ class CollectionStage(BaseStage):
         'free_google_trends': 600,   # was the one hand-tuned exception
         'sec_filings': 600,
         'insider': 600,              # one HTTP round trip per ticker
-        'wikimedia_attention': 600,
+        # 600 was sized for a 30-day window. Deepening it to 4000 days on
+        # 2026-08-23 made each of the 184 articles a ~500 KiB response taking
+        # about six seconds, so the collector needs roughly 18 minutes and
+        # would have been cancelled at ten -- losing everything, because
+        # collectors write once at the end (#32).
+        #
+        # Caught two minutes into a 2.6-hour rebuild by watching the request
+        # rate rather than waiting for the result.
+        'wikimedia_attention': 3600,
     }
 
     #: Everything not named above. Raised from 300 because that number was
