@@ -125,6 +125,18 @@ enrichment:
     params:
       window_days: 30
 
+  # Value ratios from filed accounts. Registered directly after
+  # corporate_filings because both key off SEC filing dates -- the counts there
+  # answer "did something happen", these answer "what did it say".
+  fundamentals:
+    module: "src.features.enrichers.fundamentals_enricher"
+    class: "FundamentalsEnricher"
+    params:
+      # Beyond this the accounts describe a company that stopped reporting
+      # rather than one between filings. A quarterly filer is never silent
+      # this long.
+      max_staleness_days: 200
+
   keyword_entity:
     keywords:
       tickers: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "AMD", "INTC"]

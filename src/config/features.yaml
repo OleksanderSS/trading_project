@@ -18,6 +18,10 @@ features:
     # and none of them is it, while `sec_filings` sits in stage 3's inputs
     # waiting for a reader that never loaded.
     corporate_filings: true         # SEC filings as events: recency, counts, 8-K apart from 10-Q
+    # Registering in enrichment.yaml is NOT what turns an enricher on -- that
+    # cost a whole rebuild on 2026-08-22, when corporate_filings sat registered
+    # and unused while sec_filings waited in stage 3's inputs.
+    fundamentals: true              # value ratios from filed accounts, point-in-time
     ticker_external: true           # Wikipedia attention + insider filings, joined per ticker
     peer_context: true              # What the sector did, computed without the ticker itself
     keyword_entity: true            # Extracts keywords and entities from news (NEW)
