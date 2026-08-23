@@ -164,16 +164,57 @@ class PredictionGenerator:
                         aligned_X[c] = 0
                 aligned_X = aligned_X[expected]
 
+        if getattr(aligned_X, "empty", False) or len(aligned_X) == 0:
+            # No rows for this context, so there is nothing to predict. The
+            # model returns an empty array and `[-1]` on it raised
+            # "index -1 is out of bounds for axis 0 with size 0" -- which,
+            # because IndexError was missing from the caller's except tuple,
+            # killed stages 5, 6 and 7 outright on 2026-08-23, the first run
+            # in which they had ever executed.
+            #
+            # Absent is the honest answer: a context with no bars has no
+            # forecast, and inventing one would be worse than skipping it.
+            self.logger.warning(
+                "No rows to predict on for %s; skipping this context rather "
+                "than producing a value from nothing.", best_model_name,
+            )
+            return None, {}
+
         raw_prediction = selected_model.predict(aligned_X)
-        pred_value = raw_prediction[-1] if isinstance(raw_prediction, np.
-            ndarray) else raw_prediction
+        pred_value = self._last_value(raw_prediction)
+        if pred_value is None:
+            self.logger.warning(
+                "%s returned an empty prediction for %d input row(s).",
+                best_model_name, len(aligned_X),
+            )
+            return None, {}
         return raw_prediction, {best_model_name: pred_value}
+
+    @staticmethod
+    def _last_value(prediction: Any) -> Any:
+        """The forecast for the most recent bar, or None when there is none.
+
+        Written inline as `prediction[-1] if isinstance(prediction, ndarray)`
+        in two places, and an empty array satisfies that check while having no
+        last element.
+        """
+        if isinstance(prediction, np.ndarray):
+            return prediction[-1] if prediction.size else None
+        if isinstance(prediction, (list, tuple, pd.Series)):
+            return prediction[-1] if len(prediction) else None
+        return prediction
 
     def adjust_prediction_contextually(self, raw_prediction: Any,
         best_model_name: str, market_regime: str, ticker: str) ->float:
         """Adjust prediction based on market context."""
-        pred_val = raw_prediction[-1] if isinstance(raw_prediction, np.ndarray
-            ) else raw_prediction
+        pred_val = self._last_value(raw_prediction)
+        if pred_val is None:
+            # Same empty-array trap as in generate_single_model_prediction.
+            self.logger.warning(
+                "Nothing to adjust for %s: the prediction is empty.",
+                best_model_name,
+            )
+            return 0.0
         adjustment_result = self.adjuster.analyze(data={'predictions': {
             best_model_name: pred_val}, 'market_regime': market_regime,
             'ticker': ticker})

@@ -12,6 +12,8 @@ from sklearn.neighbors import LocalOutlierFactor
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 
+from .prediction_generator import PredictionGenerator
+
 
 class AnomalyEngine:
     """Calculates anomaly scores (Z-score / IsoForest / LOF) and ensemble confidence."""
@@ -149,9 +151,17 @@ class AnomalyEngine:
                         aligned_X = aligned_X[expected]
 
                 p = m_inst.predict(aligned_X)
-                val = float(p[-1]) if hasattr(p, '__len__') else float(p)
-                raw_preds.append(val)
-            except (ValueError, TypeError, AttributeError):
+                # `hasattr(p, '__len__')` is TRUE for an empty array, so the
+                # old form walked straight into `[-1]` on size 0 -- the shape
+                # that stopped stages 5 to 7 on 2026-08-23.
+                val = PredictionGenerator._last_value(p)
+                if val is None:
+                    continue
+                raw_preds.append(float(val))
+            except Exception:
+                # Broad on purpose: this loop already skips a model that fails,
+                # and the narrow tuple only decided WHICH failures were allowed
+                # to escape and stop everything.
                 continue
         return raw_preds
 

@@ -216,7 +216,19 @@ class PredictionStage(BaseStage):
                     features_df, market_regime, news_data=news_data)
                 if result:
                     prediction_results[context_id] = result
-            except (ValueError, TypeError, KeyError, AttributeError) as e:
+            except Exception as e:
+                # Deliberately broad, and the narrowness was the defect. The
+                # tuple here was (ValueError, TypeError, KeyError,
+                # AttributeError); an IndexError from one context with no rows
+                # escaped it and stopped stages 5, 6 and 7 on 2026-08-23 -- the
+                # first run in which they had ever executed at all.
+                #
+                # A per-context failure must stay per-context. This loop
+                # already records the reason and continues, so the only thing
+                # the narrow tuple bought was deciding which failures were
+                # allowed to be fatal, by accident of which types someone
+                # listed. Same shape as the 653 narrow tuples the
+                # silent-failure contract already counts.
                 self.handle_stage_error(e, context=
                     f'Prediction-{context_id}', severity='error')
                 self.logger.error(
@@ -288,12 +300,15 @@ class PredictionStage(BaseStage):
 
         confidence_adjustment = 1.0
         if champion_state != 0:
-            last_raw_pred = (
-                raw_prediction[-1]
-                if isinstance(raw_prediction, np.ndarray)
-                else raw_prediction
-            )
-            if np.sign(last_raw_pred) != np.sign(champion_state):
+            # `is None` above does not catch an EMPTY array, which is the
+            # shape that killed this stage on 2026-08-23: `[-1]` on size 0.
+            last_raw_pred = PredictionGenerator._last_value(raw_prediction)
+            if last_raw_pred is None:
+                self.logger.warning(
+                    "Empty prediction while checking champion agreement; "
+                    "leaving confidence unadjusted rather than guessing."
+                )
+            elif np.sign(last_raw_pred) != np.sign(champion_state):
                 confidence_adjustment = self.prediction_config.get(
                     'champion_contradiction_penalty',
                     0.7,
