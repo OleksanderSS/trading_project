@@ -150,3 +150,45 @@ def test_a_timeframe_with_no_rows_does_not_erase_the_price():
         "close": [10.0, 11.0],
     })
     assert stage._last_price_from_full_frame(full, "AAPL", "15m") == 11.0
+
+
+def test_context_velocity_is_found_under_its_real_suffixed_name():
+    """The gate in stage 6 had never fired, and not because markets were calm.
+
+    There is no bare `context_velocity` column in the batch. Every one carries
+    its timeframe: context_velocity_15m, context_velocity_1d,
+    ctx_1d_context_velocity_1d. The lookup checked the bare name, so it was
+    false every time and velocity fell to a default of 0. Stage 6 then compared
+    0 against its thresholds on every signal and logged
+
+        51 signals, exposure cut on 0 (0.0%), buys blocked on 0 (0.0%),
+        no velocity reading on 0 (0.0%)
+
+    -- while the missing-reading counter reported nothing missing, because a
+    fabricated 0 is not None.
+    """
+    from src.pipeline.stages.prediction.orchestrator import PredictionStage
+
+    stage = PredictionStage.__new__(PredictionStage)
+    frame = pd.DataFrame({
+        "context_velocity_1d": [0.1, 0.9],
+        "context_velocity_rank_1d": [0.2, 0.85],
+    })
+    assert stage._state_value(frame, "context_velocity", "1d") == 0.9
+    assert stage._state_value(frame, "context_velocity_rank", "1d") == 0.85
+
+    intraday = pd.DataFrame({"context_velocity_15m": [0.3, 0.7]})
+    assert stage._state_value(intraday, "context_velocity", "15m") == 0.7
+
+
+def test_a_missing_reading_is_none_and_not_a_quiet_zero():
+    """Zero is a market state; absent is not. Conflating them disarms the gate."""
+    from src.pipeline.stages.prediction.orchestrator import PredictionStage
+
+    stage = PredictionStage.__new__(PredictionStage)
+
+    assert stage._state_value(pd.DataFrame({"x": [1]}), "context_velocity", "1d") is None
+    assert stage._state_value(pd.DataFrame(), "context_velocity", "1d") is None
+    assert stage._state_value(
+        pd.DataFrame({"context_velocity_1d": [np.nan]}), "context_velocity", "1d"
+    ) is None

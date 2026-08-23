@@ -23,6 +23,7 @@ import pandas as pd
 from src.analytics.context.prediction_adjuster import PredictionAdjuster
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
+from src.targets.timeframe_contract import resolve_column_for_frame
 from src.ensembling.caching import get_ensemble_cache
 from src.ensembling.stacked_ensemble import StackedEnsemble
 from src.meta_learning.memory.diary_engine import DiaryEngine
@@ -253,7 +254,21 @@ class PredictionStage(BaseStage):
             self.logger.error(f'Ticker missing for context {context_id}')
             return None
 
-        state = self._extract_context_state(ticker_df_clean)
+        # The FULL frame for this ticker, not the model's slice. Same root
+        # cause as the price: `ticker_df_clean` is
+        # `ticker_df_clean[selected_features]`, so a context column survives
+        # only if that model happened to be fitted on it.
+        context_frame = ticker_df_clean
+        if (features_df is not None and not getattr(features_df, "empty", True)
+                and "ticker" in features_df.columns):
+            same_ticker = features_df[
+                features_df["ticker"].astype(str) == str(ticker)
+            ]
+            if not same_ticker.empty:
+                context_frame = same_ticker
+        state = self._extract_context_state(
+            context_frame, meta.get("timeframe")
+        )
 
         # Unpack state values for use below
         current_pattern = state['pattern']
@@ -417,18 +432,60 @@ class PredictionStage(BaseStage):
                 result['context_velocity'] = float(context_velocity)
             except (TypeError, ValueError):
                 result['context_velocity'] = 0.0
+            # Stage 6 prefers the rank and falls back to the absolute value.
+            # Without this line the rank never reached it, so the gate ran on
+            # a threshold the batch already knows how to self-calibrate.
+            rank = state.get('velocity_rank') if isinstance(state, dict) else None
+            if rank is not None:
+                try:
+                    result['context_velocity_rank'] = float(rank)
+                except (TypeError, ValueError):
+                    pass
 
         return result
 
-    def _extract_context_state(self, ticker_df: pd.DataFrame) -> dict[str, Any]:
+    def _extract_context_state(self, ticker_df: pd.DataFrame, timeframe: str | None = None) -> dict[str, Any]:
         """Extracts context state from dataframe."""
         return {
             'pattern': ticker_df['context_pattern_id'].iloc[-1] if 'context_pattern_id' in ticker_df.columns and len(ticker_df) > 0 else 'normal',
             'seq': ticker_df['context_pattern_seq'].iloc[-1] if 'context_pattern_seq' in ticker_df.columns and len(ticker_df) > 0 else None,
             'fingerprint': ticker_df['context_fingerprint'].iloc[-1] if 'context_fingerprint' in ticker_df.columns and len(ticker_df) > 0 else None,
             'champion': ticker_df['state_champion'].iloc[-1] if 'state_champion' in ticker_df.columns and len(ticker_df) > 0 else 0,
-            'velocity': ticker_df['context_velocity'].iloc[-1] if 'context_velocity' in ticker_df.columns and len(ticker_df) > 0 else 0
+            # Resolved by SUFFIX, and defaulting to None rather than 0.
+            #
+            # There is no bare `context_velocity` column in the batch -- every
+            # one carries its timeframe: context_velocity_15m,
+            # context_velocity_1d, ctx_1d_context_velocity_1d. The bare-name
+            # check was therefore false every time, velocity fell to the
+            # default 0, and stage 6's gate compared 0 against its thresholds
+            # on every signal.
+            #
+            # The 2026-08-23 run read "51 signals, exposure cut on 0 (0.0%),
+            # buys blocked on 0 (0.0%), no velocity reading on 0 (0.0%)". That
+            # is not a calm market -- the gate had never fired at all, and the
+            # missing-reading counter said nothing was missing because a
+            # fabricated 0 is not None.
+            #
+            # None is the honest default: this project's own invariant is that
+            # NaN, zero and neutral-default are three different facts, and a
+            # default must never pass for a reading.
+            'velocity': self._state_value(ticker_df, 'context_velocity', timeframe),
+            'velocity_rank': self._state_value(
+                ticker_df, 'context_velocity_rank', timeframe
+            ),
         }
+
+    @staticmethod
+    def _state_value(ticker_df: pd.DataFrame, name: str,
+                     timeframe: str | None):
+        """The last value of a context column, found under its real name."""
+        if ticker_df is None or len(ticker_df) == 0:
+            return None
+        column = resolve_column_for_frame(name, ticker_df, timeframe)
+        if column is None:
+            return None
+        value = ticker_df[column].iloc[-1]
+        return None if pd.isna(value) else value
 
     def _process_context_data(self, context_id: str, meta: dict[str, Any],
         features_df: pd.DataFrame) ->tuple | None:
