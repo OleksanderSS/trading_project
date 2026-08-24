@@ -126,3 +126,60 @@ def test_a_column_empty_on_one_slice_but_not_another_is_kept_where_it_matters(ba
     assert "only_daily_1d" not in intraday_columns
     assert "only_intraday_15m" in intraday_columns
     assert "only_intraday_15m" not in daily_columns
+
+
+def test_the_pipeline_writes_the_slices_itself(tmp_path, monkeypatch):
+    """Wiring, not arithmetic: a splitter nobody calls produces nothing.
+
+    The slices existed on 2026-08-24 only because they were produced by hand.
+    The loader prefers them when present, so unless the pipeline writes them
+    the cheap path silently never happens.
+    """
+    import logging
+
+    from src.pipeline.hybrid.colab_manager import ColabManager
+
+    manager = ColabManager.__new__(ColabManager)
+    manager.logger = logging.getLogger("probe")
+
+    frame = pd.DataFrame({
+        "datetime": pd.date_range("2026-01-01", periods=4),
+        "ticker": ["AAPL"] * 4,
+        "interval": ["1d", "1d", "15m", "15m"],
+        "close": [1.0, 2.0, 3.0, 4.0],
+        "only_daily_1d": [1.0, 2.0, np.nan, np.nan],
+    })
+    frame.to_parquet(tmp_path / "features.parquet", index=False)
+    frame[["datetime", "ticker", "interval"]].assign(
+        target_return_1d=0.01
+    ).to_parquet(tmp_path / "targets.parquet", index=False)
+
+    manager._write_timeframe_slices(tmp_path)
+
+    assert (tmp_path / "features_1d.parquet").exists()
+    assert (tmp_path / "features_15m.parquet").exists()
+
+
+def test_a_failed_split_does_not_lose_the_batch(tmp_path, monkeypatch, caplog):
+    """The combined batch is already written; an optimisation must not cost it."""
+    import logging
+
+    from src.pipeline.hybrid.colab_manager import ColabManager
+
+    manager = ColabManager.__new__(ColabManager)
+    manager.logger = logging.getLogger("probe")
+
+    def explode(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(
+        "src.pipeline.batch_timeframe_split.split_batch", explode
+    )
+    with caplog.at_level(logging.ERROR):
+        manager._write_timeframe_slices(tmp_path)   # must not raise
+
+    assert any("per-timeframe slices" in record.message
+               for record in caplog.records), (
+        "the failure was swallowed, so the loader would quietly keep reading "
+        "the expensive file with nothing saying why"
+    )

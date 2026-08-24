@@ -81,6 +81,20 @@ class ColabManager:
             features_df, targets_df, batch_dir, config
         )
 
+        # 2b. Write one file per timeframe beside the combined one.
+        #
+        # The combined frame carries every timeframe's columns on every row --
+        # 154,069 daily rows holding 1,836 unused ones -- and loading it costs
+        # 4.85 GiB of resident memory against 0.27 for the daily slice. The
+        # loader prefers the slices when they exist, so producing them here is
+        # what makes that path real rather than something someone has to
+        # remember to run.
+        #
+        # Failure is logged and not raised: the combined batch is written and
+        # valid by this point, and losing it over an optimisation would be the
+        # wrong trade.
+        self._write_timeframe_slices(batch_dir)
+
         # 3. Handle configuration (Test vs Full mode)
         config_path = self._handle_batch_configuration(batch_dir, config, timestamp, eff_batch_name)
 
@@ -105,6 +119,30 @@ class ColabManager:
         return self._assemble_preparation_result(
             batch_dir, eff_batch_name, metadata_path, metadata, fs_check, config, config_path
         )
+
+    def _write_timeframe_slices(self, batch_dir: Path) -> None:
+        """Produce features_<tf>.parquet beside the combined batch."""
+        try:
+            from src.pipeline.batch_timeframe_split import split_batch
+
+            report = split_batch(batch_dir)
+        except Exception as error:  # noqa: BLE001
+            # Named, not swallowed. The combined batch is already written, so
+            # this is a lost optimisation rather than a lost run -- but a
+            # silent one would leave the loader quietly reading the expensive
+            # file forever.
+            self.logger.error(
+                "Could not write per-timeframe slices (%s: %s). The combined "
+                "batch is intact; loading will use it instead.",
+                type(error).__name__, error,
+            )
+            return
+
+        for timeframe, entry in sorted(report.items()):
+            self.logger.info(
+                "Slice %s: %d rows, %d of %d columns.",
+                timeframe, entry["rows"], entry["columns"], entry["of"],
+            )
 
     def _save_and_accumulate_data(self,
                                 features_df: pd.DataFrame,
