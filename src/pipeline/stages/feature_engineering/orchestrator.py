@@ -57,6 +57,56 @@ class FeatureEngineeringStage(BaseStage):
     _SCRATCH_MARKERS = ('_backup', 'backup_', 'test_', '_prepurge',
                         '_orphan', 'snapshot', '__run_')
 
+    @staticmethod
+    def _distinct_frames(enrich_kwargs: dict) -> dict[int, tuple[list[str], Any]]:
+        """Group input keys by the OBJECT they point at.
+
+        Stage 3 hands out `cftc` and `cftc_data` as the same frame -- the alias
+        is created with `setdefault(key[:-5], value)` -- so counting keys
+        overstates what is held. On 2026-08-24 a scan of which enrichers read
+        which key suggested 15 of 25 inputs were unused; most of those were
+        aliases of frames that ARE read, and reporting it without this
+        distinction would have argued for deleting live inputs.
+        """
+        groups: dict[int, tuple[list[str], Any]] = {}
+        for key, value in enrich_kwargs.items():
+            if not isinstance(value, pd.DataFrame):
+                continue
+            names, _ = groups.setdefault(id(value), ([], value))
+            names.append(key)
+        return groups
+
+    def _log_enrichment_input_cost(self, timeframe: str, enrich_kwargs: dict) -> None:
+        """Say what each input frame costs, so the next question is measured.
+
+        The peak of stage 3 is 2.67 GiB and the feature frames account for
+        under half of it: 15m is 29,097 x 1,386 and daily 154,069 x 466, well
+        under a gigabyte together. The rest is these inputs, held for the whole
+        stage. Which of them is worth holding could only be guessed at, because
+        nothing measured them.
+        """
+        groups = self._distinct_frames(enrich_kwargs)
+        rows = []
+        for names, frame in groups.values():
+            try:
+                megabytes = frame.memory_usage(deep=False).sum() / 2 ** 20
+            except Exception:  # noqa: BLE001 - instrumentation must not end a run
+                megabytes = float('nan')
+            rows.append((megabytes, sorted(names), len(frame)))
+        rows.sort(reverse=True)
+
+        total = sum(size for size, _, _ in rows if size == size)
+        self.logger.info(
+            "Enrichment inputs for %s: %d distinct frames under %d names, "
+            "%.0f MiB held.", timeframe, len(rows), len(groups) and
+            sum(len(n) for _, n, _ in rows), total,
+        )
+        for megabytes, names, length in rows[:8]:
+            self.logger.info(
+                "    %8.1f MiB  %8d rows  %s", megabytes, length,
+                " = ".join(names),
+            )
+
     @classmethod
     def _is_scratch_table(cls, name: str) -> bool:
         """Backups and scratch tables are not sources.
@@ -223,11 +273,7 @@ class FeatureEngineeringStage(BaseStage):
                     enrich_kwargs[key] = cleaned_data[key]
             if kwargs.get('offline_only'):
                 enrich_kwargs['offline_only'] = True
-            self.logger.info(
-                "Enrichment inputs for %s: %s", tf,
-                sorted(k for k, v in enrich_kwargs.items()
-                       if isinstance(v, pd.DataFrame)),
-            )
+            self._log_enrichment_input_cost(tf, enrich_kwargs)
 
             with self._phase(f'enrich {tf}'):
                 enriched_df = self.enricher.enrich_features(df, timeframe=tf, **enrich_kwargs)
