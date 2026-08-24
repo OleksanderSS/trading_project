@@ -213,66 +213,38 @@ class PipelineOrchestrator:
         stage_outputs = {'tickers': tickers, 'timeframes': timeframes,
             'run_mode': run_mode}
 
-        # Merge enriched_data and targets_df if both are provided
+        # Merge enriched_data and targets_df if both are provided.
+        #
+        # Both may now be DICTS keyed by timeframe rather than single frames.
+        # The batch is written that way because the combined frame carries
+        # every timeframe's columns on every row -- 154,069 daily rows holding
+        # 1,836 unused columns -- and loading it costs 4.85 GiB of resident
+        # memory against 0.27 for the daily slice alone. `iter_model_contexts`
+        # already accepts either shape; this is the last place that did not.
         enriched_data = execution_context.get('enriched_data')
         targets_df = execution_context.get('targets_df')
         if enriched_data is not None and targets_df is not None:
-            # Merge targets into enriched_data using concat on index
-            self.logger.info(f"Merging enriched_data ({enriched_data.shape}) with targets_df ({targets_df.shape})")
-            # Remove duplicate columns from targets_df (ticker, datetime, interval)
-            target_cols_only = targets_df.drop(columns=['ticker', 'datetime', 'interval'], errors='ignore')
-
-            # This pairs row i of the features with row i of the targets, and
-            # nothing here checked that row i is the same BAR in both.
-            #
-            # Verified on the 18.08 batch: 256,062 rows on each side, ticker,
-            # datetime and interval identical on every one of them. So the
-            # assumption has been holding. It is unchecked, not wrong.
-            #
-            # It is one reordering away from silent garbage, and this pipeline
-            # reorders: `Enricher 'nlp_features' returned the same 28856 rows
-            # in a DIFFERENT ORDER` is a warning that appears in these logs.
-            # Equal row counts would survive that; the pairing would not, and
-            # a model trained on it learns the relationship between one bar's
-            # features and another bar's outcome.
-            #
-            # So the invariant is asserted rather than assumed, and when it
-            # fails the frames are merged on their keys instead. Checking three
-            # columns costs nothing next to a 2,226-column concat.
-            keys = [name for name in ('ticker', 'datetime', 'interval')
-                    if name in enriched_data.columns and name in targets_df.columns]
-            aligned = len(enriched_data) == len(targets_df)
-            if aligned and keys:
-                for key in keys:
-                    left = enriched_data[key].to_numpy()
-                    right = targets_df[key].to_numpy()
-                    if not (left == right).all():
-                        aligned = False
-                        self.logger.error(
-                            "Features and targets disagree on '%s': positional "
-                            "concat would pair different bars. Merging on %s "
-                            "instead.", key, keys,
+            if isinstance(enriched_data, dict) and isinstance(targets_df, dict):
+                merged: dict[str, Any] = {}
+                for timeframe, features in enriched_data.items():
+                    targets = targets_df.get(timeframe)
+                    if targets is None or getattr(features, 'empty', True):
+                        # A timeframe with features and no targets is not an
+                        # error -- it simply cannot be trained on -- but it must
+                        # not be passed on silently as if it could.
+                        self.logger.warning(
+                            'No targets for timeframe %s; it will not be '
+                            'trained on.', timeframe,
                         )
-                        break
-
-            if aligned:
-                enriched_data_reset = enriched_data.reset_index(drop=True)
-                targets_df_reset = target_cols_only.reset_index(drop=True)
-                merged_df = pd.concat([enriched_data_reset, targets_df_reset], axis=1)
-            elif keys:
-                merged_df = enriched_data.merge(
-                    targets_df[[*keys, *target_cols_only.columns]], on=keys, how='left',
-                )
+                        continue
+                    merged[timeframe] = self._merge_features_and_targets(
+                        features, targets, label=timeframe,
+                    )
+                stage_outputs['enriched_data'] = merged
             else:
-                raise ValueError(
-                    f"Cannot align features ({enriched_data.shape}) with targets "
-                    f"({targets_df.shape}): row counts differ and no shared key "
-                    f"columns exist to merge on. Concatenating positionally here "
-                    f"would pair each bar's features with another bar's outcome."
+                stage_outputs['enriched_data'] = self._merge_features_and_targets(
+                    enriched_data, targets_df, label='batch',
                 )
-            self.logger.info(f"Merged DataFrame shape: {merged_df.shape}")
-            self.logger.info(f"Target columns in merged DataFrame: {[col for col in merged_df.columns if col.startswith('target_')]}")
-            stage_outputs['enriched_data'] = merged_df
             # Remove separate targets_df and old enriched_data to avoid confusion
             execution_context.pop('targets_df', None)
             execution_context.pop('enriched_data', None)
@@ -286,6 +258,70 @@ class PipelineOrchestrator:
                 f"📊 models_metadata count: {len(stage_outputs['models_metadata'])}"
                 )
         return stage_outputs
+
+    def _merge_features_and_targets(self, enriched_data, targets_df, *,
+                                    label: str = 'batch'):
+        """Pair each bar's features with THAT bar's outcome, not another's."""
+        self.logger.info(
+            "Merging %s: enriched_data %s with targets_df %s",
+            label, enriched_data.shape, targets_df.shape,
+        )
+        # Remove duplicate columns from targets_df (ticker, datetime, interval)
+        target_cols_only = targets_df.drop(
+            columns=['ticker', 'datetime', 'interval'], errors='ignore'
+        )
+
+        # This pairs row i of the features with row i of the targets, and
+        # nothing here checked that row i is the same BAR in both.
+        #
+        # Verified on the 18.08 batch: 256,062 rows on each side, ticker,
+        # datetime and interval identical on every one of them. So the
+        # assumption has been holding. It is unchecked, not wrong.
+        #
+        # It is one reordering away from silent garbage, and this pipeline
+        # reorders: `Enricher 'nlp_features' returned the same 28856 rows
+        # in a DIFFERENT ORDER` is a warning that appears in these logs.
+        # Equal row counts would survive that; the pairing would not, and
+        # a model trained on it learns the relationship between one bar's
+        # features and another bar's outcome.
+        #
+        # So the invariant is asserted rather than assumed, and when it
+        # fails the frames are merged on their keys instead. Checking three
+        # columns costs nothing next to a 2,226-column concat.
+        keys = [name for name in ('ticker', 'datetime', 'interval')
+                if name in enriched_data.columns and name in targets_df.columns]
+        aligned = len(enriched_data) == len(targets_df)
+        if aligned and keys:
+            for key in keys:
+                left = enriched_data[key].to_numpy()
+                right = targets_df[key].to_numpy()
+                if not (left == right).all():
+                    aligned = False
+                    self.logger.error(
+                        "Features and targets disagree on '%s': positional "
+                        "concat would pair different bars. Merging on %s "
+                        "instead.", key, keys,
+                    )
+                    break
+
+        if aligned:
+            merged_df = pd.concat(
+                [enriched_data.reset_index(drop=True),
+                 target_cols_only.reset_index(drop=True)], axis=1,
+            )
+        elif keys:
+            merged_df = enriched_data.merge(
+                targets_df[[*keys, *target_cols_only.columns]], on=keys, how='left',
+            )
+        else:
+            raise ValueError(
+                f"Cannot align features ({enriched_data.shape}) with targets "
+                f"({targets_df.shape}): row counts differ and no shared key "
+                f"columns exist to merge on. Concatenating positionally here "
+                f"would pair each bar's features with another bar's outcome."
+            )
+        self.logger.info("Merged %s shape: %s", label, merged_df.shape)
+        return merged_df
 
     def _should_run_stage(self, stage_index: int, stage: Any, stages_to_run:
         list[int] | None) ->bool:

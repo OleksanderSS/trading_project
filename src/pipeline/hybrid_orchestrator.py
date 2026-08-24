@@ -80,6 +80,41 @@ class HybridOrchestrator:
     #: Colab consumes. Reading it is the whole point of preparing it.
     _PREPARED_BATCH_DIR = Path('data/colab/accumulated')
 
+    def _load_timeframe_slices(self, base):
+        """Features and targets as dicts keyed by timeframe, or None.
+
+        None when the slices are absent or incomplete -- a partial set would
+        silently train on fewer timeframes than the batch holds, which is worse
+        than falling back to the combined file.
+        """
+        import pandas as pd
+
+        feature_files = sorted(base.glob('features_*.parquet'))
+        # `features_all110_20260806.parquet` and `features_CORRUPT_...` live in
+        # the same directory. A timeframe is short and has no underscore.
+        candidates = {}
+        for path in feature_files:
+            timeframe = path.stem.removeprefix('features_')
+            if len(timeframe) > 4 or '_' in timeframe:
+                continue
+            targets_path = base / f'targets_{timeframe}.parquet'
+            if targets_path.exists():
+                candidates[timeframe] = (path, targets_path)
+
+        if not candidates:
+            return None
+
+        features, targets = {}, {}
+        for timeframe, (feature_path, target_path) in candidates.items():
+            features[timeframe] = pd.read_parquet(feature_path)
+            targets[timeframe] = pd.read_parquet(target_path)
+            self.logger.info(
+                'Loaded %s slice: %d rows, %d feature columns.',
+                timeframe, len(features[timeframe]),
+                features[timeframe].shape[1],
+            )
+        return features, targets
+
     def _load_prepared_batch(
         self, batch_name: str | None
     ) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
@@ -99,6 +134,19 @@ class HybridOrchestrator:
         """
         name = batch_name or 'main_database'
         base = self._PREPARED_BATCH_DIR / name
+
+        # Per-timeframe slices first, when they exist. The combined frame
+        # carries every timeframe's columns on every row -- 154,069 daily rows
+        # holding 1,836 unused ones -- and loading it costs 4.85 GiB of
+        # resident memory against 0.27 GiB for the daily slice. At 110 tickers
+        # that is the difference between roughly 24 GiB and 3.
+        #
+        # `iter_model_contexts` has always accepted a dict keyed by timeframe;
+        # this simply stops throwing the shape away before it gets there.
+        sliced = self._load_timeframe_slices(base)
+        if sliced is not None:
+            return sliced
+
         features, targets = base / 'features.parquet', base / 'targets.parquet'
         if not (features.exists() and targets.exists()):
             self.logger.info(
@@ -145,9 +193,22 @@ class HybridOrchestrator:
             features_df = stage_outputs.get("features_df")
             targets_df = stage_outputs.get("targets_df")
 
-        if features_df is None or getattr(features_df, "empty", True):
+        # A dict of per-timeframe slices has no `.empty`, and `getattr(...,
+        # "empty", True)` would call it missing -- turning the cheap path into
+        # a silent "missing_features" rather than an error anyone could read.
+        def _has_rows(data) -> bool:
+            if data is None:
+                return False
+            if isinstance(data, dict):
+                return any(
+                    frame is not None and not getattr(frame, "empty", True)
+                    for frame in data.values()
+                )
+            return not getattr(data, "empty", True)
+
+        if not _has_rows(features_df):
             return {"status": "failed", "reason": "missing_features"}
-        if targets_df is None or getattr(targets_df, "empty", True):
+        if not _has_rows(targets_df):
             return {"status": "failed", "reason": "missing_targets"}
 
         return await self.light_models_trainer.run_light_models(
