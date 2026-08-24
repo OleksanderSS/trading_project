@@ -14,7 +14,23 @@ assets:
       # states all of it.
       tickers: [TSLA, NVDA, SPY, QQQ, AMD, KO, WMT, XOM, JPM, GS, AAPL, MSFT, GOOGL,
         AMZN, INTC, TSM, IWM, BAC, XLE, XLF, XLK, XLV]
-  active_preset: default_volatile
+  # Set to null on 2026-08-24 to model all 110 tickers in `sectors`
+  # instead of the 22 in `default_volatile`.
+  #
+  # The reason is that at 22 names nothing measures. The rank portfolio
+  # over the whole batch gave t = 0.85, the best non-price feature t =
+  # 0.29, and a 20-day target leaves eight non-overlapping periods in
+  # eight years. Three independent routes all ended at the same wall,
+  # and it is breadth, not the model.
+  #
+  # What made this affordable is that the batch peak of 2.70 GiB was
+  # broken down: 0.39 is imports, up to 2.0 is DuckDB's buffer pool,
+  # and only about 0.5 scales with the number of tickers. Five times
+  # the names is therefore roughly 5 GiB, not 13.5.
+  #
+  # Cost is time rather than memory: enrichment is 93.8% of stage 3 and
+  # grows with rows, so expect roughly ten hours where 22 took 2.2.
+  active_preset: null
   sectors:
     ai_big_tech:
       description: Large-cap technology stocks with a strong focus on AI.
@@ -124,3 +140,106 @@ assets:
     # than its own filer, so there is no per-ticker submissions file to fetch.
     # A wrong number that errors every run is worse than no number.
     BAC: {cik: 70858}
+
+    # The 83 entries below were resolved against SEC's own ticker map,
+    # https://www.sec.gov/files/company_tickers.json, on 2026-08-24 --
+    # the same source the comments above cite when a hand-entered number
+    # turned out to name the wrong company. None was typed by hand.
+    #
+    # They exist because the modelling universe is widening from the
+    # 22-ticker preset to all 110 tickers in `sectors`, and 93 of those
+    # 110 had no CIK. Without one the XBRL collector fetches nothing, so
+    # a wide run would have carried fundamentals on the old names only --
+    # and fundamentals are where the strongest non-price timing signal
+    # measured so far lives (fund_debt_to_equity, +0.0388 IC, 5.3 SE).
+    #
+    # Ten tickers are still absent, deliberately: IWM, TLT, VTI, XLE, XLF,
+    # XLI, XLK, XLU, XLV, XME. Each is an ETF that files as a series of a
+    # trust rather than as its own filer, so SEC's map has no entry -- the
+    # same reason already written above for IWM.
+    #
+    # XOM stays 34088 against the map's 2115436. That disagreement is
+    # already reasoned about above and the decision there stands.
+    ABBV: {cik: 1551152}  # AbbVie Inc.
+    ABT: {cik: 1800}  # ABBOTT LABORATORIES
+    ADBE: {cik: 796343}  # ADOBE INC.
+    AEP: {cik: 4904}  # AMERICAN ELECTRIC POWER CO INC
+    AMGN: {cik: 318154}  # AMGEN INC
+    AMT: {cik: 1053507}  # AMERICAN TOWER CORP /MA/
+    APD: {cik: 2969}  # Air Products & Chemicals, Inc.
+    AVB: {cik: 915912}  # AVALONBAY COMMUNITIES INC
+    BA: {cik: 12927}  # BOEING CO
+    BABA: {cik: 1577552}  # Alibaba Group Holding Ltd
+    BHP: {cik: 811809}  # BHP Group Ltd
+    BIDU: {cik: 1329099}  # Baidu, Inc.
+    BILI: {cik: 1723690}  # Bilibili Inc.
+    BMY: {cik: 14272}  # BRISTOL MYERS SQUIBB CO
+    CAT: {cik: 18230}  # CATERPILLAR INC
+    CBRE: {cik: 1138118}  # CBRE GROUP, INC.
+    CHTR: {cik: 1091667}  # CHARTER COMMUNICATIONS, INC. /MO/
+    CMCSA: {cik: 1166691}  # COMCAST CORP
+    COIN: {cik: 1679788}  # Coinbase Global, Inc.
+    COP: {cik: 1163165}  # CONOCOPHILLIPS
+    COST: {cik: 909832}  # COSTCO WHOLESALE CORP /NEW
+    CRM: {cik: 1108524}  # Salesforce, Inc.
+    CSCO: {cik: 858877}  # CISCO SYSTEMS, INC.
+    CVX: {cik: 93410}  # CHEVRON CORP
+    DD: {cik: 1666700}  # DuPont de Nemours, Inc.
+    DE: {cik: 315189}  # DEERE & CO
+    DIA: {cik: 1041130}  # SPDR DOW JONES INDUSTRIAL AVERAGE ETF TRUST
+    DIS: {cik: 1744489}  # Walt Disney Co
+    DOW: {cik: 1751788}  # DOW INC.
+    DUK: {cik: 1326160}  # Duke Energy CORP
+    EBAY: {cik: 1065088}  # EBAY INC
+    ECL: {cik: 31462}  # ECOLAB INC.
+    ED: {cik: 1047862}  # CONSOLIDATED EDISON INC
+    EQIX: {cik: 1101239}  # EQUINIX INC
+    EXC: {cik: 1109357}  # EXELON CORP
+    FCX: {cik: 831259}  # FREEPORT-MCMORAN INC
+    FOXA: {cik: 1754301}  # Fox Corp
+    GBTC: {cik: 1588489}  # Grayscale Bitcoin Trust ETF
+    GE: {cik: 40545}  # GENERAL ELECTRIC CO
+    GILD: {cik: 882095}  # GILEAD SCIENCES, INC.
+    GLD: {cik: 1222333}  # SPDR GOLD TRUST
+    HD: {cik: 354950}  # HOME DEPOT, INC.
+    HON: {cik: 773840}  # HONEYWELL INTERNATIONAL INC
+    IBM: {cik: 51143}  # INTERNATIONAL BUSINESS MACHINES CORP
+    JD: {cik: 1549802}  # JD.com, Inc.
+    JNJ: {cik: 200406}  # JOHNSON & JOHNSON
+    LI: {cik: 1791706}  # Li Auto Inc.
+    LIN: {cik: 1707925}  # LINDE PLC
+    LLY: {cik: 59478}  # ELI LILLY & Co
+    MARA: {cik: 1507605}  # MARA Holdings, Inc.
+    MCD: {cik: 63908}  # MCDONALDS CORP
+    META: {cik: 1326801}  # Meta Platforms, Inc.
+    MMM: {cik: 66740}  # 3M CO
+    MRK: {cik: 310158}  # Merck & Co., Inc.
+    NEE: {cik: 753308}  # NEXTERA ENERGY INC
+    NEM: {cik: 1164727}  # NEWMONT Corp /DE/
+    NFLX: {cik: 1065280}  # NETFLIX INC
+    NIO: {cik: 1736541}  # NIO Inc.
+    NKE: {cik: 320187}  # NIKE, Inc.
+    ORCL: {cik: 1341439}  # ORACLE CORP
+    PDD: {cik: 1737806}  # PDD Holdings Inc.
+    PEG: {cik: 788784}  # PUBLIC SERVICE ENTERPRISE GROUP INC
+    PEP: {cik: 77476}  # PEPSICO INC
+    PFE: {cik: 78003}  # PFIZER INC
+    PG: {cik: 80424}  # PROCTER & GAMBLE Co
+    PLD: {cik: 1045609}  # Prologis, Inc.
+    PSA: {cik: 1393311}  # Public Storage
+    PYPL: {cik: 1633917}  # PayPal Holdings, Inc.
+    RIOT: {cik: 1167419}  # Riot Platforms, Inc.
+    RTX: {cik: 101829}  # RTX Corp
+    SBUX: {cik: 829224}  # STARBUCKS CORP
+    SLV: {cik: 1330568}  # iShares Silver Trust
+    SO: {cik: 92122}  # SOUTHERN CO
+    SRE: {cik: 1032208}  # SEMPRA
+    T: {cik: 732717}  # AT&T INC.
+    TMUS: {cik: 1283699}  # T-Mobile US, Inc.
+    UNH: {cik: 731766}  # UNITEDHEALTH GROUP INC
+    UPS: {cik: 1090727}  # UNITED PARCEL SERVICE INC
+    VTR: {cik: 740260}  # Ventas, Inc.
+    VZ: {cik: 732712}  # VERIZON COMMUNICATIONS INC
+    WELL: {cik: 766704}  # WELLTOWER INC.
+    WFC: {cik: 72971}  # WELLS FARGO & COMPANY/MN
+    XPEV: {cik: 1810997}  # XPENG INC.
