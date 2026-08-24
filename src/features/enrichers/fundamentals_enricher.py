@@ -63,6 +63,23 @@ _SHARES = ("CommonStockSharesOutstanding",
            "WeightedAverageNumberOfSharesOutstandingBasic")
 
 
+def _naive_utc(values: "pd.Series") -> "pd.Series":
+    """Datetimes as tz-naive UTC, whichever way they arrive.
+
+    The batch stores `datetime` in UTC; every fixture in the tests is naive.
+    A step that handles only one of the two passes the whole suite and dies on
+    the real frame -- `.astype("datetime64[ns]")` raises on a tz-aware column,
+    and `.tz_localize(None)` raises on a naive one. Both mistakes were made
+    here on 2026-08-23, and the second of them crashed a two-and-a-half-hour
+    rebuild by comparing datetime64[ns] against datetime64[ns, UTC].
+    """
+    parsed = pd.to_datetime(values, errors="coerce")
+    tz = getattr(getattr(parsed, "dt", None), "tz", None)
+    if tz is not None:
+        parsed = parsed.dt.tz_convert("UTC").dt.tz_localize(None)
+    return parsed
+
+
 class FundamentalsEnricher(BaseEnricher):
     """Point-in-time value ratios from reported SEC figures."""
 
@@ -113,26 +130,40 @@ class FundamentalsEnricher(BaseEnricher):
         # exactly the rows that should pass untouched.
         return facts[~is_flow | quarterly.fillna(False)]
 
-    def _as_of(self, bars: pd.DataFrame, facts: pd.DataFrame,
-               concept: str) -> pd.Series:
-        """The value on the record for each bar, by filing date."""
-        right = facts[facts["concept"].eq(concept)]
-        if right.empty:
-            return pd.Series(np.nan, index=bars.index)
+    def _as_of(self, bars: pd.DataFrame, facts: pd.DataFrame, concept: str,
+               total_rows: int) -> np.ndarray:
+        """The value on the record for each bar, as a POSITIONAL array.
 
-        # Latest filing wins for a given period; latest period wins overall.
-        # Sorting by `filed` and taking the backward match does both, because
-        # a restatement is filed after the original by definition.
-        right = (right.sort_values("filed")
-                      .loc[:, ["ticker", "filed", "value", "period_end"]]
-                      .rename(columns={"value": concept,
-                                       "period_end": f"{concept}__end"}))
+        Positional, and that is the whole point. Returning a Series indexed by
+        bar position while the caller's frame carried its own index made
+        `frame[col] - series` align on index instead of position: pandas took
+        the UNION, and 29,097 rows became 53,441. The rebuild died on
+        "Length of values (53441) does not match length of index (29097)"
+        after two and a half hours.
+
+        Every value below is placed by position into an array the length of the
+        frame, so nothing can align anything.
+        """
+        out = np.full(total_rows, np.nan, dtype=float)
+        right = facts[facts["concept"].eq(concept)]
+        if right.empty or bars.empty:
+            return out
+
+        # Sorted by (filed, period_end) so that among rows filed on the SAME
+        # day -- a 10-Q states the current quarter and the year-ago comparative
+        # together -- the one describing the most recent period wins.
+        # `merge_asof` takes the last match, and without period_end in the sort
+        # which of the two it took was arbitrary.
+        right = (right.sort_values(["filed", "period_end"])
+                      .loc[:, ["ticker", "filed", "value"]]
+                      .rename(columns={"value": concept}))
         merged = pd.merge_asof(
             bars.sort_values("_bar"),
             right,
             left_on="_bar", right_on="filed", by="ticker", direction="backward",
         )
-        return merged.set_index("_pos")[concept].reindex(bars["_pos"].to_numpy())
+        out[merged["_pos"].to_numpy()] = merged[concept].to_numpy(dtype=float)
+        return out
 
     # -------------------------------------------------------------- enrich
 
@@ -168,11 +199,9 @@ class FundamentalsEnricher(BaseEnricher):
             return frame
 
         facts = facts.copy(deep=False)
-        facts["filed"] = pd.to_datetime(facts["filed"], errors="coerce")
-        facts["period_end"] = pd.to_datetime(facts["period_end"], errors="coerce")
-        facts["period_start"] = pd.to_datetime(
-            facts.get("period_start"), errors="coerce"
-        )
+        facts["filed"] = _naive_utc(facts["filed"])
+        facts["period_end"] = _naive_utc(facts["period_end"])
+        facts["period_start"] = _naive_utc(facts.get("period_start"))
         facts = facts.dropna(subset=["filed", "value"])
         facts = self._pick_by_span(facts)
         if facts.empty:
@@ -182,7 +211,7 @@ class FundamentalsEnricher(BaseEnricher):
         bars = pd.DataFrame({
             "_pos": np.arange(len(frame)),
             "ticker": frame["ticker"].astype(str).to_numpy(),
-            "_bar": pd.to_datetime(frame[time_column], errors="coerce").to_numpy(),
+            "_bar": _naive_utc(frame[time_column]).to_numpy(),
         })
         if bars["_bar"].isna().all():
             logger.error("FundamentalsEnricher: no usable bar timestamps.")
@@ -190,60 +219,71 @@ class FundamentalsEnricher(BaseEnricher):
         # merge_asof refuses NaT keys, and a bar with no time cannot be placed
         # against a filing date anyway.
         bars = bars.dropna(subset=["_bar"])
-        facts["filed"] = facts["filed"].to_numpy().astype("datetime64[ns]")
-        bars["_bar"] = bars["_bar"].astype("datetime64[ns]")
+        facts["filed"] = _naive_utc(facts["filed"])
+        bars["_bar"] = _naive_utc(bars["_bar"])
 
-        values = {name: self._as_of(bars, facts, name)
+        # Everything from here is numpy of length len(frame). Nothing is a
+        # Series, so nothing can align on an index that is not position.
+        rows = len(frame)
+        values = {name: self._as_of(bars, facts, name, rows)
                   for name in (*_INSTANT, *_FLOW, *_SHARES)}
-        latest_filed = self._latest_filed(bars, facts)
+        latest_filed = self._latest_filed(bars, facts, rows)
+
+        def positive(array):
+            """Keep only values above zero; the rest become NaN."""
+            return np.where(array > 0, array, np.nan)
 
         equity = values["StockholdersEquity"]
-        shares = values["CommonStockSharesOutstanding"].fillna(
-            values["WeightedAverageNumberOfSharesOutstandingBasic"]
+        shares = np.where(
+            np.isfinite(values["CommonStockSharesOutstanding"]),
+            values["CommonStockSharesOutstanding"],
+            values["WeightedAverageNumberOfSharesOutstandingBasic"],
         )
         income = values["NetIncomeLoss"]
 
         # A ratio with a non-positive denominator is not a large number, it is
         # a different situation -- negative equity is distress, and dividing by
         # it produces a figure that ranks as if it were cheap.
-        safe_equity = equity.where(equity > 0)
-        safe_shares = shares.where(shares > 0)
+        safe_equity = positive(equity)
+        safe_shares = positive(shares)
 
-        assigned = {
-            "fund_current_ratio": values["AssetsCurrent"]
-                / values["LiabilitiesCurrent"].where(values["LiabilitiesCurrent"] > 0),
-            "fund_debt_to_equity": values["Liabilities"] / safe_equity,
-            "fund_return_on_equity": income / safe_equity,
-        }
+        with np.errstate(divide="ignore", invalid="ignore"):
+            assigned = {
+                "fund_current_ratio": values["AssetsCurrent"]
+                    / positive(values["LiabilitiesCurrent"]),
+                "fund_debt_to_equity": values["Liabilities"] / safe_equity,
+                "fund_return_on_equity": income / safe_equity,
+            }
 
-        close = None
-        for candidate in ("close", "Close", "close_1d"):
-            if candidate in frame.columns:
-                close = pd.to_numeric(frame[candidate], errors="coerce")
-                break
-        if close is not None:
-            market_cap = close * safe_shares
-            assigned["fund_price_to_book"] = market_cap / safe_equity
-            assigned["fund_earnings_yield"] = income / market_cap.where(market_cap > 0)
-        else:
-            logger.info(
-                "FundamentalsEnricher: no close column, so the two ratios that "
-                "need a price are left absent; the rest are unaffected."
-            )
+            close = None
+            for candidate in ("close", "Close", "close_1d"):
+                if candidate in frame.columns:
+                    close = pd.to_numeric(
+                        frame[candidate], errors="coerce"
+                    ).to_numpy(dtype=float)
+                    break
+            if close is not None:
+                market_cap = close * safe_shares
+                assigned["fund_price_to_book"] = market_cap / safe_equity
+                assigned["fund_earnings_yield"] = income / positive(market_cap)
+            else:
+                logger.info(
+                    "FundamentalsEnricher: no close column, so the two ratios "
+                    "that need a price are left absent; the rest are unaffected."
+                )
 
-        staleness = (
-            pd.to_datetime(frame[time_column], errors="coerce")
-            - pd.to_datetime(latest_filed)
-        ).dt.days
-        fresh = staleness.between(0, self.max_staleness_days)
+        bar_times = _naive_utc(frame[time_column]).to_numpy(dtype="datetime64[ns]")
+        staleness = (bar_times - latest_filed) / np.timedelta64(1, "D")
+        fresh = np.isfinite(staleness) & (staleness >= 0) & (
+            staleness <= self.max_staleness_days
+        )
 
-        for name, series in assigned.items():
-            series = pd.to_numeric(series, errors="coerce").replace(
-                [np.inf, -np.inf], np.nan
-            )
-            frame[name] = series.where(fresh).to_numpy()
-        frame["fund_days_since_report"] = staleness.where(fresh).to_numpy()
-        frame["fund_data_available"] = fresh.fillna(False).astype(int).to_numpy()
+        for name, array in assigned.items():
+            array = np.asarray(array, dtype=float)
+            array = np.where(np.isfinite(array), array, np.nan)
+            frame[name] = np.where(fresh, array, np.nan)
+        frame["fund_days_since_report"] = np.where(fresh, staleness, np.nan)
+        frame["fund_data_available"] = fresh.astype(int)
 
         covered = int(frame["fund_data_available"].sum())
         logger.info(
@@ -253,8 +293,12 @@ class FundamentalsEnricher(BaseEnricher):
         )
         return frame
 
-    def _latest_filed(self, bars: pd.DataFrame, facts: pd.DataFrame) -> pd.Series:
-        """When the newest figure available at each bar was filed."""
+    def _latest_filed(self, bars: pd.DataFrame, facts: pd.DataFrame,
+                      total_rows: int) -> np.ndarray:
+        """When the newest figure available at each bar was filed, positionally."""
+        out = np.full(total_rows, np.datetime64("NaT"), dtype="datetime64[ns]")
+        if bars.empty or facts.empty:
+            return out
         right = (facts[["ticker", "filed"]]
                  .sort_values("filed")
                  .assign(_filed_at=lambda part: part["filed"]))
@@ -262,4 +306,7 @@ class FundamentalsEnricher(BaseEnricher):
             bars.sort_values("_bar"), right,
             left_on="_bar", right_on="filed", by="ticker", direction="backward",
         )
-        return merged.set_index("_pos")["_filed_at"].reindex(bars["_pos"].to_numpy())
+        out[merged["_pos"].to_numpy()] = merged["_filed_at"].to_numpy(
+            dtype="datetime64[ns]"
+        )
+        return out

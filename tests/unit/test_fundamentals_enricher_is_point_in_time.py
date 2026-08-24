@@ -221,3 +221,53 @@ def test_the_enricher_is_registered_in_both_places():
     registered = find(enrichment, "fundamentals")
     assert registered and registered.get("class") == "FundamentalsEnricher"
     assert (find(features, "enabled_enrichers") or {}).get("fundamentals") is True
+
+
+def test_a_frame_with_a_non_default_index_is_not_realigned(enricher):
+    """This is the one the other tests could never have caught.
+
+    `_as_of` used to return a Series indexed by bar POSITION while the caller's
+    frame carried its own index. `frame[col] - series` then aligned on index
+    rather than position, pandas took the union, and 29,097 rows became 53,441.
+    The 2026-08-23 rebuild died two and a half hours in on
+
+        Length of values (53441) does not match length of index (29097)
+
+    Every fixture above uses a default 0..n index, where alignment and position
+    agree and the bug is invisible. Stage 3 hands over frames sliced by
+    timeframe, whose index is anything but.
+    """
+    facts = pd.DataFrame([
+        _fact("StockholdersEquity", 1_000, filed="2024-05-01", end="2024-03-31"),
+        _fact("CommonStockSharesOutstanding", 100, filed="2024-05-01", end="2024-03-31"),
+    ])
+    bars = _bars(["2024-06-01", "2024-06-02", "2024-06-03"])
+    bars.index = [7, 91, 4242]          # a real slice, not 0..n
+
+    out = enricher._enrich_impl(bars, sec_fundamentals=facts)
+
+    assert len(out) == 3, f"the frame grew to {len(out)} rows"
+    assert list(out.index) == [7, 91, 4242], "the index was rebuilt"
+    assert out["fund_data_available"].tolist() == [1, 1, 1]
+    assert out["fund_price_to_book"].notna().all()
+
+
+@pytest.mark.parametrize("tz", [None, "UTC"])
+def test_both_tz_aware_and_naive_bars_are_handled(enricher, tz):
+    """The batch stores datetimes in UTC; the fixtures above are naive.
+
+    A step that only works for one of the two passes every test here and dies
+    on the real frame -- which is exactly how the accumulation guard crashed
+    the same rebuild, comparing datetime64[ns] against datetime64[ns, UTC].
+    """
+    facts = pd.DataFrame([
+        _fact("AssetsCurrent", 2_000, filed="2024-05-01", end="2024-03-31"),
+        _fact("LiabilitiesCurrent", 1_000, filed="2024-05-01", end="2024-03-31"),
+    ])
+    bars = _bars(["2024-06-01", "2024-06-02"])
+    if tz:
+        bars["datetime"] = bars["datetime"].dt.tz_localize(tz)
+
+    out = enricher._enrich_impl(bars, sec_fundamentals=facts)
+    assert len(out) == 2
+    assert out["fund_current_ratio"].iloc[0] == pytest.approx(2.0)

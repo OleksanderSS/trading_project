@@ -97,3 +97,33 @@ def test_a_frame_with_nothing_to_downcast_is_returned_unchanged():
     frame = pd.DataFrame({"a": np.arange(5, dtype=np.int32)})
     out = FeatureOrchestrator._downcast_float_columns(frame)
     assert out["a"].dtype == np.int32
+
+
+def test_the_combined_frame_is_downcast_too():
+    """Per-timeframe downcasting is not enough, and the batch proved it.
+
+    The 2026-08-24 batch came out with 1,203 float64 columns against 994
+    float32: the downcast inside FeatureOrchestrator runs on each timeframe's
+    ~450 columns, and combining them — plus the joins after — widens columns
+    back to float64.
+
+    The combined frame is the one that costs 4.58 GiB and the one feature
+    selection reads, so it is the one that has to be narrow.
+    """
+    import ast
+    import inspect
+    import textwrap
+
+    from src.pipeline.stages.feature_engineering import orchestrator as module
+
+    source = textwrap.dedent(inspect.getsource(module.FeatureEngineeringStage))
+    tree = ast.parse(source)
+    calls = [
+        ast.unparse(node)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+    ]
+    assert any("_downcast_float_columns" in call for call in calls), (
+        "the combined frame is never downcast, so the batch keeps its float64 "
+        "columns where they cost the most"
+    )

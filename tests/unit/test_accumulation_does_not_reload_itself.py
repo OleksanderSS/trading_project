@@ -118,3 +118,35 @@ def test_only_the_identity_columns_are_read(written, monkeypatch):
     assert seen["columns"] == ["datetime", "ticker", "interval"], (
         f"the whole frame was read, not just the keys: {seen['columns']}"
     )
+
+
+def test_timezone_disagreement_does_not_kill_the_run(tmp_path):
+    """pandas refuses the merge outright, and that ended a rebuild.
+
+    The file on disk and the frame in memory need not agree on timezone. When
+    they did not, pandas raised "You are trying to merge on datetime64[ns] and
+    datetime64[ns, UTC] columns for key 'datetime'" -- two and a half hours
+    into the 2026-08-23 rebuild, after the batch had already been written, so
+    the work survived and the run still reported failure.
+    """
+    aware = pd.DataFrame({
+        "datetime": pd.to_datetime(["2026-01-01", "2026-01-02"], utc=True),
+        "ticker": ["AAPL", "AAPL"],
+        "interval": ["1d", "1d"],
+        "some_feature": [1.0, 2.0],
+    })
+    naive = aware.copy()
+    naive["datetime"] = naive["datetime"].dt.tz_convert("UTC").dt.tz_localize(None)
+
+    path = tmp_path / "features.parquet"
+    naive.to_parquet(path, index=False)
+
+    # Same rows, one side tz-aware: nothing to carry over, and no exception.
+    assert ColabManager._rows_not_already_present(path, aware) == 0
+
+    extra = pd.concat([aware, pd.DataFrame({
+        "datetime": pd.to_datetime(["2026-01-03"], utc=True),
+        "ticker": ["MSFT"], "interval": ["1d"], "some_feature": [3.0],
+    })], ignore_index=True)
+    extra.to_parquet(path, index=False)
+    assert ColabManager._rows_not_already_present(path, aware) == 1

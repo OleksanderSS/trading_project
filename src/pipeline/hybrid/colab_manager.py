@@ -218,8 +218,22 @@ class ColabManager:
             # Not readable as parquet, or the schema moved. Say "cannot tell".
             return 0
 
-        merged = on_disk.merge(
-            incoming[keys].drop_duplicates(),
+        # Normalise the datetime keys before comparing them. The file on disk
+        # and the frame in memory do not have to agree on timezone: pandas
+        # refuses outright with "You are trying to merge on datetime64[ns] and
+        # datetime64[ns, UTC] columns", and that killed a two-and-a-half-hour
+        # rebuild on 2026-08-23 -- after the batch was already safely written,
+        # so the work survived and the run reported failure.
+        left = on_disk.copy(deep=False)
+        right = incoming[keys].drop_duplicates().copy(deep=False)
+        for frame in (left, right):
+            for key in keys:
+                if pd.api.types.is_datetime64_any_dtype(frame[key]):
+                    parsed = pd.to_datetime(frame[key], errors="coerce", utc=True)
+                    frame[key] = parsed.dt.tz_convert("UTC").dt.tz_localize(None)
+
+        merged = left.merge(
+            right,
             on=keys,
             how="left",
             indicator=True,

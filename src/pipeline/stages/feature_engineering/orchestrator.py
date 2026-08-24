@@ -253,6 +253,16 @@ class FeatureEngineeringStage(BaseStage):
         # 4. Feature Selection (on the primary timeframe)
         with self._phase('combine timeframes'):
             final_features = self._combine_timeframes(enriched_data)
+            # Again here, and this is not a duplicate. The per-timeframe
+            # downcast inside FeatureOrchestrator caught 200 columns each; the
+            # 2026-08-24 batch still came out with 1,203 float64 against 994
+            # float32, because combining and the joins that follow widen
+            # columns back. This is the frame that costs 4.58 GiB and the one
+            # feature selection reads, so it is the one that has to be narrow.
+            from src.features.feature_orchestrator import FeatureOrchestrator
+            final_features = FeatureOrchestrator._downcast_float_columns(
+                final_features
+            )
         with self._phase('list numeric columns'):
             selected_features = self._initial_feature_columns(final_features)
         feature_importance: dict[str, float] = {}
