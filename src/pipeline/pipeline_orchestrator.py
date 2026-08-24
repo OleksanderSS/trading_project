@@ -323,6 +323,53 @@ class PipelineOrchestrator:
         self.logger.info("Merged %s shape: %s", label, merged_df.shape)
         return merged_df
 
+    def _release_raw_data(self, stage_name: str, stage_outputs: dict) -> None:
+        """Drop the raw tables once processing has consumed them.
+
+        `stage_outputs['raw_data']` is every collected table, and NOTHING after
+        stage 2 reads it -- verified across the whole of src/, where every other
+        mention of the name is a local variable inside a collector. It is also
+        already on disk: `main_database_stage1_raw_data_*.parquet`, 360 MiB
+        compressed. So the in-memory copy was carried through stage 3's two and
+        a quarter hours for nothing.
+
+        Why this matters beyond tidiness. Stage 3 peaks at 2.67 GiB and 2.04 of
+        that is held BEFORE its first phase -- left behind by collection and
+        processing. Enrichment itself costs about 0.13 GiB. The part that scales
+        with tickers is this one, so it is what stands between 22 names and 110.
+
+        Released only after ProcessingStage has produced cleaned_data, because
+        processing is the one thing that reads it. A run that skips stage 2
+        keeps it.
+        """
+        if stage_name != 'ProcessingStage':
+            return
+        if 'raw_data' not in stage_outputs:
+            return
+        if not stage_outputs.get('cleaned_data'):
+            # Processing ran and produced nothing usable; keeping the raw
+            # tables is the only way anything downstream could recover.
+            self.logger.warning(
+                'Processing produced no cleaned_data; keeping raw_data.'
+            )
+            return
+
+        raw = stage_outputs.pop('raw_data')
+        try:
+            import pandas as pd
+
+            held = sum(
+                frame.memory_usage(deep=False).sum()
+                for frame in (raw.values() if isinstance(raw, dict) else [raw])
+                if isinstance(frame, pd.DataFrame)
+            ) / 2 ** 30
+            self.logger.info(
+                'Released raw_data after processing: %.2f GiB, read by nothing '
+                'downstream and already on disk.', held,
+            )
+        except Exception:  # noqa: BLE001 - never let bookkeeping end a run
+            self.logger.info('Released raw_data after processing.')
+
     def _should_run_stage(self, stage_index: int, stage: Any, stages_to_run:
         list[int] | None) ->bool:
         """Check if stage should be executed."""
@@ -354,6 +401,7 @@ class PipelineOrchestrator:
                     stage_outputs['raw_data'] = validated_output
                 else:
                     stage_outputs.update(validated_output)
+                self._release_raw_data(stage_name, stage_outputs)
                 self._log_models_metadata(stage_name, stage_outputs)
             end_time = time.time()
             final_mem = self._get_memory_usage()
