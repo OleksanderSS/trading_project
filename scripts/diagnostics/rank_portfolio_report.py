@@ -173,6 +173,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--features", type=int, default=20,
                         help="how many features to combine, fixed in advance")
+    parser.add_argument("--only", nargs="*", default=None,
+                        help="use exactly these features instead of the "
+                             "strongest by train IC. For testing a specific "
+                             "hypothesis rather than sweeping -- naming them "
+                             "in advance is what makes it a test.")
     parser.add_argument("--side", type=int, default=5,
                         help="names held long, and the same number short")
     parser.add_argument("--capital", type=float, default=100_000)
@@ -203,8 +208,17 @@ def main() -> int:
     if ic.empty:
         print("No feature had usable coverage on the daily frame.")
         return 1
-    chosen = ic.reindex(ic["ic"].abs().sort_values(ascending=False).index)
-    chosen = chosen.head(args.features)
+    if args.only:
+        chosen = ic[ic["feature"].isin(args.only)]
+        missing = set(args.only) - set(chosen["feature"])
+        if missing:
+            print(f"not usable on the daily frame: {sorted(missing)}")
+        if chosen.empty:
+            print("none of the named features had usable coverage.")
+            return 1
+    else:
+        chosen = ic.reindex(ic["ic"].abs().sort_values(ascending=False).index)
+        chosen = chosen.head(args.features)
     print(f"=== {len(chosen)} features chosen on TRAIN only ===")
     for _, row in chosen.head(10).iterrows():
         print(f"  {row['feature'][:44]:44s} IC {row['ic']:+.4f}")
