@@ -153,6 +153,43 @@ class AdaptiveIndicators:
     # Public API
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Window loops
+    # ------------------------------------------------------------------
+    #
+    # These four indicators take a window whose LENGTH CHANGES PER ROW, so
+    # none of them can be a `.rolling(p)` call -- that is the whole point of
+    # the module. What they can avoid is paying pandas for the slicing.
+    #
+    # Measured on the 110-ticker rebuild of 2026-08-24, daily frame, 7,507
+    # rows per ticker: the six adaptive features cost 290.3 s per ticker,
+    # 76% of the entire technical-analysis step, while SMA, EMA, RSI, MACD,
+    # Bollinger, ATR, stochastic, Williams %R and CCI together cost 0.4 s.
+    # The arithmetic was never the cost. `ret.iloc[i - p : i + 1]` builds a
+    # new Series with its own index on every one of 7,507 iterations, four
+    # times over, and that is where the four and a half minutes went.
+    #
+    # The arithmetic below is deliberately unchanged, down to pandas'
+    # NaN-skipping (`np.nanmean` for `.mean()`, `np.nanstd(ddof=1)` for
+    # `.std()`) and to the off-by-one difference between the RSI/ATR guard
+    # (`i < p`) and the Bollinger/MA guard (`i < p - 1`), which is original.
+    # `tests/unit/test_adaptive_indicators_equivalence.py` holds the previous
+    # implementations verbatim and asserts the outputs are identical, so this
+    # is a speed change and nothing else.
+
+    @staticmethod
+    def _periods_array(periods: pd.Series, base_period: int) -> np.ndarray:
+        """Per-row window lengths as ints, NaN falling back to the base."""
+        raw = periods.to_numpy(dtype=float)
+        return np.where(np.isnan(raw), float(base_period), raw).astype(np.intp)
+
+    @staticmethod
+    def _mean_or_nan(window: np.ndarray) -> float:
+        """`Series.mean()`: skip NaN, and give NaN when everything is NaN."""
+        if window.size == 0 or bool(np.isnan(window).all()):
+            return float("nan")
+        return float(np.nanmean(window))
+
     def adaptive_rsi(
         self,
         prices: pd.Series,
@@ -170,23 +207,24 @@ class AdaptiveIndicators:
             Named ``ARSI_{base_period}``.
         """
         periods = self._adaptive_period(prices, base_period)
-        result = pd.Series(np.nan, index=prices.index, name=f"ARSI_{base_period}")
-        ret = prices.diff()
+        result = np.full(len(prices), np.nan, dtype=float)
+        ret = prices.diff().to_numpy(dtype=float)
+        window_lengths = self._periods_array(periods, base_period)
 
         for i in range(len(prices)):
-            p = int(periods.iloc[i]) if not pd.isna(periods.iloc[i]) else base_period
+            p = int(window_lengths[i])
             if i < p:
                 continue
-            window = ret.iloc[i - p : i + 1]
-            gain = window.clip(lower=0).mean()
-            loss = -window.clip(upper=0).mean()
+            window = ret[i - p : i + 1]
+            gain = self._mean_or_nan(np.clip(window, 0.0, None))
+            loss = -self._mean_or_nan(np.clip(window, None, 0.0))
             if loss == 0:
-                result.iloc[i] = 100.0
+                result[i] = 100.0
             else:
                 rs = gain / loss
-                result.iloc[i] = 100.0 - (100.0 / (1.0 + rs))
+                result[i] = 100.0 - (100.0 / (1.0 + rs))
 
-        return result
+        return pd.Series(result, index=prices.index, name=f"ARSI_{base_period}")
 
     def adaptive_macd(
         self,
@@ -244,24 +282,36 @@ class AdaptiveIndicators:
         (upper, middle, lower)  all pd.Series.
         """
         periods = self._adaptive_period(prices, base_period)
-        upper = pd.Series(np.nan, index=prices.index, name="ABB_Upper")
-        middle = pd.Series(np.nan, index=prices.index, name="ABB_Mid")
-        lower = pd.Series(np.nan, index=prices.index, name="ABB_Lower")
+        values = prices.to_numpy(dtype=float)
+        upper_v = np.full(len(prices), np.nan, dtype=float)
+        middle_v = np.full(len(prices), np.nan, dtype=float)
+        lower_v = np.full(len(prices), np.nan, dtype=float)
+        window_lengths = self._periods_array(periods, base_period)
 
         for i in range(len(prices)):
-            p = int(periods.iloc[i]) if not pd.isna(periods.iloc[i]) else base_period
+            p = int(window_lengths[i])
             if i < p - 1:
                 continue
-            window = prices.iloc[i - p + 1 : i + 1]
-            mu = window.mean()
-            sigma = window.std(ddof=1) if len(window) > 1 else 0.0
-            if pd.isna(sigma) or sigma < 0:
+            window = values[i - p + 1 : i + 1]
+            mu = self._mean_or_nan(window)
+            # `Series.std(ddof=1)` is NaN when fewer than two values are
+            # present, and the guard below turns that into 0.0 -- as before.
+            if window.size > 1 and int(np.count_nonzero(~np.isnan(window))) > 1:
+                sigma = float(np.nanstd(window, ddof=1))
+            else:
                 sigma = 0.0
-            middle.iloc[i] = mu
-            upper.iloc[i] = mu + n_std * sigma
-            lower.iloc[i] = mu - n_std * sigma
+            if np.isnan(sigma) or sigma < 0:
+                sigma = 0.0
+            middle_v[i] = mu
+            upper_v[i] = mu + n_std * sigma
+            lower_v[i] = mu - n_std * sigma
 
-        return upper, middle, lower
+        index = prices.index
+        return (
+            pd.Series(upper_v, index=index, name="ABB_Upper"),
+            pd.Series(middle_v, index=index, name="ABB_Mid"),
+            pd.Series(lower_v, index=index, name="ABB_Lower"),
+        )
 
     def adaptive_atr(
         self,
@@ -287,14 +337,17 @@ class AdaptiveIndicators:
             axis=1,
         ).max(axis=1)
 
-        result = pd.Series(np.nan, index=close.index, name=f"AATR_{base_period}")
+        result = np.full(len(close), np.nan, dtype=float)
+        true_range = tr.to_numpy(dtype=float)
+        window_lengths = self._periods_array(periods, base_period)
+
         for i in range(len(close)):
-            p = int(periods.iloc[i]) if not pd.isna(periods.iloc[i]) else base_period
+            p = int(window_lengths[i])
             if i < p:
                 continue
-            result.iloc[i] = tr.iloc[i - p + 1 : i + 1].mean()
+            result[i] = self._mean_or_nan(true_range[i - p + 1 : i + 1])
 
-        return result
+        return pd.Series(result, index=close.index, name=f"AATR_{base_period}")
 
     def adaptive_moving_average(
         self,
@@ -310,19 +363,37 @@ class AdaptiveIndicators:
         ma_type : {"ema", "sma"}
         """
         periods = self._adaptive_period(prices, base_period, use_trend=True)
-        result = pd.Series(np.nan, index=prices.index, name=f"A{ma_type.upper()}_{base_period}")
+        values = prices.to_numpy(dtype=float)
+        result = np.full(len(prices), np.nan, dtype=float)
+        window_lengths = self._periods_array(periods, base_period)
 
         for i in range(len(prices)):
-            p = int(periods.iloc[i]) if not pd.isna(periods.iloc[i]) else base_period
+            p = int(window_lengths[i])
             if i < p - 1:
                 continue
-            window = prices.iloc[i - p + 1 : i + 1]
-            if ma_type == "ema":
-                result.iloc[i] = window.ewm(span=p, adjust=False).mean().iloc[-1]
-            else:
-                result.iloc[i] = window.mean()
+            window = values[i - p + 1 : i + 1]
+            if ma_type != "ema":
+                result[i] = self._mean_or_nan(window)
+                continue
+            # `ewm(span=p, adjust=False).mean()` is the recursion
+            # s_k = a * x_k + (1 - a) * s_(k-1), seeded with s_0 = x_0. Run
+            # it directly here; a window holding NaN goes back to pandas,
+            # whose NaN handling in `ewm` is more intricate than it looks and
+            # is not worth reproducing for a case that costs nothing.
+            if bool(np.isnan(window).any()):
+                result[i] = float(
+                    pd.Series(window).ewm(span=p, adjust=False).mean().to_numpy()[-1]
+                )
+                continue
+            alpha = 2.0 / (float(p) + 1.0)
+            smoothed = float(window[0])
+            for step in range(1, window.size):
+                smoothed = alpha * float(window[step]) + (1.0 - alpha) * smoothed
+            result[i] = smoothed
 
-        return result
+        return pd.Series(
+            result, index=prices.index, name=f"A{ma_type.upper()}_{base_period}"
+        )
 
     # ------------------------------------------------------------------
     # Diagnostics / monitoring
