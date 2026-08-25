@@ -262,11 +262,28 @@ class BackwardTimeframeContextAssembler:
             )
             merged_groups.append(merged)
 
-        result = (
-            pd.concat(merged_groups, ignore_index=True, sort=False)
-            .sort_values("__base_order", kind="mergesort")
-            .reset_index(drop=True)
-        )
+        # Three full copies of the frame used to exist at this line at once:
+        # `merged_groups` still holding every per-ticker piece, the block
+        # `concat` builds out of them, and the block `sort_values` builds out
+        # of that. `reset_index` then made a fourth.
+        #
+        # On the 110-ticker rebuild of 2026-08-25 the block was 415 columns by
+        # 376,359 rows and the run died right here, asking for 596 MiB with
+        # 4.7 GiB reported free -- eight hours of enrichment thrown away three
+        # minutes from the end. 596 MiB is not a shortage; it is one
+        # contiguous request into a heap that eight hours of per-row pandas
+        # slicing had left in pieces. Fewer simultaneous copies is the fix
+        # that does not depend on how the heap happens to look.
+        #
+        # The groups are dead the moment `concat` returns, so they are dropped
+        # before the sort rather than at the end of the function, and both the
+        # sort and the reindex are kept from making one more copy than they
+        # need. `mergesort` stays: it is stable, and the order of rows sharing
+        # a `__base_order` is part of the output.
+        result = pd.concat(merged_groups, ignore_index=True, sort=False)
+        merged_groups.clear()
+        result = result.sort_values("__base_order", kind="mergesort")
+        result.reset_index(drop=True, inplace=True)
         available_column = f"ctx_{context_timeframe}_available_at"
         source_column = f"ctx_{context_timeframe}_source_datetime"
         matched = result[source_column].notna()

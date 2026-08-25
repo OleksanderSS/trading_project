@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 import contextlib
+from pathlib import Path
 import time
 
 import numpy as np
@@ -295,6 +296,7 @@ class FeatureEngineeringStage(BaseStage):
             enriched_df = self._restore_service_columns(enriched_df, df)
 
             enriched_data[tf] = enriched_df
+            self._checkpoint_enriched(tf, enriched_df)
 
         # 4. Feature Selection (on the primary timeframe)
         with self._phase('combine timeframes'):
@@ -421,6 +423,45 @@ class FeatureEngineeringStage(BaseStage):
             market_data_raw = validated
 
         return cleaned_data, market_data_raw
+
+    def _checkpoint_enriched(self, timeframe: str, frame: "pd.DataFrame") -> None:
+        """Write one enriched timeframe to disk as soon as it is finished.
+
+        Enrichment is the expensive thing this stage produces -- 8.1 hours for
+        110 tickers on 2026-08-25 -- and until this existed it lived only in
+        `enriched_data`, in memory, until the whole stage completed. When the
+        run died in `combine timeframes` three minutes after the last
+        timeframe finished, all 8.1 hours went with it. Nothing had ever been
+        written; there was nothing to resume from and nothing to debug the
+        crash against except a stack trace.
+
+        So each timeframe is now put on disk the moment its guards pass. The
+        cost is one parquet write per timeframe, seconds against hours, and
+        what it buys is that a failure in the steps that follow -- combining,
+        selection, the joins -- costs those steps and not the enrichment.
+
+        This deliberately does not resume anything by itself. Reading these
+        files back into a run is a behaviour change that needs its own
+        thinking about staleness, and writing them is the part that is
+        obviously right. A failure to write is logged and swallowed: a
+        checkpoint that breaks the run it exists to protect would be worse
+        than no checkpoint.
+        """
+        try:
+            directory = Path("data") / "checkpoints" / "enriched"
+            directory.mkdir(parents=True, exist_ok=True)
+            destination = directory / f"enriched_{timeframe}.parquet"
+            frame.to_parquet(destination, index=False)
+            self.logger.info(
+                "Checkpointed %s: %d rows x %d columns, %.0f MiB at %s",
+                timeframe, len(frame), frame.shape[1],
+                destination.stat().st_size / 2 ** 20, destination,
+            )
+        except Exception as error:      # noqa: BLE001 - see the docstring
+            self.logger.warning(
+                "Could not checkpoint %s (%s); the run continues without it.",
+                timeframe, error,
+            )
 
     def _combine_timeframes(self, enriched_data: dict[str, pd.DataFrame]) -> pd.DataFrame:
         """Build point-in-time higher-timeframe context for every base frame."""
