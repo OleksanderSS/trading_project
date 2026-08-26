@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 import contextlib
+import os
 from pathlib import Path
 import time
 
@@ -235,6 +236,14 @@ class FeatureEngineeringStage(BaseStage):
 
         # 1. Enrichment for each timeframe
         for tf, df in market_data_dict.items():
+            resumed = self._resume_enriched(tf)
+            if resumed is not None:
+                enriched_data[tf] = resumed
+                all_targets[tf] = resumed[
+                    [c for c in resumed.columns if c.startswith('target_')]
+                ]
+                continue
+
             # Every collected table reaches the enrichers, not a list of two.
             #
             # This forwarded `macro_data` and `news` and nothing else, which is
@@ -424,6 +433,58 @@ class FeatureEngineeringStage(BaseStage):
 
         return cleaned_data, market_data_raw
 
+    def _resume_enriched(self, timeframe: str) -> "pd.DataFrame | None":
+        """Load a checkpointed timeframe instead of enriching it again.
+
+        Enrichment is eight hours at 110 tickers and the steps after it are
+        twelve minutes. Twice now -- 2026-08-25 and 2026-08-26 -- those twelve
+        minutes have failed on an allocation and taken the eight hours with
+        them. The checkpoints added after the first failure meant the second
+        one cost twelve minutes instead of a day, and this is the other half
+        of that: being able to start FROM them.
+
+        Deliberately opt-in, through the RESUME_ENRICHED environment
+        variable, and never by default. Nothing here can tell whether the
+        market data behind a checkpoint has moved on since it was written --
+        a run that silently reused week-old enrichment would produce a batch
+        that looks current and is not, which is worse than any crash. Making
+        the caller ask for it puts that judgement on someone who knows why
+        they are asking.
+
+        Every resume is logged at WARNING with the file's write time, so a
+        batch built this way says so in its own log.
+        """
+        flag = os.environ.get("RESUME_ENRICHED", "").strip().lower()
+        if flag not in {"1", "true", "yes", "on"}:
+            return None
+
+        path = Path("data") / "checkpoints" / "enriched" / f"enriched_{timeframe}.parquet"
+        if not path.exists():
+            self.logger.info(
+                "RESUME_ENRICHED is set but %s has no checkpoint; "
+                "enriching it normally.", timeframe,
+            )
+            return None
+
+        try:
+            frame = pd.read_parquet(path)
+        except Exception as error:      # noqa: BLE001
+            self.logger.warning(
+                "Could not read the %s checkpoint (%s); enriching it normally.",
+                timeframe, error,
+            )
+            return None
+
+        written = datetime.fromtimestamp(path.stat().st_mtime)
+        self.logger.warning(
+            "RESUMED %s from a checkpoint written %s: %d rows x %d columns. "
+            "Enrichment was NOT re-run; nothing has checked whether the "
+            "underlying data has moved on since.",
+            timeframe, written.isoformat(sep=" ", timespec="seconds"),
+            len(frame), frame.shape[1],
+        )
+        return frame
+
     def _checkpoint_enriched(self, timeframe: str, frame: "pd.DataFrame") -> None:
         """Write one enriched timeframe to disk as soon as it is finished.
 
@@ -498,6 +559,26 @@ class FeatureEngineeringStage(BaseStage):
                 filtered_data[tf] = filtered_df
             else:
                 filtered_data[tf] = df
+
+        # Narrow BEFORE assembling, not after.
+        #
+        # The 110-ticker run of 2026-08-26 died in the assembler's final
+        # concat asking for 1.97 GiB, shape (215, 1232907), dtype float64 --
+        # 1,232,907 being every timeframe's rows stacked. The downcast that
+        # exists for exactly this frame ran on the assembler's OUTPUT, so the
+        # widest moment of the whole stage was the one moment nothing had
+        # narrowed. float64 to float32 halves that allocation.
+        #
+        # It also halves every intermediate the joins build on the way there,
+        # which is the larger part: `_join_context` runs once per base/context
+        # pair and each one copies the growing base frame.
+        from src.features.feature_orchestrator import FeatureOrchestrator
+        for timeframe_name in list(filtered_data):
+            filtered_data[timeframe_name] = (
+                FeatureOrchestrator._downcast_float_columns(
+                    filtered_data[timeframe_name]
+                )
+            )
 
         assembler = getattr(
             self,

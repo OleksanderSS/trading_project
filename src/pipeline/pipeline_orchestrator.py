@@ -323,6 +323,54 @@ class PipelineOrchestrator:
         self.logger.info("Merged %s shape: %s", label, merged_df.shape)
         return merged_df
 
+    def _release_database_cache(self, stage_name: str) -> None:
+        """Shrink DuckDB's buffer pool once collection and processing are done.
+
+        The connection is opened with `max_memory: 2GB` and fills that pool
+        during collection -- 596k Wikipedia rows, 442k market rows, 141k from
+        FRED. Feature engineering then never touches the database: there is no
+        `db_manager`, no connection and no `duckdb` reference anywhere in
+        stage 3. So two gigabytes of page cache were being carried through the
+        longest stage in the pipeline by code that cannot use them.
+
+        That was measured on 2026-08-24 and written down, and not acted on --
+        the reasoning being that changing database behaviour late in a long
+        session was careless. It then cost three consecutive failures. The
+        third made the size of it plain: stage 3 entered `combine timeframes`
+        holding 7.09 GiB with 0.27 GiB free, and the three frames it actually
+        needed were 3.28 GiB of that. It was not short of memory; it was
+        carrying memory it had no use for.
+
+        Lowering the limit rather than closing the connection is deliberate.
+        DuckDB evicts buffer-managed blocks to respect a new limit, so the
+        pool shrinks immediately, while the connection stays open and valid
+        for anything later that does want it -- and nothing has to know
+        whether it was closed. Collection keeps its full 2 GB, because this
+        runs after collection is finished.
+
+        Failure here is logged and swallowed. A pipeline that dies while
+        trying to free memory would be a worse bargain than one that keeps it.
+        """
+        if stage_name != 'ProcessingStage':
+            return
+        try:
+            from src.data.management.data_manager import DataManager
+            connections = getattr(DataManager, '_connections', None) or {}
+            if not connections:
+                return
+            for name, connection in list(connections.items()):
+                connection.execute("PRAGMA memory_limit='256MB'")
+                self.logger.info(
+                    "Shrank the DuckDB buffer pool for %s to 256MB after "
+                    "%s; nothing downstream queries the database.",
+                    name, stage_name,
+                )
+        except Exception as error:      # noqa: BLE001 - see the docstring
+            self.logger.warning(
+                "Could not shrink the DuckDB buffer pool (%s); "
+                "the run continues carrying it.", error,
+            )
+
     def _release_raw_data(self, stage_name: str, stage_outputs: dict) -> None:
         """Drop the raw tables once processing has consumed them.
 
@@ -402,6 +450,7 @@ class PipelineOrchestrator:
                 else:
                     stage_outputs.update(validated_output)
                 self._release_raw_data(stage_name, stage_outputs)
+                self._release_database_cache(stage_name)
                 self._log_models_metadata(stage_name, stage_outputs)
             end_time = time.time()
             final_mem = self._get_memory_usage()
