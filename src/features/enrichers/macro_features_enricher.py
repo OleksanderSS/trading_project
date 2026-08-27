@@ -415,19 +415,63 @@ class MacroFeaturesEnricher(BaseEnricher):
         return df
 
     def _post_process_fred_columns(self, df: pd.DataFrame) ->pd.DataFrame:
-        """Post-process FRED columns with forward fill and NaN handling."""
+        """Carry the last released value forward, per ticker, and stop there.
+
+        This function used to end with
+
+            df[fred_cols] = df[fred_cols].fillna(df[fred_cols].median())
+
+        and that one line did more damage than any other in the project.
+        Measured on the 110-ticker batch of 2026-08-27: **70.5% of every
+        `FRED_INDPRO_1d` value and 70.6% of every `FRED_VIXCLS_1d` value was
+        exactly the column median.** Seven of every ten macro readings were not
+        data. They were a constant.
+
+        And the constant is computed over the WHOLE frame, so it contains the
+        future: a row dated 2018 carried a median that includes 2026. Every
+        model that ever read a FRED column was reading tomorrow's average.
+
+        It also manufactured cross-sectional variation out of nothing. A macro
+        series is one number for the whole economy on a given date, but some
+        rows held the real value and others the constant, so the column
+        appeared to differ BETWEEN tickers on 98% of dates -- and on
+        2026-08-12 the split was exactly the 22 tickers of the old preset
+        against the 88 added later. That artefact then ranked near the top of
+        the leading-feature report, because cross-sectional variation is what
+        a ranking measures. A defect that produces a plausible signal is worse
+        than one that produces none.
+
+        The fill is now per ticker as well. `ffill` over a frame with every
+        ticker stacked carries the last row of one name into the first rows of
+        the next.
+
+        **A missing macro value stays missing.** Before the series begins, or
+        beyond the 60-row carry, there is no reading -- and NaN says so, where
+        a fabricated number says the opposite with confidence.
+        """
         fred_cols = [col for col in df.columns if col.startswith('FRED_')]
         if not fred_cols:
             return df
         for col in fred_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce')
-        df[fred_cols] = df[fred_cols].ffill(limit=60)
+
+        if 'ticker' in df.columns:
+            filled = df.groupby('ticker', sort=False)[fred_cols].ffill(limit=60)
+            for col in fred_cols:
+                df[col] = filled[col]
+        else:
+            logger.warning(
+                'No ticker column here, so the FRED carry-forward cannot be '
+                'kept inside each name; filling across the frame as before.'
+            )
+            df[fred_cols] = df[fred_cols].ffill(limit=60)
+
         remaining_nans = df[fred_cols].isna().sum()
         if remaining_nans.any():
-            logger.warning(
-                f'Some FRED columns still have NaN after ffill: {remaining_nans[remaining_nans > 0].to_dict()}'
-                )
-            df[fred_cols] = df[fred_cols].fillna(df[fred_cols].median())
+            logger.info(
+                'FRED columns with no reading yet (left as NaN, deliberately): %s',
+                remaining_nans[remaining_nans > 0].to_dict(),
+            )
         return df
 
     def _merge_macro_data(self, df: pd.DataFrame, macro_data: pd.DataFrame
@@ -439,7 +483,19 @@ class MacroFeaturesEnricher(BaseEnricher):
             df = self._merge_with_duplicates(df, macro_data)
         else:
             df = self._merge_without_duplicates(df, macro_data)
-        df = df.ffill()
+        # Per ticker. A plain `df.ffill()` over a frame holding every ticker
+        # carries the last row of one name into the first rows of the next --
+        # for every column, not only the macro ones.
+        if 'ticker' in df.columns:
+            filled = df.groupby('ticker', sort=False).ffill()
+            for col in filled.columns:
+                df[col] = filled[col]
+        else:
+            logger.warning(
+                'No ticker column at the macro merge, so the forward fill '
+                'cannot be kept inside each name.'
+            )
+            df = df.ffill()
         df = self._post_process_fred_columns(df)
         logger.info(
             f'Macro features successfully added. Final shape: {df.shape}')
