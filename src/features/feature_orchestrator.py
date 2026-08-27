@@ -488,6 +488,64 @@ class FeatureOrchestrator:
         )
         return df
 
+    @staticmethod
+    def _downcast_integer_columns(df: pd.DataFrame) -> pd.DataFrame:
+        """int64 to the smallest integer that holds the values, losslessly.
+
+        Half the frame is integers that need one byte. Measured on the
+        110-ticker checkpoints of 2026-08-26: 224 of the 15-minute frame's 466
+        columns are int64, 234 of the daily frame's 480, 235 of the hourly
+        frame's 473 -- and they hold things like `hour` (0-23), `day_of_week`
+        (0-6), `month_of_year` (1-12) and a long row of `*_available_*` flags
+        that are 0 or 1. Eight bytes each.
+
+        Across the three frames that is about 2.3 GiB of int64 where roughly
+        0.3 GiB of int8 and int16 would do. Two spare gigabytes travelled
+        through every stage, and they are why the run entered `combine
+        timeframes` holding 5.18 GiB.
+
+        The existing downcast only ever looked at floats, so the integers had
+        never been touched.
+
+        **Deliberately post-enrichment only.** numpy integer arithmetic wraps
+        silently: `hour * 4` in int8 overflows at 32 without a word. Applying
+        this before the enrichers run would be a data-corruption bug that no
+        test would catch. After them nothing computes on these columns -- the
+        selector and the models convert to float -- so the narrowing is free.
+        """
+        integer_columns = [
+            name for name, dtype in df.dtypes.items()
+            if dtype.kind in "iu" and dtype.itemsize > 1
+        ]
+        if not integer_columns:
+            return df
+
+        before = df.memory_usage(deep=False).sum()
+        narrowed = 0
+        for name in integer_columns:
+            column = df[name]
+            # `to_numeric` narrows only when every value fits, so this cannot
+            # lose anything; a column that does not fit is left as it was.
+            smaller = pd.to_numeric(
+                column,
+                downcast="unsigned" if column.min() >= 0 else "integer",
+            )
+            # Only when it is genuinely narrower.
+            #
+            # A column of non-negative int64 downcasts to uint64: same eight
+            # bytes, no saving, and a signedness change that later arithmetic
+            # would have to think about. Comparing itemsize rather than dtype
+            # keeps those alone.
+            if smaller.dtype.itemsize < column.dtype.itemsize:
+                df[name] = smaller
+                narrowed += 1
+        after = df.memory_usage(deep=False).sum()
+        logger.info(
+            "Downcast %d of %d integer columns: %.2f GiB -> %.2f GiB",
+            narrowed, len(integer_columns), before / 2 ** 30, after / 2 ** 30,
+        )
+        return df
+
     def _log_enrichment_summary(self, enrichment_stats: list) -> None:
         """Log enrichment summary statistics."""
         total_duration = sum(s['duration_sec'] for s in enrichment_stats)

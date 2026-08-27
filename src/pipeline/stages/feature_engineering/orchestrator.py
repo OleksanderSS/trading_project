@@ -575,10 +575,15 @@ class FeatureEngineeringStage(BaseStage):
         # pair and each one copies the growing base frame.
         from src.features.feature_orchestrator import FeatureOrchestrator
         for timeframe_name in list(filtered_data):
+            narrow = FeatureOrchestrator._downcast_float_columns(
+                filtered_data[timeframe_name]
+            )
+            # Integers too, and they are the larger half: about 2.3 GiB of
+            # int64 across the three frames holding hours, weekdays and 0/1
+            # flags. Only safe here, after every enricher has run -- int8
+            # arithmetic wraps silently.
             filtered_data[timeframe_name] = (
-                FeatureOrchestrator._downcast_float_columns(
-                    filtered_data[timeframe_name]
-                )
+                FeatureOrchestrator._downcast_integer_columns(narrow)
             )
 
         assembler = getattr(
