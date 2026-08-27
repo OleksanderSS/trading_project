@@ -87,6 +87,16 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
             logger.exception(f"Comprehensive Granger test failed for predictor '{predictor_col}' on target '{target_col}'")
             return {'error': "Granger test failed"}
 
+    #: Lags for the ADF test. `adfuller` defaults to choosing 12*(n/100)^0.25,
+    #: which on the 563,422-row daily frame of the 2026-08-27 run came to about
+    #: 104 -- and the test then builds an (n x lags+2) float64 design matrix,
+    #: 421 MiB, twice per predictor. That allocation is what ended the run.
+    #:
+    #: Ten matches the `maxlag` the caller already passes to the Granger test,
+    #: so the two halves of the same analysis stop disagreeing about how far
+    #: back they look.
+    ADF_MAXLAG = 10
+
     @staticmethod
     def _test_stationarity(test_data: pd.DataFrame, target_col: str,
         predictor_col: str) ->dict[str, Any]:
@@ -94,7 +104,10 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
         results = {}
         for col in [target_col, predictor_col]:
             try:
-                adf_result = adfuller(test_data[col])
+                adf_result = adfuller(
+                    test_data[col],
+                    maxlag=AdvancedEconometricsCalculator.ADF_MAXLAG,
+                )
                 results[col] = {'adf_statistic': adf_result[0], 'p_value':
                     adf_result[1], 'critical_values': adf_result[4],
                     'is_stationary': adf_result[1] < 0.05, 'is_i1': not

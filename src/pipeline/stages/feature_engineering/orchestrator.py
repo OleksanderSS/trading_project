@@ -961,6 +961,33 @@ class FeatureEngineeringStage(BaseStage):
         since each predictor fits a VAR model plus stationarity/
         cointegration/impulse-response/variance-decomposition tests.
         """
+        # Off unless CAUSAL_DIAGNOSTIC is set, and the reason is not cost.
+        #
+        # It cost 13.0 minutes on 2026-08-27, 73.2% of the whole stage, and
+        # ended the run on a 421 MiB allocation. But making it cheap would not
+        # have been progress, because what it computes is not interpretable:
+        #
+        #  * The frame is POOLED ACROSS 110 TICKERS. Row 6,400 is AAPL's last
+        #    day and row 6,401 is ABBV's first. Every lag in the ADF and
+        #    Granger tests crosses those boundaries, so the series being
+        #    tested does not exist.
+        #  * At 563,422 observations any such test rejects. The log line
+        #    "N/M external predictors show significant Granger causality" is
+        #    fixed at nearly M/M by the sample size, whatever the data says.
+        #
+        # The code already notes "diagnostic only, selection unaffected", so
+        # nothing downstream loses anything. What is removed is a confident
+        # number that means nothing.
+        #
+        # Making it valid is a real piece of work rather than a flag: run per
+        # ticker, on a few thousand rows each, and aggregate. `ADF_MAXLAG` is
+        # fixed alongside this so that whoever does it does not hit the same
+        # wall on the way.
+        if os.environ.get("CAUSAL_DIAGNOSTIC", "").strip().lower() not in {
+            "1", "true", "yes", "on"
+        }:
+            return {}
+
         external_cols = [
             col
             for col in candidate_features.columns
