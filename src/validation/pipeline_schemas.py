@@ -116,9 +116,23 @@ class EnrichedDataSchema(BaseModel):
     selected_features: list[str] = Field(description="Feature selection results")
     feature_importance: dict[str, float] = Field(description="Feature importance scores")
     all_targets: dict[str, Any] | None = Field(default=None, description="Generated targets by timeframe")
-    combined_features: pd.DataFrame | None = Field(default=None, description="Combined features DataFrame")
+    # Either one frame or one frame per timeframe.
+    #
+    # Stage 3 stopped concatenating the timeframes on 2026-08-27: their union
+    # is ~80% NaN by construction and about 11 GiB at 110 tickers, and four
+    # consecutive rebuilds died building it. It is still WRITTEN to
+    # features.parquet, a chunk of rows at a time, so every reader of that file
+    # is unaffected -- but what crosses the stage boundary in memory is now the
+    # mapping. Declaring only DataFrame here would fail the run at validation,
+    # after the eight hours of enrichment and before anything is saved.
+    combined_features: pd.DataFrame | dict[str, pd.DataFrame] | None = Field(
+        default=None, description="Combined features, or one frame per timeframe"
+    )
     models_metadata: dict[str, Any] | None = Field(default=None, description="Metadata for training models")
-    enriched_data: pd.DataFrame | None = Field(default=None, description="Enriched features DataFrame (required by pipeline_runner)")
+    enriched_data: pd.DataFrame | dict[str, pd.DataFrame] | None = Field(
+        default=None,
+        description="Enriched features, or one frame per timeframe (read by pipeline_runner)",
+    )
     timeframe_context_report: dict[str, Any] | None = Field(
         default=None,
         description="Point-in-time multi-timeframe assembly lineage and safety report",

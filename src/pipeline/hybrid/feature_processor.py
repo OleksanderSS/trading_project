@@ -22,7 +22,31 @@ class FeatureProcessor:
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
 
     def process_enriched_data(self, enriched_data) -> dict | None:
-        """Process enriched data and return structured result."""
+        """Process enriched data and return structured result.
+
+        Stage 3 hands over one frame per timeframe rather than their union:
+        the union is ~11 GiB at 110 tickers and four rebuilds died building
+        it. Each frame is normalised on its own here and the three are only
+        brought together at the moment of writing, a chunk of rows at a time.
+        """
+        if isinstance(enriched_data, dict):
+            data: dict[str, pd.DataFrame] = {}
+            features: dict[str, pd.DataFrame] = {}
+            targets: dict[str, pd.DataFrame] = {}
+            for timeframe, frame in enriched_data.items():
+                one = self.process_enriched_data(frame)
+                if one is None:
+                    # Already logged by the recursive call; an empty timeframe
+                    # is not a reason to discard the others.
+                    continue
+                data[timeframe] = one['data']
+                features[timeframe] = one['features']
+                targets[timeframe] = one['targets']
+            if not features:
+                self.logger.error("No timeframe produced usable features!")
+                return None
+            return {'data': data, 'features': features, 'targets': targets}
+
         if enriched_data is None or (isinstance(enriched_data, pd.DataFrame) and enriched_data.empty):
             self.logger.error("Stage 3 did not return enriched_data!")
             return None
@@ -113,6 +137,24 @@ class FeatureProcessor:
 
         features_path = batch_dir / "features.parquet"
         targets_path = batch_dir / "targets.parquet"
+
+        if isinstance(features_df, dict):
+            # The union file still exists and still holds exactly the rows and
+            # columns it always did -- fingerprints, cache validation,
+            # historical replay and the timeframe splitter all read it. It is
+            # simply never resident: `write_union` converts one chunk of rows
+            # to Arrow at a time, padding each timeframe's absent columns with
+            # null bitmaps rather than with columns of NaN.
+            from src.pipeline.parquet_union_writer import write_union
+            write_union(features_df, features_path)
+            if isinstance(targets_df, dict):
+                write_union(targets_df, targets_path)
+            elif targets_df is not None and not targets_df.empty:
+                targets_df.to_parquet(targets_path, compression='snappy')
+            return {
+                'features_path': features_path,
+                'targets_path': targets_path,
+            }
 
         # Save DataFrames
         if not features_df.empty:

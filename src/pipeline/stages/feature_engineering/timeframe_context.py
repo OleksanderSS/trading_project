@@ -42,15 +42,32 @@ _SERVICE_COLUMNS = {
 class BackwardTimeframeContextAssembler:
     """Attach completed higher-timeframe observations to each base row."""
 
-    def assemble(
+    def assemble_by_timeframe(
         self,
         frames_by_timeframe: dict[str, pd.DataFrame],
-    ) -> tuple[pd.DataFrame, dict[str, Any]]:
+    ) -> tuple[dict[str, pd.DataFrame], dict[str, Any]]:
+        """Assemble each base timeframe and hand them back SEPARATELY.
+
+        This used to end in `pd.concat`, and that single line is what stopped
+        a 110-ticker universe. The union of timeframes is ~80% NaN by
+        construction -- every daily row carries a null in each 15-minute
+        column and back -- and comes to about 11 GiB at 110 tickers on a
+        machine with roughly 10 GB usable. Four separate fixes on 2026-08-26
+        trimmed allocations around it and all four failed, because the union
+        does not fit and no trimming makes it fit.
+
+        The union is still WRITTEN, to `features.parquet`, because that file
+        is a contract: fingerprints, cache validation and historical replay
+        all read it. What it no longer does is exist in memory all at once --
+        the writer takes one timeframe at a time. `assemble` below still
+        returns the concatenated frame for callers that genuinely want it,
+        and is now the expensive path rather than the only one.
+        """
         normalized = self._normalize_frames(frames_by_timeframe)
         if not normalized:
-            return pd.DataFrame(), self._empty_report()
+            return {}, self._empty_report()
 
-        assembled_frames: list[pd.DataFrame] = []
+        assembled_by_timeframe: dict[str, pd.DataFrame] = {}
         base_reports: list[dict[str, Any]] = []
         total_future_violations = 0
 
@@ -76,7 +93,7 @@ class BackwardTimeframeContextAssembler:
                     f"Context assembly changed {base_timeframe} row count "
                     f"from {len(base_frame)} to {len(assembled)}."
                 )
-            assembled_frames.append(self._finalize_base(assembled))
+            assembled_by_timeframe[base_timeframe] = self._finalize_base(assembled)
             base_reports.append(
                 {
                     "base_timeframe": base_timeframe,
@@ -87,7 +104,6 @@ class BackwardTimeframeContextAssembler:
                 }
             )
 
-        combined = pd.concat(assembled_frames, ignore_index=True, sort=False)
         if total_future_violations:
             raise ValueError(
                 "Backward timeframe context assembly produced future-context matches."
@@ -107,7 +123,9 @@ class BackwardTimeframeContextAssembler:
             "base_contexts": base_reports,
             "summary": {
                 "input_rows": int(sum(len(frame) for frame in normalized.values())),
-                "output_rows": int(len(combined)),
+                "output_rows": int(
+                    sum(len(frame) for frame in assembled_by_timeframe.values())
+                ),
                 "base_context_count": len(base_reports),
                 "future_context_violations": total_future_violations,
                 "row_identity_preserved": all(
@@ -115,7 +133,27 @@ class BackwardTimeframeContextAssembler:
                 ),
             },
         }
-        return combined, report
+        return assembled_by_timeframe, report
+
+    def assemble(
+        self,
+        frames_by_timeframe: dict[str, pd.DataFrame],
+    ) -> tuple[pd.DataFrame, dict[str, Any]]:
+        """The concatenated frame, for callers that really need one object.
+
+        Kept so the existing contract holds, and deliberately no longer used
+        by the pipeline: at 110 tickers this concat is the ~11 GiB that four
+        consecutive rebuilds died on. Prefer `assemble_by_timeframe`.
+        """
+        assembled_by_timeframe, report = self.assemble_by_timeframe(frames_by_timeframe)
+        if not assembled_by_timeframe:
+            return pd.DataFrame(), report
+        return (
+            pd.concat(
+                assembled_by_timeframe.values(), ignore_index=True, sort=False
+            ),
+            report,
+        )
 
     def _normalize_frames(
         self,

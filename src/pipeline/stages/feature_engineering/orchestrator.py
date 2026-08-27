@@ -313,25 +313,26 @@ class FeatureEngineeringStage(BaseStage):
             # Again here, and this is not a duplicate. The per-timeframe
             # downcast inside FeatureOrchestrator caught 200 columns each; the
             # 2026-08-24 batch still came out with 1,203 float64 against 994
-            # float32, because combining and the joins that follow widen
-            # columns back. This is the frame that costs 4.58 GiB and the one
-            # feature selection reads, so it is the one that has to be narrow.
+            # float32, because the joins widen columns back.
             from src.features.feature_orchestrator import FeatureOrchestrator
-            final_features = FeatureOrchestrator._downcast_float_columns(
-                final_features
-            )
+            for timeframe_name in list(final_features):
+                final_features[timeframe_name] = (
+                    FeatureOrchestrator._downcast_float_columns(
+                        final_features[timeframe_name]
+                    )
+                )
         with self._phase('list numeric columns'):
             selected_features = self._initial_feature_columns(final_features)
         feature_importance: dict[str, float] = {}
-        if not final_features.empty:
-            target_col = kwargs.get('target_column', 'target_up_1d')
-            if target_col in final_features.columns:
-                with self._phase('feature selection (VIF + selector)'):
-                    selected_features, feature_importance = await self._select_features(
-                        final_features,
-                        target_col,
-                        kwargs,
-                    )
+        target_col = kwargs.get('target_column', 'target_up_1d')
+        selection_frame = self._frame_carrying_target(final_features, target_col)
+        if selection_frame is not None:
+            with self._phase('feature selection (VIF + selector)'):
+                selected_features, feature_importance = await self._select_features(
+                    selection_frame,
+                    target_col,
+                    kwargs,
+                )
 
         self._log_phase_breakdown()
 
@@ -585,18 +586,68 @@ class FeatureEngineeringStage(BaseStage):
             "timeframe_context_assembler",
             BackwardTimeframeContextAssembler(),
         )
-        combined, report = assembler.assemble(filtered_data)
+        # `assemble_by_timeframe`, not `assemble`.
+        #
+        # The concatenating version is still there and still correct, and at
+        # 110 tickers it is an ~11 GiB allocation that four consecutive
+        # rebuilds died on. The union is written to `features.parquet` a chunk
+        # of rows at a time instead -- same file, never resident.
+        assembled, report = assembler.assemble_by_timeframe(filtered_data)
         self._last_timeframe_context_report = report
         self.logger.info(
-            "Assembled %s causal timeframe contexts: %s total rows",
+            "Assembled %s causal timeframe contexts: %s total rows across %s",
             report["summary"]["base_context_count"],
             report["summary"]["output_rows"],
+            ", ".join(f"{name} {len(frame):,}" for name, frame in assembled.items()),
         )
-        return combined
+        return assembled
 
-    def _initial_feature_columns(self, frame: pd.DataFrame) -> list[str]:
-        """Return numeric model candidates without labels or service metadata."""
-        if frame.empty:
+    @staticmethod
+    def _frame_carrying_target(
+        frames: dict[str, "pd.DataFrame"], target_column: str,
+    ) -> "pd.DataFrame | None":
+        """The one timeframe that actually holds the selection target.
+
+        Selection used to run on the concatenated frame, and that was never
+        what it sounded like: `target_up_1d` is a daily label, so on the
+        15-minute and hourly rows it is null, and every one of those rows was
+        dropped inside the selector anyway. Running on the daily frame is the
+        same computation on the same rows -- it is simply the frame that has
+        the column.
+
+        Chosen by which frame carries the target rather than by name, because
+        a caller may ask for an hourly target and the right answer then is the
+        hourly frame. When more than one carries it, the largest wins: that is
+        the one with the most rows to select on.
+        """
+        candidates = [
+            (name, frame) for name, frame in frames.items()
+            if frame is not None and not frame.empty
+            and target_column in frame.columns
+            and frame[target_column].notna().any()
+        ]
+        if not candidates:
+            return None
+        return max(candidates, key=lambda item: len(item[1]))[1]
+
+    def _initial_feature_columns(self, frame) -> list[str]:
+        """Return numeric model candidates without labels or service metadata.
+
+        Accepts either one frame or the per-timeframe mapping the stage now
+        carries. For a mapping it is the union across timeframes, in first-seen
+        order, which is what the single concatenated frame used to yield -- and
+        it is read from `dtypes` per frame, so no frame is ever built to answer
+        a question about names.
+        """
+        if isinstance(frame, dict):
+            seen: dict[str, None] = {}
+            for part in frame.values():
+                if part is None or part.empty:
+                    continue
+                for column in self._initial_feature_columns(part):
+                    seen.setdefault(column, None)
+            return list(seen)
+        if frame is None or frame.empty:
             return []
         metadata_columns = {
             "datetime",
