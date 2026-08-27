@@ -109,8 +109,8 @@ class ColabManager:
         #
         # Same shape of mistake as `select_dtypes` being called to list column
         # NAMES: metadata is metadata, and parquet keeps it in the header.
-        final_features = self._interval_only(features_path)
-        final_targets = self._interval_only(targets_path)
+        final_features = self._metadata_columns(features_path)
+        final_targets = self._metadata_columns(targets_path)
         metadata = self._create_batch_metadata(
             eff_batch_name, timestamp, config, final_features, final_targets,
             features_path, targets_path, config_path,
@@ -143,19 +143,29 @@ class ColabManager:
             logger.warning("Could not read the header of %s: %s", path, error)
             return (0, 0)
 
-    @staticmethod
-    def _interval_only(path: Path) -> pd.DataFrame:
-        """Just the interval column, which is all the metadata step reads.
+    #: The only columns the metadata step looks at: which timeframes were
+    #: delivered, and what timezone the timestamps carry.
+    METADATA_COLUMNS = ("interval", "timeframe", "datetime")
 
-        One column of 1.2M rows is a few megabytes; the whole frame is 6.8 GiB.
-        A file without the column comes back empty rather than raising -- the
-        caller treats that as "no timeframes delivered", which is exactly what
-        it means.
+    @staticmethod
+    def _metadata_columns(path: Path) -> pd.DataFrame:
+        """Just the columns the metadata step reads, not the batch.
+
+        Three columns of 1.2M rows is a few tens of megabytes; the whole frame
+        is 6.8 GiB. Only the columns the file actually has are requested --
+        asking parquet for an absent column raises, and a batch missing
+        `interval` should report "no timeframes delivered" rather than end the
+        run.
         """
+        import pyarrow.parquet as pq
         try:
-            return pd.read_parquet(path, columns=["interval"])
+            available = set(pq.ParquetFile(path).schema_arrow.names)
+            wanted = [c for c in ColabManager.METADATA_COLUMNS if c in available]
+            if not wanted:
+                return pd.DataFrame()
+            return pd.read_parquet(path, columns=wanted)
         except (OSError, ValueError, KeyError) as error:
-            logger.warning("Could not read `interval` from %s: %s", path, error)
+            logger.warning("Could not read metadata columns from %s: %s", path, error)
             return pd.DataFrame()
 
     def _write_timeframe_slices(self, batch_dir: Path) -> None:
@@ -711,13 +721,25 @@ class ColabManager:
                 ],
                 'feature_interval_counts': {
                     str(key): int(value)
-                    for key, value in f_df['interval']
+                    for key, value in (
+                        f_df['interval'] if 'interval' in f_df.columns
+                        else pd.Series(dtype=object)
+                    )
                     .value_counts()
                     .sort_index()
                     .items()
                 },
-                'datetime_timezone': str(f_df['datetime'].dt.tz),
-                'datetime_timezone_status': 'timezone_aware',
+                # Absent when the batch carries no datetime column at all,
+                # which is a fact about the batch rather than a reason to end
+                # a run whose files are already written.
+                'datetime_timezone': (
+                    str(f_df['datetime'].dt.tz) if 'datetime' in f_df.columns
+                    else None
+                ),
+                'datetime_timezone_status': (
+                    'timezone_aware' if 'datetime' in f_df.columns
+                    else 'no_datetime_column'
+                ),
             },
         }
 

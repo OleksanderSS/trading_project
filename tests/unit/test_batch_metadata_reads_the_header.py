@@ -44,15 +44,17 @@ def test_the_shape_matches_the_file(batch):
     assert ColabManager._parquet_shape(batch) == pd.read_parquet(batch).shape
 
 
-def test_the_interval_column_carries_every_timeframe(batch):
-    intervals = ColabManager._interval_only(batch)
+def test_the_metadata_columns_carry_every_timeframe(batch):
+    intervals = ColabManager._metadata_columns(batch)
 
-    assert list(intervals.columns) == ["interval"]
+    # interval and datetime, not the other 2,300 columns: the metadata step
+    # reads which timeframes arrived and what timezone the stamps carry.
+    assert set(intervals.columns) == {"interval", "datetime"}
     assert set(intervals["interval"]) == {"15m", "1d", "60m"}
     assert len(intervals) == 80
 
 
-def test_only_one_column_is_read(batch, monkeypatch):
+def test_only_the_metadata_columns_are_read(batch, monkeypatch):
     """The point is the cost, so the cost is what gets pinned.
 
     If a later change drops the `columns=` argument the timeframes still come
@@ -66,9 +68,9 @@ def test_only_one_column_is_read(batch, monkeypatch):
         return original(source, *args, **kwargs)
 
     monkeypatch.setattr("src.pipeline.hybrid.colab_manager.pd.read_parquet", spy)
-    ColabManager._interval_only(batch)
+    ColabManager._metadata_columns(batch)
 
-    assert seen["columns"] == ["interval"]
+    assert seen["columns"] == ["interval", "datetime"]
 
 
 def test_a_missing_interval_column_is_not_an_error(tmp_path):
@@ -76,7 +78,9 @@ def test_a_missing_interval_column_is_not_an_error(tmp_path):
     path = tmp_path / "features.parquet"
     pd.DataFrame({"close": [1.0, 2.0]}).to_parquet(path, index=False)
 
-    assert ColabManager._interval_only(path).empty
+    # None of the metadata columns are present, so nothing is read at all --
+    # asking parquet for an absent column raises.
+    assert ColabManager._metadata_columns(path).empty
     assert ColabManager._parquet_shape(path) == (2, 1)
 
 
@@ -86,4 +90,4 @@ def test_an_unreadable_file_reports_zero_rather_than_raising(tmp_path):
     broken.write_bytes(b"not a parquet file")
 
     assert ColabManager._parquet_shape(broken) == (0, 0)
-    assert ColabManager._interval_only(broken).empty
+    assert ColabManager._metadata_columns(broken).empty
