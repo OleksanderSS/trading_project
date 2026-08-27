@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
@@ -61,10 +62,84 @@ class FeatureGuards:
         self.temporal_leakage_guard = get_temporal_leakage_guard()
         self.logger.info(f'✅ Temporal safety guards initialized (mode: {self.mode}, strict: {self.strict_mode})')
 
+    #: Fraction of the time span treated as the training window when asking
+    #: whether a feature could ever be learned. Matches the split used by
+    #: `scripts/diagnostics/leading_feature_report.py`, so the two agree.
+    TRAIN_FRACTION = 0.70
+
+    def report_features_dead_in_training(self, df: pd.DataFrame) -> list[str]:
+        """Name the features that are constant while a model would be learning.
+
+        A column that never changes across the training window carries no
+        signal a model can fit, so it gets no weight -- and then it starts
+        varying in the holdout, where nothing has prepared for it. That is
+        worse than a useless feature: it is a distribution shift arriving
+        exactly when the column finally means something.
+
+        Measured on the 110-ticker batch of 2026-08-27, split at 2018-11-19:
+        **65 features are constant in training and vary afterwards** -- 14
+        sentiment, 12 FRED, 9 news, 15 state, and the rest filings, nlp,
+        fear/greed, keywords. News exists only for 2026 (69.8% coverage that
+        year, zero for 2015-2025) and the macro series do not reach back
+        either.
+
+        This is the third time the project has met this shape by hand:
+        attention collected 30 days deep against a frame spanning decades, and
+        now news and macro. It was invisible for the macro columns because the
+        old median fill wrote a plausible number over the gap -- the
+        fabrication concealed the shallowness, which is why nobody noticed for
+        so long.
+
+        Reported, not removed. Dropping 65 columns on the strength of a
+        heuristic would be a silent change to what the batch contains, and the
+        decision of what to collect deeper versus what to abandon belongs to
+        whoever is looking at the numbers.
+        """
+        datetime_col = next(
+            (c for c in ('datetime', 'timestamp', 'date') if c in df.columns), None
+        )
+        if datetime_col is None or df.empty:
+            return []
+
+        stamps = pd.to_datetime(df[datetime_col], errors='coerce')
+        if stamps.notna().sum() < 2:
+            return []
+        split = stamps.quantile(self.TRAIN_FRACTION)
+        in_train = (stamps <= split).to_numpy()
+        if not in_train.any() or in_train.all():
+            return []
+
+        dead: list[str] = []
+        for column, dtype in df.dtypes.items():
+            if dtype.kind not in 'iuf' or column == datetime_col:
+                continue
+            values = df[column].to_numpy(dtype=float, na_value=np.nan)
+            train_values = values[in_train]
+            train_values = train_values[~np.isnan(train_values)]
+            if len(np.unique(train_values)) > 1:
+                continue
+            rest = values[~in_train]
+            rest = rest[~np.isnan(rest)]
+            if len(np.unique(rest)) > 1:
+                dead.append(str(column))
+
+        if dead:
+            self.logger.error(
+                "%d feature(s) are CONSTANT across the training window and "
+                "only start varying afterwards, so nothing can learn them: "
+                "%s%s. Their source is collected shallower than the frame "
+                "they are joined to.",
+                len(dead), ", ".join(dead[:8]),
+                f" and {len(dead) - 8} more" if len(dead) > 8 else "",
+            )
+        return dead
+
     def apply_guards(self, df: pd.DataFrame) -> pd.DataFrame:
         """Apply various safety checks to the feature set."""
         if df is None or df.empty:
             return df
+
+        self.report_features_dead_in_training(df)
 
         guarded = df.loc[:, ~df.columns.duplicated()].copy()
         datetime_col = next((col for col in ('datetime', 'timestamp', 'date') if col in guarded.columns), None)
