@@ -99,11 +99,23 @@ class ColabManager:
         config_path = self._handle_batch_configuration(batch_dir, config, timestamp, eff_batch_name)
 
         # 4. Create metadata
-        final_features = pd.read_parquet(features_path)
-        final_targets = pd.read_parquet(targets_path)
+        #
+        # Read the interval column and the file's own header, not the batch.
+        # `pd.read_parquet(features_path)` pulled all 2,305 columns of
+        # 1,232,907 rows back into memory to fill in a shape and a list of
+        # timeframes: 6.8 GiB for two numbers and a set of three strings, and
+        # it ended the 2026-08-27 run with `malloc of size 7308672704 failed`
+        # after the batch had already been written.
+        #
+        # Same shape of mistake as `select_dtypes` being called to list column
+        # NAMES: metadata is metadata, and parquet keeps it in the header.
+        final_features = self._interval_only(features_path)
+        final_targets = self._interval_only(targets_path)
         metadata = self._create_batch_metadata(
             eff_batch_name, timestamp, config, final_features, final_targets,
-            features_path, targets_path, config_path
+            features_path, targets_path, config_path,
+            f_shape=self._parquet_shape(features_path),
+            t_shape=self._parquet_shape(targets_path),
         )
 
         # 5. Save metadata
@@ -119,6 +131,32 @@ class ColabManager:
         return self._assemble_preparation_result(
             batch_dir, eff_batch_name, metadata_path, metadata, fs_check, config, config_path
         )
+
+    @staticmethod
+    def _parquet_shape(path: Path) -> tuple[int, int]:
+        """(rows, columns) from the parquet header, without reading any data."""
+        import pyarrow.parquet as pq
+        try:
+            handle = pq.ParquetFile(path)
+            return int(handle.metadata.num_rows), len(handle.schema_arrow.names)
+        except (OSError, ValueError) as error:
+            logger.warning("Could not read the header of %s: %s", path, error)
+            return (0, 0)
+
+    @staticmethod
+    def _interval_only(path: Path) -> pd.DataFrame:
+        """Just the interval column, which is all the metadata step reads.
+
+        One column of 1.2M rows is a few megabytes; the whole frame is 6.8 GiB.
+        A file without the column comes back empty rather than raising -- the
+        caller treats that as "no timeframes delivered", which is exactly what
+        it means.
+        """
+        try:
+            return pd.read_parquet(path, columns=["interval"])
+        except (OSError, ValueError, KeyError) as error:
+            logger.warning("Could not read `interval` from %s: %s", path, error)
+            return pd.DataFrame()
 
     def _write_timeframe_slices(self, batch_dir: Path) -> None:
         """Produce features_<tf>.parquet beside the combined batch."""
@@ -622,7 +660,9 @@ class ColabManager:
 
     def _create_batch_metadata(self, name: str, timestamp: str, config: BatchPreparationConfig,
                               f_df: pd.DataFrame, t_df: pd.DataFrame,
-                              f_path: Path, t_path: Path, c_path: Path | None) -> dict[str, Any]:
+                              f_path: Path, t_path: Path, c_path: Path | None,
+                              f_shape: tuple[int, int] | None = None,
+                              t_shape: tuple[int, int] | None = None) -> dict[str, Any]:
         """Creates the batch metadata dictionary."""
         delivered = self._delivered_timeframes(f_df)
         requested = [str(tf) for tf in (config.timeframes or [])]
@@ -649,8 +689,11 @@ class ColabManager:
             # same question and the metadata answered only the first.
             'timeframes_delivered': sorted(delivered),
             'timeframes_missing': missing,
-            'features_shape': f_df.shape,
-            'targets_shape': t_df.shape,
+            # Passed in when the caller read the header instead of the file,
+            # so the recorded shape is the batch's and not that of the one
+            # column that was read to find the timeframes.
+            'features_shape': f_shape or f_df.shape,
+            'targets_shape': t_shape or t_df.shape,
             'accumulated': config.accumulate,
             'test_mode': self._is_test_mode(config),
             'files': {
@@ -809,7 +852,14 @@ class ColabManager:
             reason = 'Forced selection' if force_selection else 'No existing selection'
             return {'needed': True, 'reason': reason}
 
-        if len(features_df) < 1000:
+        # `len` of a mapping is the number of timeframes -- three -- which
+        # would take the "too small to select on" branch on every wide batch
+        # without saying a word.
+        row_count = (
+            sum(len(frame) for frame in features_df.values())
+            if isinstance(features_df, dict) else len(features_df)
+        )
+        if row_count < 1000:
             return {'needed': False, 'reason': 'Dataset too small for feature selection'}
 
         return {'needed': False, 'reason': 'Existing feature selection found'}
