@@ -83,37 +83,14 @@ class HybridOrchestrator:
     def _load_timeframe_slices(self, base):
         """Features and targets as dicts keyed by timeframe, or None.
 
-        None when the slices are absent or incomplete -- a partial set would
-        silently train on fewer timeframes than the batch holds, which is worse
-        than falling back to the combined file.
+        The body moved to `src.pipeline.timeframe_slices` when the cache check
+        turned out to be loading the union instead -- two callers needed the
+        same rule about which `features_*.parquet` is a timeframe and which is
+        an old export that happens to match the glob.
         """
-        import pandas as pd
+        from src.pipeline.timeframe_slices import load_timeframe_slices
 
-        feature_files = sorted(base.glob('features_*.parquet'))
-        # `features_all110_20260806.parquet` and `features_CORRUPT_...` live in
-        # the same directory. A timeframe is short and has no underscore.
-        candidates = {}
-        for path in feature_files:
-            timeframe = path.stem.removeprefix('features_')
-            if len(timeframe) > 4 or '_' in timeframe:
-                continue
-            targets_path = base / f'targets_{timeframe}.parquet'
-            if targets_path.exists():
-                candidates[timeframe] = (path, targets_path)
-
-        if not candidates:
-            return None
-
-        features, targets = {}, {}
-        for timeframe, (feature_path, target_path) in candidates.items():
-            features[timeframe] = pd.read_parquet(feature_path)
-            targets[timeframe] = pd.read_parquet(target_path)
-            self.logger.info(
-                'Loaded %s slice: %d rows, %d feature columns.',
-                timeframe, len(features[timeframe]),
-                features[timeframe].shape[1],
-            )
-        return features, targets
+        return load_timeframe_slices(base, self.logger)
 
     def _load_prepared_batch(
         self, batch_name: str | None

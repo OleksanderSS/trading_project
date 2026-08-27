@@ -404,7 +404,33 @@ class PipelineExecutor:
             return None
 
         # Step 4: load and validate cached features
+        #
+        # Slices first, union only as a fallback.
+        #
+        # `pd.read_parquet(features_path)` reads every timeframe's columns on
+        # every row: 69.3% of those cells are null by construction and the
+        # whole thing expands to about 6.8 GiB at 110 tickers. The per-
+        # timeframe files hold the same rows without the padding, and are
+        # written beside the batch precisely so this path does not have to pay
+        # for it. Until now it did, which quietly undid the point of writing
+        # them -- every cached run rebuilt the union in memory.
         try:
+            from src.pipeline.timeframe_slices import load_timeframe_slices
+
+            sliced = load_timeframe_slices(output_dir, logger)
+            if sliced is not None:
+                features_df, targets_df = sliced
+                if any(not frame.empty for frame in features_df.values()):
+                    logger.info(
+                        '✅ Cache: loaded %d timeframe slice(s) instead of the '
+                        'combined batch.', len(features_df),
+                    )
+                    return features_df, targets_df
+                logger.warning(
+                    'Cache: every timeframe slice was empty — reading the '
+                    'combined batch instead.'
+                )
+
             features_df = pd.read_parquet(features_path)
             targets_df = pd.read_parquet(targets_path)
             if features_df.empty or targets_df.empty:
