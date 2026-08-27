@@ -144,6 +144,77 @@ class ColabManager:
                 timeframe, entry["rows"], entry["columns"], entry["of"],
             )
 
+    def _save_frames_by_timeframe(self, features_by_timeframe: dict,
+                                  targets_by_timeframe, features_path: Path,
+                                  targets_path: Path, config) -> tuple[Path, Path]:
+        """Write the per-timeframe frames into the two union files.
+
+        `pipeline_runner` has already written these very paths by the time this
+        runs, so "existing" is almost always this run's own output -- the
+        situation that turned accumulation into a batch joined to itself on
+        2026-08-22. The cheap key check still decides, and when the disk holds
+        nothing new the frames are simply written.
+
+        Accumulation across timeframes is done one timeframe at a time, reading
+        only that interval's rows back from disk. Loading the whole file to
+        merge would rebuild the union this entire change exists to avoid.
+        """
+        from src.pipeline.parquet_union_writer import write_union
+
+        carried_over = 0
+        if config.accumulate and features_path.exists() and targets_path.exists():
+            identity = pd.concat(
+                [
+                    frame[[c for c in ("datetime", "ticker", "interval")
+                           if c in frame.columns]]
+                    for frame in features_by_timeframe.values()
+                    if frame is not None and not frame.empty
+                ],
+                ignore_index=True,
+            )
+            carried_over = self._rows_not_already_present(features_path, identity)
+
+        if carried_over:
+            logger.info(
+                "Accumulating per timeframe: %d row(s) on disk are not in "
+                "this batch.", carried_over,
+            )
+            import pyarrow.parquet as pq
+            for timeframe, frame in list(features_by_timeframe.items()):
+                try:
+                    existing = pq.read_table(
+                        features_path,
+                        filters=[("interval", "=", timeframe)],
+                    ).to_pandas()
+                except (OSError, ValueError, KeyError) as error:
+                    logger.warning(
+                        "Could not read %s rows back for accumulation (%s); "
+                        "keeping this run's rows only.", timeframe, error,
+                    )
+                    continue
+                if existing.empty:
+                    continue
+                merged = pd.concat([existing, frame], ignore_index=True)
+                features_by_timeframe[timeframe] = self._deduplicate_df(merged)
+
+        for timeframe, frame in list(features_by_timeframe.items()):
+            targets = (targets_by_timeframe or {}).get(timeframe) \
+                if isinstance(targets_by_timeframe, dict) else None
+            if targets is not None:
+                features_by_timeframe[timeframe] = self._check_feature_leakage(
+                    frame, targets,
+                )
+
+        write_union(features_by_timeframe, features_path)
+        if isinstance(targets_by_timeframe, dict):
+            write_union(targets_by_timeframe, targets_path)
+        logger.info(
+            "Batch written by timeframe: %s",
+            ", ".join(f"{name} {len(frame):,}"
+                      for name, frame in features_by_timeframe.items()),
+        )
+        return features_path, targets_path
+
     def _save_and_accumulate_data(self,
                                 features_df: pd.DataFrame,
                                 targets_df: pd.DataFrame,
@@ -152,16 +223,31 @@ class ColabManager:
         """Handles saving and optional accumulation of features and targets."""
         features_path = batch_dir / FEATURES_FILE
         targets_path = batch_dir / TARGETS_FILE
-        features_df = self._validate_batch_frame(
-            features_df,
-            frame_name="features",
-            requested_timeframes=config.timeframes,
-        )
-        targets_df = self._validate_batch_frame(
-            targets_df,
-            frame_name="targets",
-            requested_timeframes=config.timeframes,
-        )
+        # Validated per timeframe when stage 3 hands back a mapping, which it
+        # now does: the union of timeframes is ~11 GiB at 110 tickers and is
+        # never built in memory, only written.
+        def validate(frames, name):
+            if isinstance(frames, dict):
+                return {
+                    timeframe: self._validate_batch_frame(
+                        frame,
+                        frame_name=f"{name} {timeframe}",
+                        requested_timeframes=[timeframe],
+                    )
+                    for timeframe, frame in frames.items()
+                }
+            return self._validate_batch_frame(
+                frames, frame_name=name,
+                requested_timeframes=config.timeframes,
+            )
+
+        features_df = validate(features_df, "features")
+        targets_df = validate(targets_df, "targets")
+
+        if isinstance(features_df, dict):
+            return self._save_frames_by_timeframe(
+                features_df, targets_df, features_path, targets_path, config,
+            )
 
         # Accumulation is worth doing only when the file on disk actually holds
         # rows this batch does not. It usually holds none, because

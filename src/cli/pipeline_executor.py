@@ -432,6 +432,18 @@ class PipelineExecutor:
         disable_lineage_tracking()
 
     @staticmethod
+    def _describe_frames(frames) -> str:
+        """Shape of a frame, or of each timeframe when there are several."""
+        if isinstance(frames, dict):
+            if not frames:
+                return "{}"
+            return ", ".join(
+                f"{name} {getattr(frame, 'shape', ('?', '?'))}"
+                for name, frame in frames.items()
+            )
+        return str(getattr(frames, "shape", ("?", "?")))
+
+    @staticmethod
     async def _run_local_pipeline_and_extract_data(orchestrator, tickers: list, timeframes: list):
         """Run local pipeline and extract features/targets dataframes."""
         local_results = await orchestrator.run_local_pipeline(tickers=tickers,
@@ -439,6 +451,18 @@ class PipelineExecutor:
         results_data = local_results.get('results', {})
         features_df = results_data.get('features_df', pd.DataFrame())
         targets_df = results_data.get('targets_df', pd.DataFrame())
+
+        # Stage 3 hands back one frame per timeframe rather than their union:
+        # the union is ~11 GiB at 110 tickers and four rebuilds died building
+        # it. `features.parquet` still holds every row, written a chunk at a
+        # time, but what crosses this boundary in memory is the mapping.
+        if isinstance(features_df, dict) or isinstance(targets_df, dict):
+            logger.info(
+                'Local pipeline complete: features=%s, targets=%s',
+                PipelineExecutor._describe_frames(features_df),
+                PipelineExecutor._describe_frames(targets_df),
+            )
+            return features_df, targets_df
 
         # If features/targets are empty — cascade fallbacks:
         # 1. saved_files['features'] from this run (written by feature_processor)
@@ -588,6 +612,13 @@ class PipelineExecutor:
     @staticmethod
     def _capture_final_features(tracker, features_df):
         """Captures final features for lineage report."""
+        if isinstance(features_df, dict):
+            # Lineage tracks one frame; with several, the largest is the one
+            # whose columns the models actually train on.
+            features_df = max(
+                (f for f in features_df.values() if getattr(f, 'empty', True) is False),
+                key=len, default=pd.DataFrame(),
+            )
         if tracker is not None and not features_df.empty:
             try:
                 tracker.capture_step("final_features", features_df)
