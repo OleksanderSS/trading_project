@@ -283,7 +283,18 @@ def main() -> int:
         frame = frame.loc[frame["interval"].astype(str) == args.interval]
     frame = frame.copy()
     frame["_time"] = pd.to_datetime(frame["datetime"], errors="coerce")
-    frame["_date"] = frame["_time"].dt.date
+    # Grouped by the exact timestamp, not the calendar date.
+    #
+    # On an intraday frame a market-wide value legitimately differs between
+    # 09:45 and 14:15, and tickers do not share every bar -- the 15-minute
+    # checkpoint of 2026-08-28 has 56 date-groups holding more than one ticker
+    # against 1,456 timestamp-groups. Grouping by date compared bars taken at
+    # different times and reported `state_champion` as 78.6% inconsistent when
+    # by timestamp it is 0.0%.
+    #
+    # A checker that cries wolf on every intraday frame stops being read, which
+    # is a worse failure than the one it was written to catch.
+    frame["_date"] = frame["_time"]
 
     rows = pq.ParquetFile(path).metadata.num_rows
     print(f"{path.name}: {rows:,} rows, checking {len(frame):,}"
