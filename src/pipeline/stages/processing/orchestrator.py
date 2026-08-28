@@ -104,10 +104,38 @@ class ProcessingStage(BaseStage):
             df_m = self.data_handler.clean_and_normalize_market_data(raw_data['market_data'])
             cleaned_data_map['prices'] = self.data_handler.group_by_timeframes(df_m)
 
-        # ✅ Pass macro_data from Stage 1 (FredCollector) to Feature Engineering with cleaning
-        if 'macro_data' in raw_data and isinstance(raw_data['macro_data'], __import__('pandas').DataFrame):
-            macro_df = self.data_handler.clean_and_normalize_macro_data(raw_data['macro_data'])
-            cleaned_data_map['macro_data'] = macro_df
+        # The accumulated table, not this run's fetch.
+        #
+        # `macro_data` is what FredCollector RETURNED, and the collector is
+        # configured to fetch from two years back -- 8,103 rows on 2026-08-27,
+        # of which 23 were new. `fred_data` is the table those fetches have
+        # been accumulating into for as long as the project has run: 154,045
+        # rows, 13,535 daily observations for DGS10 alone, over fifty years.
+        #
+        # Feature engineering used the two-year fetch, joined it to a frame
+        # spanning thirty years, and 93% of the rows came out with no macro
+        # value. A median fill then wrote a plausible constant over the gap,
+        # which is how 70% of every FRED column became one number containing
+        # the future (see the macro enricher). The history was never missing.
+        # It was sitting in the next variable.
+        macro_source = None
+        for key in ('fred_data', 'macro_data'):
+            frame = raw_data.get(key)
+            if isinstance(frame, __import__('pandas').DataFrame) and not frame.empty:
+                if macro_source is None or len(frame) > len(macro_source[1]):
+                    macro_source = (key, frame)
+        if macro_source is not None:
+            key, frame = macro_source
+            self.logger.info(
+                "Macro source for enrichment: '%s' with %d rows "
+                "(candidates: %s).", key, len(frame),
+                {k: len(v) for k, v in raw_data.items()
+                 if k in ('fred_data', 'macro_data')
+                 and isinstance(v, __import__('pandas').DataFrame)},
+            )
+            cleaned_data_map['macro_data'] = (
+                self.data_handler.clean_and_normalize_macro_data(frame)
+            )
 
         # Pass news data with cleaning
         if 'news' in raw_data and isinstance(raw_data['news'], __import__('pandas').DataFrame):
