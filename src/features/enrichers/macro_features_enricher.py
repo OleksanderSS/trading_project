@@ -414,6 +414,77 @@ class MacroFeaturesEnricher(BaseEnricher):
                 df[col] = aligned_macro_data[col].values
         return df
 
+    def _fill_forward_in_time(self, df: pd.DataFrame,
+                              limit: int | None = None) -> pd.DataFrame:
+        """Carry values forward along TIME, inside each ticker.
+
+        `ffill` walks rows, not dates. When the frame is ordered newest-first
+        it therefore fills backwards through time, and no `bfill` appears
+        anywhere in the code -- which is why this survived every reading of it.
+
+        Measured on the 110-ticker batch of 2026-08-28: `FRED_CPIAUCSL_1d` held
+        **313.569 in 1996**, the 2024 level, on every row from 1996 to 2023,
+        with 0.5% NaN. US CPI in 1996 was about 157. Reproduced exactly by
+        running this same merge over the same data twice, changing only the row
+        order:
+
+            ascending   1996 = NaN    93.3% NaN   correct
+            descending  1996 = 300.0   0.0% NaN   the future, thirty years back
+
+        The 15-minute frame looked clean throughout, because its dates sit
+        inside the macro coverage and the fill direction never mattered there.
+
+        So the order is made explicit rather than assumed: sort by ticker and
+        time, fill, then restore the caller's row order. An enricher that
+        silently permutes its input is a trap for the next consumer, and this
+        project has already paid for that once.
+        """
+        datetime_col = next(
+            (c for c in ('datetime', 'timestamp', 'date') if c in df.columns), None
+        )
+        by_index = datetime_col is None and isinstance(df.index, pd.DatetimeIndex)
+
+        if datetime_col is None and not by_index:
+            # Still inside each ticker. Without a timestamp the order cannot
+            # be checked, but crossing names is wrong under any order.
+            logger.warning(
+                'No timestamp at the macro merge, so the carry-forward cannot '
+                'be ordered in time; filling in row order, per ticker.'
+            )
+            if 'ticker' in df.columns:
+                filled = df.groupby('ticker', sort=False).ffill(limit=limit)
+                out = df.copy()
+                for col in filled.columns:
+                    out[col] = filled[col]
+                return out
+            return df.ffill(limit=limit)
+
+        order_key = '__macro_fill_row_order'
+        working = df.copy()
+        working[order_key] = np.arange(len(working))
+        if by_index:
+            working['__macro_fill_time'] = working.index
+            time_col = '__macro_fill_time'
+        else:
+            time_col = datetime_col
+
+        sort_by = ([c for c in ('ticker',) if c in working.columns]) + [time_col]
+        working = working.sort_values(sort_by, kind='mergesort')
+
+        if 'ticker' in working.columns:
+            filled = working.groupby('ticker', sort=False).ffill(limit=limit)
+        else:
+            filled = working.ffill(limit=limit)
+        for col in filled.columns:
+            if col not in (order_key, '__macro_fill_time'):
+                working[col] = filled[col]
+
+        working = working.sort_values(order_key, kind='mergesort')
+        working = working.drop(
+            columns=[c for c in (order_key, '__macro_fill_time') if c in working.columns]
+        )
+        return working
+
     def _post_process_fred_columns(self, df: pd.DataFrame) ->pd.DataFrame:
         """Carry the last released value forward, per ticker, and stop there.
 
@@ -455,16 +526,19 @@ class MacroFeaturesEnricher(BaseEnricher):
         for col in fred_cols:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        if 'ticker' in df.columns:
-            filled = df.groupby('ticker', sort=False)[fred_cols].ffill(limit=60)
-            for col in fred_cols:
-                df[col] = filled[col]
-        else:
-            logger.warning(
-                'No ticker column here, so the FRED carry-forward cannot be '
-                'kept inside each name; filling across the frame as before.'
-            )
-            df[fred_cols] = df[fred_cols].ffill(limit=60)
+        # Ordered in time, for the reason in `_fill_forward_in_time`: a
+        # newest-first frame turns this carry-forward into a thirty-year
+        # backfill without a single `bfill` in sight.
+        # Column selection, not `join`: the frame is indexed by datetime with
+        # one row per ticker, so the labels repeat and `join` refuses them.
+        carried = fred_cols + [
+            c for c in ('ticker', 'datetime') if c in df.columns
+        ]
+        # limit=60: a series that stops publishing must not be carried
+        # forever, which is a separate promise from the ordering one.
+        ordered = self._fill_forward_in_time(df[carried], limit=60)
+        for col in fred_cols:
+            df[col] = ordered[col]
 
         remaining_nans = df[fred_cols].isna().sum()
         if remaining_nans.any():
@@ -483,19 +557,7 @@ class MacroFeaturesEnricher(BaseEnricher):
             df = self._merge_with_duplicates(df, macro_data)
         else:
             df = self._merge_without_duplicates(df, macro_data)
-        # Per ticker. A plain `df.ffill()` over a frame holding every ticker
-        # carries the last row of one name into the first rows of the next --
-        # for every column, not only the macro ones.
-        if 'ticker' in df.columns:
-            filled = df.groupby('ticker', sort=False).ffill()
-            for col in filled.columns:
-                df[col] = filled[col]
-        else:
-            logger.warning(
-                'No ticker column at the macro merge, so the forward fill '
-                'cannot be kept inside each name.'
-            )
-            df = df.ffill()
+        df = self._fill_forward_in_time(df)
         df = self._post_process_fred_columns(df)
         logger.info(
             f'Macro features successfully added. Final shape: {df.shape}')
