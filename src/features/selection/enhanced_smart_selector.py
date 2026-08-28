@@ -170,6 +170,17 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
         Маппимо на трирівневий vocab SmartFeatureSelector: normal / volatile / trending.
         """
         if 'MARKET_REGIME' not in features_df.columns:
+            # Said out loud, because 'normal' is a real answer and an absent
+            # column is not. MARKET_REGIME became opt-in on 2026-08-28 -- it
+            # cost 90% of the technical-analysis step and failed its own
+            # leading-feature test -- so this path is now the usual one, and
+            # selection behaves as if every regime were normal.
+            self.logger.warning(
+                "No MARKET_REGIME column, so selection treats the regime as "
+                "'normal'. The feature is off by default; set "
+                "MARKET_REGIME_FEATURES=1 to compute it (about five hours on "
+                "the daily frame at 110 tickers)."
+            )
             return 'normal'
 
         raw = str(features_df['MARKET_REGIME'].iloc[-1]).upper()

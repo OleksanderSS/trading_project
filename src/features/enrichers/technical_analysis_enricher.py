@@ -1,3 +1,4 @@
+import os
 import logging
 
 import numpy as np
@@ -309,7 +310,41 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             logger.info('Added volatility features')
 
     def _add_market_regime_features(self, df_enriched: pd.DataFrame, returns: pd.Series = None):
-        """Add point-in-time market regime features from trailing returns only."""
+        """Off unless MARKET_REGIME_FEATURES is set, and the reason is measured.
+
+        This one feature was 90% of the technical-analysis step. Measured on
+        2026-08-28 from mid-frame cycles of the live run: 68.7 of 75.8 seconds
+        across four tickers, and the cost is real work rather than waste --
+        `detect_regime` takes 23.69 ms per call and is called once per row, so
+        a daily ticker of 7,507 bars costs 178 seconds and the 110-name daily
+        frame costs about **5.4 hours of a twelve-hour rebuild**.
+
+        Subsampling was considered and measured away: `MARKET_REGIME_ENCODED`
+        changes on 47.1% of consecutive rows, one change every 2.1 bars, with
+        213,120 distinct values. It is the detector's continuous confidence,
+        not a slow-moving label, so computing it every fifth row and carrying
+        it forward would produce a different feature rather than a cheaper one.
+
+        What settles it is that the feature failed its own test. In the
+        leading-feature report `MARKET_REGIME_ENCODED_1d` came out as "sign
+        flipped out of sample" -- the direction it showed on the training
+        slice reversed on the holdout, which is the cheapest evidence there is
+        that a relationship was a coincidence.
+
+        And its one non-model consumer reads a single cell:
+        `EnhancedSmartSelector._resolve_market_regime` takes
+        `MARKET_REGIME.iloc[-1]`. Five hours of computation to answer a
+        question about the last bar.
+
+        So it is off by default, on the same rule that retired the causal
+        diagnostic: a feature that does not pass its own check has no claim on
+        90% of the budget. Turning it on is one environment variable, and the
+        selector says out loud when it is missing.
+        """
+        if os.environ.get("MARKET_REGIME_FEATURES", "").strip().lower() not in {
+            "1", "true", "yes", "on"
+        }:
+            return
         if 'close' in df_enriched.columns:
             if returns is None:
                 returns = df_enriched['close'].pct_change(fill_method=None)
