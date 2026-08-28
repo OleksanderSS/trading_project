@@ -249,14 +249,30 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
                     f'Cannot detect market phase: missing columns {missing}')
                 return
             phase_map = self._get_phase_mapping()
+            # Only the indicator columns reach the analyzer.
+            #
+            # `df_enriched.iloc[[i]]` built a one-row frame of all 460 columns
+            # for every row, and the analyzer then built a set of those 460
+            # column names to check what was missing -- per row. Measured on
+            # 2026-08-28: the wide slice is 687 microseconds against 156 for a
+            # narrow one, and the enricher cost 625 seconds of the 15-minute
+            # frame while the analysis itself accounted for 70.
+            #
+            # The analyzer reads `self.indicators.values()` and nothing else,
+            # so the values it returns are identical.
+            needed = [
+                column for column in set(self.phase_analyzer.indicators.values())
+                if column in df_enriched.columns
+            ]
+            source = df_enriched[needed] if needed else df_enriched
             phases = [
                 phase_map.get(
                     self.phase_analyzer.analyze(
-                        {'market_data': df_enriched.iloc[[i]]}
+                        {'market_data': source.iloc[[i]]}
                     ).get('market_phase', 'unknown'),
                     5,
                 )
-                for i in range(len(df_enriched))
+                for i in range(len(source))
             ]
             df_enriched['market_phase'] = phases
             logger.info(

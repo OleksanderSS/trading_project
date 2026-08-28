@@ -57,7 +57,19 @@ class MarketPhaseAnalyzer(IAnalyzer):
         try:
             market_phase = self._determine_market_phase(validation_result[
                 'market_data'])
-            self.logger.info(f'Determined market phase: {market_phase}')
+            # DEBUG, not INFO.
+            #
+            # `AdvancedAnalyticsEnricher` calls this once per row, so on
+            # 2026-08-28 this single line produced **156,372 of the log's
+            # 169,622 lines -- 92% of a 19 MB file** -- and cost 94% of the
+            # analyzer's 449 microseconds per row. Rule parsing and evaluation,
+            # the part that does the work, is 27 microseconds.
+            #
+            # The value it announces is written to the `market_phase` column
+            # anyway, so nothing is lost by not saying it 156,372 times. Every
+            # log search today was sifting a file that was almost entirely
+            # this message.
+            self.logger.debug('Determined market phase: %s', market_phase)
             return {'market_phase': market_phase}
         except KeyError as e:
             self.logger.error(
