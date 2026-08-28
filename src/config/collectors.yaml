@@ -159,7 +159,15 @@ collectors:
     - value
     params:
       max_retries: 3
-      period: 2y
+      # 30y, not 2y.
+      #
+      # Two years gave DGS10 554 observation dates against a thirty-year
+      # frame, so 93% of rows had no macro reading and a median fill wrote a
+      # constant over the gap. Measured against the live API on 2026-08-28:
+      # asking from 1996 returns 7,998 dates for DGS10 without vintages,
+      # 367 dates and 385 vintages for CPIAUCSL, 122 dates and 361 vintages
+      # for GDP. The depth was always available; nobody asked for it.
+      period: 30y
       series_ids:
       - FEDFUNDS
       - DGS10

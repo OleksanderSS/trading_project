@@ -27,6 +27,18 @@ class FredCollector(BaseCollector):
         "maximum_runs_enforced_by_external_gate": True,
     }
 
+    #: Series FRED does not revise: market observations rather than estimates.
+    #: Asking for their vintages is refused outright -- see the note in the
+    #: request builder -- and is meaningless anyway, since a rate published for
+    #: a day is not restated later.
+    UNREVISED_DAILY_SERIES = frozenset({
+        "DGS10", "GS10", "GS2", "T10Y2Y", "T10Y3M",
+        "T5YIE", "T10YIE", "T5YIFR",
+        "VIXCLS", "DEXUSEU", "DEXCHUS", "DCOILWTICO",
+        "BAMLH0A0HYM2", "BAMLC0A0CM",
+        "WALCL", "WTREGEN", "RRPONTSYD", "NFCI",
+    })
+
     def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.timeout = self.configs.get('timeout', 20.0)
@@ -184,6 +196,31 @@ class FredCollector(BaseCollector):
         observation_end: str | None = None,
         vintage_date: str | None = None,
     ) -> list[dict[str, Any]]:
+        # Daily market series are asked for WITHOUT the vintage window.
+        #
+        # Measured against the live API on 2026-08-28, asking from 1996:
+        #
+        #   DGS10     vintages -> REFUSED 400: "There are 5097 vintage dates
+        #                         in the specified real-time period ... exceeds
+        #                         the maximum"        no vintages -> 7,998 dates
+        #   CPIAUCSL  vintages -> 1,766 rows, 367 dates, 385 vintages
+        #   GDP       vintages -> 1,231 rows, 122 dates, 361 vintages
+        #
+        # The refusal does not depend on how far back the observations go: the
+        # real-time window is 1776 to 9999 either way, so a daily series is
+        # refused even over two years. Every daily request has therefore been
+        # failing and falling back to the current vintage -- which stamps
+        # availability with the collection date, the exact thing the vintage
+        # window exists to prevent. Capping history at two years looks like it
+        # was an attempt to work around that refusal.
+        #
+        # Revision is what decides. A Treasury yield, a VIX close or an FX rate
+        # for a given day is an observation, not an estimate, and FRED does not
+        # restate it; its availability is the observation date plus the
+        # publication lag. CPI, GDP and payrolls ARE estimates and are revised
+        # for years, so for those the vintage window is the whole point.
+        wants_vintages = series_id not in self.UNREVISED_DAILY_SERIES
+
         params = {
             "series_id": series_id,
             "api_key": api_key,
@@ -215,6 +252,12 @@ class FredCollector(BaseCollector):
             "realtime_start": "1776-07-04",
             "realtime_end": "9999-12-31",
         }
+        if not wants_vintages:
+            # Skipped rather than sent and refused: the 400 costs a request,
+            # a retry and a warning per series per run, and the answer is
+            # known in advance for these.
+            params.pop("realtime_start", None)
+            params.pop("realtime_end", None)
         if observation_end:
             params["observation_end"] = observation_end
         if vintage_date:
