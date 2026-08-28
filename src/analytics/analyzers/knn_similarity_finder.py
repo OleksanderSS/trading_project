@@ -67,18 +67,47 @@ class KnnSimilarityFinder(IAnalyzer):
             raise DataProcessingError("Missing input dataframes.")
 
         try:
-            # ✅ ELITE: Контекстна фільтрація
-            # Якщо у нас є pattern_id, спочатку шукаємо в ньому
-            pattern_id = kwargs.get('context_pattern_id')
-
+            # The fingerprint of one bar, not the sequence hash.
+            #
+            # This filtered on `context_pattern_id`, which is a SHA of the last
+            # `pattern_length` fingerprints joined together. Measured on the
+            # daily frame of 2026-08-28: 682,035 distinct values across 705,166
+            # rows -- 1.03 rows per pattern, no pattern above 589 rows, none at
+            # all above a thousand. Against `min_regime_samples = 20` that
+            # condition can never hold, so every call fell through to the
+            # global search while logging that it had considered the regime.
+            #
+            # `context_fingerprint` is the state of a single bar built from the
+            # eight configured drivers, and it takes 2,027 values: 348 rows per
+            # condition on average, 166 conditions above a thousand rows. That
+            # is a regime one can actually match against.
+            #
+            # The sequence id is still accepted when a caller passes it, since
+            # a caller that has one means it -- it simply is not the default any
+            # more.
             working_historical = historical_df
-            if pattern_id and 'context_pattern_id' in historical_df.columns:
-                regime_df = historical_df[historical_df['context_pattern_id'] == pattern_id]
+            regime_key, regime_value = None, None
+            for candidate in ('context_fingerprint', 'context_pattern_id'):
+                supplied = kwargs.get(candidate)
+                if supplied is not None and candidate in historical_df.columns:
+                    regime_key, regime_value = candidate, supplied
+                    break
+
+            if regime_key is not None:
+                regime_df = historical_df[historical_df[regime_key] == regime_value]
                 if len(regime_df) >= self.min_regime_samples:
-                    logger.info(f"🔍 KNN: Using regime-specific subset for pattern {pattern_id} ({len(regime_df)} samples)")
+                    logger.info(
+                        "🔍 KNN: %s=%s gives %d neighbours; searching inside it.",
+                        regime_key, regime_value, len(regime_df),
+                    )
                     working_historical = regime_df
                 else:
-                    logger.info(f"ℹ️ KNN: Pattern {pattern_id} has too few samples ({len(regime_df)}). Falling back to global search.")
+                    logger.info(
+                        "ℹ️ KNN: %s=%s has %d rows, under the %d needed; "
+                        "searching globally instead.",
+                        regime_key, regime_value, len(regime_df),
+                        self.min_regime_samples,
+                    )
 
             # Очищуємо не-числові колонки для KNN
             X_hist = working_historical.select_dtypes(include=['number'])
