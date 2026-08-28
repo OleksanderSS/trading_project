@@ -45,18 +45,43 @@ TRAIN_FRACTION = 0.70
 MIN_ROWS = 200
 
 
-def _pick_columns(path: Path, interval: str) -> tuple[str, str]:
-    """The fingerprint and close columns for this timeframe, whatever the suffix."""
+def _pick_columns(path: Path, interval: str,
+                  condition: str | None = None) -> tuple[str, str]:
+    """The condition and close columns, whatever suffix the timeframe added.
+
+    The default condition is `context_fingerprint`, and six of its eight
+    drivers are transformations of price -- SMA_200, SMA_20, ATR_14,
+    VOLATILITY_20, obv, RSI_14 -- with the two non-price ones being exactly
+    the sentiment and macro composites measured as broken on 2026-08-28. So
+    conditioning on it asks what price states imply, and what came back looked
+    like a risk premium: the surviving conditions carried twice the spread.
+
+    Any column can be named instead. The states worth trying are the ones from
+    the leading class, and they have the coverage for it on the daily frame:
+    `state_fund_price_to_book` is non-zero on 10.7% of rows -- about 75,000 --
+    and the `state_cftc_*` family on 2.2 to 3.4%, around 9,500 rows per side.
+    That is a measurable bucket, which is why this is worth pointing somewhere
+    other than at price.
+    """
     names = pq.ParquetFile(path).schema_arrow.names
-    fingerprint = next(
-        (c for c in names if c.startswith("context_fingerprint")), None
-    )
+    if condition:
+        chosen = next(
+            (c for c in names if c == condition or c.startswith(condition + "_")),
+            None,
+        )
+        if chosen is None:
+            raise SystemExit(f"no column matching '{condition}' in {path.name}")
+    else:
+        chosen = next(
+            (c for c in names if c.startswith("context_fingerprint")), None
+        )
     close = next((c for c in names if c == "close" or c.startswith("close")), None)
-    return fingerprint, close
+    return chosen, close
 
 
-def load(path: Path, interval: str | None) -> pd.DataFrame:
-    fingerprint, close = _pick_columns(path, interval or "")
+def load(path: Path, interval: str | None,
+         condition: str | None = None) -> pd.DataFrame:
+    fingerprint, close = _pick_columns(path, interval or "", condition)
     if fingerprint is None or close is None:
         raise SystemExit(
             f"{path} has no context_fingerprint or close column; nothing to do."
@@ -108,6 +133,8 @@ def main() -> int:
                         help="a move is a forward return at or above this quantile")
     parser.add_argument("--min-rows", type=int, default=MIN_ROWS)
     parser.add_argument("--top", type=int, default=20)
+    parser.add_argument("--condition", default=None,
+                        help="column to condition on; default context_fingerprint")
     args = parser.parse_args()
 
     path = Path(args.path)
@@ -115,12 +142,15 @@ def main() -> int:
         print(f"no such file: {path}")
         return 2
 
-    frame = add_outcome(load(path, args.interval), args.horizon, args.quantile)
+    frame = add_outcome(
+        load(path, args.interval, args.condition), args.horizon, args.quantile
+    )
     split = frame["_time"].quantile(TRAIN_FRACTION)
     train = frame.loc[frame["_time"] <= split]
     holdout = frame.loc[frame["_time"] > split]
 
     base = float(train["_move"].mean())
+    print(f"condition: {args.condition or 'context_fingerprint'}")
     print(f"{path.name} [{args.interval}]  horizon {args.horizon} bars, "
           f"move = top {(1 - args.quantile) * 100:.0f}%")
     print(f"train {len(train):,} rows to {split:%Y-%m-%d}, "
