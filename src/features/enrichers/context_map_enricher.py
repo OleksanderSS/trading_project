@@ -137,19 +137,76 @@ class ContextMapEnricher(BaseEnricher):
         return res_df
 
     def _get_champion_state(self, df: pd.DataFrame) -> pd.Series | None:
-        """Визначає режим Чемпіона."""
+        """The champion's regime, carried to every name BY DATE.
+
+        This used to end with
+
+            champ_state.reindex(df.index).ffill()
+
+        which spreads the champion's state along ROW ORDER rather than along
+        time. The champion's rows sit in one block, and every row after that
+        block -- whatever ticker, whatever year -- inherited the last state in
+        the block.
+
+        Measured on the 110-ticker batch of 2026-08-28: 659,509 rows held +1
+        against 39,194 holding -1, and **16 of the 110 tickers carried +1 on
+        every row of their entire history**. Only SPY, the champion itself,
+        showed a believable 0.28 mean. A regime that is "price above its
+        20-day average" is roughly a coin flip over thirty years, not 94% one
+        way.
+
+        It is also lookahead: a row dated 1996 was handed a state computed
+        from a bar that merely preceded it in the frame, which in a
+        ticker-then-date ordering is a bar from a different ticker and a later
+        year. Same shape as the macro fill that put 2024 CPI into 1996 -- the
+        fill walked rows, not dates.
+
+        The state is now keyed by timestamp and mapped onto every row by its
+        own date, with the last known state carried forward IN TIME. A date
+        before the champion has any history has no regime, and says 0.
+        """
         if 'ticker' not in df.columns or self.champion_ticker not in df['ticker'].values:
             return None
         champ_data = df[df['ticker'] == self.champion_ticker].copy()
         if champ_data.empty:
             return None
+
+        datetime_col = next(
+            (c for c in ('datetime', 'timestamp', 'date') if c in df.columns), None
+        )
+        if datetime_col is not None:
+            champ_times = pd.to_datetime(champ_data[datetime_col], errors='coerce')
+            row_times = pd.to_datetime(df[datetime_col], errors='coerce')
+        elif isinstance(df.index, pd.DatetimeIndex):
+            champ_times = pd.Series(champ_data.index, index=champ_data.index)
+            row_times = pd.Series(df.index, index=df.index)
+        else:
+            self.logger.warning(
+                "No timestamp available, so the champion's regime cannot be "
+                "aligned by date; emitting no champion state rather than "
+                "spreading it along row order."
+            )
+            return None
+
+        champ_data = champ_data.assign(__t=champ_times).sort_values(
+            '__t', kind='mergesort'
+        )
         champ_close = champ_data['close']
         champ_sma = champ_close.rolling(20, min_periods=1).mean()
-        state = np.where(champ_close > champ_sma, 1, -1)
-        # Create Series with original index and reindex to df.index
-        champ_state = pd.Series(state, index=champ_data.index)
-        aligned_state = champ_state.reindex(df.index).ffill()
-        return aligned_state.where(aligned_state.notna(), 0).astype(int)
+        by_time = pd.Series(
+            np.where(champ_close > champ_sma, 1, -1).astype(float),
+            index=champ_data['__t'].to_numpy(),
+        )
+        # One state per timestamp; a repeated stamp keeps the last reading.
+        by_time = by_time[~by_time.index.duplicated(keep='last')].sort_index()
+
+        aligned = pd.Series(
+            by_time.reindex(
+                pd.DatetimeIndex(row_times), method='ffill'
+            ).to_numpy(),
+            index=df.index,
+        )
+        return aligned.where(aligned.notna(), 0).astype(int)
 
     def _get_context_columns(self, df: pd.DataFrame) -> list[str]:
         """Отримує числові колонки, ігноруючи таргети та вже створені стани."""
