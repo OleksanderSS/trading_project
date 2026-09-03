@@ -104,6 +104,58 @@ assets:
       # a ticker changes what the whole pipeline collects and models, which
       # is a decision rather than a repair.
       assets: [COIN, MARA, RIOT, PYPL, GBTC, EBAY]
+  # ------------------------------------------------------------------
+  # SECTOR PARTITION — the membership the sector CONTEXT LAYER uses.
+  # ------------------------------------------------------------------
+  #
+  # Separate from `sectors` above, which cannot serve this purpose: it is
+  # two taxonomies merged. Six hand-written entries (ai_big_tech,
+  # semiconductors, market_etfs, finance, consumer_staples, energy) are
+  # SUBSETS of thirteen later auto-imported ones, and `core` (32 names) is
+  # not a sector at all but "large caps", overlapping everything.
+  #
+  # Measured 2026-09-02: 29 of 110 tickers sit in more than one entry, and
+  # `ai_big_tech` vs `tech_giants` share six names of 6/7 -- their daily
+  # equal-weight returns correlate at 0.986 (REGISTER #225). A sector
+  # layer built on that would present one series twice and count it as two
+  # sectors, adding multiplicity without information.
+  #
+  # This block is a genuine PARTITION: every one of the 110 tickers appears
+  # exactly once. `sectors` above is left untouched because it is what the
+  # collector reads to decide what to download; changing it would change
+  # the universe, which is a different decision.
+  #
+  # Enforced by tests/contracts/test_sector_partition_is_a_partition.py.
+  sector_partition:
+    tech_giants:
+      assets: [AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA]
+    additional_tech:
+      assets: [AMD, INTC, CSCO, IBM, ORCL, CRM, ADBE, NFLX, TSM]
+    healthcare:
+      assets: [JNJ, PFE, UNH, ABT, MRK, LLY, BMY, AMGN, GILD, ABBV]
+    consumer:
+      assets: [PG, KO, PEP, WMT, HD, MCD, NKE, SBUX, COST]
+    industrial:
+      assets: [GE, MMM, HON, CAT, DE, UPS, RTX, BA]
+    materials:
+      assets: [DD, DOW, LIN, ECL, APD, NEM, FCX, BHP]
+    utilities:
+      assets: [NEE, DUK, SO, AEP, EXC, SRE, ED, PEG]
+    realestate:
+      assets: [AMT, PLD, EQIX, PSA, CBRE, WELL, VTR, AVB]
+    communication:
+      assets: [VZ, T, TMUS, CMCSA, CHTR, DIS, FOXA]
+    international:
+      assets: [BABA, BIDU, JD, PDD, NIO, XPEV, LI, BILI]
+    crypto:
+      assets: [COIN, MARA, RIOT, PYPL, GBTC, EBAY]
+    finance:
+      assets: [JPM, BAC, GS, WFC]
+    energy:
+      assets: [XOM, CVX, COP]
+    etf:
+      assets: [SPY, QQQ, DIA, IWM, VTI, GLD, SLV, TLT, XLF, XLE, XLI, XLU, XLK, XLV, XME]
+
   details:
     TSLA: {cik: 1318605}
     NVDA: {cik: 1045810}
