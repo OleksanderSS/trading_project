@@ -725,10 +725,37 @@ class PipelineExecutor:
         # memory with the source (measured on pandas 2.3.3), so the call was a
         # second full duplicate. On the features frame -- 259,133 rows by 2,238
         # columns, 4.6 GiB as float64 -- that is not a rounding error.
-        if tickers and hasattr(features_df, 'empty') and not features_df.empty and 'ticker' in features_df.columns:
-            features_df = features_df[features_df['ticker'].isin(tickers)]
-        if tickers and hasattr(targets_df, 'empty') and not targets_df.empty and 'ticker' in targets_df.columns:
-            targets_df = targets_df[targets_df['ticker'].isin(tickers)]
+        # Ask the cheap question first: would the filter remove anything?
+        #
+        # `--mode continue` resolves the ticker list from assets.yaml, so it
+        # normally holds every name the batch contains. The mask then selects
+        # ALL rows and pandas still builds a full copy. Measured 2026-08-29 on
+        # the 110-ticker batch: stages 5-7 died before starting with
+        #
+        #   MemoryError: Unable to allocate 6.81 GiB for an array with shape
+        #   (735, 1243783) and data type float64
+        #
+        # -- a duplicate of a frame that needed no filtering at all. The
+        # `.copy()` above this was already removed for the same reason; the
+        # filter itself was left unconditional, which is the bigger half of
+        # the cost. Comparing two sets of ticker symbols is free.
+        def _narrow(frame, names):
+            if not names or not hasattr(frame, 'empty') or frame.empty:
+                return frame
+            if 'ticker' not in frame.columns:
+                return frame
+            present = set(frame['ticker'].unique())
+            if present.issubset(set(names)):
+                logger.info(
+                    "Ticker filter skipped: the batch holds %d name(s), all "
+                    "of them requested. Filtering would copy the frame to "
+                    "produce the same rows.", len(present),
+                )
+                return frame
+            return frame[frame['ticker'].isin(names)]
+
+        features_df = _narrow(features_df, tickers)
+        targets_df = _narrow(targets_df, tickers)
             
         logger.info(f"Resolved tickers for continue mode: {tickers}")
         if getattr(args, 'skip_training', False):
@@ -893,10 +920,207 @@ class PipelineExecutor:
         features_path = batch_dir / FEATURES_FILE
         targets_path = batch_dir / TARGETS_FILE
 
-        features_df = PipelineExecutor._safe_load_parquet(features_path, "Features")
+        feature_columns = PipelineExecutor._resolve_feature_columns(
+            features_path, PipelineExecutor._champion_feature_columns(colab_results)
+        )
+        features_df = PipelineExecutor._safe_load_parquet(
+            features_path, "Features", columns=feature_columns
+        )
         targets_df = PipelineExecutor._safe_load_parquet(targets_path, "Targets")
 
         return features_df, targets_df, colab_results
+
+    #: Columns Stage 5 needs that no model lists among its features. Narrowing
+    #: the read by the models' columns alone removed these and broke two
+    #: consumers silently on 2026-09-01:
+    #:
+    #: * `interval` / `timeframe` -- `_rows_for_timeframe` picks whichever of
+    #:   the two is present and returns ALL rows when neither is. Without them
+    #:   the timeframe filter is a no-op, and a 1d model is handed 15m rows in
+    #:   which its features are NaN by construction. That is the exact defect
+    #:   the filter was written to fix, restored by omission.
+    #:
+    #: The lesson is not the list. It is that a narrowing justified by ONE
+    #: consumer's needs breaks every other consumer without raising, so the
+    #: other consumers have to be named.
+    #:
+    #: The `context_*` names are listed for the same reason and are NOT a
+    #: current bug: they are absent from features.parquet altogether, which is
+    #: its own defect (the enricher writes them, the batch does not carry
+    #: them, and the diary reports "context_pattern_seq is not being written" -
+    #: REGISTER #215). Listing them here means that when the batch does carry
+    #: them, the narrowing will not be the thing that hides them again.
+    IDENTITY_FEATURE_COLUMNS = (
+        'datetime', 'ticker', 'interval', 'timeframe',
+        # `_last_price_from_full_frame` reads `close` off the unnarrowed frame
+        # precisely because the model-specific slice loses it. Narrowing the
+        # file read put it back out of reach, which is how Stage 5 reported
+        # "3 predictions, 0 prices" - a prediction with no price cannot become
+        # a signal. Only `close` is read; open/high/low/volume have no reader
+        # on this path and are left out rather than added on speculation.
+        'close',
+        'context_fingerprint', 'context_pattern_id', 'context_pattern_seq',
+        'state_champion', 'context_velocity',
+    )
+
+    #: Without one of these the timeframe filter silently passes everything.
+    TIMEFRAME_COLUMNS = ('interval', 'timeframe')
+
+    @staticmethod
+    def _champion_feature_columns(colab_results: Any) -> set[str]:
+        """The columns Stage 5 must have on hand to serve the champions.
+
+        Continue mode read every column of features.parquet - 2,279 of them
+        over 1,243,783 rows, roughly 8.6 GB once in memory - and died of it.
+
+        The set that matters is the PREPROCESSOR's fit columns, not the
+        model's. Measured 2026-09-01 on the nine champions of run 7: each
+        model consumes five features, but each imputer+scaler was fitted on
+        seventy (the pre-screen ceiling), and `_apply_training_preprocessor`
+        reindexes to those seventy before transforming. Narrowing to the
+        models' forty made every one of the 5,500 prepared rows more than half
+        NaN, and the missing-share guard correctly refused all of them:
+        `dropping 5500 of 5500 row(s)`. The union of the preprocessors' fit
+        columns is 436 - still a fifth of the file, and the right fifth.
+
+        An empty set means read everything. It is returned whenever ANY
+        context fails to declare its columns, not merely when all of them do:
+        a union built from the contexts that answered would silently
+        under-read for the one that did not, and under-reading does not raise,
+        it just makes that context's rows NaN.
+        """
+        metadata = (colab_results or {}).get('models_metadata') or {}
+        if not metadata:
+            return set()
+        wanted: set[str] = set()
+        for meta in metadata.values():
+            if not isinstance(meta, dict):
+                continue
+            declared = PipelineExecutor._declared_feature_columns(meta)
+            if not declared:
+                logger.warning(
+                    'A context declares no feature columns, so every column of '
+                    'the features file will be read rather than risk reading '
+                    'too few for it.'
+                )
+                return set()
+            wanted |= declared
+        return wanted
+
+    @staticmethod
+    def _declared_feature_columns(meta: dict[str, Any]) -> set[str]:
+        """One context's columns: preprocessor first, then metadata, then model."""
+        from_preprocessor = PipelineExecutor._preprocessor_feature_names(
+            meta.get('model_path')
+        )
+        if from_preprocessor:
+            return from_preprocessor
+        for key in ('feature_cols', 'features', 'feature_names', 'selected_features'):
+            names = meta.get(key)
+            if names:
+                return {str(name) for name in names}
+        return PipelineExecutor._model_file_feature_names(meta.get('model_path'))
+
+    @staticmethod
+    def _preprocessor_feature_names(model_path: Any) -> set[str]:
+        """Fit columns of the imputer+scaler saved beside this champion.
+
+        The preprocessor file is the champion's own name with the prefix
+        swapped - `CHAMP_x.joblib` beside `PREP_x.joblib` - which is how
+        `preprocessor_filename` builds it and how Stage 5 finds it.
+        """
+        if not model_path:
+            return set()
+        try:
+            path = Path(str(model_path))
+        except (TypeError, ValueError) as error:
+            logger.warning(
+                'Could not read a model path from metadata (%s: %s); this '
+                'context declares no columns.', type(error).__name__, error,
+            )
+            return set()
+        name = path.name
+        if not name.startswith('CHAMP_'):
+            return set()
+        candidate = path.with_name('PREP_' + name[len('CHAMP_'):])
+        if not candidate.exists():
+            return set()
+        try:
+            import joblib
+            payload = joblib.load(candidate)
+        except Exception as error:  # noqa: BLE001 - unreadable means undeclared
+            logger.warning('Could not read %s: %s', candidate.name, error)
+            return set()
+        names = payload.get('feature_names') if isinstance(payload, dict) else None
+        return {str(n) for n in names} if names else set()
+
+    @staticmethod
+    def _resolve_feature_columns(features_path: Path, wanted: set[str]) -> list[str] | None:
+        """Narrow the features read to what the champions need, or read all.
+
+        Every path returns an EXPLICIT list of columns, including the paths
+        that decide not to narrow: "read all of these" and "read whatever is
+        there" describe the same read, and only one of them can be checked by
+        the caller or read by the next person. None survives in exactly one
+        place -- the schema could not be read at all, so there is no list to
+        return and nothing is known.
+
+        Columns that were wanted and are absent are logged loudly: a champion
+        trained on a column this batch no longer carries is a defect, not a
+        detail, and it must not pass in silence.
+        """
+        try:
+            import pyarrow.parquet as pq
+            available = sorted(pq.ParquetFile(features_path).schema_arrow.names)
+        except Exception as error:  # noqa: BLE001 - nothing is known without a schema
+            logger.warning(
+                'Could not read the schema of %s (%s: %s); the read cannot be '
+                'narrowed because its columns are unknown.',
+                features_path.name, type(error).__name__, error,
+            )
+            return None
+
+        if not wanted:
+            logger.warning(
+                'No champion declared its feature columns, so all %d columns '
+                'of %s will be read. See REGISTER #209.',
+                len(available), features_path.name,
+            )
+            return available
+
+        if not any(c in available for c in PipelineExecutor.TIMEFRAME_COLUMNS):
+            logger.error(
+                '%s carries neither %s, so the timeframe filter in Stage 5 '
+                'cannot work and a model would be served rows of the wrong '
+                'cadence. Reading all %d columns rather than narrowing.',
+                features_path.name, ' nor '.join(PipelineExecutor.TIMEFRAME_COLUMNS),
+                len(available),
+            )
+            return available
+
+        identity = [c for c in PipelineExecutor.IDENTITY_FEATURE_COLUMNS if c in available]
+        present = wanted & set(available)
+        missing = wanted - set(available)
+        if missing:
+            logger.error(
+                '%d column(s) a champion was trained on are absent from %s: %s',
+                len(missing), features_path.name, sorted(missing)[:10],
+            )
+        if not present:
+            logger.warning(
+                'None of the %d champion columns exist in %s; reading all %d '
+                'columns instead.',
+                len(wanted), features_path.name, len(available),
+            )
+            return available
+
+        selected = sorted(present | set(identity))
+        logger.info(
+            'Reading %d of %d columns from %s: %d used by champions, %d identity.',
+            len(selected), len(available), features_path.name,
+            len(present), len(identity),
+        )
+        return selected
 
     @staticmethod
     def _load_extra_continue_data(orchestrator, args):
@@ -1014,19 +1238,41 @@ class PipelineExecutor:
         return 'unknown'
 
     @staticmethod
-    def _safe_load_parquet(path: Path, label: str, silent: bool = False) -> Any:
+    def _safe_load_parquet(path: Path, label: str, silent: bool = False,
+                           columns: list[str] | None = None) -> Any:
         """Safely loads a parquet file, logging success or failure.
 
         Uses broad Exception catch to handle corrupted files (e.g. pyarrow ArrowInvalid,
         OSError) alongside the usual pandas/type errors.
+
+        `MemoryError` is NOT one of those. It is re-raised, because swallowing
+        it produced a false diagnosis on 2026-09-01: the features read died
+        with `Unable to allocate 218 MiB for an array with shape
+        (23, 1243783) and data type object`, that was logged as a WARNING,
+        continue mode carried on, and the run then reported
+
+            Cannot continue batch 'main_database': features.parquet is
+            missing or empty
+
+        for a one-gigabyte file that is neither missing nor empty. A failure
+        to READ must never be reported as a fact about the CONTENT; anyone
+        reading that line goes looking for a file that is sitting right there.
         """
         if path.exists():
             try:
-                df = pd.read_parquet(path)
+                df = pd.read_parquet(path, columns=columns)
                 if not silent:
                     logger.info(f"Loaded {label}: {df.shape}")
                 return df
-            except Exception as e:  # noqa: BLE001 — intentional: corrupted parquet raises ArrowInvalid
+            except MemoryError:
+                label_sanitized = PipelineExecutor._sanitize(label)
+                logger.error(
+                    "Out of memory reading %s from %s. This is a resource "
+                    "failure, not a corrupt or missing file - re-raising so "
+                    "the run reports the real cause.", label_sanitized, path,
+                )
+                raise
+            except Exception as e:  # noqa: BLE001 - intentional: corrupted parquet raises ArrowInvalid
                 label_sanitized = PipelineExecutor._sanitize(label)
                 logger.warning(f"Failed to load {label_sanitized} from {path}: {e}")
         elif not silent:

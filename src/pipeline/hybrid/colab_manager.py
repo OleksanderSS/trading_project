@@ -761,7 +761,17 @@ class ColabManager:
             'metadata_path': str(meta_path),
             'files': metadata['files'],
             'feature_selection_check': fs_check,
-            'test_mode': self._is_test_mode(config)
+            'test_mode': self._is_test_mode(config),
+            # `_create_batch_metadata` already worked these out and logged the
+            # gap at ERROR; they were then dropped on the way out, so the
+            # caller that decides pass or fail could not see them. Run 14
+            # asked for three cadences, delivered two, logged the error, and
+            # printed "Pipeline completed successfully" two seconds later
+            # (REGISTER #229). Carrying the fact is what makes a verdict
+            # possible at the boundary -- no second source of truth.
+            'timeframes_requested': metadata['timeframes'],
+            'timeframes_delivered': metadata['timeframes_delivered'],
+            'timeframes_missing': metadata['timeframes_missing'],
         }
 
         if config_path:

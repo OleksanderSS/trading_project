@@ -272,15 +272,104 @@ async def main():
         )
 
     # Log completion
-    failed = (
-        not results or
-        (isinstance(results, dict) and results.get('status') in {'error', 'failed'})
-    )
+    failed = run_failed(results, args)
     if not failed:
         logger.info(f"✅ Pipeline completed successfully for batch: {args.batch_name}")
     else:
         logger.error(f"❌ Pipeline failed for batch: {args.batch_name}")
         sys.exit(1)
+
+
+def run_failed(results: object, args) -> bool:
+    """The run's single verdict, in one place so it can be tested.
+
+    It was inline in `main()`, which meant the only way to check it was to run
+    the pipeline. Every condition here exists because a run once ended with
+    "Pipeline completed successfully" while one of them was true.
+    """
+    short = _timeframes_missing(results)
+    tolerated = bool(getattr(args, 'allow_missing_timeframes', False))
+    if short and not tolerated:
+        logger.error(
+            "Batch '%s' was asked for %s and delivered %s. Missing: %s. "
+            "The reason was decided earlier in the run -- search the log for "
+            "\"DROPPED\" -- and this is a failure, not a smaller success. "
+            "Pass --allow-missing-timeframes if the gap is intended.",
+            getattr(args, 'batch_name', '?'),
+            _requested(results), _delivered(results), short,
+        )
+    return bool(
+        not results
+        or (isinstance(results, dict) and results.get('status') in {'error', 'failed'})
+        or _produced_nothing(results)
+        or (short and not tolerated)
+    )
+
+
+def _timeframes_missing(results: object) -> list:
+    """Requested cadences that produced no rows, from the field prepare writes.
+
+    Run 14 (2026-09-02) asked for ['15m', '1d', '1h'] and delivered ['1d',
+    '60m']. The gap was detected, logged at ERROR, and written into
+    `batch_metadata.json` as `timeframes_missing: ['15m']` -- and then the run
+    printed "Pipeline completed successfully" two seconds later and exited
+    zero. Nothing was hidden; nothing turned the evidence into a verdict.
+
+    The cost is measured rather than hypothetical: 15m was dropped twelve
+    minutes into that run and stage 3 spent the next two hours enriching the
+    two cadences that survived, while the batch it produced was planned on as
+    though it held three (REGISTER #228, #229).
+
+    This is the same shape as `_produced_nothing` directly below -- read a
+    field the pipeline already writes, at the boundary, and let it decide.
+    """
+    if not isinstance(results, dict):
+        return []
+    missing = results.get('timeframes_missing') or []
+    return list(missing)
+
+
+def _requested(results: object) -> list:
+    return list(results.get('timeframes_requested') or []) if isinstance(results, dict) else []
+
+
+def _delivered(results: object) -> list:
+    return list(results.get('timeframes_delivered') or []) if isinstance(results, dict) else []
+
+
+#: Values of `execution_status` that mean the run produced nothing, whatever
+#: the surrounding `status` field says.
+_EMPTY_OUTCOMES = frozenset({'no_predictions', 'no_signals', 'failed', 'error'})
+
+
+def _produced_nothing(results: object, depth: int = 0) -> bool:
+    """True when the run's own artifact says it produced no output.
+
+    On 2026-09-01 stages 5-7 ran, Stage 5 reported `0 predictions, 0 prices`,
+    Stage 7 finished in 0.38 seconds on an empty input, and the run logged
+    "Pipeline completed successfully" and exited zero. The honest signal was
+    already there and simply unread -- the saved artifact carried
+
+        execution_status: 'no_predictions'
+        reason: 'Stage 6 received no predictions.'
+
+    A month earlier the same thing happened at larger scale: 0 predictions
+    from 330 resolved models, again reported as success. Twice is a missing
+    verdict, not bad luck: evidence was collected per stage and nothing turned
+    it into a pass or a fail at the boundary (REGISTER #201, #211).
+
+    The walk is shallow on purpose. It reads a field the pipeline already
+    writes rather than adding a second source of truth about the same fact.
+    """
+    if depth > 3 or not isinstance(results, dict):
+        return False
+    if results.get('execution_status') in _EMPTY_OUTCOMES:
+        return True
+    return any(
+        _produced_nothing(value, depth + 1)
+        for value in results.values()
+        if isinstance(value, dict)
+    )
 
 
 def _run() -> int:

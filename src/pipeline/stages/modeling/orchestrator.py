@@ -14,9 +14,10 @@ from src.analytics.analyzers.model_comparison_analyzer import ModelComparisonAna
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.models.adapters.data_preparation import prepare_data_for_models
-from src.pipeline.modeling_context import iter_model_contexts
+from src.pipeline.modeling_context import is_pooled, iter_model_contexts
 from src.pipeline.stages.base_stage import BaseStage
 from src.pipeline.stages.modeling import pipeline_control_artifacts
+from src.pipeline.stages.modeling.context_ledger import ContextLedger
 from src.pipeline.stages.modeling.walk_forward_validation import (
     PipelineWalkForwardValidationEvaluator,
     WalkForwardValidationConfig,
@@ -36,6 +37,21 @@ from src.training.constants import (
 from src.training.unified_training_manager import TrainerConfig, TrainingStrategy, UnifiedTrainingManager
 
 logger = ProjectLogger.get_logger('ModelingStage')
+
+
+def _shown(value: Any) -> str:
+    """A number, or "n/a" when the rung was never measured.
+
+    Never 0.0000 for an unmeasured opponent: that reads as "the model beat
+    it", which is the opposite of what an absent measurement means.
+    """
+    if value is None:
+        return "n/a"
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "n/a"
+    return f"{number:.4f}" if np.isfinite(number) else "n/a"
 
 
 @dataclass
@@ -80,6 +96,53 @@ class ModelingStage(BaseStage):
         # never assigned and _init_infrastructure never ran. Restored here.
         self.models_dir = self.config_manager.get_models_path()
         self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
+
+        # Per-run state, given safe defaults HERE and not only in `run()`.
+        # `_process_ticker_with_async` is reachable from the stage-4 contract
+        # tests and from the walk-forward review branch without `run()` ever
+        # executing; an attribute that exists only inside `run()` turns any
+        # such entry into an AttributeError swallowed by the stage's own
+        # `except`, which reads in the log as "Error modeling NVDA" and looks
+        # like a data problem. A null ledger also means a caller that did not
+        # start a run cannot write to the real one.
+        self._gate_refusals: list[dict[str, Any]] = []
+        self._ledger: ContextLedger | None = None
+        self._resume_contexts = False
+        self._replayed_contexts = 0
+        # Contexts whose pipeline-control artifacts could not be written. The
+        # writer returned {} on failure and the caller appends only truthy
+        # results, so the context simply vanished from the artifact set with
+        # nothing saying it had. Counted here and reported at the stage
+        # boundary: an artifact set that is quietly short is the same problem
+        # as a check that quietly did not run (REGISTER #201).
+        self._artifact_write_failures: list[str] = []
+        #: How many (context, target) verdicts this run actually attempted.
+        #
+        #: `models.yaml` states `family_size: 27` and says of it: "it cannot be
+        #: known before the run starts -- contexts are materialised lazily --
+        #: so it is stated here and the stage compares it against the actual
+        #: count at the end, and says so loudly if they differ. A number that
+        #: drifts silently is the thing this whole gate exists to prevent."
+        #
+        #: That comparison did not exist. `family_size` appeared nowhere in
+        #: `src/pipeline` except `_promotion_family_size`, which was set to
+        #: None here and never assigned anywhere, so the training context
+        #: always carried None and the gate fell back to the configured 27 --
+        #: correct by luck as long as a run happens to make 27 verdicts, and
+        #: silently wrong the moment it does not. A run of 216 verdicts would
+        #: be judged at 2.90 sigma where its own stated 5% needs 3.50.
+        #
+        #: This counter is the missing half. It changes no bar: the multiplier
+        #: still comes from the config, because the count is only complete
+        #: when the run is over and the verdicts are long since made. What it
+        #: does is make the discrepancy VISIBLE at the stage boundary, which is
+        #: what the config promised and CRITIQUE section 11 asks for.
+        self._promotion_attempts: int = 0
+        # Set at the top of run() once the contexts are known; the gate reads
+        # it to size its bar. None means "unknown", and the gate then falls
+        # back to config rather than pretending the run is a single test.
+        self._promotion_family_size: int | None = None
+
         self._init_infrastructure()
 
     def _resolve_purge_gap(self, configured: int) -> int:
@@ -125,6 +188,56 @@ class ModelingStage(BaseStage):
                 f'falling back to test_size={DEFAULT_TEST_SIZE}.')
             return self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
 
+    def _resolve_resume_contexts(self) -> bool:
+        """May this run replay contexts an earlier run already finished?
+
+        Default false. A context replayed from the ledger is a number this
+        run did not compute, and every previous version of "reuse what is on
+        disk" in this project ended as a stale artifact being read as a fresh
+        one. Turning it on is a decision an operator makes after a crash, in
+        `src/config/processing.yaml` under `modeling.resume_completed_contexts`.
+        """
+        try:
+            enabled = bool(self.modeling_config.get(
+                'resume_completed_contexts', False))
+        except (AttributeError, TypeError, KeyError) as e:
+            # Assign and fall through rather than log-and-return: a handler
+            # that returns a falsy literal is the shape the silent-failure
+            # ratchet counts, and it earns that reputation here -- "resume is
+            # off" and "the config could not be read" would look identical.
+            logger.warning(
+                "Could not read modeling.resume_completed_contexts (%s); "
+                "resume stays off.", e,
+            )
+            enabled = False
+        if enabled:
+            logger.warning(
+                "Resume is ON: contexts already finished on identical data "
+                "will be REPLAYED from the ledger rather than trained. Their "
+                "numbers come from an earlier run.",
+            )
+        return enabled
+
+    def _replay_context(self, key: str, entry: dict[str, Any],
+                        champions: dict[str, Any]) -> None:
+        """Put a finished context's outcome back without training it."""
+        champion = entry.get("champion")
+        if champion:
+            champions[key] = champion
+            logger.info(
+                "Replayed champion for %s from the ledger (%s, recorded %s).",
+                key, champion.get("winner"), entry.get("recorded_at"),
+            )
+        else:
+            refusal = entry.get("refusal")
+            if refusal:
+                self._gate_refusals.append(dict(refusal))
+            logger.info(
+                "Replayed refusal for %s from the ledger (recorded %s).",
+                key, entry.get("recorded_at"),
+            )
+        self._replayed_contexts += 1
+
     def _init_infrastructure(self):
         """Initializes the environment."""
         self.models_dir.mkdir(parents=True, exist_ok=True)
@@ -136,7 +249,27 @@ class ModelingStage(BaseStage):
     async def run(self, **kwargs) -> dict[str, Any]:
         """Runs the full training cycle with Pattern-Aware logic."""
         # Why a context produced no champion, kept rather than logged away.
-        self._gate_refusals: list[dict[str, Any]] = []
+        self._gate_refusals = []
+        # What has already been trained, and on exactly which data. Written
+        # always, read only when the operator asks -- a replayed context is a
+        # result the reporting run did not compute.
+        self._ledger = ContextLedger()
+        self._resume_contexts = self._resolve_resume_contexts()
+        self._replayed_contexts = 0
+        self._artifact_write_failures = []
+        self._promotion_attempts = 0
+        # `--tickers` reaches this stage and used to stop here.
+        #
+        # The caller passes the resolved list all the way down, and the
+        # context iterator never saw it: a run asked for AAPL and MSFT on
+        # 2026-08-29 trained AAPL, then went on to ABBV. There is no cheap
+        # end-to-end check of a seven-stage pipeline if the smallest possible
+        # run is the full universe -- which is why this counts as tooling
+        # rather than a nicety.
+        requested = kwargs.get('tickers') or None
+        self._requested_tickers = (
+            {str(x) for x in requested} if requested else None
+        )
         enriched_data = kwargs.get('enriched_data')
         if enriched_data is None or (isinstance(enriched_data, pd.DataFrame) and enriched_data.empty):
             logger.error('Enriched data not found. Skipping Modeling Stage.')
@@ -206,18 +339,72 @@ class ModelingStage(BaseStage):
             # already puts ctx_1d_MARKET_REGIME_1d on the finer rows, so the
             # model can use the daily regime as a FEATURE without it being
             # the key.
+            # ...and on 2026-08-28 MARKET_REGIME was switched OFF at the
+            # source. It cost 5.4 hours of a twelve-hour rebuild and failed
+            # its own leading-feature test, so `_add_market_regime_features`
+            # is now opt-in behind MARKET_REGIME_FEATURES. That decision was
+            # taken in the enricher and never carried here.
+            #
+            # The consequence is silent and total: every context falls back
+            # to the literal 'normal', so the "Regime-Aware Training Arena"
+            # has ONE value on the axis it is named after. Measured on the
+            # run of 2026-08-31 -- all ten champion keys end in `_normal`,
+            # which is the exact state a fix in 9fa3a84a was written to end.
+            #
+            # Repointing this at `volatility_regime_*`, which DOES exist in
+            # the batch, was considered and measured away on 2026-08-31.
+            #
+            # First correcting a wrong reason: it would not "split the data
+            # three ways". This value never filters `df`. It is a LABEL on
+            # the champion -- it reaches the context key, the champion
+            # filename and the diary, and the model is trained on every row
+            # regardless of it. So the cost of changing it is zero, and the
+            # question is only whether the label discriminates.
+            #
+            # Measured on the export, value at each ticker's last bar:
+            #
+            #     15m   low 110 of 110          -> ONE value
+            #     60m   low 98, normal 8, high 3, extreme 1
+            #     1d    extreme 50, normal 26, high 20, low 14
+            #
+            # The daily spread looks usable until pooling is accounted for.
+            # With `pool_tickers` on there is one context per (timeframe,
+            # target), so this reads the last row of the POOLED frame -- and
+            # at that timestamp 108 tickers hold four different regimes. The
+            # label would then be decided by whichever ticker sorts last:
+            # change the row order and the champion's regime changes with no
+            # change to the data or the model. That is not an axis, it is a
+            # coin flip that gets recorded.
+            #
+            # So the key stays constant, deliberately, and the promise of
+            # regime-awareness is not kept by pretending otherwise. Training
+            # one model PER regime -- an actual split, an actual experiment --
+            # is register #182 and roadmap §26, to be run when there is a
+            # surviving champion worth conditioning.
+            #
+            # What changes here is only that the fallback stops being silent.
             current_pattern = self._latest_context_value(
                 df,
                 ("MARKET_REGIME", "market_regime", "regime"),
                 default='normal',
                 timeframe=str(timeframe),
             ) or 'normal'
-            logger.info(
-                "Ticker %s/%s is currently in pattern: %s",
-                ticker,
-                timeframe,
-                current_pattern,
-            )
+            if current_pattern == 'normal':
+                logger.warning(
+                    "Ticker %s/%s has no MARKET_REGIME column, so its "
+                    "champions are keyed by the literal 'normal'. The regime "
+                    "axis of the arena carries one value. Set "
+                    "MARKET_REGIME_FEATURES=1 to compute it (~5.4h on the "
+                    "daily frame), or see register #182.",
+                    ticker, timeframe,
+                )
+            else:
+                logger.info(
+                    "Ticker %s/%s is currently in pattern: %s",
+                    ticker,
+                    timeframe,
+                    current_pattern,
+                )
 
             await self._process_ticker_with_async(
                 ticker,
@@ -229,7 +416,17 @@ class ModelingStage(BaseStage):
                 metric_artifact_dir=metric_artifact_dir,
             )
 
-        logger.info(f'Modeling Stage complete. Trained {len(champions)} expert models.')
+        if self._replayed_contexts:
+            # Say it in the completion line, not only where it happened. A
+            # summary that reads "trained N models" when some of them were
+            # replayed is the kind of sentence that gets quoted later.
+            logger.warning(
+                'Modeling Stage complete. %d champion(s), of which %d '
+                'context(s) were REPLAYED from the ledger and not trained in '
+                'this run.', len(champions), self._replayed_contexts,
+            )
+        else:
+            logger.info(f'Modeling Stage complete. Trained {len(champions)} expert models.')
         manifests = sorted(
             {
                 str(item["manifest"])
@@ -239,6 +436,19 @@ class ModelingStage(BaseStage):
         )
         holdout_path = self._write_holdout_predictions(champions)
         refusals_path = self._write_gate_refusals(self._gate_refusals)
+        # Said at the stage boundary, where a verdict can still be formed. A
+        # per-context write failure logged in passing is a line nobody reads;
+        # a count next to the champion count is a discrepancy anyone reading
+        # the summary trips over.
+        if self._artifact_write_failures:
+            logger.error(
+                'Pipeline-control artifacts could not be written for %d '
+                'context(s), so the artifact set is short by that many and '
+                'does not say so on its own: %s',
+                len(self._artifact_write_failures),
+                ', '.join(self._artifact_write_failures[:10]),
+            )
+        self._reconcile_promotion_family()
         return {
             'models_metadata': champions,
             'processed_data': enriched_data,
@@ -246,7 +456,62 @@ class ModelingStage(BaseStage):
             'pipeline_control_metric_artifact_manifests': manifests,
             'holdout_predictions_path': str(holdout_path) if holdout_path else None,
             'gate_refusals_path': str(refusals_path) if refusals_path else None,
+            'artifact_write_failures': list(self._artifact_write_failures),
         }
+
+    def _reconcile_promotion_family(self) -> None:
+        """Say whether the bar the gate used matched the run the gate judged.
+
+        The promotion bar is a multiple-comparison correction, so it is only
+        meaningful relative to the number of comparisons. `models.yaml` states
+        that number in advance and promises this check; the check was never
+        written, so a stated 27 and an actual 216 would have looked identical
+        from outside -- and the difference between them is 2.90 sigma against
+        3.50, which is the difference between a 5% run-wide error rate and
+        something several times that.
+
+        Nothing is corrected here. The verdicts are already made and a bar
+        cannot be applied backwards; what this does is refuse to let the
+        discrepancy pass unsaid, which is the whole content of CRITIQUE
+        section 11 ("we do not count our own attempts").
+        """
+        try:
+            cfg = (self.config_manager.get_config('models') or {}).get(
+                'promotion_gate', {}
+            ) or {}
+        except (AttributeError, KeyError, TypeError):
+            cfg = {}
+        declared = cfg.get('family_size')
+        actual = int(self._promotion_attempts)
+        if declared is None:
+            logger.error(
+                'The run made %d promotion attempt(s) and no family_size is '
+                'configured, so the gate judged them at the single-test bar. '
+                'Every verdict in this run carries a higher error rate than '
+                'it states.', actual,
+            )
+            return
+        declared = int(declared)
+        if declared == actual:
+            logger.info(
+                'Promotion family reconciled: %d attempt(s), matching the '
+                'configured family_size.', actual,
+            )
+            return
+        logger.error(
+            'PROMOTION BAR DOES NOT MATCH THIS RUN: the gate judged %d '
+            'attempt(s) at the bar for %d. %s Set models.yaml '
+            'promotion_gate.family_size to %d and re-read this run\'s '
+            'champions as provisional.',
+            actual, declared,
+            (
+                'The bar was too LOOSE, so the run-wide error rate is higher '
+                'than the stated one.'
+                if actual > declared else
+                'The bar was too STRICT, so real edges may have been refused.'
+            ),
+            actual,
+        )
 
     @staticmethod
     def _write_holdout_predictions(champions: dict[str, Any]) -> "Path | None":
@@ -360,8 +625,75 @@ class ModelingStage(BaseStage):
         }
 
     def _iter_model_contexts(self, enriched_data):
-        """Yield isolated ticker/timeframe frames for model preparation."""
-        yield from iter_model_contexts(enriched_data)
+        """Yield isolated ticker/timeframe frames for model preparation.
+
+        Honours the ticker list the caller asked for. A pooled context is
+        never filtered: it is one frame carrying every name by design, and
+        dropping it because its label is not a ticker symbol would silently
+        disable pooling.
+        """
+        # Pooling is a switch, not a rewrite.
+        #
+        # `iter_model_contexts` has carried `pool_tickers` all along, with the
+        # measurement in its own docstring: one pooled model beats 22
+        # per-ticker models at every cost ratio from 0.5 to 3.0, widening as
+        # false signals get more expensive. The call here never passed it, so
+        # the better-measured mode has been off by default.
+        #
+        # Two numbers from 2026-08-29 say why it matters beyond that
+        # measurement. Per ticker, a context holds ~900 training rows, which
+        # is what forced the feature budget down to five; 47 contexts across
+        # AAPL and MSFT produced ZERO champions. And it took 31 minutes for
+        # two names -- about thirty hours for 110, so the per-ticker shape is
+        # not merely worse, it is the one that cannot be run in full.
+        #
+        # Off by default all the same: this changes what the stage produces,
+        # and the comparison between the two modes is the point. Set
+        # `modeling.pool_tickers: true` to turn it on.
+        pooled = bool(self.modeling_config.get('pool_tickers', False))
+        if pooled:
+            logger.info(
+                "Pooling tickers: one model per (timeframe, target) across "
+                "every name, instead of one per ticker."
+            )
+        wanted = getattr(self, '_requested_tickers', None)
+        skipped = 0
+        for ticker, timeframe, frame in iter_model_contexts(
+            enriched_data, pool_tickers=pooled
+        ):
+            if wanted and is_pooled(ticker):
+                # A pooled context is not dropped, it is NARROWED.
+                #
+                # Skipping it because `__POOLED__` is not a ticker symbol
+                # would silently switch pooling off; ignoring the list
+                # entirely makes `--tickers` meaningless in pooled mode,
+                # which is how the run of 2026-08-30 became a 25-hour job
+                # while being discussed as a two-name smoke test. Narrowing
+                # the ROWS keeps both promises.
+                if 'ticker' in frame.columns:
+                    narrowed = frame[frame['ticker'].isin(wanted)]
+                    if narrowed.empty:
+                        skipped += 1
+                        continue
+                    if len(narrowed) != len(frame):
+                        logger.info(
+                            "Pooled %s narrowed to %d of %d name(s): "
+                            "%s rows instead of %s.",
+                            timeframe, narrowed['ticker'].nunique(),
+                            frame['ticker'].nunique(),
+                            f"{len(narrowed):,}", f"{len(frame):,}",
+                        )
+                    yield ticker, timeframe, narrowed
+                    continue
+            if wanted and not is_pooled(ticker) and str(ticker) not in wanted:
+                skipped += 1
+                continue
+            yield ticker, timeframe, frame
+        if skipped:
+            logger.info(
+                "Modeling skipped %d context(s) outside the requested "
+                "ticker list (%d name(s) asked for).", skipped, len(wanted),
+            )
 
     async def _process_ticker_with_async(
         self,
@@ -393,6 +725,26 @@ class ModelingStage(BaseStage):
                 )
 
             for target_name in target_cols:
+                # One promotion attempt, counted where it is made rather than
+                # inferred afterwards from champions -- a refused verdict is an
+                # attempt too, and counting only the survivors is exactly the
+                # arithmetic that makes a multiple-comparison correction wrong.
+                self._promotion_attempts += 1
+                # What this context is, and what its data is, BEFORE paying
+                # for either. A run that dies in the eighth hour otherwise
+                # loses everything it had already finished: the 15m frame was
+                # recomputed six times across runs 1-6 for byte-identical
+                # numbers.
+                context_key = (
+                    f"{ticker}_{timeframe}_{target_name}_{current_pattern}"
+                )
+                fingerprint = ContextLedger.fingerprint(df, str(target_name))
+                if self._resume_contexts:
+                    entry = self._ledger.lookup(context_key, fingerprint)
+                    if entry is not None:
+                        self._replay_context(context_key, entry, champions)
+                        continue
+
                 # Готуємо дані з PURGED GAP
                 prepared_data = prepare_data_for_models(
                     df=df, ticker=ticker, timeframe=timeframe,
@@ -413,6 +765,7 @@ class ModelingStage(BaseStage):
                         timeframe=str(timeframe),
                         target_name=str(target_name),
                     )
+                    self._remember_refusal(context_key, fingerprint)
                     continue
 
                 # Запускаємо уніфіковане тренування
@@ -444,9 +797,6 @@ class ModelingStage(BaseStage):
                     winner_name = ticker_result.get('winner')
                     metrics = ticker_result.get('winner_metrics', {})
 
-                    context_key = (
-                        f"{ticker}_{timeframe}_{target_name}_{current_pattern}"
-                    )
                     artifact_paths = self._write_active_stage4_candidates(
                         ticker=ticker,
                         timeframe=timeframe,
@@ -474,6 +824,7 @@ class ModelingStage(BaseStage):
                     # the corrupted batch.
                     if not self._champion_is_allowed(ticker_result, context_key):
                         self._collect_gate_refusal(ticker_result, context_key)
+                        self._remember_refusal(context_key, fingerprint)
                         continue
 
                     if self._is_indicator_prediction(target_name):
@@ -485,6 +836,7 @@ class ModelingStage(BaseStage):
                             ticker_result, context_key,
                             note="indicator_prediction targets are measured but not promoted",
                         )
+                        self._remember_refusal(context_key, fingerprint)
                         continue
 
                     stability = self._walk_forward_stability(
@@ -506,6 +858,7 @@ class ModelingStage(BaseStage):
                             ticker_result, context_key,
                             note=stability.get('reason'),
                         )
+                        self._remember_refusal(context_key, fingerprint)
                         continue
 
                     champions[context_key] = {
@@ -527,6 +880,17 @@ class ModelingStage(BaseStage):
                         # split -- models.yaml categories.light.
                         'model_category': 'light',
                         'metrics': metrics,
+                        # What this champion actually BEAT, kept with it.
+                        #
+                        # The gate recorded its evidence only when it refused
+                        # (`_collect_gate_refusal`), so a promoted model left
+                        # no trace of which opponents it faced or by how much.
+                        # Noticed on 2026-08-31, on the first champion of the
+                        # run that added the missing ladder rungs: there was
+                        # no way to tell from any artifact whether the clock
+                        # opponent had been measured at all. A gate whose
+                        # passes are unauditable is a gate you have to trust.
+                        'ladder': self._ladder_evidence(ticker_result),
                         'model_path': ticker_result.get('model_path'),
                         # The WINNER'S OWN columns, not every column the
                         # context offered. Each model is now fitted on its own
@@ -553,8 +917,31 @@ class ModelingStage(BaseStage):
                         'timestamp': datetime.datetime.now().isoformat()
                     }
 
+                    self._remember_champion(
+                        context_key, fingerprint, champions[context_key])
                     self._log_expert_to_diary(champions[context_key], timeframe)
-                    logger.info(f"🏆 Pattern Champion for {context_key}: {winner_name} (Score: {metrics.get('score', 0):.4f})")
+                    ladder = champions[context_key]['ladder']
+                    logger.info(
+                        "🏆 Pattern Champion for %s: %s (Score: %.4f) — holdout "
+                        "%s beat %s %s by %s (sigma %s) [constant %s, lag-%s %s, "
+                        "clock %s (%s), one feature %s]",
+                        context_key, winner_name, metrics.get('score', 0),
+                        _shown(ladder.get('score')),
+                        ladder.get('binding_opponent') or 'nothing measured',
+                        _shown(ladder.get('baseline_score')),
+                        # The two numbers that decide promotion since #186.
+                        # Printing the verdict without them is how the first
+                        # version of this line failed to answer the question
+                        # it was added to answer.
+                        _shown(ladder.get('baseline_margin')),
+                        _shown(ladder.get('baseline_margin_sigma')),
+                        _shown(ladder.get('baseline_constant_score')),
+                        ladder.get('baseline_persistence_lag_bars', '?'),
+                        _shown(ladder.get('baseline_persistence_score')),
+                        _shown(ladder.get('baseline_clock_score')),
+                        ladder.get('baseline_clock_scheme') or 'not measured',
+                        _shown(ladder.get('single_feature_score')),
+                    )
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Error modeling {ticker}: {e}")
@@ -605,14 +992,37 @@ class ModelingStage(BaseStage):
         signal held on at least two folds, and a threshold that coarse
         tolerates noise far better than it tolerates absence.
 
-        Intraday contexts keep the defaults, because they can afford them.
+        The window scales in BOTH directions, which it used not to.
+
+        The early return below fired whenever the defaults produced enough
+        folds -- that is, whenever data was plentiful -- so a bigger context
+        was validated on the same fixed 120 rows as a small one. Measured on
+        the pooled run of 2026-08-30: 104,267 training rows, four folds, and
+        all four validation windows inside the LAST 480 rows. 0.46% of the
+        data, at the very end of the timeline, deciding whether a model
+        becomes a champion.
+
+        That was invisible while every context held ~900 rows, where 120 is a
+        sensible eighth. Pooling multiplied the rows by a hundred and left the
+        window where it was, so the comment "intraday contexts can afford the
+        defaults" quietly inverted: the more data a context has, the smaller
+        the fraction it was checked on.
+
+        `row_count // 8` now applies always. On 900 rows it yields 112, the
+        `max` keeps 120, and nothing about the per-ticker world changes. On
+        104,267 it yields 13,033 per fold -- about 52,000 rows actually
+        validated instead of 480.
         """
         default = WalkForwardValidationConfig()
-        if len(build_purged_expanding_folds(row_count, config=default)) >= cls._MIN_STABLE_FOLDS:
-            return default
-
-        validation_rows = max(cls._MIN_FOLD_VALIDATION_ROWS, row_count // 8)
+        validation_rows = max(
+            cls._MIN_FOLD_VALIDATION_ROWS, default.validation_rows, row_count // 8
+        )
         min_train_rows = max(cls._MIN_FOLD_TRAIN_ROWS, row_count // 2)
+        if (validation_rows <= default.validation_rows
+                and min_train_rows <= default.min_train_rows
+                and len(build_purged_expanding_folds(row_count, config=default))
+                >= cls._MIN_STABLE_FOLDS):
+            return default
         return WalkForwardValidationConfig(
             min_train_rows=min_train_rows,
             validation_rows=validation_rows,
@@ -845,9 +1255,43 @@ class ModelingStage(BaseStage):
             summary = evaluator.evaluate(
                 frame, ticker=ticker, timeframe=timeframe, target_name=target_name,
             )
-        except (ValueError, TypeError, KeyError, AttributeError) as e:
-            logger.debug(f"{context_key}: walk-forward not evaluable ({e})")
-            return None
+        except Exception as e:  # noqa: BLE001 - see below; breadth is the point
+            # This handler is where #189 actually lived. The pooled filter was
+            # the cause that time, but the SHAPE is what let it run for weeks:
+            # catch, write the reason to `logger.debug`, return None -- and
+            # the caller's `if stability and not stability.get('passed', True)`
+            # reads None as "no objection" and promotes.
+            #
+            # Two cases were being merged. "Too short to build folds" is a
+            # known limitation, and passing through with that stated is a
+            # decision this project has taken deliberately. "The evaluator
+            # raised" is not that: it is an unknown, and an unknown that
+            # cannot be told apart from a pass is the whole defect family.
+            #
+            # So the known case still returns None below, and the unknown case
+            # refuses -- loudly, and with the reason carried into the refusal
+            # record. If that starts refusing every champion, an evaluator is
+            # broken and we will find out in the first run instead of in the
+            # audit that follows the fourth.
+            #
+            # The catch is broad on purpose: the previous tuple was
+            # (ValueError, TypeError, KeyError, AttributeError), which is the
+            # narrow tuple the silent-failure scanner already counts 629 of,
+            # and the exception that produced #189 was not in it.
+            logger.error(
+                "%s: walk-forward stability could not be evaluated (%s: %s). "
+                "Refusing rather than promoting: a check that failed is not a "
+                "check that passed.",
+                context_key, type(e).__name__, e, exc_info=True,
+            )
+            return {
+                'passed': False,
+                'measured': False,
+                'reason': (
+                    f"walk-forward stability could not be evaluated "
+                    f"({type(e).__name__}: {e})"
+                ),
+            }
 
         payload = summary.get('metrics', {}) if isinstance(summary, dict) else {}
         fold_count = int(payload.get('fold_count') or 0)
@@ -945,15 +1389,27 @@ class ModelingStage(BaseStage):
         try:
             from src.config.target_type_registry import load_target_types
             return load_target_types().get(target_name) == 'indicator_prediction'
-        except (ImportError, OSError, ValueError) as e:
-            # The registry is the same one the Colab cell and the champion
-            # selector read; if it cannot be loaded, promote as before rather
-            # than silently refusing every target.
-            logger.warning(
-                "Could not read the target registry (%s); "
-                "not filtering indicator targets this run.", e,
+        except Exception as e:  # noqa: BLE001 - any failure here means "unknown"
+            # This used to return False -- "not an indicator" -- and promote.
+            # The registry is the ONLY thing that distinguishes a tradeable
+            # target from arithmetic on data already known, so when it cannot
+            # be read the honest answer is not "no" but "cannot tell", and the
+            # question being asked is whether to PROMOTE. Answering "no" under
+            # uncertainty is how `target_sma_20_f1` at R2 0.998 lands in the
+            # champion table beside a directional model at 0.55.
+            #
+            # Returning True refuses every target for the run. That is loud,
+            # it is caught by the run verdict (zero champions is a failure),
+            # and it costs one rerun after fixing the registry. The old
+            # behaviour cost a champion table nobody could trust, which is the
+            # more expensive of the two by a distance.
+            logger.error(
+                "Could not read the target registry (%s: %s). Refusing every "
+                "target this run rather than promoting under a check that "
+                "could not be made -- fix the registry and rerun.",
+                type(e).__name__, e,
             )
-            return False
+            return True
 
     def _collect_gate_refusal(
         self,
@@ -1009,9 +1465,72 @@ class ModelingStage(BaseStage):
             "baseline_kind": holdout.get("baseline_kind"),
             "baseline_constant_score": holdout.get("baseline_constant_score"),
             "baseline_persistence_score": holdout.get("baseline_persistence_score"),
+            # The clock rung, added 2026-08-31. "Lost to the weekday and the
+            # hour" is a different finding from "lost to a constant": it says
+            # the target is a schedule, which no feature in this pipeline can
+            # improve on.
+            "baseline_clock_score": holdout.get("baseline_clock_score"),
+            "baseline_clock_scheme": holdout.get("baseline_clock_scheme"),
+            "single_feature_score": holdout.get("single_feature_score"),
+            "single_feature_name": holdout.get("single_feature_name"),
             "holdout_rows": holdout.get("holdout_sample_count"),
             "holdout_events": holdout.get("holdout_event_count"),
         })
+
+    @staticmethod
+    def _ladder_evidence(ticker_result: dict[str, Any]) -> dict[str, Any]:
+        """Every rung the winner was measured against, and its own score.
+
+        `None` for a rung means NOT MEASURED, and it has to stay
+        distinguishable from a rung the model beat. A promoted champion whose
+        `baseline_clock_score` is null did not beat the clock -- nobody asked
+        the clock.
+        """
+        holdout = ticker_result.get('winner_holdout_metrics') or {}
+
+        # EVERY number the gate weighed, copied wholesale rather than listed.
+        #
+        # The first version of this method enumerated fields, and within the
+        # hour it was already out of date: `baseline_margin_sigma` -- the
+        # value that decides promotion since #186 -- was added to the gate
+        # and not to this list, so the champion record still could not say
+        # what had cleared it. That is the SAME defect this method was
+        # written to fix, reappearing inside the fix. A list of fields has to
+        # be maintained; a copy cannot fall behind.
+        #
+        # Safe to copy: `_record_winner_test_score` pops the one array-shaped
+        # entry (`_baseline_prediction`) before this is reached, so what
+        # remains is scalars and short strings.
+        evidence = {
+            key: value for key, value in holdout.items()
+            if not key.startswith('_')
+        }
+        evidence['binding_opponent'] = holdout.get('baseline_kind')
+        # The verdict beside the numbers, so "why was this promoted" is
+        # answerable from the record alone.
+        evidence['gate'] = ticker_result.get('promotion_gate') or {}
+        return evidence
+
+    def _remember_refusal(self, context_key: str, fingerprint: str) -> None:
+        """Record the refusal just appended, so a restart need not redo it.
+
+        Reads the last row rather than taking an argument, because every
+        refusal path in this loop appends exactly one and the alternative is
+        four call sites each passing a slightly different dict.
+        """
+        if self._ledger is None:
+            return
+        self._ledger.record(
+            context_key, fingerprint,
+            refusal=self._gate_refusals[-1] if self._gate_refusals else None,
+        )
+
+    def _remember_champion(self, context_key: str, fingerprint: str,
+                           champion: dict[str, Any]) -> None:
+        """Record a promoted champion and the data it was promoted on."""
+        if self._ledger is None:
+            return
+        self._ledger.record(context_key, fingerprint, champion=champion)
 
     def _record_unprepared_context(
         self,
@@ -1047,6 +1566,10 @@ class ModelingStage(BaseStage):
             "baseline_kind": None,
             "baseline_constant_score": None,
             "baseline_persistence_score": None,
+            "baseline_clock_score": None,
+            "baseline_clock_scheme": None,
+            "single_feature_score": None,
+            "single_feature_name": None,
             "holdout_rows": None,
             "holdout_events": None,
         })
@@ -1148,6 +1671,11 @@ class ModelingStage(BaseStage):
             # what caused the original defect.
             "X_holdout": light.get("X_test"),
             "y_holdout": light.get("y_test"),
+            # Which series each holdout row belongs to. The naive opponents in
+            # the promotion gate lag WITHIN a series; on a pooled frame, "the
+            # row h positions back" is another ticker at nearly the same
+            # timestamp, which makes the opponent measure nothing.
+            "holdout_groups": light.get("holdout_groups"),
             # The transformers the models are fitted BEHIND. prepare_data_for_models
             # fits these on the training split and hands the models z-scores;
             # they were returned in `light_data` and collected by nobody, so
@@ -1167,6 +1695,14 @@ class ModelingStage(BaseStage):
             # one filename each -- see base_trainer._save_model_candidate.
             "timeframe": timeframe,
             "target_type": self._infer_target_type(y_train),
+            # How many promotion attempts this run will make. The gate turns
+            # it into the number of standard errors a margin must clear.
+            # Before 2026-09-01 the bar was one standard error regardless,
+            # which is a 16% false-positive rate per test -- measured, by
+            # running twenty panels of pure noise through the gate and
+            # watching it promote three (CLAIMS.md R11). Applied 27 times in
+            # run 7, that is about four false champions out of nine.
+            "promotion_family_size": getattr(self, "_promotion_family_size", None),
             "context_fingerprint": context_fingerprint,
             # BaseTrainer already forwards this to the diary
             # (base_trainer.py: log_event(..., context_pattern_seq=
@@ -1313,9 +1849,17 @@ class ModelingStage(BaseStage):
             ZeroDivisionError,
             OSError,
         ) as exc:
-            logger.warning(
-                "Could not write active Stage 4 pipeline-control candidates: %s",
-                exc,
+            # A write failure is not an absence of candidates. Returning {}
+            # here means the caller's `if artifact_paths` skips the append and
+            # the context leaves no trace in the artifact set at all -- so a
+            # short artifact set and a complete one look identical.
+            logger.error(
+                "Could not write active Stage 4 pipeline-control candidates "
+                "for %s/%s/%s (%s: %s).",
+                ticker, timeframe, target_name, type(exc).__name__, exc,
+            )
+            self._artifact_write_failures.append(
+                f"{ticker}/{timeframe}/{target_name}"
             )
             return {}
 
