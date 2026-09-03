@@ -914,8 +914,29 @@ class ColabTrainingController:
                     is_classification=is_classification, max_features=max_features
                 )
             except Exception as e:
-                self.logger.error("Failed to select features, using all columns", exc_info=True)
-                selected_features = list(x_df.columns)
+                # An unknown feature list is not "every column".
+                #
+                # This branch only re-derives the selection for a model that
+                # already exists on disk, so a failure here means we do not
+                # KNOW what the model was trained on. Writing every column
+                # into `selected_features` hands Stage 5 a list of 1,384
+                # names for a model fitted on five, and Stage 5 believes it:
+                # it prepares that many columns and either wastes the work or
+                # refuses the context for missing features. Recording the
+                # failure is the honest answer, and Stage 5 already knows how
+                # to skip a context it cannot serve --
+                # `missing selected features; skipping prediction instead of
+                # filling zeros`.
+                self.logger.error(
+                    "Feature selection failed for an existing model; "
+                    "recording it as an error rather than claiming every "
+                    "column was used.", exc_info=True,
+                )
+                self._results_slot(ticker, timeframe, target_col)[model_type] = {
+                    'status': 'error',
+                    'message': f'feature selection failed: {str(e)[:160]}',
+                }
+                return
 
             model_result = {
                 'status': 'success',
