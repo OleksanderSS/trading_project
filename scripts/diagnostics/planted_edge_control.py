@@ -213,6 +213,118 @@ EXPECTED = {
 }
 
 
+# ---------------------------------------------------------------------------
+# The shape the pipeline is actually built to find, which nothing had measured.
+#
+# Two shapes have power curves. Neither can be what this machine finds:
+#
+#   one column          the funnel passes it, and the gate REFUSES it on
+#                       purpose -- "the model reproduces what one column
+#                       already says" (R10 case A).
+#   pure interaction    the gate promotes it (R10 case B) and the funnel
+#                       drops it: 1 of 10 reach the pre-screen, 0 of 10 the
+#                       models with a five-feature budget (R14, R15).
+#
+# So R17's power curve was measured on a panel of twenty columns where the
+# funnel discards nothing, and running it again through four hundred noise
+# columns would measure the funnel a third time rather than the gate.
+#
+# The unmeasured shape is the one in between and the one ROADMAP 1.2 assumes:
+# SEVERAL WEAK ADDITIVE COLUMNS. Each carries its own marginal correlation, so
+# the |corr| funnel ranks it; none explains the target alone, so the
+# single-feature rung does not bind. That is the only shape that can pass both
+# and therefore the only one whose power curve says what this pipeline can
+# find.
+#
+# PREDICTION, written before the run so it cannot be fitted afterwards: the
+# funnel passes most of the eight, the single-feature rung does not bind, and
+# the boundary lands near R17's -- around a Sharpe of 1. If it lands
+# materially higher, the funnel is the cause; if it coincides, funnel and gate
+# agree and the bar is what binds.
+
+
+def _additive_panel(rng: np.random.Generator, carriers: int, noise_columns: int,
+                    share: float) -> tuple[pd.DataFrame, str, float]:
+    """`carriers` columns that each predict a little, plus pure noise.
+
+    The share is of the LATENT variance, so the strength is comparable with
+    R17: balanced accuracy from the signal alone is 0.5 + arcsin(sqrt(share))/pi.
+    """
+    rows = N_NAMES * N_BARS
+    total = carriers + noise_columns
+    frame = pd.DataFrame(
+        rng.standard_normal((rows, total)).astype("float32"),
+        columns=[f"f{i}" for i in range(total)],
+    )
+    names = [f"f{i}" for i in range(carriers)]
+    signal = frame[names].to_numpy().sum(axis=1) / np.sqrt(carriers)
+    latent = (np.sqrt(share) * signal
+              + np.sqrt(max(0.0, 1.0 - share)) * rng.standard_normal(rows))
+    target = "target_planted_additive_1d"
+    frame[target] = (latent > 0).astype(float)
+
+    frame["ticker"] = np.repeat([f"T{i:02d}" for i in range(N_NAMES)], N_BARS)
+    calendar = pd.bdate_range("2010-01-04", periods=N_BARS, tz="UTC")
+    frame["datetime"] = np.tile(calendar.to_numpy(), N_NAMES)
+    frame["interval"] = "1d"
+    # Measured BEFORE the sort: `signal` is in the frame's original row order,
+    # and comparing it against a re-ordered target reports 0.5 for any panel --
+    # which is what the first version of this line printed, on a panel whose
+    # true ceiling is 0.698.
+    best = float(((signal > 0) == (frame[target].to_numpy() == 1)).mean())
+    frame = frame.sort_values(["datetime", "ticker"]).reset_index(drop=True)
+    return frame, target, best
+
+
+def run_additive(share: float, carriers: int, noise_columns: int, seed: int,
+                 family_size: int | None, models: list[str] | None) -> dict:
+    rng = np.random.default_rng(seed)
+    frame, target, best = _additive_panel(rng, carriers, noise_columns, share)
+    names = [f"f{i}" for i in range(carriers)]
+
+    prepared = prepare_data_for_models(frame, POOLED_TICKER, "1d", [target])
+    if not prepared:
+        return {"share": share, "seed": seed, "promoted": False,
+                "reason": "prepare_data_for_models returned nothing",
+                "kept": 0, "budget_kept": {}, "best_possible": best,
+                "winner": None, "winner_score": None}
+
+    light = prepared["light_models"]
+    survivors = set(light.get("feature_names") or [])
+    kept = sum(1 for n in names if n in survivors)
+
+    stage = ModelingStage.__new__(ModelingStage)
+    stage._promotion_family_size = family_size
+    data = stage._build_unified_training_context(
+        prepared, target_name=target,
+        context_fingerprint=f"additive::{share}::seed{seed}", timeframe="1d",
+    )
+    plan = _plan(POOLED_TICKER, models)
+    if plan:
+        data["plan"] = plan
+
+    trainer = BatchTrainer()
+    budget_kept = {
+        m: sum(1 for n in names
+               if n in (trainer._select_features_for_model(m, data, True) or []))
+        for m in ("linear", "random_forest")
+    }
+    results = trainer._train_ticker_suite(POOLED_TICKER, data)
+    gate = results.get("promotion_gate") or {}
+    holdout = results.get("winner_holdout_metrics") or {}
+    return {
+        "share": share, "seed": seed,
+        "best_possible": best,
+        "kept": kept, "carriers": carriers,
+        "budget_kept": budget_kept,
+        "winner": results.get("winner"),
+        "winner_score": holdout.get("score"),
+        "promoted": bool(gate.get("passed")),
+        "reason": "; ".join(gate.get("reasons") or []) or None,
+    }
+
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -246,6 +358,17 @@ def main() -> int:
     )
     parser.add_argument("--real-features", type=int, default=120)
     parser.add_argument(
+        "--additive", type=float, nargs="+", default=None, metavar="SHARE",
+        help=(
+            "Power curve on the shape the pipeline can actually deliver: "
+            "several weak columns that each correlate with the target, plus "
+            "pure noise, so the real feature funnel applies. Shares are of "
+            "the latent variance, comparable with R17."
+        ),
+    )
+    parser.add_argument("--carriers", type=int, default=8)
+    parser.add_argument("--noise-columns", type=int, default=400)
+    parser.add_argument(
         "--family-size", type=int, default=None,
         help=(
             "Promotion attempts the run is treated as making. The gate turns "
@@ -275,6 +398,34 @@ def main() -> int:
         + (", ".join(args.models) if args.models else "the configured suite"),
         flush=True,
     )
+
+    if args.additive is not None:
+        print(f"additive panel: {args.carriers} carrier columns + "
+              f"{args.noise_columns} pure noise, shares {args.additive}\n", flush=True)
+        header = (f"{'share':>8}{'bestAcc':>9}{'seed':>11}{'kept/8':>8}"
+                  f"{'linear':>8}{'rf':>5}{'winner':>12}{'score':>9}{'promoted':>10}")
+        print(header)
+        print("-" * len(header))
+        tally = {}
+        for share in args.additive:
+            hits = 0
+            for offset in range(args.seeds):
+                out = run_additive(share, args.carriers, args.noise_columns,
+                                   SEED + offset, args.family_size, args.models)
+                hits += bool(out["promoted"])
+                score = out["winner_score"]
+                print(f"{share:>8.4f}{out['best_possible']:>9.3f}"
+                      f"{SEED + offset:>11}{out['kept']:>8}"
+                      f"{out['budget_kept'].get('linear', 0):>8}"
+                      f"{out['budget_kept'].get('random_forest', 0):>5}"
+                      f"{str(out['winner']):>12}"
+                      f"{(f'{score:.4f}' if score is not None else 'n/a'):>9}"
+                      f"{str(out['promoted']):>10}", flush=True)
+            tally[share] = hits
+        print(f"\n{'share':>8}{'promoted':>12}")
+        for share, hits in tally.items():
+            print(f"{share:>8.4f}{f'{hits} of {args.seeds}':>12}")
+        return 0
 
     if args.real_null:
         verdicts = []
