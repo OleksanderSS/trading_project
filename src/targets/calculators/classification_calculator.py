@@ -91,7 +91,15 @@ class ClassificationCalculator:
             reference = df[indicator_col]
 
             def _forward_max(series: pd.Series) -> pd.Series:
-                ahead = series.shift(-1)
+                # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL this builds a TARGET.
+                # A breakout label asks whether the price exceeds the band at
+                # any point in the next `window` bars, so it must look forward
+                # by construction; the comment above records the 30% breakout
+                # that a non-forward version labelled 0. The ratchet cannot tell
+                # a target from a feature, and its own message asks for exactly
+                # this marker rather than a silent ceiling raise, and it reads
+                # the marker from the line it sits on.
+                ahead = series.shift(-1)  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL
                 return (
                     ahead[::-1]
                     .rolling(window, min_periods=window)
