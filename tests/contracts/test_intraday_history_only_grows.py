@@ -31,6 +31,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.contracts._database_available import connect_or_skip
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = PROJECT_ROOT / "data" / "trading_data.duckdb"
 
@@ -72,10 +74,7 @@ EARLIEST = {
 
 @pytest.fixture(scope="module")
 def spans():
-    duckdb = pytest.importorskip("duckdb")
-    if not DB_PATH.exists():
-        pytest.skip(f"no database at {DB_PATH}")
-    con = duckdb.connect(str(DB_PATH), read_only=True)
+    con = connect_or_skip(DB_PATH)
     rows = con.execute(
         """select interval, min(datetime) as first_bar, max(datetime) as last_bar,
                   count(*) as bars
@@ -116,10 +115,7 @@ def test_the_backup_that_held_the_lost_bars_is_still_there(spans):
     the restore put in the live table. Keep it: if the judgement in #228 is ever
     shown wrong, this is what it would be re-checked against.
     """
-    duckdb = pytest.importorskip("duckdb")
-    if not DB_PATH.exists():
-        pytest.skip(f"no database at {DB_PATH}")
-    con = duckdb.connect(str(DB_PATH), read_only=True)
+    con = connect_or_skip(DB_PATH)
     tables = {row[0] for row in con.execute(
         "select table_name from information_schema.tables"
     ).fetchall()}

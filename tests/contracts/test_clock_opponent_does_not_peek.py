@@ -37,12 +37,32 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.core.logging.logger import ProjectLogger
 from src.training.batch_trainer import BatchTrainer
 
 
 @pytest.fixture(scope="module")
 def trainer():
-    return BatchTrainer()
+    """The real methods, without the constructor's unrelated side effect.
+
+    `BatchTrainer()` opens the DuckDB file for its diary, and DuckDB allows
+    one writer, so building one here failed outright whenever a measurement
+    run held the database -- which, in this project, is most of the time.
+    Five contract tests then ERRORED for a reason that had nothing to do with
+    the invariant they check.
+
+    The methods under test are the pipeline's own, called unchanged; what is
+    avoided is a side effect none of them use. `config_manager` is None
+    because `_choose_clock_scheme` and `_clock_prediction` never read it, and
+    `evaluator` is the real one.
+    """
+    from src.metrics.model.ml_evaluator import MLEvaluator
+
+    instance = BatchTrainer.__new__(BatchTrainer)
+    instance.config_manager = None
+    instance.logger = ProjectLogger.get_logger("ClockOpponentTest")
+    instance.evaluator = MLEvaluator()
+    return instance
 
 
 def _frame(index: pd.DatetimeIndex) -> pd.DataFrame:
