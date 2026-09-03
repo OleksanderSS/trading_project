@@ -140,3 +140,11 @@ reports/audit_v1*/
 audit/legacy/*.json
 audit/legacy/*.html
 audit/legacy/*.txt
+
+# The June 2026 audit quarantine: 160 files, 44 MB, referenced by
+# src/archive/MANIFEST.md and docs/AUDIT_HISTORY.md as "already-known
+# non-live" -- the set they grep to prove code has no live callers. Kept
+# locally so those citations point at something; not committed, because no
+# code imports it and a fresh clone that lacks it gets the same or a
+# stronger answer from the same grep.
+/audit/legacy/
