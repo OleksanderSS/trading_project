@@ -24,7 +24,24 @@ models:
 
   dual_model_manager:
     base_path: "data/models"
-    light_models: ["lightgbm", "random_forest", "linear", "mlp", "ensemble", "catboost", "xgboost", "knn", "svm"]
+    # svm прибрано 30.08 — з двох незалежних причин, і кожна сама по собі
+    # достатня.
+    #
+    # ВАРТІСТЬ. Складність SVM квадратично-кубічна за кількістю прикладів.
+    # На потікерному контексті (~950 рядків) це секунди. Після переходу на
+    # об'єднані контексти вибірка стала 104 267 рядків, і прогін простояв на
+    # ньому **півтори години**, навчивши за цей час одну модель із дев'яти.
+    #
+    # КОРИСТЬ. Замір у цьому ж файлі (див. коментар до per_model нижче):
+    # svm дає -0.209 при k=5 і -0.276 при k=35, і **0.0% контекстів вище
+    # нуля при обох бюджетах** — єдина модель із семи, яка не має жодного
+    # успішного контексту. Тобто вона з'їдала весь прогін, не заробляючи
+    # нічого.
+    #
+    # knn лишається: навчання в нього тривіальне, дорогий лише прогноз, і
+    # він має 9-18% контекстів вище нуля. Якщо стане вузьким місцем на
+    # об'єднаних даних — прибрати так само, з числом.
+    light_models: ["lightgbm", "random_forest", "linear", "mlp", "ensemble", "catboost", "xgboost", "knn"]
     heavy_models: ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder", "mlp", "neural_network", "base_neural"]
 
   trained_models_registry:
@@ -42,7 +59,12 @@ models:
   # hand-maintained copies of one thing. They currently agree; if they ever
   # diverge, this file is the intended source.
   categories:
-    light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]
+    # svm прибрано 30.08 — див. причину над `light_models` вище.
+    # ЦЕЙ список читає арена навчання. Правка лише в `light_models`
+    # не подіяла: прогін знову простояв 112 хвилин на SVM, бо працює
+    # саме цей ключ. Два списки моделей в одному файлі — та сама форма,
+    # що `max_features` у трьох копіях.
+    light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "knn"]
     heavy: ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]
 
   # Feature budget per model. THE source of this number: read through
@@ -146,9 +168,60 @@ training:
     enabled: true
     # Below this many holdout rows the measurement is not worth acting on.
     min_holdout_rows: 20
-    # How far above the naive baseline the winner must score. 0.0 means
-    # "strictly better"; raise it to demand a real margin.
+    # How far above the naive baseline the winner must score, as a FLOOR.
+    # 0.0 means "strictly better" on its own, but the effective bar is now
+    # the larger of this and the sigma bar below.
     min_baseline_margin: 0.0
+
+    # HOW MANY standard errors, and why it is not one.
+    #
+    # It was one until 2026-09-01. One standard error, one-sided, is
+    # p = 0.159 -- and that was not an estimate: twenty panels of a pure
+    # coin-flip target were put through this gate and it promoted three.
+    # 15% of nothing became a champion (CLAIMS.md R11). Worse, the highest
+    # score among those twenty noise panels was 0.5175, and the score the
+    # gate accepted as a genuine planted edge in the sensitivity test was
+    # 0.5176 -- the bar sat inside the null distribution's upper tail.
+    #
+    # The multiplier is now derived from how many promotion attempts a run
+    # makes, which the old rule never looked at:
+    #
+    #     family_size = 1   ->  1.645 sigma   (one test at 5%)
+    #     family_size = 27  ->  2.90 sigma
+    #     family_size = 216 ->  3.50 sigma
+    #
+    # Run 7 took 27 verdicts and produced 9 champions; at the old bar about
+    # four of those nine are what pure noise would have produced.
+    #
+    # `family_size` is the number of (context, target) verdicts a run makes.
+    # It cannot be known before the run starts -- contexts are materialised
+    # lazily -- so it is stated here and the stage compares it against the
+    # actual count at the end, and says so loudly if they differ. A number
+    # that drifts silently is the thing this whole gate exists to prevent.
+    #
+    # Setting it to 1 does NOT restore the old behaviour: the old behaviour
+    # was never a 5% test, it was a 16% one.
+    family_size: 27
+    family_alpha: 0.05
+    # The bar is the opponent PLUS the noise in the comparison.
+    #
+    # Decided by the owner on 2026-08-31, on a measured number rather than a
+    # principle: the first champion of run 7 cleared its strongest opponent
+    # by 0.0046 of F1 -- 0.4197 against a constant's 0.4151 -- and a margin
+    # of 0.0 promoted it. #175 had already settled the same point on a
+    # different target, where an edge of 0.041 sat inside an opponent whose
+    # own weekly figure varied by 0.07, and the honest verdict was "the data
+    # ran out before the question".
+    #
+    # The standard error is of the model-minus-opponent DIFFERENCE, paired on
+    # the same rows and resampled in MOVING BLOCKS, because holdout rows are
+    # a time series and independent resampling would understate the spread.
+    #
+    # One consequence worth stating: a holdout too short to resample (under
+    # 60 rows) can no longer be promoted at all, so this raises the practical
+    # minimum above `min_holdout_rows`. That is the intended reading -- a
+    # margin that cannot be measured is not a margin that was cleared.
+    require_baseline_margin_sigma: true
     # The opponent an investor actually has: owning the same exposure and
     # doing nothing. The constant and persistence baselines are both about the
     # SHAPE of the series and cannot see this.

@@ -102,6 +102,61 @@ class TrainerConfig:
         self.enable_target_validation = enable_target_validation
 
 
+#: Which metric decides a classification context — for the arena that picks
+#: the winner AND for the gate that judges it. One name, one place: the two
+#: read it separately and a third copy is how `max_features` ended up with
+#: three answers and Sharpe with two.
+#:
+#: Owner's decision, 2026-08-31, taken on measured numbers. F1 with
+#: average='binary' scores the positive class only, so it is maximised by
+#: saying yes more often — and the champion that prompted this predicted 1 on
+#: 86.5% of rows against a 26.2% event rate, beating "always yes" by 0.0046
+#: while sitting 39 points below "always no" on plain accuracy. Balanced
+#: accuracy gives BOTH constants exactly 0.5, so a score above it says
+#: something about the model rather than about the class balance. On that
+#: metric the same champion scores 0.5257.
+CLASSIFICATION_METRIC = 'BalancedAccuracy'
+REGRESSION_METRIC = 'R2'
+
+
+def _governing_metric(is_classif: bool) -> str:
+    return CLASSIFICATION_METRIC if is_classif else REGRESSION_METRIC
+
+
+def _opponent(holdout: dict[str, Any], key: str) -> str:
+    """One rung's score for the refusal message, or "n/a" if unmeasured.
+
+    An unmeasured opponent must read as unmeasured. Printing 0.0000 for a
+    rung that never ran is how a gate ends up looking stricter in its logs
+    than it was in fact.
+    """
+    value = holdout.get(key)
+    if value is None or not np.isfinite(value):
+        return "n/a"
+    return f"{float(value):.4f}"
+
+
+def _sigma_multiplier(alpha: float, family_size: int) -> float:
+    """How many standard errors a margin must clear, given how many were tried.
+
+    One-sided, because the gate asks whether the model is BETTER, not whether
+    it differs. Bonferroni over the family: each attempt is tested at
+    `alpha / family_size`, so the whole run keeps its stated error rate
+    instead of spending it once per context.
+
+    Bonferroni assumes independent tests and the attempts here are not -- the
+    eight model types see the same data -- so this is conservative. The
+    alternative, a permutation null per context, costs one training run per
+    permutation and is not affordable at 27 contexts; when it becomes
+    affordable it should replace this.
+    """
+    from statistics import NormalDist
+
+    size = max(int(family_size), 1)
+    per_test = min(max(alpha / size, 1e-12), 0.5)
+    return float(NormalDist().inv_cdf(1.0 - per_test))
+
+
 class BaseTrainer(ABC):
     """
     Abstract base class for training orchestration.
@@ -261,6 +316,10 @@ class BaseTrainer(ABC):
             "timeframe": data.get("timeframe", ""),
             "target_name": data.get("target_name", "unknown"),
             "selected_features": list(data.get("feature_names") or []),
+            # How many promotion attempts this run makes. The gate turns it
+            # into the number of standard errors a margin must clear: a bar
+            # set for one test, applied 27 times, is not the bar it claims.
+            "promotion_family_size": data.get("promotion_family_size"),
             # Carried through so _finalize_ticker_results can save it beside a
             # promoted champion; popped there, so it never reaches metadata.
             "_preprocessor": data.get("preprocessor"),
@@ -411,7 +470,11 @@ class BaseTrainer(ABC):
             task_type="classification" if is_classif else "regression"
         )
 
-        score_val = float(score.get('F1' if is_classif else 'R2', 0.0))
+        # The arena must select on the SAME metric the gate judges by. It did
+        # not: selection took F1, so the winner of every classification
+        # context was whichever model said "yes" most confidently, and the
+        # gate then measured that winner on a metric it had not competed on.
+        score_val = float(score.get(_governing_metric(is_classif), 0.0))
         results['metrics'][m_type] = {
             'score': score_val,
             'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
@@ -533,9 +596,25 @@ class BaseTrainer(ABC):
             return pipeline_control_artifacts.extract_native_feature_importance(
                 winner_model, list(winner_columns)
             )
-        except (ImportError, ValueError, TypeError, AttributeError, KeyError) as e:
-            logging.getLogger(__name__).warning(
-                f"Could not read the winner's feature importance ({e})."
+        except Exception as e:  # noqa: BLE001 - any failure here means "unknown"
+            # `{}` is what a model with nothing to offer returns, so a FAILURE
+            # to read importances arrived at the artifact writer wearing the
+            # same clothes as a genuine absence -- and the artifact then said
+            # "not_available_from_model", which is a claim about the MODEL made
+            # on the strength of an exception. The docstring above records what
+            # that cost once already: 3,207 artifacts from the 2026-08-14 batch
+            # reported no importances from RandomForest, CatBoost, LightGBM and
+            # XGBoost winners, every one of which exposes them.
+            #
+            # The names are logged at error level with the model type and the
+            # column count, because those two numbers are what tells a length
+            # mismatch apart from an unsupported model.
+            logging.getLogger(__name__).error(
+                "Could not read the winner's feature importance from %s over "
+                "%d column(s) (%s: %s). This is a failed READ, not a model "
+                "without importances -- do not record it as the latter.",
+                type(winner_model).__name__, len(winner_columns),
+                type(e).__name__, e,
             )
             return {}
 
@@ -583,7 +662,7 @@ class BaseTrainer(ABC):
         projected = self._project(X_holdout, columns)
         preds = winner_model.predict(projected)
         score = self.evaluator.calculate(y_holdout, preds, task_type=task_type)
-        metric_key = 'F1' if is_classif else 'R2'
+        metric_key = _governing_metric(is_classif)
 
         results['winner_holdout_predictions'] = self._holdout_prediction_series(
             X_holdout, y_holdout, preds,
@@ -607,6 +686,25 @@ class BaseTrainer(ABC):
             **self._score_single_feature_baseline(
                 data, is_classif, task_type, metric_key, self.evaluator),
         }
+
+        # How big a difference this holdout can produce by luck. Measured
+        # against the opponent that actually binds, and stored beside the two
+        # scores so the gate compares like with like.
+        holdout = results['winner_holdout_metrics']
+        opponent = holdout.pop('_baseline_prediction', None)
+        if opponent is not None:
+            holdout['baseline_margin_sigma'] = self._block_bootstrap_sigma(
+                np.asarray(y_holdout).ravel(),
+                np.asarray(preds).ravel(),
+                np.asarray(opponent).ravel(),
+                task_type=task_type,
+                metric_key=metric_key,
+            )
+            holdout['baseline_margin'] = (
+                None if holdout.get('score') is None
+                or holdout.get('baseline_score') is None
+                else float(holdout['score']) - float(holdout['baseline_score'])
+            )
 
     @staticmethod
     def _holdout_event_count(y_holdout: Any, is_classif: bool) -> dict[str, Any]:
@@ -806,12 +904,40 @@ class BaseTrainer(ABC):
         try:
             xt = pd.DataFrame(X_tr).select_dtypes('number')
             xh = pd.DataFrame(X_ho).select_dtypes('number')
-            yt = pd.Series(np.asarray(y_tr).ravel()).astype(float)
-            yh = pd.Series(np.asarray(y_ho).ravel()).astype(float)
+            # The target must carry the FRAME'S index, not a fresh 0..n-1 one.
+            #
+            # `corrwith` aligns on the index. `prepare_data_for_models` gives
+            # every split a `model_datetime` DatetimeIndex, so a target built
+            # with the default RangeIndex shared not one label with it: every
+            # correlation came out NaN, `dropna()` emptied the series, and
+            # this baseline reported "no usable feature" for EVERY context it
+            # was ever asked about.
+            #
+            # Measured 2026-08-31 on the run this was found in: the same data
+            # scores 1.0 with a RangeIndex and returns nothing with the
+            # DatetimeIndex the pipeline actually passes. So rung 5 of the
+            # opponent ladder has been silently absent since the datetime
+            # index was introduced -- the rung that caught
+            # target_hourly_breakout_1h, where distance to the upper Bollinger
+            # band scores AUC 0.9666 and earns the same money as the model.
+            #
+            # The failure was invisible because "no usable feature" is a
+            # legitimate state, and the gate only binds when the score is not
+            # None. An opponent that cannot be measured does not block, so a
+            # dead rung and a passed rung look identical from outside.
+            # Lengths checked BEFORE the Series is built: passing a mismatched
+            # index to the constructor raises, and an exception here would be
+            # caught below and filed as "failed: ValueError" -- a third way for
+            # this rung to disappear quietly.
+            train_values = np.asarray(y_tr).ravel()
+            holdout_values = np.asarray(y_ho).ravel()
             shared = [c for c in xt.columns if c in xh.columns]
-            if not shared or len(xt) != len(yt) or len(xh) != len(yh):
+            if (not shared or len(xt) != len(train_values)
+                    or len(xh) != len(holdout_values)):
                 out['single_feature_status'] = 'shape_mismatch'
                 return out
+            yt = pd.Series(train_values, index=xt.index).astype(float)
+            yh = pd.Series(holdout_values, index=xh.index).astype(float)
             corr = xt[shared].corrwith(yt).abs().dropna()
             if corr.empty:
                 out['single_feature_status'] = 'no_usable_feature'
@@ -942,11 +1068,21 @@ class BaseTrainer(ABC):
                                task_type: str, metric_key: str) -> dict[str, Any]:
         """Score the naive predictors the winner has to beat.
 
-        Two of them, and which one binds matters enormously:
+        Three of them, and which one binds matters enormously:
 
-        - CONSTANT: majority class, or the train mean. Fitted on TRAIN alone.
-        - PERSISTENCE (regression only): "tomorrow equals today", i.e. the
-          previous actual value. Zero work, no model, no features.
+        - CONSTANT: the best single answer -- every observed class, or the
+          train mean. Fitted on TRAIN alone.
+        - PERSISTENCE: "the same thing, h bars ago", lagged inside each
+          series. Zero work, no model, no features.
+        - CLOCK: what the weekday and hour alone say, fitted on TRAIN.
+
+        The gate checked two of these five rungs for regression and one for
+        classification, which is why seven 15m "champions" passed it on
+        2026-08-30 and then lost to hand-run opponents on the same holdouts.
+        The remaining rungs of the ladder in docs/WORKING_METHOD.md -- the
+        base rate, which the best constant subsumes, and the source-column
+        rule, which `_score_single_feature_baseline` covers separately -- are
+        checked elsewhere in this same gate.
 
         The gate used to compare against the constant only, and for a slow,
         trending series that is a hopeless opponent — which is how seven
@@ -1004,6 +1140,15 @@ class BaseTrainer(ABC):
                 # Scoring every observed class and keeping the strongest makes
                 # the opponent what it should be: the best a model can do
                 # while learning nothing.
+                #
+                # Since 2026-08-31 the governing metric is balanced accuracy
+                # (`CLASSIFICATION_METRIC`), on which EVERY constant scores
+                # exactly 0.5 — so this loop now returns 0.5 whichever class
+                # wins, and the bar stops depending on the class balance at
+                # all. The loop is kept rather than replaced by the constant
+                # 0.5: it is the metric's job to say what a constant is worth,
+                # not this function's assumption, and the same code has to
+                # keep working if the metric is ever changed back.
                 observed = np.unique(y_train[~pd.isna(y_train)])
                 if observed.size == 0:
                     return out
@@ -1011,19 +1156,29 @@ class BaseTrainer(ABC):
             else:
                 candidates = [float(np.nanmean(y_train))]
 
-            constant_score = max(
-                float(
-                    self.evaluator.calculate(
-                        y_holdout, np.full(n, candidate), task_type=task_type
-                    ).get(metric_key, 0.0)
+            # The PREDICTIONS of the winning constant are kept, not only its
+            # score: the gate needs the binding opponent's own series to
+            # measure how far apart the two really are (see
+            # `_block_bootstrap_sigma`). Popped again before the metrics are
+            # written out, so nothing array-shaped reaches the artifact.
+            constants = [
+                (
+                    float(
+                        self.evaluator.calculate(
+                            y_holdout, np.full(n, candidate), task_type=task_type
+                        ).get(metric_key, 0.0)
+                    ),
+                    np.full(n, float(candidate)),
                 )
                 for candidate in candidates
-            )
+            ]
+            constant_score, constant_prediction = max(constants, key=lambda p: p[0])
             out['baseline_constant_score'] = constant_score
             out['baseline_score'] = constant_score
             out['baseline_kind'] = 'constant'
+            out['_baseline_prediction'] = constant_prediction
 
-            if is_classif or n < 3:
+            if n < 3:
                 return out
 
             # The persistence opponent has to be a FORECAST, and this one was
@@ -1065,33 +1220,412 @@ class BaseTrainer(ABC):
             #
             # So the only behaviour that changes is for targets proven to look
             # more than one bar forward.
-            horizon = target_horizon_bars(
-                str(data.get('target_name') or ''), data.get('timeframe')
-            ) or 1
-            if n <= horizon:
-                return out
-
-            persistence = np.empty(n, dtype=float)
-            # No y_true[0]: seeding with the truth handed the opponent one
-            # exactly-right prediction for free. The train mean is what is
-            # actually known before the holdout starts.
-            persistence[:horizon] = float(np.nanmean(y_train))
-            persistence[horizon:] = y_true[:-horizon]
-            persistence_score = float(
-                self.evaluator.calculate(
-                    y_holdout, persistence, task_type=task_type
-                ).get(metric_key, 0.0)
+            # The horizon has to count the FORWARD WINDOW, not just the name.
+            #
+            # `target_horizon_bars` reads the suffix: `_5d` is five bars, `_1d`
+            # is one. That is right for targets whose name carries their whole
+            # reach and wrong for every windowed one.
+            # `target_daily_trend_strength_1d` is `shift: -1, window: 20` --
+            # it reaches twenty bars ahead while its name says one.
+            #
+            # Measured 2026-09-03 on the batch, lag-by-name against
+            # lag-by-window:
+            #
+            #     target_daily_trend_strength_1d   R2  0.8973  ->  -1.0213
+            #     target_hourly_breakout_1h    BalAcc  0.8573  ->   0.5406
+            #     target_daily_momentum_score_1d   R2  0.7579  ->  -1.0020
+            #
+            # The left column is what this gate was using. It is not a property
+            # of those targets -- at their own horizon they are as
+            # unpredictable as any return (-1.02 is what a lag scores on a
+            # series it cannot predict, by construction). It is an ORACLE: the
+            # opponent was handed a value nobody can know at forecast time, and
+            # a model on `target_daily_trend_strength_1d` had to beat R2 0.897
+            # to be promoted, which no honest forecast will ever do.
+            #
+            # So the direction of the damage is false REFUSALS, and the targets
+            # it silenced never had a chance to be judged. Nine of eighteen
+            # targets in the batch have the two horizons disagreeing;
+            # `target_hourly_volume_spike_1h` is name 1 against window 23.
+            #
+            # This is #191 again, on the path #191 did not reach: that fix made
+            # the lag the horizon instead of one bar, and this makes the
+            # horizon the real one instead of the name's. `_get_target_horizon_rows`
+            # is the policy manager's answer and already exists for the purge
+            # gap, which needs the same number for the same reason.
+            from src.pipeline.stages.modeling.walk_forward_validation import (
+                _get_target_horizon_rows,
             )
-            out['baseline_persistence_score'] = persistence_score
-            out['baseline_persistence_lag_bars'] = horizon
 
-            if np.isfinite(persistence_score) and persistence_score > constant_score:
-                out['baseline_score'] = persistence_score
-                out['baseline_kind'] = 'persistence'
+            target_name = str(data.get('target_name') or '')
+            named = target_horizon_bars(target_name, data.get('timeframe')) or 1
+            windowed = _get_target_horizon_rows(target_name) or named
+            horizon = max(int(named), int(windowed))
+            if horizon != named:
+                self.logger.info(
+                    "Persistence lag for %s is %d bars, not the %d its name "
+                    "implies: the target reaches past its own suffix.",
+                    target_name, horizon, named,
+                )
+
+            persistence = self._persistence_prediction(
+                y_true, y_train,
+                horizon=horizon,
+                groups=data.get('holdout_groups'),
+                is_classif=is_classif,
+            )
+            if persistence is not None:
+                out['baseline_persistence_score'] = float(
+                    self.evaluator.calculate(
+                        y_holdout, persistence, task_type=task_type
+                    ).get(metric_key, 0.0)
+                )
+                out['baseline_persistence_lag_bars'] = horizon
+                out['baseline_persistence_grouped'] = (
+                    data.get('holdout_groups') is not None
+                )
+
+            # WHICH clock scheme is the opponent is decided on VALIDATION,
+            # and only then scored on the holdout.
+            #
+            # It used to be decided on the holdout: all three schemes were
+            # scored against y_holdout and the best kept. That was deliberate
+            # and documented -- "flattering the opponent is the safe direction
+            # for a gate, and the constant baseline already does the same
+            # across its candidate classes" -- and the second half of that
+            # reasoning does not hold. The constant's candidates are the
+            # observed classes, and for a binary target under balanced
+            # accuracy every constant scores exactly 0.5, so its maximum
+            # selects nothing; measured on twelve null runs the constant came
+            # back 0.5000 every time. The clock's three schemes are three
+            # genuinely different predictors with real variance, so taking
+            # their maximum on the holdout inflates the opponent by the
+            # max-of-three selection effect.
+            #
+            # The cost is not that the gate is strict. It is that the gate's
+            # own arithmetic stops meaning what it says: the margin's sigma is
+            # computed as though the baseline were a fixed quantity, and a
+            # maximum chosen on the same rows it is then compared against is
+            # not one. This project spent R11 establishing what its bar means;
+            # an opponent that peeks at the answer takes that back, in the
+            # conservative direction and by an unmeasured amount.
+            #
+            # Validation is the honest split for this because it is where the
+            # MODEL was chosen too, so opponent and champion are picked under
+            # the same rules. Where validation cannot serve, the scheme is
+            # fixed by a stated order rather than by the holdout, and the
+            # record says which happened -- a silent fallback to the old
+            # behaviour would be the same defect with better manners.
+            clock_prediction = None
+            holdout_schemes = self._clock_prediction(
+                data, y_train, is_classif, split='X_holdout'
+            )
+            if holdout_schemes:
+                chosen, chosen_on = self._choose_clock_scheme(
+                    data, y_train, is_classif, task_type, metric_key,
+                    list(holdout_schemes),
+                )
+                if chosen is not None:
+                    prediction, buckets = holdout_schemes[chosen]
+                    scored = float(
+                        self.evaluator.calculate(
+                            y_holdout, prediction, task_type=task_type
+                        ).get(metric_key, 0.0)
+                    )
+                    if np.isfinite(scored):
+                        out['baseline_clock_score'] = scored
+                        out['baseline_clock_scheme'] = chosen
+                        out['baseline_clock_buckets'] = buckets
+                        out['baseline_clock_scheme_chosen_on'] = chosen_on
+                        clock_prediction = prediction
+
+            predictions = {
+                'persistence': persistence,
+                'clock': clock_prediction,
+            }
+
+            # The bar is the STRONGEST opponent measured, not the first one.
+            # Every rung is kept in the record either way, because "which
+            # opponent bound" is the most informative single number the gate
+            # produces -- a champion that loses to the clock and one that
+            # loses to the constant have failed for completely different
+            # reasons.
+            for kind, key in (
+                ('persistence', 'baseline_persistence_score'),
+                ('clock', 'baseline_clock_score'),
+            ):
+                value = out.get(key)
+                if (value is not None and np.isfinite(value)
+                        and value > float(out['baseline_score'])):
+                    out['baseline_score'] = float(value)
+                    out['baseline_kind'] = kind
+                    if predictions.get(kind) is not None:
+                        out['_baseline_prediction'] = predictions[kind]
             return out
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f"Could not score naive baselines: {e}")
             return out
+
+    #: Resamples for the margin's standard error. Two hundred is enough for a
+    #: standard deviation (the quantity used here); a confidence INTERVAL
+    #: would need an order of magnitude more, and none is taken.
+    MARGIN_BOOTSTRAP_RESAMPLES = 200
+
+    def _block_bootstrap_sigma(self, y_true: np.ndarray, model: np.ndarray,
+                               baseline: np.ndarray, *, task_type: str,
+                               metric_key: str) -> float | None:
+        """How far apart model and opponent could be by luck alone.
+
+        The gate compared the two scores and promoted on any difference at
+        all, `min_baseline_margin` being 0.0. On the first champion of the
+        2026-08-31 run that difference was **0.0046** of F1 -- a model that
+        beats "always predict the same class" in the fourth decimal.
+
+        #175 had already established the principle on a different target: the
+        edge there was 0.041 against an opponent whose own weekly figure
+        varied by 0.07, and the honest conclusion was not "signal" or "no
+        signal" but "the data ran out before the question". A margin is only
+        evidence when it is larger than the noise in the measurement itself.
+
+        Measured PAIRED, on the same resampled rows for both series, because
+        model and opponent are scored on the identical holdout and their
+        errors are correlated. The standard error of the difference is
+        smaller than either score's own, so this is the tighter and fairer
+        quantity -- not a way of raising the bar arbitrarily.
+
+        A MOVING BLOCK bootstrap, not an i.i.d. one: holdout rows are a time
+        series and adjacent rows are dependent, so resampling single rows
+        would understate the spread and hand back a margin that looks
+        significant because the resampling pretended the data were
+        independent. Block length is the usual n^(1/3).
+
+        Returns None when the holdout is too short to resample, which the
+        caller must treat as "no margin could be measured" rather than as a
+        margin of zero.
+        """
+        n = int(len(y_true))
+        if n < 60:
+            return None
+        block = max(1, int(round(n ** (1.0 / 3.0))))
+        blocks_needed = int(np.ceil(n / block))
+        rng = np.random.default_rng(0)          # fixed: the gate must be reproducible
+        offsets = np.arange(block)
+
+        differences: list[float] = []
+        for _ in range(self.MARGIN_BOOTSTRAP_RESAMPLES):
+            starts = rng.integers(0, n - block + 1, size=blocks_needed)
+            rows = (starts[:, None] + offsets).ravel()[:n]
+            truth = y_true[rows]
+            try:
+                a = float(self.evaluator.calculate(
+                    truth, model[rows], task_type=task_type).get(metric_key, np.nan))
+                b = float(self.evaluator.calculate(
+                    truth, baseline[rows], task_type=task_type).get(metric_key, np.nan))
+            except (ValueError, TypeError, ZeroDivisionError):
+                continue
+            if np.isfinite(a) and np.isfinite(b):
+                differences.append(a - b)
+
+        if len(differences) < self.MARGIN_BOOTSTRAP_RESAMPLES // 2:
+            return None
+        return float(np.std(differences, ddof=1))
+
+    @staticmethod
+    def _persistence_prediction(y_true: np.ndarray, y_train: np.ndarray, *,
+                                horizon: int, groups: Any,
+                                is_classif: bool) -> np.ndarray | None:
+        """"The same thing, h bars ago" -- lagged WITHIN each series.
+
+        Two things were wrong with the previous version, and both made the
+        opponent weaker than it should be:
+
+        1. It was scored for regression only. For a binary target "did this
+           already happen h bars ago" is just as legitimate an opponent, and
+           on a persistent target it is a strong one. Classification simply
+           never met it.
+        2. It lagged by ROW. A pooled frame interleaves 22 tickers at the
+           same timestamp, so `y[t-h]` is another company a few minutes
+           earlier, not this company h bars ago -- an opponent measuring
+           nothing in particular. With `groups` the lag is taken inside each
+           ticker, which is what the sentence "tomorrow equals today" means.
+
+        The first `horizon` rows of each series have no predecessor. They get
+        the train answer -- the majority class, or the train mean -- because
+        that is what is actually known before the holdout starts. Seeding
+        them with the truth would hand the opponent free exact predictions.
+        """
+        n = int(np.asarray(y_true).size)
+        if n < 3 or horizon < 1 or n <= horizon:
+            return None
+        train = np.asarray(y_train, dtype=float).ravel()
+        train = train[np.isfinite(train)]
+        if train.size == 0:
+            return None
+        if is_classif:
+            values, counts = np.unique(train, return_counts=True)
+            fill = float(values[int(np.argmax(counts))])
+        else:
+            fill = float(train.mean())
+
+        prediction = np.full(n, fill, dtype=float)
+        labels = None if groups is None else np.asarray(groups).ravel()
+        if labels is None or labels.size != n:
+            prediction[horizon:] = y_true[:-horizon]
+            return prediction
+
+        for label in pd.unique(labels):
+            rows = np.flatnonzero(labels == label)
+            if rows.size <= horizon:
+                continue
+            prediction[rows[horizon:]] = y_true[rows[:-horizon]]
+        return prediction
+
+    #: A calendar bucket needs this many training rows before it is allowed
+    #: its own answer. Below it the bucket mean is noise wearing a schedule.
+    #: Order used when validation cannot choose the clock scheme: most
+    #: specific first, so the fallback is the strictest opponent available
+    #: rather than the luckiest one. Stated here so the choice is a rule and
+    #: not an accident of dictionary order.
+    CLOCK_SCHEME_FALLBACK_ORDER: tuple[str, ...] = (
+        "weekday_hour", "weekday", "hour",
+    )
+
+    def _choose_clock_scheme(self, data: dict[str, Any], y_train: np.ndarray,
+                             is_classif: bool, task_type: str, metric_key: str,
+                             available: list[str]) -> tuple[str | None, str]:
+        """Pick the clock opponent's scheme WITHOUT looking at the holdout.
+
+        Returns the scheme and how it was chosen, because "chosen on
+        validation" and "chosen because validation was unusable" are different
+        facts about the number that follows, and a gate that cannot say which
+        one applies is back to reporting a score whose provenance nobody can
+        check.
+        """
+        if not available:
+            return None, "none_available"
+
+        y_val = data.get('y_val')
+        val_schemes = self._clock_prediction(
+            data, y_train, is_classif, split='X_val'
+        )
+        if y_val is not None and val_schemes:
+            observed = np.asarray(y_val, dtype=float).ravel()
+            best_name, best_score = None, -np.inf
+            for scheme in available:
+                candidate = val_schemes.get(scheme)
+                if candidate is None:
+                    continue
+                prediction = candidate[0]
+                if len(prediction) != observed.size:
+                    continue
+                scored = float(
+                    self.evaluator.calculate(
+                        y_val, prediction, task_type=task_type
+                    ).get(metric_key, 0.0)
+                )
+                if np.isfinite(scored) and scored > best_score:
+                    best_name, best_score = scheme, scored
+            if best_name is not None:
+                return best_name, "validation"
+
+        for scheme in self.CLOCK_SCHEME_FALLBACK_ORDER:
+            if scheme in available:
+                return scheme, "fallback_fixed_order"
+        return available[0], "fallback_fixed_order"
+
+    MIN_CLOCK_BUCKET_ROWS = 20
+
+    #: How the calendar is cut. Three schemes rather than one, because the
+    #: finest is not the strongest: (weekday, hour) is 168 buckets, and an
+    #: hourly context with 3,000 training rows leaves 18 rows in each -- below
+    #: the minimum, so the opponent goes unmeasured exactly where the effect
+    #: it looks for is largest. Hour alone and weekday alone are coarse enough
+    #: to be estimated on the histories this project actually has.
+    CLOCK_SCHEMES: tuple[str, ...] = ("hour", "weekday", "weekday_hour")
+
+    @classmethod
+    def _clock_buckets(cls, index: pd.DatetimeIndex, scheme: str) -> np.ndarray:
+        if scheme == "hour":
+            return index.hour.to_numpy()
+        if scheme == "weekday":
+            return index.weekday.to_numpy()
+        return (index.weekday * 100 + index.hour).to_numpy()
+
+    @classmethod
+    def _clock_prediction(cls, data: dict[str, Any], y_train: np.ndarray,
+                          is_classif: bool, split: str = 'X_holdout',
+                          ) -> dict[str, tuple[np.ndarray, int]]:
+        """What the calendar alone predicts, fitted on train.
+
+        The rung the gate was missing entirely. A model can beat the constant
+        and beat persistence while reproducing nothing but "this hour of this
+        weekday behaves like this" -- and on intraday targets that is a large
+        effect: the first and last bars of a session carry most of the
+        volatility and most of the volume, every day, for reasons that have
+        nothing to do with any feature in this pipeline.
+
+        Buckets come from the row's own timestamp, cut three ways (see
+        `CLOCK_SCHEMES`). On a daily frame the hour is constant, so the hour
+        scheme collapses to a constant and the other two to weekday -- the
+        right behaviour rather than a special case.
+
+        For regression the bucket predicts its own training mean. For
+        classification it predicts the event whenever the bucket's training
+        event rate exceeds the overall training rate -- "the clock says this
+        slot is unusually likely" -- since predicting each bucket's majority
+        class on an imbalanced target degenerates to predicting nothing at
+        all and would make this opponent free to beat.
+
+        Every scheme is returned; the CALLER decides which one is the
+        opponent. `split` names the frame the predictions are aligned to, so
+        the same buckets -- always fitted on TRAIN -- can be laid over the
+        validation rows to CHOOSE a scheme and over the holdout rows to SCORE
+        it. Choosing and scoring on the same rows is what this used to do, and
+        why it no longer does, is argued at the call site.
+
+        Returns an empty mapping when the frame carries no usable timestamps
+        or no bucket has enough training rows -- an honest "not measured"
+        rather than a passing score.
+        """
+        empty: dict[str, tuple[np.ndarray, int]] = {}
+        train_index = getattr(data.get('X_train'), 'index', None)
+        holdout_index = getattr(data.get(split), 'index', None)
+        if not isinstance(train_index, pd.DatetimeIndex):
+            return empty
+        if not isinstance(holdout_index, pd.DatetimeIndex):
+            return empty
+
+        train = np.asarray(y_train, dtype=float).ravel()
+        if train.size != len(train_index):
+            return empty
+        observed = np.isfinite(train)
+        if not observed.any():
+            return empty
+        train_values = train[observed]
+        overall = float(train_values.mean())
+
+        out: dict[str, tuple[np.ndarray, int]] = {}
+        for scheme in cls.CLOCK_SCHEMES:
+            train_buckets = cls._clock_buckets(train_index, scheme)[observed]
+            holdout_buckets = cls._clock_buckets(holdout_index, scheme)
+            prediction = np.full(len(holdout_index),
+                                 0.0 if is_classif else overall, dtype=float)
+            used = 0
+            for bucket in np.unique(holdout_buckets):
+                rows = train_buckets == bucket
+                if int(rows.sum()) < cls.MIN_CLOCK_BUCKET_ROWS:
+                    continue
+                bucket_value = float(train_values[rows].mean())
+                answer = (
+                    float(bucket_value > overall) if is_classif else bucket_value
+                )
+                prediction[holdout_buckets == bucket] = answer
+                used += 1
+            # One bucket is a constant wearing a schedule; the constant
+            # opponent already covers it and it only clutters the record.
+            if used > 1:
+                out[scheme] = (prediction, used)
+        return out
 
     def _finalize_ticker_results(self, results: dict[str, Any], winner: str | None, best_score: float) -> dict:
         """Packages the final results dictionary."""
@@ -1281,15 +1815,19 @@ class BaseTrainer(ABC):
         anything. "Champion" named the winner of the round, not a model shown
         to be useful.
 
-        Three conditions, all cheap and all measurable from what training
-        already produces:
+        Conditions, all cheap and all measurable from what training already
+        produces:
 
         1. the winner was scored on a real holdout (not the selection split);
-        2. that holdout was not vanishingly small;
-        3. the winner beat the train-only naive baseline on it.
+        2. that holdout was not vanishingly small, in rows OR in events;
+        3. the winner beat the STRONGEST train-only naive opponent on it --
+           best constant, lag-h persistence within its own series, and the
+           weekday/hour clock (see `_score_naive_baselines`);
+        4. it beat one column fitted with one straight line;
+        5. it beat holding the same exposure, raw and at matched risk;
+        6. its score is not implausibly high, which reads as a leak.
 
-        Everything richer that a promotion gate should eventually check --
-        walk-forward stability, cost stress, shadow outcomes -- needs evidence
+        Everything richer -- cost stress, shadow outcomes -- needs evidence
         this pipeline does not yet produce. This is the floor, not the target.
         """
         # Not every BaseTrainer subclass carries a config_manager (BatchTrainer
@@ -1305,6 +1843,38 @@ class BaseTrainer(ABC):
         enabled = bool(cfg.get('enabled', True))
         min_rows = int(cfg.get('min_holdout_rows', 20))
         min_margin = float(cfg.get('min_baseline_margin', 0.0))
+        # The effective bar is the LARGER of the configured margin and one
+        # standard error of the model-minus-opponent difference, measured on
+        # the holdout itself. Owner's decision of 2026-08-31, taken after the
+        # gate promoted a model that led its opponent by 0.0046 of F1. Set
+        # false to compare the two scores directly again.
+        require_sigma = bool(cfg.get('require_baseline_margin_sigma', True))
+        # How many standard errors the margin must clear. One was the rule
+        # until 2026-09-01, and one standard error ONE-SIDED is p = 0.159 --
+        # measured, not estimated: twenty panels of pure noise were run
+        # through this gate and it promoted three of them (CLAIMS.md R11).
+        # 15% of nothing becomes a champion.
+        #
+        # The multiplier is derived from the number of promotion attempts the
+        # run makes, because that is what the old rule never looked at: run 7
+        # took 27 verdicts over 8 model types, and a per-test 0.159 across 27
+        # verdicts is about four false champions out of nine.
+        #
+        #     family_size = 1   ->  1.645 sigma  (a single test at 5%)
+        #     family_size = 27  ->  2.90 sigma
+        #     family_size = 216 ->  3.50 sigma
+        #
+        # `family_size` comes from the caller when it knows how many contexts
+        # it will evaluate, and from config otherwise. Setting it to 1 does
+        # NOT restore the old behaviour: the old behaviour was never a 5%
+        # test, it was a 16% one.
+        family_alpha = float(cfg.get('family_alpha', 0.05))
+        family_size = int(
+            results.get('promotion_family_size')
+            or cfg.get('family_size', 1)
+            or 1
+        )
+        sigma_multiplier = _sigma_multiplier(family_alpha, family_size)
         # Ten is a floor, not a target: below it a proportion carries an
         # interval about thirty points wide, so the comparison against the
         # baseline cannot separate skill from chance. Set
@@ -1417,20 +1987,62 @@ class BaseTrainer(ABC):
                 reasons.append("holdout score is not finite")
             elif baseline is None:
                 reasons.append("naive baseline could not be scored for comparison")
-            elif float(score) <= float(baseline) + min_margin:
-                reasons.append(
-                    f"holdout score {float(score):.4f} does not beat the naive "
-                    f"baseline {float(baseline):.4f} by {min_margin}"
-                )
-            elif float(score) >= self.IMPLAUSIBLE_SCORE:
-                # A near-perfect score on market data is the signature of a
-                # leak or a degenerate target, and the one case where a HIGHER
-                # number must be treated worse than a middling one.
-                reasons.append(
-                    f"holdout score {float(score):.4f} is implausibly high "
-                    f"(>= {self.IMPLAUSIBLE_SCORE}); audit for leakage before "
-                    f"promoting"
-                )
+            else:
+                # The bar is the opponent PLUS the noise in the comparison.
+                #
+                # `min_baseline_margin` was 0.0, so any difference promoted --
+                # and on 2026-08-31 the first champion of the run cleared its
+                # opponent by 0.0046 of F1. The standard error of that very
+                # difference, measured by block bootstrap on the same holdout,
+                # is what says whether 0.0046 is an edge or a rounding artefact.
+                # The owner's decision, taken on the number: require one.
+                sigma = holdout.get('baseline_margin_sigma')
+                required = min_margin
+                bound_by = 'the configured margin'
+                if (require_sigma and sigma is not None and np.isfinite(sigma)
+                        and float(sigma) * sigma_multiplier > required):
+                    required = float(sigma) * sigma_multiplier
+                    bound_by = (
+                        f'{sigma_multiplier:.2f} standard errors of the '
+                        f'difference, the bar for {family_size} attempt(s) '
+                        f'at a family-wise {family_alpha:.0%}'
+                    )
+
+                if float(score) <= float(baseline) + required:
+                    # Name the rung. "Does not beat the naive baseline" was
+                    # true of every refusal and told the reader nothing:
+                    # losing to a constant and losing to the clock are
+                    # different diagnoses, and only the second one says the
+                    # target is a schedule.
+                    reasons.append(
+                        f"holdout score {float(score):.4f} does not beat the "
+                        f"{holdout.get('baseline_kind', 'naive')} baseline "
+                        f"{float(baseline):.4f} by {required:.4f} "
+                        f"({bound_by}; margin "
+                        f"{float(score) - float(baseline):+.4f}, sigma "
+                        f"{_opponent(holdout, 'baseline_margin_sigma')}) "
+                        f"[constant {_opponent(holdout, 'baseline_constant_score')}, "
+                        f"lag-{holdout.get('baseline_persistence_lag_bars', '?')} "
+                        f"{_opponent(holdout, 'baseline_persistence_score')}, "
+                        f"clock {_opponent(holdout, 'baseline_clock_score')}, "
+                        f"one feature {_opponent(holdout, 'single_feature_score')}]"
+                    )
+                elif require_sigma and sigma is None:
+                    # An unmeasurable margin must not pass as a measured one.
+                    reasons.append(
+                        "the margin over the naive baseline could not be "
+                        "measured (holdout too short to resample), so it "
+                        "cannot be distinguished from noise"
+                    )
+                elif float(score) >= self.IMPLAUSIBLE_SCORE:
+                    # A near-perfect score on market data is the signature of
+                    # a leak or a degenerate target, and the one case where a
+                    # HIGHER number must be treated worse than a middling one.
+                    reasons.append(
+                        f"holdout score {float(score):.4f} is implausibly high "
+                        f"(>= {self.IMPLAUSIBLE_SCORE}); audit for leakage "
+                        f"before promoting"
+                    )
 
         # Shape problems make the score above unfalsifiable, so they block
         # regardless of how the comparison went.
