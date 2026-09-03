@@ -44,6 +44,37 @@ def _read(path: Path, columns: list[str]) -> pd.DataFrame:
     return pd.read_parquet(path, columns=wanted) if wanted else pd.DataFrame()
 
 
+def _columns_of_frame(path: Path, frame: pd.DataFrame, keep) -> list[str]:
+    """Columns matching `keep` that belong to the interval this frame holds.
+
+    Both agreement checks used to take the first N names out of the union
+    schema -- `[:20]` for FRED, `[:12]` for the states. The union lists 15m
+    columns first, so on a `--interval 1d` slice every one of those names was
+    entirely null, `subset.empty` skipped it, and the check reported a clean
+    pass having examined nothing. Measured on the batch of 2026-08-29 it
+    announced "0 of 20 differ between names on one date" while **45 of 45**
+    FRED columns actually disagreed on 1-14% of dates.
+
+    A vacuous pass is worse than a failure: it is a green light bought with no
+    evidence, and it was quoted as proof that the point-in-time fix held.
+
+    Same shape as the SMA_20 defect fixed hours earlier in this file. Fixing
+    one instance and not scanning for the rest is exactly the mistake the
+    project keeps writing down.
+    """
+    suffix = ""
+    if "interval" in frame.columns:
+        present = frame["interval"].astype(str).unique()
+        if len(present) == 1:
+            suffix = f"_{present[0]}"
+    names = [c for c in pq.ParquetFile(path).schema_arrow.names if keep(c)]
+    if suffix:
+        matching = [c for c in names if c.endswith(suffix)]
+        if matching:
+            return matching
+    return names
+
+
 def check_market_wide_series_agree(path: Path, frame: pd.DataFrame) -> Result:
     """A macro series is one number for the whole economy on a date.
 
@@ -54,8 +85,7 @@ def check_market_wide_series_agree(path: Path, frame: pd.DataFrame) -> Result:
     then led the leading-feature report, because a ranking measures precisely
     that variation.
     """
-    names = [c for c in pq.ParquetFile(path).schema_arrow.names
-             if c.startswith("FRED_")][:20]
+    names = _columns_of_frame(path, frame, lambda c: c.startswith("FRED_"))
     if not names or "ticker" not in frame.columns:
         return Result("macro agrees across tickers", True, "no macro columns", "")
 
@@ -109,7 +139,14 @@ def check_nothing_is_mostly_its_median(path: Path, frame: pd.DataFrame) -> Resul
             counts = series.value_counts()
             share = counts.iloc[0] / len(series)
             if share > 0.25 and abs(float(counts.index[0]) - float(series.median())) < 1e-9:
-                offenders.append(f"{column} {share * 100:.0f}%")
+                # Name the value, not just the share. A macro column fabricated
+                # from a whole-frame median piles up on an arbitrary number;
+                # a sparse count column piles up on a truthful zero. Both trip
+                # this test, and only the first is a defect -- printing the
+                # value is what lets a reader tell them apart.
+                offenders.append(
+                    f"{column} {share * 100:.0f}% @{float(counts.index[0]):g}"
+                )
         del block
     return Result(
         "no column is mostly its own median", not offenders,
@@ -152,8 +189,10 @@ def check_context_state_agrees(path: Path, frame: pd.DataFrame) -> Result:
     was spread by row order rather than joined by date. Only the champion
     itself had a believable value.
     """
-    names = [c for c in pq.ParquetFile(path).schema_arrow.names
-             if "champion" in c.lower() or c.startswith("state_FRED_")][:12]
+    names = _columns_of_frame(
+        path, frame,
+        lambda c: "champion" in c.lower() or c.startswith("state_FRED_"),
+    )
     if not names or "ticker" not in frame.columns:
         return Result("context state agrees across tickers", True, "none present", "")
     data = _read(path, names).loc[frame.index]
@@ -185,10 +224,27 @@ def check_indicators_match_recomputation(path: Path, frame: pd.DataFrame) -> Res
     real rather than an artefact of scrambled rows -- while exposing that the
     first 47 to 54 rows of every ticker do not match, which remains open.
     """
+    # The column must belong to the timeframe being checked.
+    #
+    # `startswith("SMA_20")` picked `SMA_20_15m` out of the union no matter
+    # which slice was asked for, and on the 1d slice that column is null by
+    # construction -- so the check reported 0.0% agreement where the daily
+    # SMA_20 in fact matches. It also matched `SMA_200`, a different
+    # indicator. Both are answered by building the exact name from the one
+    # interval present in the frame.
     names = pq.ParquetFile(path).schema_arrow.names
-    sma = next((c for c in names if c.startswith("SMA_20")), None)
+    suffix = ""
+    if "interval" in frame.columns:
+        present = frame["interval"].astype(str).unique()
+        if len(present) == 1:
+            suffix = f"_{present[0]}"
+    sma = next(
+        (c for c in names if c == f"SMA_20{suffix}"),
+        None if suffix else next((c for c in names if c.startswith("SMA_20_")), None),
+    )
     if sma is None or "close" not in names or "ticker" not in frame.columns:
-        return Result("indicators match a recomputation", True, "no SMA_20", "")
+        return Result("indicators match a recomputation", True,
+                      f"no SMA_20{suffix}", "")
 
     data = _read(path, ["close", sma]).loc[frame.index]
     data["ticker"] = frame["ticker"].to_numpy()

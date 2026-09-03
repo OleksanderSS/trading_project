@@ -40,6 +40,11 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
+# The diagnostics run as scripts, not as part of the package, so the
+# project root has to be on the path before src/ can be imported.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.pipeline.sealed_period import SEAL_START, describe
+
 DEFAULT = Path("data/colab/accumulated/main_database/features.parquet")
 TRAIN_FRACTION = 0.70
 MIN_ROWS = 200
@@ -63,19 +68,36 @@ def _pick_columns(path: Path, interval: str,
     That is a measurable bucket, which is why this is worth pointing somewhere
     other than at price.
     """
+    # Pick the column belonging to the interval being examined.
+    #
+    # The union lists 15m columns first, so `startswith("context_fingerprint")`
+    # returned `context_fingerprint_15m` for every request. Sliced to 1d that
+    # column is null by construction, the dropna emptied the frame, and the
+    # report announced "0 rows" -- on 2026-08-29 it printed
+    # "0 rows withheld; 0 remain" against a batch of 705,274 daily bars.
+    #
+    # Third file in this directory with the identical defect: the SMA_20 pick
+    # and both agreement checks in batch_invariants.py had it too, and each
+    # was fixed on its own without looking next door.
     names = pq.ParquetFile(path).schema_arrow.names
+    suffix = f"_{interval}" if interval else ""
+
+    def _prefer(candidates: list[str]) -> str | None:
+        if suffix:
+            exact = [c for c in candidates if c.endswith(suffix)]
+            if exact:
+                return exact[0]
+        return candidates[0] if candidates else None
+
     if condition:
-        chosen = next(
-            (c for c in names if c == condition or c.startswith(condition + "_")),
-            None,
-        )
+        chosen = _prefer([c for c in names
+                          if c == condition or c.startswith(condition + "_")])
         if chosen is None:
             raise SystemExit(f"no column matching '{condition}' in {path.name}")
     else:
-        chosen = next(
-            (c for c in names if c.startswith("context_fingerprint")), None
-        )
-    close = next((c for c in names if c == "close" or c.startswith("close")), None)
+        chosen = _prefer([c for c in names
+                          if c.startswith("context_fingerprint")])
+    close = _prefer([c for c in names if c == "close" or c.startswith("close_")])
     return chosen, close
 
 
@@ -145,6 +167,13 @@ def main() -> int:
     frame = add_outcome(
         load(path, args.interval, args.condition), args.horizon, args.quantile
     )
+    # The sealed stretch is not read here either.
+    before = len(frame)
+    frame = frame.loc[frame["_time"] < SEAL_START]
+    print(describe())
+    print(f"  {before - len(frame):,} rows withheld; {len(frame):,} remain.")
+    print()
+
     split = frame["_time"].quantile(TRAIN_FRACTION)
     train = frame.loc[frame["_time"] <= split]
     holdout = frame.loc[frame["_time"] > split]
