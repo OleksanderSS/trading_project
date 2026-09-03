@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.modeling_context import is_pooled, rows_for_ticker
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -13,8 +14,17 @@ class PredictionContextManager:
         self.logger = ProjectLogger.get_logger('PredictionContextManager')
 
     def prepare_ticker_data(self, features_df: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
-        """Prepares ticker-specific data for prediction."""
-        ticker_df = features_df[features_df['ticker'] == ticker].tail(50)
+        """Prepares ticker-specific data for prediction.
+
+        Second copy of the filter that made Stage 5 produce zero predictions
+        for every pooled champion (#210). Both copies now ask the one
+        predicate in `modeling_context` instead of comparing to a literal.
+        """
+        rows = rows_for_ticker(features_df, ticker)
+        if is_pooled(ticker) and 'ticker' in rows.columns:
+            ticker_df = rows.groupby('ticker', sort=False).tail(50)
+        else:
+            ticker_df = rows.tail(50)
         if ticker_df.empty:
             self.logger.warning(f'⚠️ No data for ticker {ticker}')
             return None

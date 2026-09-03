@@ -28,6 +28,7 @@ processed.
 from __future__ import annotations
 
 import pandas as pd
+import pyarrow.parquet as pq
 import pytest
 
 from src.pipeline.stages.modeling.orchestrator import ModelingStage
@@ -121,6 +122,22 @@ def test_nulls_are_skipped_in_favour_of_the_last_real_value():
     ) == "0|1"
 
 
+def _columns_for(path, bases):
+    """Only the columns a lookup can possibly answer from, read from the schema.
+
+    `_latest_context_value` builds its candidates from the base names plus
+    whatever timeframe-suffixed variants exist in `frame.columns`, in column
+    order. Restricting the read to names that start with one of those bases
+    therefore leaves the candidate set -- and its order -- identical, while
+    turning a 7.0 GiB allocation into a few megabytes.
+    """
+    names = pq.read_schema(path).names
+    return [
+        name for name in names
+        if any(name == base or name.startswith(f"{base}_") for base in bases)
+    ]
+
+
 def test_the_exported_features_carry_only_suffixed_names():
     """The observation this fix rests on, checked against the real artifact."""
     from pathlib import Path
@@ -129,7 +146,11 @@ def test_the_exported_features_carry_only_suffixed_names():
     if not path.exists():
         pytest.skip("no prepared batch on disk")
 
-    columns = set(pd.read_parquet(path).columns)
+    # The schema, not the data. Reading the frame to look at its column
+    # names asked pyarrow for a 7.0 GiB allocation and failed on a machine
+    # with 5 free -- the same whole-frame-where-a-slice-would-do shape that
+    # killed the pipeline run of 2026-08-31.
+    columns = set(pq.read_schema(path).names)
 
     assert "context_pattern_seq" not in columns
     assert "context_fingerprint" not in columns
@@ -149,7 +170,9 @@ def test_the_real_export_now_yields_a_vectorisable_fingerprint():
     if not path.exists():
         pytest.skip("no prepared batch on disk")
 
-    frame = pd.read_parquet(path).head(200)
+    frame = pd.read_parquet(
+        path, columns=_columns_for(path, ("context_fingerprint",))
+    ).head(200)
     fingerprint = ModelingStage._latest_context_value(
         frame, ("context_fingerprint",), default=None, timeframe="1d"
     )
@@ -169,10 +192,25 @@ def test_the_real_export_yields_a_regime_label_not_a_number(timeframe):
     if not path.exists():
         pytest.skip("no prepared batch on disk")
 
-    frame = pd.read_parquet(path)
+    bases = ("MARKET_REGIME", "market_regime", "regime")
+    wanted = _columns_for(path, bases)
+    if not wanted:
+        # Not a stale assertion to delete: MARKET_REGIME was switched off at
+        # the source on 2026-08-28 because it cost 5.4 hours of a twelve-hour
+        # rebuild and failed its own leading-feature test. The absence is a
+        # decision, and this test cannot judge it -- what it CAN judge is the
+        # shape of the value when one exists. The consequence of the absence
+        # (every champion keyed by the literal 'normal') is register #182 and
+        # is now warned about in ModelingStage.run.
+        pytest.skip(
+            "no MARKET_REGIME column in this batch; it is opt-in behind "
+            "MARKET_REGIME_FEATURES since 2026-08-28 (register #182)"
+        )
+
+    frame = pd.read_parquet(path, columns=wanted)
     regime = ModelingStage._latest_context_value(
         frame,
-        ("MARKET_REGIME", "market_regime", "regime"),
+        bases,
         default="unknown",
         timeframe=timeframe,
     )

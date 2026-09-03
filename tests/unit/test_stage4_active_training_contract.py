@@ -241,6 +241,14 @@ def test_active_stage4_emits_honest_partial_evidence_and_prediction_metadata(
     )
     stage.diary_path = tmp_path / "diary.csv"
     stage._log_expert_to_diary = lambda *args, **kwargs: None
+    # Per-run state that `run()` and `__init__` both set. Declared here
+    # because this test builds the stage with `object.__new__` to skip the
+    # heavy infrastructure, and a null ledger is the correct value: a test
+    # driving one context must not write into the real resume ledger.
+    stage._gate_refusals = []
+    stage._ledger = None
+    stage._resume_contexts = False
+    stage._replayed_contexts = 0
     frame = pd.DataFrame(
         {
             "datetime": pd.date_range(
@@ -377,6 +385,12 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
                 "metric": "F1",
                 "baseline_score": 0.40,
                 "holdout_sample_count": 58,
+                # Since 2026-08-31 the bar is the opponent plus one standard
+                # error of the difference. This test is about which FILE gets
+                # written, so the margin is made unambiguous (0.22 against a
+                # sigma of 0.01) rather than left absent, which would refuse
+                # the promotion for a reason this test is not about.
+                "baseline_margin_sigma": 0.01,
             },
             training_sanity={"blocking": [], "warnings": []},
         ),

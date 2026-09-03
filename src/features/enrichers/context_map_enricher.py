@@ -282,7 +282,46 @@ class ContextMapEnricher(BaseEnricher):
 
     def _process_numeric_column(self, res_df: pd.DataFrame, col: str, state_col_name: str, state_cols: list[str]):
         """Адаптивний фільтр шуму."""
-        if 'ticker' in res_df.columns:
+        # A market-wide column gets ONE state per timestamp, not one per name.
+        #
+        # The per-ticker branch below asks "how did this move since this
+        # ticker's previous row". For a series that is the same number for
+        # every name on a date, the answer depends only on where that name's
+        # calendar has holes: META starts in 2012 and misses sessions, so its
+        # pct_change and its rolling threshold differ from AAPL's on identical
+        # input. Measured on the batch of 2026-08-29, after the raw macro
+        # columns had been fixed to agree perfectly (0 of 45 disagreeing),
+        # **all 45 `state_FRED_*` still disagreed between tickers**. The column
+        # named for the state of the economy was encoding the shape of one
+        # name's trading calendar -- and a ranking feeds on exactly that kind
+        # of cross-sectional variation, so it reads as signal.
+        #
+        # Same shape as the availability stamp and the per-ticker fill before
+        # it: a market-wide quantity made personal to a name. Here it is fixed
+        # one level up, on the series itself, then broadcast by timestamp --
+        # which is what `_get_champion_state` already does for the champion.
+        time_col = next(
+            (c for c in ('datetime', 'timestamp', 'date') if c in res_df.columns),
+            None,
+        )
+        stamps = None
+        if time_col is not None and 'ticker' in res_df.columns:
+            stamps = pd.to_datetime(res_df[time_col], errors='coerce')
+            per_stamp = res_df[col].groupby(stamps).nunique(dropna=True)
+            market_wide = bool(per_stamp.size > 1 and (per_stamp <= 1).all())
+        else:
+            market_wide = False
+
+        if market_wide:
+            series = res_df[col].groupby(stamps).first().sort_index()
+            returns_by_stamp = (
+                series.pct_change(fill_method=None)
+                .replace([np.inf, -np.inf], np.nan)
+            )
+            std_by_stamp = returns_by_stamp.rolling(window=20, min_periods=2).std()
+            returns = stamps.map(returns_by_stamp)
+            rolling_std = stamps.map(std_by_stamp)
+        elif 'ticker' in res_df.columns:
             returns = res_df.groupby('ticker')[col].pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
             rolling_std = returns.groupby(res_df['ticker']).rolling(window=20, min_periods=2).std().reset_index(level=0, drop=True)
         else:

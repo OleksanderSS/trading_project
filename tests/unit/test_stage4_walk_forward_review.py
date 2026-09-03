@@ -22,6 +22,10 @@ def test_stage4_walk_forward_review_bypasses_normal_model_promotion():
         }
     )
     stage = object.__new__(ModelingStage)
+    # `_iter_model_contexts` reads `modeling.pool_tickers` since pooling was
+    # introduced, so a stage built with `object.__new__` has to declare it.
+    # Empty means unpooled, which is what this test measures: one ticker.
+    stage.modeling_config = {}
 
     result = stage._run_walk_forward_review_only(
         frame,

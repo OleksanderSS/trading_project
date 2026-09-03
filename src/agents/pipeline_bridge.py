@@ -229,8 +229,14 @@ class PipelineBridge:
 
         # Staleness check
         eval_ts = flat.get("evaluated_at") or result.get("_file_mtime")
-        if eval_ts:
-            age_h = _age_hours(eval_ts)
+        age_h = _age_hours(eval_ts)
+        if age_h is None:
+            # An age nobody could establish is not an age of zero. Recorded as
+            # its own failure so it cannot be read as "fresh enough", which is
+            # what the previous 0.0 amounted to.
+            failures.append("evaluation_timestamp_unreadable")
+            flat["evaluation_age_hours"] = None
+        else:
             if age_h > _FRESHNESS_THRESHOLD_HOURS:
                 failures.append("evaluation_artifact_stale")
             flat["evaluation_age_hours"] = round(age_h, 2)
@@ -344,22 +350,46 @@ def _utc_now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def _file_mtime_iso(path: Path) -> str:
+def _file_mtime_iso(path: Path) -> str | None:
+    """When the file was last written, or None if that cannot be read.
+
+    This used to return `_utc_now_iso()` -- the current time -- when `stat()`
+    failed, so a file whose age could not be established was reported as
+    written this instant. The staleness check downstream compares that age to
+    a threshold, so an unreadable artifact passed the check every time. The
+    same defect as the dead ladder rungs, in a different module: the value
+    that means "could not measure" was the value that means "fine".
+    """
     try:
         ts = path.stat().st_mtime
-        return datetime.fromtimestamp(ts, tz=UTC).isoformat()
-    except OSError:
-        return _utc_now_iso()
+    except OSError as error:
+        logger.warning(
+            "Could not read the modification time of %s (%s); its age is "
+            "unknown, not zero.", path, error,
+        )
+        return None
+    return datetime.fromtimestamp(ts, tz=UTC).isoformat()
 
 
-def _age_hours(iso_str: str) -> float:
+def _age_hours(iso_str: str | None) -> float | None:
+    """Hours since `iso_str`, or None when it cannot be parsed.
+
+    Returned 0.0 before, which reads as "brand new" and passes every
+    freshness threshold there is.
+    """
+    if not iso_str:
+        return None
     try:
         dt = datetime.fromisoformat(str(iso_str).replace("Z", "+00:00"))
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        return (datetime.now(UTC) - dt).total_seconds() / 3600
-    except (TypeError, ValueError):
-        return 0.0
+    except (TypeError, ValueError) as error:
+        logger.warning(
+            "Could not parse the timestamp %r (%s); the artifact's age is "
+            "unknown, not zero.", iso_str, error,
+        )
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - dt).total_seconds() / 3600
 
 
 def _infer_tickers(result: dict[str, Any]) -> list[str]:

@@ -124,14 +124,44 @@ class MacroFeaturesEnricher(BaseEnricher):
                     # Normalize cached index to tz-naive
                     if isinstance(full_cache.index, pd.DatetimeIndex) and full_cache.index.tz is not None:
                         full_cache.index = full_cache.index.tz_localize(None)
-                    merged = pd.concat([full_cache, pivoted]).sort_index()
-                    merged = merged[~merged.index.duplicated(keep='last')]
+                    # The cache is REPLACED, never unioned with itself.
+                    #
+                    # Unioning kept rows whose availability stamp was computed
+                    # by code that has since been fixed. Measured on the batch
+                    # of 2026-08-29: 695 of 8,447 cached rows sat at midnight
+                    # instead of 23:59:59, carried values ONLY for the
+                    # eighteen series whose availability used to be the
+                    # COLLECTION date, and were NaN for the other twenty-seven.
+                    #
+                    # Daily bars are stamped at midnight too, so merge_asof
+                    # matched those rows exactly and handed the bar a NaN for
+                    # nearly every series. The per-ticker forward fill then
+                    # filled the hole from each name's OWN history, and names
+                    # with different histories diverged: META missed the
+                    # 2024-07-05 claims print (it has no row that day), hit the
+                    # first stale midnight row on 07-08, and carried a
+                    # two-year-old value for 514 consecutive sessions. That is
+                    # what made 44 of 45 macro columns disagree between tickers
+                    # on the same date -- a macro series labelling which name
+                    # it belongs to.
+                    #
+                    # The cache's stated purpose was "accumulating more
+                    # historical FRED_* rows". That purpose is gone: fred_data
+                    # now holds thirty years, and the fresh pivot spans
+                    # 1996-09-02 to 2026-08-31 on its own. Keeping the union
+                    # bought nothing and carried old semantics forward
+                    # forever.
                     try:
-                        merged.to_parquet(self.cache_path)
-                        logger.info(f'Updated macro cache with {len(pivoted)} new rows → {len(merged)} total')
+                        pivoted.to_parquet(self.cache_path)
+                        logger.info(
+                            'Macro cache rebuilt from this run: %d rows '
+                            '(previous file held %d and was NOT merged in; '
+                            'its rows may carry superseded availability).',
+                            len(pivoted), len(full_cache),
+                        )
                     except Exception as e:
                         logger.exception(f'Failed to save macro cache: {e}')
-                    return merged
+                    return pivoted
                 return pivoted
 
         if offline_only:
@@ -263,6 +293,26 @@ class MacroFeaturesEnricher(BaseEnricher):
         # every series. Nothing is filled before its first release, so a bar
         # still cannot see a figure that did not exist.
         macro_pivoted = macro_pivoted.sort_index().ffill()
+
+        # Name the index what every consumer looks for.
+        #
+        # `pivot_table(index=date_col)` names it after the source column --
+        # `available_at`. That name used to be erased by chance:
+        # `pd.concat([cache, pivoted])` joins two differently-named indexes
+        # and drops the name, so `reset_index()` produced a column called
+        # `index`, which `_merge_with_duplicates` accepts. When the cache
+        # union was removed on 2026-08-29 the real name survived, the lookup
+        # `['datetime', 'index', 'date']` missed it, and the merge returned a
+        # frame with no `datetime` at all:
+        #
+        #   MacroFeaturesEnricher missing required column: 'datetime'
+        #   Enricher 'macro_features' completed: +0 columns
+        #
+        # Forty-five macro columns vanished from the batch in silence -- the
+        # enricher reported success and the checkpoint held 383 columns
+        # instead of 475. The index IS the availability timestamp, so it is
+        # named for what it is rather than left to a coincidence.
+        macro_pivoted.index.name = 'datetime'
         logger.info(
             f'Pivoted macro data into {len(macro_pivoted.columns)} FRED columns'
             )

@@ -270,24 +270,35 @@ class SmartFeatureSelector:
 
     # --- Filter Methods ---
     def _correlation_filter(self, features_df, target_series, is_classification) -> pd.Series:
-        """Spearman correlation with target.
+        """Spearman correlation with target, column by column.
 
-        `corrwith` rather than `apply(lambda x: x.corr(...))`, but NOT for the
-        reason the audit that prompted this gave. It claimed the per-column
-        form is "100-200x slower". Measured on this project's real shape —
-        3,000 rows by 2,203 columns — the two are the same: corrwith 4.1s
-        against ~4s extrapolated, because pandas loops internally for Spearman
-        too. The speed claim does not survive measurement and is not why this
-        changed.
+        THE PER-COLUMN LOOP IS DELIBERATE, and I learned that the expensive
+        way. Gemini's audit claimed `corrwith` is "100-200x faster"; I
+        benchmarked the two as equal and switched anyway for a different
+        reason, then watched this method go from **3m26s to over 50 minutes**
+        on the real batch and had to kill a five-hour rebuild.
 
-        What it does buy is correctness at the edges. A zero-variance column
-        yields NaN, and the old form sorted that NaN into the ranking, where it
-        occupied a slot in the top 30% while meaning nothing — this batch
-        carries 47 constant columns. `.dropna()` here removes them from
-        contention instead.
+        The benchmark was invalid. I measured on
+        `pd.DataFrame(rng.normal(...))` — a single consolidated float64 block —
+        while the real frame is built from many blocks of mixed dtype.
+        `corrwith` CONSOLIDATES the frame before it starts, which on
+        258,397 rows by 2,192 columns is the same multi-gigabyte copy that
+        `select_dtypes` was making two functions away. `.apply` walks column by
+        column and never materialises the whole thing.
+
+        The lesson is the project's own rule, which I broke: measure on OUR
+        data, not on a synthetic frame that shares its shape but not its
+        structure.
+
+        `.dropna()` stays, and it is the one thing worth keeping from that
+        detour: a zero-variance column yields NaN, and without this the NaN
+        sorts into the ranking and occupies a slot in the top 30% while meaning
+        nothing. This batch carries 47 constant columns.
         """
         return (
-            features_df.corrwith(target_series, method=self.correlation_method)
+            features_df
+            .apply(lambda column: column.corr(target_series,
+                                              method=self.correlation_method))
             .abs()
             .dropna()
             .sort_values(ascending=False)

@@ -13,6 +13,7 @@ from sklearn.feature_selection import mutual_info_classif
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
 
+from src.pipeline.modeling_context import is_pooled
 from src.pipeline.stages.modeling.pipeline_control_artifacts import (
     build_feature_distribution_stability_analysis,
 )
@@ -101,7 +102,24 @@ class PipelineWalkForwardValidationEvaluator:
         # tail of the training window "looking into" the validation window.
         # Example: target_weekly_up_1w has shift=-7 → purge must be ≥ 7.
         target_horizon = _get_target_horizon_rows(target_name)
+
+        # The purge is configured in BARS and applied with `.iloc`, so on a
+        # pooled frame -- 110 names on every bar -- a purge of 5 rows spans a
+        # twentieth of a bar and the training window all but touches its
+        # validation window. Exactly the defect already fixed for the split
+        # in `prepare_data_for_models`; scaled the same way, by the frame's
+        # own rows-per-timestamp rather than by any ticker count, so a
+        # single-series frame measures 1.0 and is untouched.
+        rows_per_bar = 1.0
+        distinct_bars = prepared.index.nunique()
+        if distinct_bars:
+            rows_per_bar = max(1.0, len(prepared) / distinct_bars)
+        if rows_per_bar > 1.0:
+            target_horizon = int(round(target_horizon * rows_per_bar))
+
         effective_purge = self.config.purge_rows
+        if rows_per_bar > 1.0:
+            effective_purge = int(round(effective_purge * rows_per_bar))
         if self.config.enforce_horizon_purge and effective_purge < target_horizon:
             import warnings
             warnings.warn(
@@ -222,9 +240,21 @@ class PipelineWalkForwardValidationEvaluator:
         result = frame.copy(deep=False)
         if "ticker" not in result.columns:
             raise ValueError("Walk-forward frame is missing ticker.")
-        result = result.loc[
-            result["ticker"].astype(str).str.upper().eq(ticker.upper())
-        ]
+
+        # `__POOLED__` is a synthetic context name, not a value in the data.
+        #
+        # Filtering for it matched ZERO of 159,149 rows, so the frame came
+        # out empty, "fewer than two classes" was raised, the caller logged
+        # it at DEBUG and returned None -- and None is read upstream as "not
+        # measurable, pass through". The stability check has therefore been
+        # silently OFF for every pooled context since pooling was enabled,
+        # which is the only rung that asks whether an edge holds over TIME.
+        # Both champions of 2026-08-31 were promoted without it.
+        pooled = is_pooled(ticker)
+        if not pooled:
+            result = result.loc[
+                result["ticker"].astype(str).str.upper().eq(ticker.upper())
+            ]
         interval_column = next(
             (
                 column
@@ -257,11 +287,16 @@ class PipelineWalkForwardValidationEvaluator:
         result = result.dropna(
             subset=["__walk_forward_datetime", target_name]
         )
-        result = (
-            result.sort_values("__walk_forward_datetime", kind="mergesort")
-            .drop_duplicates("__walk_forward_datetime", keep="last")
-            .set_index("__walk_forward_datetime", drop=True)
-        )
+        result = result.sort_values("__walk_forward_datetime", kind="mergesort")
+        if not pooled:
+            # One row per timestamp is what a single series should hold; a
+            # duplicate there is a data defect. On a POOLED frame it is the
+            # normal shape -- 110 names share every bar -- and dropping it
+            # would keep whichever ticker happened to sort last, turning
+            # 159,149 rows into 7,200 belonging to no one in particular.
+            result = result.drop_duplicates(
+                "__walk_forward_datetime", keep="last")
+        result = result.set_index("__walk_forward_datetime", drop=True)
         target_values = set(result[target_name].astype(int).unique())
         if not target_values.issubset({0, 1}):
             raise ValueError(

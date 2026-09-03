@@ -1,10 +1,17 @@
 """Tests for scripts/colab/select_champions.py.
 
-Context: the user wants a champion picked per (ticker, target) -- target
-already encodes horizon (target_up_1d vs target_up_5d vs
-target_weekly_up_1w), comparing real training-run metrics, never the static
+Context: the user wants a champion picked per (ticker, timeframe, target),
+comparing real training-run metrics, never the static
 priors in src/models/model_selector/model_competence_map.json (left
-untouched by design). Entries with no real metric ({'info': 'already_exists'}
+untouched by design).
+
+The timeframe was NOT in that key until 2026-09-01, on the reasoning written
+here originally: "target already encodes horizon (target_up_1d vs
+target_up_5d vs target_weekly_up_1w)". True of daily targets and false across
+cadences -- `target_hourly_breakout_1h` is trained on the 15m frame AND on the
+60m frame, so the name encodes the PREDICTION HORIZON and not the BAR SIZE,
+and grouping without the timeframe silently made the two frames compete. Run 7
+lost two of its nine champions that way (REGISTER #212). Entries with no real metric ({'info': 'already_exists'}
 skipped models, or {'error': ...} failed runs) must never win a group by
 default -- a group where nothing is comparable must come back as
 `no_champion`, not a fabricated winner.
@@ -14,8 +21,10 @@ from __future__ import annotations
 from src.pipeline.hybrid.champion_selector import select_champions
 
 
-def _entry(ticker, target, model_type, metrics):
-    return {"ticker": ticker, "target": target, "model_type": model_type, "metrics": metrics, "model_path": f"model_{ticker}_{target}_{model_type}.keras"}
+def _entry(ticker, target, model_type, metrics, timeframe="1d"):
+    return {"ticker": ticker, "target": target, "timeframe": timeframe,
+            "model_type": model_type, "metrics": metrics,
+            "model_path": f"model_{ticker}_{target}_{model_type}.keras"}
 
 
 class TestClassificationChampion:
@@ -26,7 +35,7 @@ class TestClassificationChampion:
             "b": _entry("AAPL", "target_up_1d", "lstm", {"val_accuracy": 0.6, "val_auc": 0.70}),
         }
         champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
-        result = champions["AAPL::target_up_1d"]
+        result = champions["AAPL::1d::target_up_1d"]
         assert result["status"] == "champion_selected"
         # lstm wins on AUC (0.70 > 0.55) despite cnn having higher raw accuracy.
         assert result["champion_model_type"] == "lstm"
@@ -39,7 +48,7 @@ class TestClassificationChampion:
             "b": _entry("AAPL", "target_up_1d", "tabnet", {"accuracy": 0.6, "auc": 0.70}),
         }
         champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
-        result = champions["AAPL::target_up_1d"]
+        result = champions["AAPL::1d::target_up_1d"]
         assert result["champion_model_type"] == "tabnet"
         assert result["selection_metric"] == "auc"
 
@@ -52,7 +61,7 @@ class TestClassificationChampion:
             "mlp": _entry("AAPL", "target_up_1d", "mlp", {"accuracy": 0.5, "auc": 0.80}),
         }
         champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
-        result = champions["AAPL::target_up_1d"]
+        result = champions["AAPL::1d::target_up_1d"]
         assert result["champion_model_type"] == "mlp"
         assert len(result["ranking"]) == 2
 
@@ -65,7 +74,7 @@ class TestClassificationChampion:
         champions = select_champions(metadata, {"target_multi_1d": "classification_multiclass"})
         # Neither entry uses the exact key "accuracy" for cnn (val_accuracy) --
         # only mlp's "accuracy" key is recognized by _score for multiclass.
-        result = champions["AAPL::target_multi_1d"]
+        result = champions["AAPL::1d::target_multi_1d"]
         assert result["status"] == "champion_selected"
         assert result["champion_model_type"] == "mlp"
 
@@ -77,7 +86,7 @@ class TestRegressionChampion:
             "b": _entry("AAPL", "target_return_1d", "tabnet", {"mse": 0.9}),
         }
         champions = select_champions(metadata, {"target_return_1d": "regression"})
-        result = champions["AAPL::target_return_1d"]
+        result = champions["AAPL::1d::target_return_1d"]
         assert result["champion_model_type"] == "mlp"
         assert result["selection_metric"] == "mse"
         assert result["selection_score"] == 0.05  # unnegated in the reported field
@@ -90,7 +99,7 @@ class TestNoComparableMetric:
             "b": _entry("AAPL", "target_up_1d", "lstm", {"info": "already_exists"}),
         }
         champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
-        result = champions["AAPL::target_up_1d"]
+        result = champions["AAPL::1d::target_up_1d"]
         assert result["status"] == "no_champion"
         assert result["candidates_considered"] == 2
 
@@ -100,7 +109,7 @@ class TestNoComparableMetric:
             "b": _entry("AAPL", "target_return_1d", "mlp", {"mse": 0.1}),
         }
         champions = select_champions(metadata, {"target_return_1d": "regression"})
-        result = champions["AAPL::target_return_1d"]
+        result = champions["AAPL::1d::target_return_1d"]
         assert result["status"] == "champion_selected"
         assert result["champion_model_type"] == "mlp"
         assert result["candidates_considered"] == 2
@@ -119,13 +128,14 @@ class TestModelPathKey:
             "a": _entry("AAPL", "target_return_1d", "mlp", {"mse": 0.1}),
         }
         champions = select_champions(metadata, {"target_return_1d": "regression"})
-        result = champions["AAPL::target_return_1d"]
+        result = champions["AAPL::1d::target_return_1d"]
         assert result["model_path"] == "model_AAPL_target_return_1d_mlp.keras"
 
     def test_missing_model_path_key_does_not_crash(self):
-        entry = {"ticker": "AAPL", "target": "target_return_1d", "model_type": "mlp", "metrics": {"mse": 0.1}}
+        entry = {"ticker": "AAPL", "target": "target_return_1d", "timeframe": "1d",
+                 "model_type": "mlp", "metrics": {"mse": 0.1}}
         champions = select_champions({"a": entry}, {"target_return_1d": "regression"})
-        assert champions["AAPL::target_return_1d"]["model_path"] is None
+        assert champions["AAPL::1d::target_return_1d"]["model_path"] is None
 
 
 class TestGroupingAndDefaults:
@@ -135,16 +145,16 @@ class TestGroupingAndDefaults:
             "b": _entry("MSFT", "target_up_1d", "cnn", {"accuracy": 0.6}),
         }
         champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
-        assert "AAPL::target_up_1d" in champions
-        assert "MSFT::target_up_1d" in champions
-        assert champions["AAPL::target_up_1d"]["champion_model_type"] == "cnn"
+        assert "AAPL::1d::target_up_1d" in champions
+        assert "MSFT::1d::target_up_1d" in champions
+        assert champions["AAPL::1d::target_up_1d"]["champion_model_type"] == "cnn"
 
     def test_unknown_target_defaults_to_regression_comparison(self):
         metadata = {
             "a": _entry("AAPL", "target_unregistered", "mlp", {"mse": 1.0}),
         }
         champions = select_champions(metadata, {})  # empty registry
-        result = champions["AAPL::target_unregistered"]
+        result = champions["AAPL::1d::target_unregistered"]
         assert result["target_type"] == "regression"
         assert result["status"] == "champion_selected"
 
@@ -155,5 +165,87 @@ class TestGroupingAndDefaults:
             "c": _entry("AAPL", "target_return_1d", "lstm", {"mse": 0.3}),
         }
         champions = select_champions(metadata, {"target_return_1d": "regression"})
-        ranking = champions["AAPL::target_return_1d"]["ranking"]
+        ranking = champions["AAPL::1d::target_return_1d"]["ranking"]
         assert [r["model_type"] for r in ranking] == ["cnn", "lstm", "mlp"]
+
+
+class TestTimeframeIsPartOfTheGroup:
+    """The same target on two cadences is two contexts, not two candidates."""
+
+    def test_the_same_target_on_two_frames_yields_two_champions(self):
+        metadata = {
+            "a": _entry("AAPL", "target_hourly_breakout_1h", "linear",
+                        {"accuracy": 0.55}, timeframe="15m"),
+            "b": _entry("AAPL", "target_hourly_breakout_1h", "linear",
+                        {"accuracy": 0.61}, timeframe="60m"),
+        }
+        champions = select_champions(
+            metadata, {"target_hourly_breakout_1h": "classification_binary"}
+        )
+        assert set(champions) == {
+            "AAPL::15m::target_hourly_breakout_1h",
+            "AAPL::60m::target_hourly_breakout_1h",
+        }
+        # Neither is discarded in favour of the other. Before this, the 60m
+        # entry won on a higher score -- and CLAIMS.md R6 measured that a
+        # coarser cadence scores higher because the clock opponent weakens,
+        # not because the model is better, so the comparison preferred the
+        # frame with the weaker opponent.
+        assert all(
+            champion["status"] == "champion_selected"
+            for champion in champions.values()
+        )
+
+    def test_an_entry_without_a_timeframe_does_not_join_another_group(self):
+        metadata = {
+            "a": _entry("AAPL", "target_up_1d", "linear", {"accuracy": 0.6},
+                        timeframe="1d"),
+            "b": {"ticker": "AAPL", "target": "target_up_1d",
+                  "model_type": "knn", "metrics": {"accuracy": 0.9}},
+        }
+        champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
+        assert set(champions) == {"AAPL::1d::target_up_1d", "AAPL::unknown::target_up_1d"}
+        # An unknown cadence is not the same cadence as another unknown, and it
+        # is certainly not 1d: the 0.9 entry must not take the 1d slot.
+        assert champions["AAPL::1d::target_up_1d"]["champion_model_type"] == "linear"
+
+
+class TestBothSelectorsJudgeByTheSameMetric:
+    """Two selections deciding one thing by two metrics is the original defect.
+
+    `base_trainer` fixed the arena to select on the metric the gate judges by
+    (REGISTER #187: F1(binary) rewarded whichever model said "yes" most often,
+    and a champion predicting 1 on 86.5% of rows at a 26.2% base rate lived
+    through every run). `select_champions` runs AFTERWARDS over those winners
+    and went on ranking by `accuracy` -- the metric that hands 0.7381 to a
+    predictor that never fires.
+    """
+
+    def test_the_governing_score_outranks_raw_accuracy(self):
+        metadata = {
+            # Says "yes" almost always: high raw accuracy on an unbalanced
+            # target, balanced accuracy barely above chance.
+            "loud": _entry("AAPL", "target_up_1d", "catboost",
+                           {"score": 0.5257, "accuracy": 0.7381, "mse": None}),
+            # Says less, and is right more often on BOTH classes.
+            "honest": _entry("AAPL", "target_up_1d", "linear",
+                             {"score": 0.5615, "accuracy": 0.6100, "mse": None}),
+        }
+        champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
+        result = champions["AAPL::1d::target_up_1d"]
+        assert result["champion_model_type"] == "linear", (
+            "ranked by raw accuracy, the louder model wins -- which is the "
+            "defect #187 removed from the arena and left standing here"
+        )
+        assert result["selection_metric"] == "score"
+
+    def test_accuracy_is_still_used_when_no_governing_score_is_present(self):
+        """Older metadata has no `score` key; it must not become unrankable."""
+        metadata = {
+            "a": _entry("AAPL", "target_up_1d", "cnn", {"accuracy": 0.55}),
+            "b": _entry("AAPL", "target_up_1d", "knn", {"accuracy": 0.61}),
+        }
+        champions = select_champions(metadata, {"target_up_1d": "classification_binary"})
+        result = champions["AAPL::1d::target_up_1d"]
+        assert result["champion_model_type"] == "knn"
+        assert result["selection_metric"] == "accuracy"

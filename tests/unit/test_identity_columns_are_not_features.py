@@ -277,8 +277,21 @@ def test_no_label_encoder_remains_in_the_path():
     )
 
 
-def test_the_real_batch_has_exactly_the_market_regime_columns_affected():
-    """Pins the measurement the fix rests on: 5 columns, all MARKET_REGIME."""
+def test_a_dropped_categorical_always_has_a_numeric_counterpart():
+    """Nothing may be dropped that is not represented some other way.
+
+    Written when five MARKET_REGIME_* columns hit the drop branch, and it
+    asserted exactly that: five columns, all MARKET_REGIME. Measured again on
+    2026-08-31, the batch reaches that branch ZERO times -- the regime columns
+    are now `volatility_regime_*` with three or four values each, so they take
+    the one-hot branch and survive as features. The old assertion therefore
+    failed on a batch where nothing is wrong.
+
+    An empty drop branch is a good state, not a defect, so it is a skip. What
+    stays asserted is the reasoning the fix actually rests on: a column may be
+    dropped for having an unpersistable encoding only if the frame carries a
+    numeric column saying the same thing.
+    """
     from pathlib import Path
 
     import pandas as pd
@@ -295,8 +308,18 @@ def test_the_real_batch_has_exactly_the_market_regime_columns_affected():
     ]
     high_cardinality = [c for c in categorical if frame[c].nunique() > 5]
 
-    assert high_cardinality, "nothing reaches the dropped branch any more"
-    assert all("MARKET_REGIME" in c for c in high_cardinality), high_cardinality
+    if not high_cardinality:
+        pytest.skip(
+            "no categorical column reaches the drop branch in this batch; "
+            f"the {len(categorical)} that survive are all one-hot candidates"
+        )
+
+    numeric = set(frame.select_dtypes(include="number").columns)
     for column in high_cardinality:
-        twin = column.replace("MARKET_REGIME", "MARKET_REGIME_ENCODED")
-        assert twin in frame.columns, f"{column} has no numeric counterpart"
+        twin = {column.replace("MARKET_REGIME", "MARKET_REGIME_ENCODED"),
+                f"{column}_ENCODED", f"{column}_encoded"}
+        assert twin & numeric, (
+            f"{column} is dropped for having no persistable encoding and has "
+            f"no numeric counterpart either, so the information leaves the "
+            f"frame entirely"
+        )

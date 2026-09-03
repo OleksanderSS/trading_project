@@ -125,7 +125,13 @@ def test_gate_rejects_a_model_that_cannot_beat_the_naive_baseline():
 
     gate = host._evaluate_promotion_gate(results)
     assert gate['passed'] is False
-    assert any('naive baseline' in r for r in gate['reasons'])
+    # The refusal must NAME the rung that bound. "Does not beat the naive
+    # baseline" was true of every refusal and told the reader nothing; losing
+    # to a constant and losing to the clock are different diagnoses.
+    refusal = next(r for r in gate['reasons']
+                   if 'does not beat the' in r and 'baseline' in r)
+    assert metrics['baseline_kind'] in refusal
+    assert 'constant' in refusal and 'clock' in refusal
 
 
 def test_gate_admits_a_model_that_beats_the_baseline():
@@ -274,14 +280,97 @@ def test_the_constant_still_wins_when_the_series_has_no_momentum():
     assert scores['baseline_persistence_score'] < scores['baseline_constant_score']
 
 
-def test_classification_keeps_the_constant_bar_only():
+def test_classification_now_meets_persistence_too():
+    """Classification used to be exempt from the persistence opponent.
+
+    It was scored for regression only, on the reasoning that "tomorrow equals
+    today" is a statement about a continuous series. It is not: "this already
+    happened h bars ago" is just as legitimate against a binary target, and on
+    a persistent one it is a strong opponent that classification simply never
+    met. Seven 15m champions passed this gate on 2026-08-30 and then lost to
+    opponents run by hand on the same holdouts.
+
+    On this fixture the holdout alternates 0,1,0,1..., so lag-1 predicts the
+    opposite class every time and the constant still binds — which is the
+    point: adding a rung must not change which rung wins when it should not.
+    """
     host = _Host()
     data = _classification_data()
 
     scores = host._score_naive_baselines(data, True, 'classification', 'F1')
 
+    assert scores['baseline_persistence_score'] is not None
     assert scores['baseline_kind'] == 'constant'
-    assert 'baseline_persistence_score' not in scores
+    assert scores['baseline_score'] == scores['baseline_constant_score']
+
+
+def test_persistence_lags_inside_a_series_not_across_the_pooled_frame():
+    """A pooled frame interleaves tickers; lagging by ROW crosses companies.
+
+    With 22 names at one timestamp, `y[t-h]` is another company minutes
+    earlier rather than this company h bars back, so the opponent measured
+    something no one meant. `holdout_groups` carries the ticker per row.
+    """
+    host = _Host()
+    horizon, names, bars = 3, list('ABCD'), 60
+    rng = np.random.default_rng(2)
+    # Each name's own series is exactly periodic with period h, so a correct
+    # lag-h opponent reproduces it and a row-wise one cannot.
+    series = {n: np.tile(rng.integers(0, 2, horizon), bars // horizon)
+              for n in names}
+    rows = [(b, n) for b in range(bars) for n in names]
+    groups = np.array([n for _b, n in rows])
+    y = np.array([series[n][b] for b, n in rows], dtype=float)
+
+    grouped = host._persistence_prediction(
+        y, y, horizon=horizon, groups=groups, is_classif=True)
+    rowwise = host._persistence_prediction(
+        y, y, horizon=horizon, groups=None, is_classif=True)
+
+    tail = slice(horizon * len(names), None)
+    assert (grouped[tail] == y[tail]).all()
+    assert not (rowwise[tail] == y[tail]).all()
+
+
+def test_the_clock_is_an_opponent_and_says_which_cut_of_it_won():
+    """A target that is nothing but the hour of day must not pass the gate.
+
+    The rung the gate was missing entirely. On intraday targets the effect is
+    large and has nothing to do with any feature here: the first and last bars
+    of a session carry most of the volatility and most of the volume, every
+    day.
+    """
+    host = _Host()
+    index = pd.date_range('2024-01-01', periods=12000, freq='h', tz='UTC')
+    y = index.hour.isin([14, 15, 20]).astype(float)
+    split = 9000
+    data = {
+        'X_train': pd.DataFrame(index=index[:split]),
+        'y_train': y[:split],
+        'X_holdout': pd.DataFrame(index=index[split:]),
+        'y_holdout': y[split:],
+    }
+
+    scores = host._score_naive_baselines(data, True, 'classification', 'F1')
+
+    assert scores['baseline_kind'] == 'clock'
+    assert scores['baseline_clock_score'] == pytest.approx(1.0)
+    assert scores['baseline_clock_scheme'] in ('hour', 'weekday_hour')
+    assert scores['baseline_clock_score'] > scores['baseline_constant_score']
+
+
+def test_the_clock_reports_nothing_when_it_cannot_be_measured():
+    """An unmeasured opponent must be absent, never a passing zero."""
+    host = _Host()
+    plain = pd.DataFrame(index=range(50))
+    assert host._clock_prediction(
+        {'X_train': plain, 'X_holdout': plain}, np.zeros(50), True) == {}
+
+    # Timestamps, but too few training rows for any bucket to earn an answer.
+    index = pd.date_range('2024-01-01', periods=40, freq='h', tz='UTC')
+    sparse = pd.DataFrame(index=index)
+    assert host._clock_prediction(
+        {'X_train': sparse, 'X_holdout': sparse}, np.zeros(40), True) == {}
 
 
 def test_the_classification_bar_is_the_best_constant_not_the_most_common_one():
@@ -293,6 +382,12 @@ def test_the_classification_bar_is_the_best_constant_not_the_most_common_one():
     target passed the gate at the same rate as models trained on the real one
     — 28% each — by degenerating to almost-all-ones, which scores 2p/(1+p):
     0.61 on a holdout with a 44% positive rate, against a bar of zero.
+
+    Kept, and still passing 'F1' explicitly, although F1 no longer GOVERNS
+    anything (see `CLASSIFICATION_METRIC`, changed 2026-08-31):
+    `_score_naive_baselines` is metric-agnostic and must stay correct for
+    whatever metric it is handed. The test for the metric that governs today
+    is `test_the_governing_metric_cannot_be_won_by_predicting_one_class`.
     """
     host = _Host()
     n = 60
@@ -402,3 +497,226 @@ def test_a_high_but_survivable_feature_ratio_only_warns():
     })
     assert not quiet['blocking']
     assert not any('ratio' in w for w in quiet['warnings'])
+
+
+def test_a_promoted_champion_records_what_it_beat():
+    """A gate whose passes are unauditable is a gate you have to trust.
+
+    `_collect_gate_refusal` kept the numbers for every REFUSED context, so
+    "why did nothing get promoted" was answerable while "what did this
+    champion actually beat" was not. Noticed on 2026-08-31, on the first
+    champion of the run that added the missing ladder rungs: no artifact on
+    disk could say whether the clock opponent had been measured at all.
+
+    An unmeasured rung must stay None. Zero would read as "the model beat
+    it", which is the opposite of what an absent measurement means.
+    """
+    from src.pipeline.stages.modeling.orchestrator import ModelingStage
+
+    measured = ModelingStage._ladder_evidence({
+        'winner_holdout_metrics': {
+            'score': 0.61, 'metric': 'F1',
+            'baseline_kind': 'clock',
+            'baseline_score': 0.55,
+            'baseline_constant_score': 0.40,
+            'baseline_persistence_score': 0.48,
+            'baseline_persistence_lag_bars': 4,
+            'baseline_clock_score': 0.55,
+            'baseline_clock_scheme': 'hour',
+            'single_feature_score': 0.50,
+        }
+    })
+    assert measured['binding_opponent'] == 'clock'
+    assert measured['baseline_clock_score'] == 0.55
+    assert measured['baseline_constant_score'] == 0.40
+    assert measured['single_feature_score'] == 0.50
+
+    # A rung that could not be measured must be ABSENT, never zero: zero
+    # reads as "the model beat it", the opposite of an absent measurement.
+    unmeasured = ModelingStage._ladder_evidence({
+        'winner_holdout_metrics': {'score': 0.61, 'baseline_kind': 'constant',
+                                   'baseline_constant_score': 0.40}
+    })
+    assert unmeasured.get('baseline_clock_score') is None
+    assert unmeasured.get('baseline_persistence_score') is None
+
+    # And no holdout at all must not fabricate a full ladder.
+    assert ModelingStage._ladder_evidence({}).get('score') is None
+
+
+def test_the_champion_record_cannot_fall_behind_the_gate():
+    """Every number the gate weighs must reach the record, without a list.
+
+    The first version of `_ladder_evidence` enumerated fields, and within the
+    hour it was out of date: `baseline_margin_sigma`, the value that decides
+    promotion since #186, was added to the gate and not to the list, so the
+    champion record still could not say what had cleared it. That is the same
+    defect the method was written to fix, reappearing inside the fix.
+    """
+    from src.pipeline.stages.modeling.orchestrator import ModelingStage
+
+    holdout = {
+        'status': 'measured', 'score': 0.61, 'metric': 'F1',
+        'baseline_score': 0.55, 'baseline_kind': 'clock',
+        'baseline_margin': 0.06, 'baseline_margin_sigma': 0.004,
+        'excess_over_passive': 0.001, 'excess_risk_adjusted': 0.0004,
+        'single_feature_score': 0.50, 'single_feature_status': 'measured',
+        'holdout_sample_count': 30_494, 'holdout_event_count': 7_987,
+        'a_field_invented_tomorrow': 42,
+        '_baseline_prediction': [0, 1, 0],     # internal, must not be copied
+    }
+    evidence = ModelingStage._ladder_evidence({
+        'winner_holdout_metrics': holdout,
+        'promotion_gate': {'passed': True, 'reasons': ['ok']},
+    })
+
+    for key, value in holdout.items():
+        if key.startswith('_'):
+            assert key not in evidence, key
+        else:
+            assert evidence[key] == value, key
+    assert evidence['gate']['passed'] is True
+
+
+def test_a_margin_smaller_than_its_own_noise_is_refused():
+    """The decision of 2026-08-31, taken on a real number.
+
+    The first champion of run 7 cleared its strongest opponent by 0.0046 of
+    F1 — 0.4197 against a constant's 0.4151 — and `min_baseline_margin: 0.0`
+    promoted it. #175 had already settled the principle on a different
+    target: an edge of 0.041 against an opponent whose own weekly figure
+    varied by 0.07 is not an edge, it is a sample too short to answer the
+    question.
+
+    The bar is now the opponent plus one standard error of the difference
+    between them, measured on that same holdout.
+    """
+    host = _Host()
+    base = {
+        'status': 'measured', 'holdout_sample_count': 25_000,
+        'holdout_event_count': 9_000,
+        'score': 0.4197, 'baseline_score': 0.4151,
+        'baseline_kind': 'constant', 'baseline_constant_score': 0.4151,
+    }
+
+    thin = host._evaluate_promotion_gate(
+        {'winner_holdout_metrics': dict(base, baseline_margin_sigma=0.0120)})
+    assert thin['passed'] is False
+    assert any('one standard error' in r for r in thin['reasons'])
+
+    # The same margin against a quieter measurement is evidence.
+    solid = host._evaluate_promotion_gate(
+        {'winner_holdout_metrics': dict(base, baseline_margin_sigma=0.0004)})
+    assert solid['passed'] is True
+
+
+def test_an_unmeasurable_margin_does_not_pass_as_a_measured_one():
+    """Too short to resample means "cannot tell", not "good enough"."""
+    host = _Host()
+    gate = host._evaluate_promotion_gate({'winner_holdout_metrics': {
+        'status': 'measured', 'holdout_sample_count': 40,
+        'holdout_event_count': 15,
+        'score': 0.90, 'baseline_score': 0.10,
+        'baseline_kind': 'constant', 'baseline_margin_sigma': None,
+    }})
+    assert gate['passed'] is False
+    assert any('could not be measured' in r for r in gate['reasons'])
+
+
+def test_the_sigma_rule_can_be_switched_off():
+    """It is a policy, and policies are named in config, not buried."""
+    host = _Host({'require_baseline_margin_sigma': False})
+    gate = host._evaluate_promotion_gate({'winner_holdout_metrics': {
+        'status': 'measured', 'holdout_sample_count': 25_000,
+        'holdout_event_count': 9_000,
+        'score': 0.4197, 'baseline_score': 0.4151,
+        'baseline_kind': 'constant', 'baseline_margin_sigma': 0.0120,
+    }})
+    assert gate['passed'] is True
+
+
+def test_the_bootstrap_sigma_grows_when_the_two_series_really_differ():
+    """A sanity check on the measurement itself, not on the gate.
+
+    Blocks, not single rows: holdout rows are a time series, and resampling
+    them independently would understate the spread and hand back a margin
+    that looks significant because the resampling pretended otherwise.
+    """
+    host = _Host()
+    rng = np.random.default_rng(3)
+    n = 600
+    truth = (rng.normal(size=n) > 0).astype(int)
+
+    # A model that IS the truth against a coin: the difference is huge and
+    # stable, so its standard error must be small relative to the gap.
+    sharp = host._block_bootstrap_sigma(
+        truth, truth, rng.integers(0, 2, n),
+        task_type='classification', metric_key='F1')
+
+    # Two coins: no real difference, so the spread is what noise looks like.
+    noisy = host._block_bootstrap_sigma(
+        truth, rng.integers(0, 2, n), rng.integers(0, 2, n),
+        task_type='classification', metric_key='F1')
+
+    assert sharp is not None and noisy is not None
+    assert 0.0 < sharp < 0.5 and 0.0 < noisy < 0.5
+
+    # Too short to resample must be None, never zero.
+    assert host._block_bootstrap_sigma(
+        truth[:30], truth[:30], truth[:30],
+        task_type='classification', metric_key='F1') is None
+
+
+def test_the_governing_metric_cannot_be_won_by_predicting_one_class():
+    """Under balanced accuracy every constant scores exactly 0.5.
+
+    That is the whole reason for the change of 2026-08-31. On F1 the bar
+    depended on the class balance — 0.0 for always-no, 2p/(1+p) for
+    always-yes — so a model could clear it by shifting its threshold rather
+    than by knowing anything. On balanced accuracy both constants sit at 0.5
+    whatever the balance, so the bar measures the model.
+    """
+    host = _Host()
+    for positives in (0.05, 0.26, 0.50, 0.90):
+        n = 400
+        rng = np.random.default_rng(int(positives * 100))
+        y_train = (rng.random(n) < positives).astype(int)
+        y_holdout = (rng.random(n) < positives).astype(int)
+        data = {
+            'X_train': pd.DataFrame({'f': np.zeros(n)}),
+            'y_train': y_train,
+            'X_holdout': pd.DataFrame({'f': np.zeros(n)}),
+            'y_holdout': y_holdout,
+        }
+
+        scores = host._score_naive_baselines(
+            data, True, 'classification', 'BalancedAccuracy')
+
+        assert scores['baseline_constant_score'] == pytest.approx(0.5), positives
+
+
+def test_the_arena_and_the_gate_judge_by_the_same_metric():
+    """They did not, and that is how a "yes"-machine became a champion.
+
+    Selection took F1, so the winner of every classification context was
+    whichever model said yes most confidently; the gate then measured that
+    winner against opponents on a metric it had never competed on. One name
+    in one place is the fix — a second copy is how `max_features` ended up
+    with three answers and Sharpe with two.
+
+    F1 may still appear in this module as prose or as a metric other code
+    asks for; what must not appear is a second place that DECIDES with it.
+    """
+    import inspect
+
+    from src.training import base_trainer
+
+    deciding = [
+        line.strip() for line in inspect.getsource(base_trainer).splitlines()
+        if ("metric_key = " in line or "score.get(" in line)
+        and ("'F1'" in line or '"F1"' in line)
+    ]
+    assert not deciding, deciding
+    assert base_trainer.CLASSIFICATION_METRIC == 'BalancedAccuracy'
+    assert base_trainer._governing_metric(True) == 'BalancedAccuracy'
+    assert base_trainer._governing_metric(False) == 'R2'

@@ -44,6 +44,25 @@ def _score(metrics: dict[str, Any], target_type: str) -> tuple[float, str] | Non
     """
     if not _has_real_metric(metrics):
         return None
+
+    # `score` carries the metric the GATE judged this model by -- balanced
+    # accuracy for classification, R2 for regression -- already oriented so
+    # that higher is better. Prefer it, because two selections deciding the
+    # same thing by two metrics is how the original defect worked.
+    #
+    # `base_trainer` line 448 records the first half of that defect and its
+    # fix: "The arena must select on the SAME metric the gate judges by. It
+    # did not: selection took F1, so the winner of every classification
+    # context was whichever model said 'yes' most confidently." That was
+    # repaired inside the arena. This function is a SECOND selection, run
+    # afterwards over the arena's winners, and it went on ranking by
+    # `accuracy` -- the metric measured to hand 0.7381 to a predictor that
+    # never fires while the model itself scored 0.5257 balanced (REGISTER
+    # #187). Fixing one selector and leaving the other is the same defect
+    # with a smaller blast radius.
+    if "score" in metrics and metrics["score"] is not None:
+        return float(metrics["score"]), "score"
+
     if target_type in CLASSIFICATION_TARGET_TYPES:
         if target_type == CLASSIFICATION_BINARY_TYPE:
             for key in ("auc", "val_auc"):
@@ -59,8 +78,26 @@ def _score(metrics: dict[str, Any], target_type: str) -> tuple[float, str] | Non
 
 
 def select_champions(models_metadata: dict[str, Any], target_types: dict[str, str]) -> dict[str, Any]:
-    """Group models_metadata entries by (ticker, target) and pick the
-    highest-scoring model_type in each group.
+    """Group models_metadata entries by (ticker, timeframe, target) and pick
+    the highest-scoring model_type in each group.
+
+    The timeframe belongs in that key and was missing until 2026-09-01. The
+    intent was to choose the best ARCHITECTURE for a (ticker, target); without
+    the timeframe it also chose the best CADENCE, by comparing scores that are
+    not comparable. Measured on run 7: `Built metadata for 9 models` became
+    `Filtered to 7 champion model(s)`, and the two that vanished were exactly
+    the pair of names that repeat across frames --
+    `target_hourly_breakout_1h` and `target_volatility_spike_1h`, each present
+    on 15m and on 60m. Both had passed the gate as separate contexts, with
+    separate verdicts and separate files, and both carry the timeframe in
+    their own context id. The log said 9 and then 7; nothing said that two had
+    been discarded.
+
+    Why it is not a detail: our own measurement (CLAIMS.md R6) says a coarser
+    cadence scores higher because the clock opponent weakens, not because the
+    model improves. So the missing key systematically preferred the coarser
+    frame -- and R8 then showed that the coarser intraday frame is the one with
+    barely two years of history behind it.
 
     Returns {"{ticker}::{target}": {champion payload}}, where the payload's
     `source_key` is the winning entry's *actual* key in `models_metadata`
@@ -72,16 +109,19 @@ def select_champions(models_metadata: dict[str, Any], target_types: dict[str, st
     A group where nothing is comparable comes back with status
     "no_champion" rather than a fabricated winner or a silent skip.
     """
-    groups: dict[tuple[str, str], list[tuple[str, dict[str, Any]]]] = {}
+    groups: dict[tuple[str, str, str], list[tuple[str, dict[str, Any]]]] = {}
     for source_key, entry in models_metadata.items():
         ticker = entry.get("ticker")
         target = entry.get("target")
         if not ticker or not target:
             continue
-        groups.setdefault((ticker, target), []).append((source_key, entry))
+        # An entry with no timeframe gets its own group rather than joining
+        # one: an unknown cadence is not the same cadence as another unknown.
+        timeframe = str(entry.get("timeframe") or "unknown")
+        groups.setdefault((ticker, timeframe, target), []).append((source_key, entry))
 
     champions: dict[str, Any] = {}
-    for (ticker, target), entries in groups.items():
+    for (ticker, timeframe, target), entries in groups.items():
         target_type = target_types.get(target, "regression")
         scored = []
         for source_key, entry in entries:
@@ -90,10 +130,11 @@ def select_champions(models_metadata: dict[str, Any], target_types: dict[str, st
                 score, score_name = result
                 scored.append((score, score_name, source_key, entry))
 
-        key = f"{ticker}::{target}"
+        key = f"{ticker}::{timeframe}::{target}"
         if not scored:
             champions[key] = {
                 "ticker": ticker,
+                "timeframe": timeframe,
                 "target": target,
                 "target_type": target_type,
                 "status": "no_champion",
@@ -106,6 +147,7 @@ def select_champions(models_metadata: dict[str, Any], target_types: dict[str, st
         best_score, best_score_name, best_source_key, best_entry = scored[0]
         champions[key] = {
             "ticker": ticker,
+            "timeframe": timeframe,
             "target": target,
             "target_type": target_type,
             "status": "champion_selected",

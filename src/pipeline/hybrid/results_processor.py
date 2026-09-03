@@ -121,10 +121,14 @@ class ResultsProcessor:
         light_results: dict[str, Any] | None) ->dict[str, Any]:
         """Build models metadata from colab and light results, then hard-
         filter it down to the single empirical champion model_type per
-        (ticker, target) -- see src/pipeline/hybrid/champion_selector.py.
-        Stage 5 never sees, and can never accidentally predict with, an
-        architecture that trained worse than another candidate for the
-        same (ticker, target)."""
+        (ticker, timeframe, target) -- see
+        src/pipeline/hybrid/champion_selector.py. Stage 5 never sees, and can
+        never accidentally predict with, an architecture that trained worse
+        than another candidate for the same context.
+
+        The timeframe entered that key on 2026-09-01. Without it the filter
+        also compared cadences, and run 7 lost two of its nine champions to a
+        comparison nobody had asked for (REGISTER #212)."""
         models_metadata = {}
         if 'models_metadata' in colab_results:
             models_metadata.update(colab_results['models_metadata'])
@@ -137,15 +141,24 @@ class ResultsProcessor:
         candidate_count = len(models_metadata)
         target_types = load_target_types()
         models_metadata = filter_to_champions(models_metadata, target_types)
+        dropped = candidate_count - len(models_metadata)
+        # The count alone said 9 -> 7 and left the reader to notice. Naming the
+        # grouping and the loss is the difference between a log line and a
+        # report: two champions that had passed the gate were being discarded
+        # here, and nothing said so (REGISTER #212).
         self.logger.info(
             f'🏆 Filtered to {len(models_metadata)} champion model(s) '
-            f'(from {candidate_count} candidate(s) across all (ticker, target) groups)'
+            f'(from {candidate_count} candidate(s) grouped by '
+            f'(ticker, timeframe, target)'
+            + (f'; {dropped} discarded as not the best model type for their '
+               f'group' if dropped else '') + ')'
         )
         if candidate_count and not models_metadata:
             self.logger.warning(
-                '⚠️ Champion filter removed every candidate -- no (ticker, target) '
-                'group had a model with a comparable metric. Stage 5 will have no '
-                'models_metadata to predict with.'
+                '⚠️ Champion filter removed every candidate -- no '
+                '(ticker, timeframe, target) group had a model with a '
+                'comparable metric. Stage 5 will have no models_metadata to '
+                'predict with.'
             )
         return models_metadata
 

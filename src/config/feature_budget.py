@@ -65,3 +65,65 @@ def get_model_max_features(model_type: str, config_manager=None) -> int:
             model_type, e, DEFAULT_MAX_FEATURES,
         )
         return DEFAULT_MAX_FEATURES
+
+
+#: Safety margin between the pre-screen ceiling and the largest budget any
+#: model may actually spend. The pre-screen ranks columns by the SAME
+#: statistic the per-model budget uses, so a ceiling equal to the largest
+#: budget would already be enough -- the top 35 of the top 70 are the top 35.
+#: The doubling exists for the one case where that reasoning is not exact:
+#: the pre-screen ranks the raw column, the budget ranks it after scaling,
+#: and two columns whose correlations agree to twelve decimal places can
+#: swap places between the two. A swap inside the margin cannot change what
+#: any model is trained on; a swap at the ceiling itself could.
+PRESELECTION_MARGIN = 2
+
+#: Never pre-screen below this, whatever the configured budgets say. A run
+#: with every budget set to 5 should still leave the arena something to
+#: choose between.
+MIN_PRESELECTION_CEILING = 64
+
+
+def get_preselection_ceiling(config_manager=None) -> int:
+    """How many columns are worth imputing and scaling at all.
+
+    The pipeline used to impute, scale and sequence EVERY numeric column and
+    then hand each model its budget of 5 to 35. Measured on the pooled daily
+    context of 2026-08-31: 474 columns across 490,799 rows, of which the
+    largest budget spends 35. The other 439 were carried through
+    `SimpleImputer(strategy='median')`, which sorts through a masked array --
+    a `(490799, 200)` int64 index, 749 MiB for one block -- and the stage died
+    there with a MemoryError after eight hours.
+
+    So the ceiling is derived from what the budgets can actually spend rather
+    than being a new tuning knob: the largest configured budget, doubled, and
+    never below `MIN_PRESELECTION_CEILING`. Nothing here decides WHICH columns
+    survive; that is the caller's ranking, and it is the same ranking the
+    budget itself uses.
+    """
+    budgets: list[int] = []
+    try:
+        if config_manager is None:
+            from src.config.unified_config_manager import get_current_config
+            config_manager = get_current_config()
+        per_model = config_manager.get("models.per_model", {}) or {}
+        for settings in per_model.values():
+            if not isinstance(settings, dict):
+                continue
+            value = settings.get("max_features")
+            if value is None:
+                continue
+            budget = int(value)
+            if budget > 0:
+                budgets.append(budget)
+    except (ImportError, AttributeError, TypeError, ValueError, KeyError) as e:
+        # KeyError belongs here: a config manager that raises on a missing
+        # key is a normal shape, and letting it through would take the whole
+        # modelling stage down over a ceiling that has a documented default.
+        logger.warning(
+            "Could not read the per-model feature budgets (%s); the "
+            "pre-screen ceiling falls back to the default budget.", e,
+        )
+
+    largest = max(budgets) if budgets else DEFAULT_MAX_FEATURES
+    return max(MIN_PRESELECTION_CEILING, largest * PRESELECTION_MARGIN)

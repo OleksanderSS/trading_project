@@ -255,7 +255,11 @@ class EvaluationStage(BaseStage):
                 final_summary['pipeline_control_evaluation_metric_artifacts'] = pipeline_control_paths
                 if summary_path:
                     save_evaluation_summary(Path(summary_path), final_summary)
-            equity_path = self.report_gen.plot_equity_curve(portfolio_history, financial_metrics)
+            # The picture is told what the summary already knows.
+            equity_path = self.report_gen.plot_equity_curve(
+                portfolio_history, financial_metrics,
+                simulated=bool(final_summary.get('is_simulated_data')),
+            )
 
             # 9. External notification requires an explicit per-run opt-in.
             if notification_authorized:

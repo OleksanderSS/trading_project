@@ -57,12 +57,33 @@ def test_a_short_context_is_not_stretched_into_meaningless_folds():
     assert config.validation_rows >= ModelingStage._MIN_FOLD_VALIDATION_ROWS
 
 
-def test_intraday_contexts_keep_the_full_windows():
+def test_the_window_never_shrinks_below_the_defaults():
     """Shrinking is for contexts that cannot afford the defaults, not for all."""
-    default = ModelingStage._walk_forward_config_for(1100)
+    for row_count in (1100, 5000, 104_267):
+        config = ModelingStage._walk_forward_config_for(row_count)
+        assert config.min_train_rows >= 360
+        assert config.validation_rows >= 120
 
-    assert default.min_train_rows == 360
-    assert default.validation_rows == 120
+
+def test_the_window_grows_with_the_context_instead_of_staying_at_120():
+    """The defect pooling exposed: more data, smaller checked fraction.
+
+    The geometry used to return the fixed defaults whenever they produced
+    enough folds -- that is, whenever data was plentiful. Measured on the
+    pooled run of 2026-08-30: 104,267 training rows, four folds, and all four
+    validation windows inside the LAST 480 rows. 0.46% of the data, at the
+    very end of the timeline, deciding whether a model became a champion.
+    """
+    small = ModelingStage._walk_forward_config_for(900)
+    pooled = ModelingStage._walk_forward_config_for(104_267)
+
+    # A per-ticker context is unchanged: 900 // 8 is 112, and the floor of
+    # 120 keeps the old window.
+    assert small.validation_rows == 120
+
+    assert pooled.validation_rows == 104_267 // 8
+    validated = pooled.validation_rows * ModelingStage._MIN_STABLE_FOLDS
+    assert validated > 480 * 10
 
 
 @pytest.mark.parametrize(
@@ -164,3 +185,93 @@ def test_an_unmeasurable_context_is_passed_through_rather_than_failed():
     # stated reason, never a silent refusal.
     assert stage_result['passed'] is True
     assert 'too few folds' in stage_result['reason']
+
+
+def test_a_pooled_context_is_evaluated_rather_than_silently_skipped():
+    """The rung that asks whether an edge holds over TIME was off entirely.
+
+    `_prepare_context_frame` filtered `ticker == "__POOLED__"`. That is a
+    synthetic context name, not a value in the data, so it matched ZERO of
+    159,149 rows; "fewer than two classes" was raised, the caller logged it at
+    DEBUG and returned None — and None is read upstream as "not measurable,
+    pass through". Measured 2026-08-31: both champions of that run were
+    promoted without this check, and pooling had been on since #155.
+
+    The timestamp dedupe was the second half: 110 names share every bar, so
+    `drop_duplicates(keep="last")` would have kept whichever ticker sorted
+    last and turned 159,149 rows into ~7,200 belonging to no one.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from src.pipeline.modeling_context import POOLED_TICKER
+    from src.pipeline.stages.modeling.walk_forward_validation import (
+        PipelineWalkForwardValidationEvaluator,
+        WalkForwardValidationConfig,
+    )
+
+    tickers = [f"T{i:02d}" for i in range(12)]
+    bars = pd.date_range("2024-01-01", periods=900, freq="15min", tz="UTC")
+    rng = np.random.default_rng(5)
+    rows = []
+    for name in tickers:
+        frame = pd.DataFrame({
+            "datetime": bars,
+            "ticker": name,
+            "interval": "15m",
+            "signal": rng.normal(size=len(bars)),
+        })
+        # Structure a working check must find, and a broken one cannot.
+        frame["t"] = ((frame["signal"] > 0) | (rng.random(len(bars)) < 0.05)).astype(int)
+        rows.append(frame)
+    pooled = pd.concat(rows, ignore_index=True).sort_values("datetime")
+
+    config = WalkForwardValidationConfig(
+        min_train_rows=4000, validation_rows=1200, step_rows=1200,
+        max_folds=3, max_features=3,
+    )
+    result = PipelineWalkForwardValidationEvaluator(config).evaluate(
+        pooled, ticker=POOLED_TICKER, timeframe="15m", target_name="t")
+
+    metrics = result["metrics"]
+    assert metrics["fold_count"] >= 3
+    # Every row kept, not one per timestamp.
+    assert result["folds"][0]["train_window"]["sample_count"] > 1000
+    assert metrics["mean_validation_balanced_accuracy"] > 0.6
+
+
+def test_the_purge_is_scaled_by_rows_per_bar_on_a_pooled_frame():
+    """A purge of 5 ROWS spans a twentieth of a bar when 110 names share it.
+
+    The same defect already fixed for the split in `prepare_data_for_models`;
+    here it would let the training window all but touch its validation window.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from src.pipeline.modeling_context import POOLED_TICKER
+    from src.pipeline.stages.modeling.walk_forward_validation import (
+        PipelineWalkForwardValidationEvaluator,
+        WalkForwardValidationConfig,
+    )
+
+    names = [f"T{i}" for i in range(10)]
+    bars = pd.date_range("2024-01-01", periods=800, freq="15min", tz="UTC")
+    rng = np.random.default_rng(6)
+    pooled = pd.concat([
+        pd.DataFrame({"datetime": bars, "ticker": n, "interval": "15m",
+                      "signal": rng.normal(size=len(bars)),
+                      "t": (rng.random(len(bars)) > 0.5).astype(int)})
+        for n in names
+    ], ignore_index=True).sort_values("datetime")
+
+    config = WalkForwardValidationConfig(
+        min_train_rows=3000, validation_rows=1000, step_rows=1000,
+        max_folds=3, max_features=2, purge_rows=5,
+    )
+    result = PipelineWalkForwardValidationEvaluator(config).evaluate(
+        pooled, ticker=POOLED_TICKER, timeframe="15m", target_name="t")
+
+    purge = result["folds"][0]["purge_window"]
+    # 5 configured bars x 10 names sharing every bar.
+    assert purge["row_count"] == 5 * 10, purge

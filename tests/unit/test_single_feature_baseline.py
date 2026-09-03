@@ -109,3 +109,73 @@ class TestItRefusesRatherThanInventsAScore:
         d = bundle(); d['X_holdout'] = 'not a frame'
         out = score(d, False, 'regression', 'R2', Evaluator())
         assert out['single_feature_score'] is None
+
+
+def test_the_rung_survives_the_datetime_index_the_pipeline_actually_passes():
+    """It did not, and the failure was invisible for weeks.
+
+    `corrwith` aligns on the index. `prepare_data_for_models` gives every
+    split a `model_datetime` DatetimeIndex, while this baseline built its
+    target with the default RangeIndex -- so the two shared not one label,
+    every correlation came out NaN, and `dropna()` left nothing. The status
+    read "no usable feature", which is a legitimate state, and the gate only
+    binds when the score is not None. A dead rung and a passed rung looked
+    identical from outside.
+
+    Found 2026-08-31 on the first champion of run 7, whose log line read
+    `one feature n/a` beside three measured opponents.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from src.metrics.model.ml_evaluator import MLEvaluator
+    from src.training.base_trainer import BaseTrainer
+
+    n = 200
+    index = pd.date_range("2024-01-01", periods=n, freq="15min", tz="UTC")
+    index.name = "model_datetime"
+    feature = np.random.default_rng(1).normal(size=n)
+    target = (feature > 0).astype(int)
+
+    def score(frame_index):
+        data = {
+            "X_train": pd.DataFrame({"f": feature}, index=frame_index),
+            "y_train": target,
+            "X_holdout": pd.DataFrame({"f": feature}, index=frame_index),
+            "y_holdout": target,
+        }
+        return BaseTrainer._score_single_feature_baseline(
+            data, True, "classification", "F1", MLEvaluator())
+
+    stamped = score(index)
+    plain = score(pd.RangeIndex(n))
+
+    assert stamped["single_feature_status"] == "measured"
+    assert stamped["single_feature_score"] == plain["single_feature_score"]
+
+
+def test_a_length_mismatch_is_reported_not_raised():
+    """The index must not be attached before the lengths are checked.
+
+    `pd.Series(values, index=frame.index)` raises when they disagree, and the
+    handler below would file that as "failed: ValueError" -- a third way for
+    this rung to disappear quietly.
+    """
+    import numpy as np
+    import pandas as pd
+
+    from src.metrics.model.ml_evaluator import MLEvaluator
+    from src.training.base_trainer import BaseTrainer
+
+    index = pd.date_range("2024-01-01", periods=100, freq="15min", tz="UTC")
+    feature = np.arange(100.0)
+    out = BaseTrainer._score_single_feature_baseline(
+        {
+            "X_train": pd.DataFrame({"f": feature}, index=index),
+            "y_train": np.zeros(50),
+            "X_holdout": pd.DataFrame({"f": feature}, index=index),
+            "y_holdout": np.zeros(100),
+        },
+        True, "classification", "F1", MLEvaluator(),
+    )
+    assert out["single_feature_status"] == "shape_mismatch"

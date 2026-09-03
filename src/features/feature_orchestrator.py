@@ -270,7 +270,32 @@ class FeatureOrchestrator:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'   Output shape: {df_enriched.shape}')
 
-        logger.info(f"✅ Enricher '{enricher.name}' completed: +{cols_added} columns in {duration:.2f}s")
+        if cols_added > 0:
+            logger.info(
+                f"✅ Enricher '{enricher.name}' completed: "
+                f"+{cols_added} columns in {duration:.2f}s"
+            )
+        else:
+            # An enricher that added nothing did not succeed.
+            #
+            # On 2026-08-29 `macro_features` built its pivot, logged
+            # "Pivoted macro data into 45 FRED columns", failed to find a
+            # 'datetime' column during the join, returned the frame
+            # untouched -- and this line printed a green checkmark saying
+            # "+0 columns". Forty-five macro columns were missing from the
+            # batch and nothing in the log said so; it took reading the
+            # checkpoint's column count (383 against 475) to notice.
+            #
+            # Zero is not neutral. It is either a defect or a configuration
+            # that should not have run at all, and both deserve to be
+            # visible while the run is still going.
+            logger.error(
+                "Enricher '%s' added NOTHING (+0 columns in %.2fs) but "
+                "reported no failure. Either its join produced no usable "
+                "output, or it should not be enabled. Check the lines it "
+                "logged just above.",
+                enricher.name, duration,
+            )
 
         stats = {
             'enricher': enricher.name,
@@ -601,6 +626,19 @@ class FeatureOrchestrator:
         # earlier would leave the later ones accumulating rolling sums in
         # float32.
         df_enriched = self._downcast_float_columns(df_enriched)
+
+        # `_downcast_integer_columns` was written, documented with its own
+        # measurements -- "224 of the 15-minute frame's 466 columns are int64,
+        # 234 of the daily frame's 480" -- and never called. Only the float
+        # half of the pair was wired up.
+        #
+        # The cost was paid on 2026-08-30: the daily checkpoint carried 229
+        # int64 columns holding states of -1/0/1 and availability flags of
+        # 0/1, eight bytes each. That is 1.29 GiB where int8 needs 161 MiB,
+        # and it is also why a mixed selection of int64 and float32 columns
+        # comes back as float64 -- which is the dtype in the MemoryError that
+        # stopped the pooled run four targets into the daily frame.
+        df_enriched = self._downcast_integer_columns(df_enriched)
 
         logger.info('✅ Feature enrichment pipeline completed.')
         logger.info(f'📊 Final result: {df_enriched.shape[0]} rows, {df_enriched.shape[1]} columns')

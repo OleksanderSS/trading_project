@@ -472,9 +472,42 @@ class PipelineOrchestrator:
             if stage_name == 'ModelingStage':
                 enriched_data = stage_outputs.get('enriched_data')
                 if enriched_data is not None:
-                    self.logger.info(f"ModelingStage receiving enriched_data with shape: {enriched_data.shape}")
-                    target_cols = [col for col in enriched_data.columns if col.startswith('target_')]
-                    self.logger.info(f"ModelingStage enriched_data target columns: {len(target_cols)}")
+                    # A DEBUG LINE MUST NOT BE ABLE TO KILL THE RUN.
+                    #
+                    # `_load_prepared_batch` deliberately returns a dict keyed
+                    # by timeframe -- `iter_model_contexts` has always taken
+                    # one, and keeping the slices apart is what stopped the
+                    # union from costing 11 GiB. This line assumed a frame,
+                    # called `.shape` on the dict, and the AttributeError
+                    # propagated out of `_execute_stage` as
+                    #
+                    #   RuntimeError: Stage ModelingStage execution failed:
+                    #   'dict' object has no attribute 'shape'
+                    #
+                    # Measured 2026-08-29: stage 4 never started. Not one row
+                    # was trained on, and the cause was a log message about
+                    # the data rather than anything done to it.
+                    if isinstance(enriched_data, dict):
+                        for key, frame in enriched_data.items():
+                            shape = getattr(frame, 'shape', None)
+                            columns = getattr(frame, 'columns', [])
+                            targets = sum(1 for c in columns
+                                          if str(c).startswith('target_'))
+                            self.logger.info(
+                                "ModelingStage receiving '%s': shape %s, "
+                                "%d target column(s)", key, shape, targets,
+                            )
+                    else:
+                        self.logger.info(
+                            "ModelingStage receiving enriched_data with shape: %s",
+                            getattr(enriched_data, 'shape', 'unknown'),
+                        )
+                        target_cols = [c for c in getattr(enriched_data, 'columns', [])
+                                       if str(c).startswith('target_')]
+                        self.logger.info(
+                            "ModelingStage enriched_data target columns: %d",
+                            len(target_cols),
+                        )
             return await stage.run(**stage_outputs)
 
     # Stages whose output the rest of the pipeline cannot do without. When one

@@ -57,6 +57,8 @@ class UnifiedAnalyticsEngine:
         self.analyzer_configs = engine_config.get('analyzers', [])
         self.results_manager = ModelResultsManager()
         self._contract_timeout = self.DEFAULT_ANALYZER_TIMEOUT
+        #: id(frame) -> (frame, digest). See `_frame_content_hash`.
+        self._hash_cache: dict[int, tuple[Any, str]] = {}
         self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
         self._register_analyzers_from_config()
         logger.info(
@@ -172,6 +174,50 @@ class UnifiedAnalyticsEngine:
         )
         return hashlib.sha256(deterministic_json.encode()).hexdigest()
 
+    #: How many recently hashed frames to remember by identity. Small on
+    #: purpose: it exists to stop ONE unchanged frame being rehashed for every
+    #: context in a loop, not to be a general cache.
+    _HASH_CACHE_SIZE = 8
+
+    def _frame_content_hash(self, frame: "pd.DataFrame | pd.Series") -> str:
+        """Content hash of a frame, computed once per object.
+
+        `hash_pandas_object` walks every value. Measured 2026-09-01 on this
+        machine:
+
+            11,000 x 439      0.42 s
+            1,243,783 x 25    1.77 s
+            1,243,783 x 439  28.23 s
+
+        Stage 7 partitions prices by (ticker, cadence) and calls
+        `run_full_analysis` once per partition, passing the SAME features
+        frame every time. So the 28-second hash was recomputed for each of
+        ~330 contexts -- about two and a half hours -- to build a cache key
+        for an analysis that takes 0.05 s, and the key could never hit
+        anyway, because `price_data` differs by construction on every call.
+        A cache key that costs five hundred times the computation it protects
+        is not a cache.
+
+        Keyed on object identity, with the object retained so the id cannot be
+        reused by a later allocation. A frame mutated in place between calls
+        would return a stale hash; nothing in this pipeline does that to a
+        frame it has already handed to the engine, and the alternative --
+        hashing to find out whether the hash changed -- is the cost being
+        removed.
+        """
+        key = id(frame)
+        cached = self._hash_cache.get(key)
+        if cached is not None:
+            return cached[1]
+        digest = hashlib.sha256(
+            pd.util.hash_pandas_object(frame, index=True, categorize=True)
+            .values.tobytes()
+        ).hexdigest()
+        self._hash_cache[key] = (frame, digest)
+        while len(self._hash_cache) > self._HASH_CACHE_SIZE:
+            self._hash_cache.pop(next(iter(self._hash_cache)))
+        return digest
+
     def _generate_data_hash(self, data_map: dict[str, Any]) ->str:
         """
         Generates a stable fingerprint (MD5 hash) for input datasets to support result caching.
@@ -184,13 +230,7 @@ class UnifiedAnalyticsEngine:
             for key in sorted(data_map.keys()):
                 value = data_map[key]
                 if isinstance(value, pd.DataFrame):
-                    content_hash = hashlib.sha256(
-                        pd.util.hash_pandas_object(
-                            value,
-                            index=True,
-                            categorize=True,
-                        ).values.tobytes()
-                    ).hexdigest()
+                    content_hash = self._frame_content_hash(value)
                     stable_repr[key] = {
                         'shape': value.shape,
                         'columns': list(value.columns),

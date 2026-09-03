@@ -570,6 +570,7 @@ class CollectionStage(BaseStage):
                 df['available_at'] = pd.to_datetime(
                     df[existing], errors='coerce', utc=True
                 )
+            df = self._derive_unrevised_availability(df)
             return self._defer_date_only_availability(df, table_name)
 
         source_column = self._MACRO_SELF_TIMED_TABLES.get(table_name)
@@ -593,6 +594,70 @@ class CollectionStage(BaseStage):
             table_name, source_column,
         )
         return self._defer_date_only_availability(df, table_name)
+
+    def _derive_unrevised_availability(self, df: pd.DataFrame) -> pd.DataFrame:
+        """For series FRED never revises, availability follows the observation.
+
+        `realtime_start` is the honest release date only when the request
+        carried a vintage window. For the eighteen daily market series in
+        `FredCollector.UNREVISED_DAILY_SERIES` that window is deliberately
+        omitted -- FRED refuses it on a series with thousands of vintages --
+        so the API returns the current vintage and stamps EVERY observation
+        with the request date.
+
+        Measured on the live table 2026-08-28, after a thirty-year collection:
+
+            DGS10   22,919 observations   dates 1996-09-04 .. 2026-08-26
+                                          realtime_start 2026-06-05 .. 08-28
+
+        Thirty years of history, all marked as having become known this
+        summer. Those eighteen series hold 247,095 of the table's 314,062
+        rows. Joined to the daily frame it means every FRED column is null
+        for the whole training window and starts moving only in the holdout:
+        107 features constant while a model learns, and a third of the daily
+        columns dropped as separating nothing.
+
+        The rule is not an invention, it is the definition. A Treasury yield,
+        a VIX close or an FX rate for a given day is an OBSERVATION, not an
+        estimate; FRED does not restate it, so it became public one business
+        day after the day it describes. Deriving that is more truthful than
+        a stamp recording when we happened to ask.
+
+        Revised series are untouched: for CPI, GDP or payrolls the vintage
+        window works and carries the real release date -- CPIAUCSL stamps
+        1996-10-16 against a 1996-09-01 observation, a 45-day lag this must
+        not overwrite.
+        """
+        if 'series_id' not in df.columns or 'date' not in df.columns:
+            return df
+
+        from src.data.collectors.fred_collector import FredCollector
+
+        unrevised = df['series_id'].astype('string').isin(
+            FredCollector.UNREVISED_DAILY_SERIES
+        )
+        if not bool(unrevised.any()):
+            return df
+
+        observed = pd.to_datetime(df.loc[unrevised, 'date'], errors='coerce',
+                                  utc=True)
+        derived = observed + pd.tseries.offsets.BusinessDay(1)
+
+        df = df.copy()
+        before = pd.to_datetime(df.loc[unrevised, 'available_at'],
+                                errors='coerce', utc=True)
+        df.loc[unrevised, 'available_at'] = derived.to_numpy()
+        moved = int((before != derived).sum())
+        self.logger.info(
+            "Availability derived from the observation date for %d row(s) "
+            "across %d unrevised series (%d changed): a daily market figure "
+            "is public one business day after the day it describes, not on "
+            "the day we collected it.",
+            int(unrevised.sum()),
+            int(df.loc[unrevised, 'series_id'].nunique()),
+            moved,
+        )
+        return df
 
     def _defer_date_only_availability(
         self, df: pd.DataFrame, table_name: str

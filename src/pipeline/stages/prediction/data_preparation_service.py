@@ -16,6 +16,9 @@ from src.core.logging.logger import ProjectLogger
 from src.pipeline.modeling_context import (
     INSTRUMENT_CODE_COLUMN,
     instrument_code,
+    instrument_ticker,
+    is_pooled,
+    rows_for_ticker,
 )
 from src.pipeline.timeframe_lineage import is_timeframe_token, normalize_timeframe
 from src.pipeline.stages.prediction.lineage import (
@@ -133,12 +136,32 @@ class DataPreparationService:
         Stage 5 finished with 0 predictions from 330 resolved models while
         the pipeline reported success.
         """
-        ticker_rows = features_df[features_df['ticker'] == ticker]
+        pooled = is_pooled(ticker)
+        ticker_rows = rows_for_ticker(features_df, ticker)
         if timeframe:
             ticker_rows = self._rows_for_timeframe(ticker_rows, ticker, timeframe)
-        ticker_df = ticker_rows.tail(50)
+        # A pooled context is every ticker at once, so the recent window has to
+        # be taken per instrument. `.tail(50)` on the pooled frame would return
+        # fifty rows of whichever ticker happens to sort last and call that the
+        # state of the market.
+        if pooled and 'ticker' in ticker_rows.columns:
+            ticker_df = ticker_rows.groupby('ticker', sort=False).tail(50)
+        else:
+            ticker_df = ticker_rows.tail(50)
         if ticker_df.empty:
-            self.logger.warning(f'⚠️ No data for ticker {ticker}')
+            # Naming the cause matters more than it looks: on 2026-09-01 all
+            # seven pooled champions logged "No data for ticker __POOLED__",
+            # which reads as a data problem and is in fact a filter matching a
+            # synthetic name against real ones (#210, and #189 before it).
+            if pooled:
+                self.logger.error(
+                    'No rows for the pooled context after the %s timeframe '
+                    'filter. The pooled frame holds every ticker, so an empty '
+                    'result here is a filter defect, not missing data.',
+                    timeframe or 'any',
+                )
+            else:
+                self.logger.warning(f'⚠️ No data for ticker {ticker}')
             return None
 
         ticker_df_clean = ticker_df.copy()
@@ -201,7 +224,10 @@ class DataPreparationService:
         Returns:
             Tuple of (ticker_df_clean, selected_features) or None if preparation fails
         """
-        ticker = meta.get('ticker')
+        # Rows are selected by the INSTRUMENT; the preprocessor below is
+        # loaded by the ARTIFACT identity. They coincide for a per-ticker
+        # model and differ for a pooled one.
+        ticker = instrument_ticker(meta)
         if not ticker:
             self.logger.error(f'No ticker found in metadata for context {context_id}')
             return None

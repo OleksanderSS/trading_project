@@ -20,6 +20,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from src.pipeline.modeling_context import (
+    INSTRUMENT_META_KEY,
+    instrument_ticker,
+    is_pooled,
+)
 from src.analytics.context.prediction_adjuster import PredictionAdjuster
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
@@ -212,30 +217,97 @@ class PredictionStage(BaseStage):
             f'Generating ensemble predictions for {len(filtered_models_meta)}/{len(models_meta)} available contexts...'
             )
         for context_id, meta in filtered_models_meta.items():
-            try:
-                result = self._process_single_context(context_id, meta,
-                    features_df, market_regime, news_data=news_data)
-                if result:
-                    prediction_results[context_id] = result
-            except Exception as e:
-                # Deliberately broad, and the narrowness was the defect. The
-                # tuple here was (ValueError, TypeError, KeyError,
-                # AttributeError); an IndexError from one context with no rows
-                # escaped it and stopped stages 5, 6 and 7 on 2026-08-23 -- the
-                # first run in which they had ever executed at all.
-                #
-                # A per-context failure must stay per-context. This loop
-                # already records the reason and continues, so the only thing
-                # the narrow tuple bought was deciding which failures were
-                # allowed to be fatal, by accident of which types someone
-                # listed. Same shape as the 653 narrow tuples the
-                # silent-failure contract already counts.
-                self.handle_stage_error(e, context=
-                    f'Prediction-{context_id}', severity='error')
-                self.logger.error(
-                    f'Prediction failed for context {context_id}: {e}',
-                    exc_info=True)
+            for request_key, request_meta in self._expand_context(
+                    context_id, meta, features_df):
+                self._predict_one(
+                    prediction_results, request_key, context_id, request_meta,
+                    features_df, market_regime, news_data,
+                )
         return prediction_results
+
+    def _expand_context(
+        self, context_id: str, meta: dict[str, Any], features_df: pd.DataFrame,
+    ) -> list[tuple[str, dict[str, Any]]]:
+        """One request per instrument for a pooled model, one otherwise.
+
+        A pooled model is trained on every ticker at once and then applied to
+        each of them separately. Before this, Stage 5 asked it once, for a
+        ticker named `__POOLED__`, and reduced 5,500 rows -- 110 instruments
+        over 50 bars -- to a single number: `Ensemble forecast for __POOLED__:
+        1.0000`. A forecast with no instrument cannot be priced (hence the
+        `0 prices` beside it), cannot be executed, and cannot be evaluated,
+        so pooling paid for itself in training and threw the result away at
+        prediction (REGISTER #216).
+
+        Fanning out here rather than deeper down is deliberate: every request
+        then travels the ordinary per-ticker path, which already works and is
+        already tested. The pooled model keeps its own identity -- the record's
+        `model_context_id` stays the pooled context, because that is the model
+        -- while the result key and the record's `ticker` carry the instrument.
+
+        An empty list is returned when the instruments cannot be established.
+        That yields zero predictions, which the run's verdict now reports as a
+        failure; substituting the pooled request would put back exactly the
+        silent behaviour this replaces.
+        """
+        ticker = meta.get('ticker')
+        if not is_pooled(ticker):
+            return [(context_id, meta)]
+        instruments = self._pooled_instruments(features_df)
+        if not instruments:
+            self.logger.error(
+                '%s is a pooled context but no instruments could be read from '
+                'the features frame, so it will produce nothing. A pooled '
+                'model has no meaning without the names it is applied to.',
+                context_id,
+            )
+            return []
+        self.logger.info(
+            'Pooled context %s expands to %d per-instrument requests.',
+            context_id, len(instruments),
+        )
+        return [
+            (f'{context_id}::{name}', {**meta, INSTRUMENT_META_KEY: name})
+            for name in instruments
+        ]
+
+    def _pooled_instruments(self, features_df: pd.DataFrame) -> list[str]:
+        """The instruments a pooled model is to be applied to."""
+        if features_df is None or getattr(features_df, 'empty', True):
+            return []
+        if 'ticker' not in features_df.columns:
+            return []
+        names = [str(name) for name in features_df['ticker'].dropna().unique()]
+        return sorted(name for name in names if not is_pooled(name))
+
+    def _predict_one(
+        self, prediction_results: dict[str, Any], request_key: str,
+        context_id: str, meta: dict[str, Any], features_df: pd.DataFrame,
+        market_regime: str, news_data: Any,
+    ) -> None:
+        try:
+            result = self._process_single_context(context_id, meta,
+                features_df, market_regime, news_data=news_data)
+            if result:
+                prediction_results[request_key] = result
+        except Exception as e:
+            # Deliberately broad, and the narrowness was the defect. The
+            # tuple here was (ValueError, TypeError, KeyError,
+            # AttributeError); an IndexError from one context with no rows
+            # escaped it and stopped stages 5, 6 and 7 on 2026-08-23 -- the
+            # first run in which they had ever executed at all.
+            #
+            # A per-context failure must stay per-context. This loop
+            # already records the reason and continues, so the only thing
+            # the narrow tuple bought was deciding which failures were
+            # allowed to be fatal, by accident of which types someone
+            # listed. Same shape as the 653 narrow tuples the
+            # silent-failure contract already counts.
+            self.handle_stage_error(e, context=
+                f'Prediction-{request_key}', severity='error')
+            self.logger.error(
+                f'Prediction failed for context {request_key}: {e}',
+                exc_info=True)
 
     def _get_available_model_types(self) ->set:
         """Get available model types by scanning model files in the database directory"""
@@ -249,7 +321,10 @@ class PredictionStage(BaseStage):
         if context_result is None:
             return None
         ticker_df_clean, filtered_features_list = context_result
-        ticker = meta.get('ticker')
+        # The instrument, not the artifact identity: for a pooled champion
+        # these differ, and the record, the price lookup and the calibration
+        # ledger all want the instrument.
+        ticker = instrument_ticker(meta)
         if not ticker:
             self.logger.error(f'Ticker missing for context {context_id}')
             return None
@@ -542,9 +617,24 @@ class PredictionStage(BaseStage):
                 )
         pred_value = self.prediction_generator.extract_prediction_value(request
             .adjusted_prediction)
+        # Log the number that is USED, not a fourth one nobody consumes.
+        #
+        # This printed `confidence_info['score']` -- the ensemble agreement
+        # alone, before the anomaly multiplier and before calibration. The
+        # value the pipeline carries forward is `final_confidence`, and both
+        # `raw_confidence` and `anomaly_score` are kept beside it. Reading the
+        # log on 2026-08-29 therefore showed "Conf: 30.83%" for a forecast of
+        # 1.0, which looks like a system predicting the class it thinks less
+        # likely -- it was simply a different quantity wearing the name.
+        #
+        # All three are printed now, because their RATIO is what explains a
+        # low final number: agreement times anomaly, then calibrated.
         self.logger.info(
-            f"Ensemble forecast for {request.ticker}: {pred_value:.4f} | Conf: {confidence_info.get('score'):.2%}"
-            )
+            "Ensemble forecast for %s: %.4f | confidence %.2f%% "
+            "(agreement %.2f%% x anomaly %.2f, calibrated)",
+            request.ticker, pred_value, final_confidence * 100,
+            float(confidence_info.get('score', 0.0)) * 100, anomaly_score,
+        )
         observed_at = prediction_observed_at(request.ticker_df_clean)
         resolved_timeframe = (
             request.meta.get("timeframe")

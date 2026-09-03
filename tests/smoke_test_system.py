@@ -1,7 +1,6 @@
 import pandas as pd
 
 from src.analytics.arena.arena_battle import get_trading_arena
-from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
 from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
@@ -10,42 +9,44 @@ from src.risk.elite_risk_metrics import EliteRiskMetrics
 logger = ProjectLogger.get_logger("SystemHealthCheck")
 
 def run_smoke_test():
-    report = {"INTEGRATED": [], "ORPHANED": []}
+    # These were called INTEGRATED and ORPHANED. Only the first section
+    # measures integration -- a component registered by UnifiedAnalyticsEngine
+    # is one the pipeline will call. The sections below construct a class and
+    # call a method: that shows the code imports and runs, which is not the
+    # same claim.
+    #
+    # MarketContextAnalyzer is why the distinction matters. It sat in the list
+    # below and was reported INTEGRATED on every run, while its only consumer
+    # set `self.analyzer = ...` and never read the attribute again. It was
+    # archived on 2026-08-13, and a check that says "integrated" for a class
+    # nothing calls is worse than no check.
+    report = {"REGISTERED": [], "IMPORTABLE": [], "BROKEN": []}
     logger.info("Starting System Health & Integration Check...")
 
-    # 1. Check the real analyzer registration path (analysis.yaml-driven,
-    # not the archived static ANALYZER_REGISTRY dict)
+    # 1. The real registration path (analysis.yaml-driven, not the archived
+    # static ANALYZER_REGISTRY dict). This one does mean integrated.
     engine = UnifiedAnalyticsEngine(get_current_config())
     logger.info(f"Registry status: {len(engine.analyzers)} components registered.")
     for name in engine.analyzers:
-        report["INTEGRATED"].append(f"Analyzer: {name}")
+        report["REGISTERED"].append(f"Analyzer: {name}")
 
-    # 2. Check Market Context Analyzer (Feature Engine)
-    try:
-        mca = MarketContextAnalyzer(context_features=['volatility_5d', 'trend_5d'])
-        df = pd.DataFrame({'close': [100, 101, 102, 103, 104], 'volume': [100]*5})
-        mca.analyze(df)
-        report["INTEGRATED"].append("MarketContextAnalyzer")
-    except Exception:
-        report["ORPHANED"].append("MarketContextAnalyzer")
-
-    # 3. Check Risk Metrics
+    # 2. Check Risk Metrics
     try:
         risk = EliteRiskMetrics()
         risk.calculate_volatility(pd.Series([0.01, -0.01, 0.02]))
-        report["INTEGRATED"].append("EliteRiskMetrics")
+        report["IMPORTABLE"].append("EliteRiskMetrics")
     except Exception:
-        report["ORPHANED"].append("EliteRiskMetrics")
+        report["BROKEN"].append("EliteRiskMetrics")
 
-    # 4. Check Arena
+    # 3. Check Arena
     try:
         arena = get_trading_arena()
-        report["INTEGRATED"].append("TradingModelArena (Arena)")
+        report["IMPORTABLE"].append("TradingModelArena (Arena)")
     except Exception:
-        report["ORPHANED"].append("TradingModelArena (Arena)")
+        report["BROKEN"].append("TradingModelArena (Arena)")
 
-    # 5. Output Connectivity Report
-    logger.info("--- INTEGRATION CONNECTIVITY REPORT ---")
+    # 4. Output Connectivity Report
+    logger.info("--- REGISTRATION AND IMPORT REPORT ---")
     for category, items in report.items():
         logger.info(f"{category}: {len(items)}")
         for item in items:

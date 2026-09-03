@@ -1840,3 +1840,32 @@ invoked today via `python run_shadow_battle.py` -- it is not the
 shadow-evidence stage Codex asks for, which needs forward calendar time on
 unseen data, but it is reachable and worth reading before that stage is
 designed.
+
+### `src/analytics/context/market_context_analyzer.py` → `src/archive/analytics/context/` (2026-08-13)
+
+`MarketContextAnalyzer` plus `tests/test_feature_engine.py`, which existed
+only to exercise it. Superseded by `MarketContextEnricher.
+_build_single_series_context` — a causal, vectorised implementation of the
+same 18 features, where the analyzer computed a point-in-time snapshot from
+the tail of the frame.
+
+Its only production reference was `self.analyzer = MarketContextAnalyzer(...)`
+in that enricher, commented "kept available to callers that need a latest
+snapshot". No caller ever read the attribute. Construction cost, and a false
+impression that the analyzer took part in building features.
+
+Two of its behaviours were kept rather than lost:
+
+- `missing_context_features`, the list of features it had to default, was
+  computed and read by nobody. The live enricher now logs the same fact —
+  which features were filled entirely by their default — where someone will
+  see it.
+- `test_market_context_marks_missing_features_explicitly` in
+  `tests/unit/test_p1_missing_policy_math.py` was rewritten against the live
+  enricher instead of being deleted with the class.
+
+`tests/smoke_test_system.py` was reporting this class as INTEGRATED on every
+run, because its check was "constructs without raising". That is importable,
+not integrated, and the distinction is exactly what let a class nothing calls
+look wired for months. Its buckets are now REGISTERED (components
+UnifiedAnalyticsEngine will actually call), IMPORTABLE, and BROKEN.

@@ -43,12 +43,21 @@ def trainer():
     return _Trainer()
 
 
-def _metrics(events=None, rows=331, score=0.8, baseline=0.5):
+def _metrics(events=None, rows=331, score=0.8, baseline=0.5, sigma=0.01):
+    """A holdout that passes every rule EXCEPT the one under test.
+
+    `baseline_margin_sigma` joined this on 2026-08-31: the gate now demands
+    the winner clear its opponent by at least one standard error of that very
+    difference, and a fixture without one is refused for a reason these tests
+    are not about. 0.01 against a margin of 0.30 keeps the margin rule
+    satisfied so the EVENT rule is what decides.
+    """
     out = {
         "status": "measured",
         "holdout_sample_count": rows,
         "score": score,
         "baseline_score": baseline,
+        "baseline_margin_sigma": sigma,
     }
     if events is not None:
         out["holdout_event_count"] = events

@@ -97,22 +97,48 @@ def test_macro_weighted_composite_uses_available_indicators_only():
     assert pd.isna(composite.iloc[2])
 
 
-def test_market_context_marks_missing_features_explicitly():
-    from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
+def test_market_context_names_the_features_it_had_to_default():
+    """Moved from MarketContextAnalyzer, which was archived 2026-08-13.
 
-    analyzer = MarketContextAnalyzer(["volatility_5d", "rsi_current"])
-    data = pd.DataFrame(
-        {
-            "close": [100.0, None, 102.0],
-            "rsi": [None, None, None],
-        }
-    )
+    That class computed a `missing_context_features` list and no caller ever
+    read it; the enricher that superseded it computes its columns causally
+    and, since this date, logs the features it filled entirely by default.
+    Same property, live path: a defaulted feature has to be nameable, or a
+    constant column is indistinguishable from a measured neutral one.
+    """
+    import logging
 
-    result = analyzer.analyze(data)
+    import numpy as np
 
-    assert "volatility_5d" in result["missing_context_features"]
-    assert result["market_context_vector"]["volatility_5d"] == 0.0
-    assert result["market_context_vector"]["rsi_current"] == 50.0
+    from src.features.enrichers.market_context_enricher import MarketContextEnricher
+
+    enricher = MarketContextEnricher()
+    bars = pd.DataFrame({
+        "ticker": ["AAPL"] * 30,
+        "datetime": pd.date_range("2026-01-01", periods=30, freq="D", tz="UTC"),
+        "close": np.linspace(100, 110, 30),
+        "volume": np.linspace(1e6, 2e6, 30),
+    })
+
+    caplog = logging.getLogger("MarketContextEnricher")
+    records = []
+
+    class _Capture(logging.Handler):
+        def emit(self, record):
+            records.append(record.getMessage())
+
+    handler = _Capture()
+    caplog.addHandler(handler)
+    try:
+        enriched = enricher._enrich_impl(bars)
+    finally:
+        caplog.removeHandler(handler)
+
+    defaulted = "\n".join(records)
+    assert "filled entirely by their default" in defaulted
+    assert "put_call_ratio" in defaulted
+    # And the column still exists, carrying that default.
+    assert enriched["market_context_put_call_ratio"].notna().all()
 
 
 def test_market_regime_analyzer_drops_missing_returns_instead_of_zero_filling():

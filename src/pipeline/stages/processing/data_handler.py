@@ -101,8 +101,26 @@ class ProcessingDataHandler:
         result["value"] = pd.to_numeric(result["value"], errors="coerce")
         result = result.dropna(subset=canonical_columns)
         result = result.loc[result["series_id"].ne("")]
-        result = result.sort_values(["datetime", "series_id"]).drop_duplicates(
-            ["datetime", "series_id"],
+        # A vintage is part of a row's identity, not a duplicate of it.
+        #
+        # Deduplicating on (datetime, series_id) alone collapsed the stored
+        # table from 314,062 rows to 97,090 -- every revision of every figure
+        # discarded, keeping one row whose survival was decided by row order
+        # rather than by publication date. The macro enricher is built to use
+        # exactly what this threw away: it keys the pivot on `available_at`,
+        # sorts by `realtime_start` so `aggfunc='last'` means most recently
+        # published, and forward-fills along the publication axis.
+        #
+        # The harm is loss, not look-ahead: a surviving late revision carries
+        # its own 2026 stamp, so an old bar does not see it -- it sees nothing
+        # at all where the original 1996 print used to be. Keeping the vintage
+        # in the key preserves both the first release and every restatement,
+        # and still removes rows that are genuinely identical.
+        dedup_key = ["datetime", "series_id"]
+        if availability_column not in dedup_key:
+            dedup_key.append(availability_column)
+        result = result.sort_values(dedup_key).drop_duplicates(
+            dedup_key,
             keep="last",
         )
         return result.reset_index(drop=True)

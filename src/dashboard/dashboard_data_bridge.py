@@ -322,13 +322,22 @@ class DashboardDataBridge:
             }
 
         except ImportError:
-            # Fallback if psutil not available
+            # psutil is absent, so nothing here was measured. The previous
+            # fallback returned cpu 45.2%, memory 8.5 GB used, disk 120.3 GB
+            # and `status: 'healthy'` -- invented numbers, in the same shape
+            # as the real ones, on a panel whose only job is to say whether
+            # the machine is in trouble. Nothing marked them as fabricated,
+            # so a reader could not tell a healthy machine from a missing
+            # dependency, and the run that died of MemoryError three times on
+            # 2026-08-31 would have been reported as healthy throughout.
+            self.logger.error(
+                "psutil is not installed, so system metrics cannot be read. "
+                "Reporting them as unavailable rather than inventing values."
+            )
             return {
-                'cpu_percent': 45.2,
-                'memory': {'used_gb': 8.5, 'available_gb': 7.5, 'percent': 53.1},
-                'disk': {'used_gb': 120.3, 'free_gb': 380.7, 'percent': 24.0},
-                'status': 'healthy',
-                'last_updated': datetime.now().isoformat()
+                'status': 'unavailable',
+                'reason': 'psutil is not installed',
+                'last_updated': datetime.now().isoformat(),
             }
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get system status: {e}")

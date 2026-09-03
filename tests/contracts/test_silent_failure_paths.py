@@ -1,7 +1,7 @@
 """Silent failure paths must not multiply, and the tool that mass-produced
 them must stay disarmed.
 
-This is a ratchet, not a clean-sweep. Three shapes are counted repo-wide; the
+This is a ratchet, not a clean-sweep. Four shapes are counted repo-wide; the
 counts may fall, never rise. Each already produced a real defect:
 
   LOGGED_THEN_EMPTY  ModelingStage logged "Enriched data not found. Skipping
@@ -13,6 +13,14 @@ counts may fall, never rise. Each already produced a real defect:
                      ZeroDivisionError) -- missed CatBoostError,
                      sqlite3.IntegrityError and yaml.YAMLError, all of which
                      inherit straight from Exception.
+  QUIET_THEN_EMPTY   the same as LOGGED_THEN_EMPTY but reported below error
+                     level, which is exactly why LOGGED_THEN_EMPTY never saw
+                     it. The walk-forward stability rung caught its exception,
+                     wrote the reason to `logger.debug` and returned None; the
+                     gate reads `if stability and not stability.get("passed",
+                     True)`, so None promoted the champion. The only rung that
+                     asks whether an edge holds over TIME was off for every
+                     pooled context (REGISTER #189, #202).
 
 Not every count is a bug: a collector returning [] after logging a failed
 fetch is fine, because process_and_save_results distinguishes that case. The
@@ -32,11 +40,86 @@ from tests.contracts._silent_failure_scan import (
     scan,
 )
 
-# Measured 2026-08-01. Lower these when findings are fixed; never raise them.
+# Lower these when findings are fixed; never raise them.
 CEILINGS = {
-    "LOGGED_THEN_EMPTY": 168,
-    "SWALLOWED": 89,
+    # Re-pinned DOWN from 168 on 2026-09-01, not because anything was fixed
+    # but because the scan had been counting the wrong thing: 72 of the 170
+    # were `logger.error(...)` followed by `return False` inside functions
+    # whose every return is a boolean. There the log says what went wrong and
+    # the boolean says it went wrong; that is the contract, not a hidden
+    # failure. Functions whose names ask a question (is_, has_, can_) are
+    # still counted -- False from `is_ready()` after an exception answers
+    # "not ready" when the truth is "could not determine".
+    #
+    # A ceiling that counts correct code can only be met by rewriting correct
+    # code, so it never gets met, and a permanently red ratchet is not a check
+    # -- REGISTER #181 stood red from 22 August to 1 September and nobody
+    # acted on it, which is the same failure as a check that never fires.
+    "LOGGED_THEN_EMPTY": 98,
     "NARROW_TUPLE": 653,
+    # Measured 2026-09-01, when the shape was added. Three of these are in
+    # `_champion_feature_columns` and its helpers, and they are the one
+    # legitimate form: an artifact that cannot be read declares no columns,
+    # and an empty declaration makes the caller read EVERY column. The empty
+    # value widens rather than narrows, so no caller can mistake it for a
+    # successful narrowing. That is the test to apply to the rest of them --
+    # not "is the empty value logged" but "does the empty value make the
+    # caller do less than it should".
+    "QUIET_THEN_EMPTY": 41,
+}
+
+#: `SWALLOWED` was one number covering four different failures, so it meant
+#: none of them. Split 2026-09-01; the three parts replace it and their sum
+#: (88) sits under the old ceiling of 89 without it being raised.
+SWALLOWED_CEILINGS = {
+    "SWALLOWED_ERASED": 48,
+    "SWALLOWED_EMPTY": 28,
+    "SWALLOWED_FABRICATED": 12,
+}
+CEILINGS.pop("SWALLOWED", None)
+CEILINGS.update(SWALLOWED_CEILINGS)
+
+#: Modules where a return value decides whether a model is promoted, whether a
+#: prediction is made, or what a metric says. Elsewhere an empty return after
+#: a warning is often right -- a collector that fetched nothing really did
+#: fetch nothing. Here it is the difference between "refused" and "passed",
+#: and those must never share a value. The target is zero.
+DECISION_PATH = (
+    "src/pipeline/stages/modeling",
+    "src/pipeline/stages/prediction",
+    "src/pipeline/stages/evaluation",
+    "src/training",
+    "src/metrics",
+    "src/models/adapters",
+)
+
+#: 8 when first counted on 2026-09-01; 3 after the walk-forward handler, the
+#: target-registry check, the artifact-write failure and the feature-importance
+#: read were each given a state distinct from "passed".
+DECISION_PATH_CEILING = 3
+
+#: Sites where the empty value IS the distinct state, because the caller was
+#: changed to act on it. The scanner sees one function at a time and cannot
+#: know that; an exemption is the honest way to say so, and it has to name the
+#: caller, because "trust me" is what every one of the counted sites would
+#: also say. Line numbers are deliberate: if the code moves, the justification
+#: is re-examined instead of inherited.
+#:
+#: Raising a ceiling would have hidden the same two entries with no
+#: justification attached, and a ceiling raised once is raised again.
+QUIET_THEN_EMPTY_EXEMPT = {
+    # _file_mtime_iso and _age_hours returned the CURRENT time and 0.0 when a
+    # timestamp could not be read, so an artifact of unknown age passed every
+    # freshness threshold. They now return None, and the caller at
+    # pipeline_bridge.py:238 records `evaluation_timestamp_unreadable` as its
+    # own failure -- the empty value is acted on, not absorbed.
+    "src/agents/pipeline_bridge.py:370",
+    "src/agents/pipeline_bridge.py:389",
+    # ContextLedger._load: an unreadable ledger leaves the ledger EMPTY, and
+    # an empty ledger makes the run retrain every context instead of replaying
+    # any. The empty value makes the caller do more work, never less, so it
+    # cannot be mistaken for a pass -- the opposite of the sites this counts.
+    "src/pipeline/stages/modeling/context_ledger.py:82",
 }
 
 
@@ -47,12 +130,76 @@ def findings():
 
 @pytest.mark.parametrize("kind", sorted(CEILINGS))
 def test_silent_failure_shapes_do_not_spread(findings, kind):
-    found = findings.get(kind, [])
+    found = [
+        f for f in findings.get(kind, [])
+        if f"{f.module}:{f.line}" not in QUIET_THEN_EMPTY_EXEMPT
+    ]
     ceiling = CEILINGS[kind]
 
     assert len(found) <= ceiling, (
         f"{kind} rose from {ceiling} to {len(found)}.\n"
         + "\n".join(f"  {f}" for f in found[:20])
+    )
+
+
+def test_a_broken_check_never_reads_as_a_passed_check(findings):
+    """Zero is the target; the ceiling is only where it stood when counted.
+
+    Each of these is a place where a failure returns the same value a success
+    returns. That is not a style problem: it is how three ladder rungs ran
+    dead for weeks while the gate reported they had passed.
+    """
+    found = [
+        f for f in findings.get("QUIET_THEN_EMPTY", [])
+        if f.module.startswith(DECISION_PATH)
+        and f"{f.module}:{f.line}" not in QUIET_THEN_EMPTY_EXEMPT
+    ]
+
+    assert len(found) <= DECISION_PATH_CEILING, (
+        f"quiet failures in the decision path rose from "
+        f"{DECISION_PATH_CEILING} to {len(found)}. A check that could not run "
+        f"must return a state distinct from 'passed':\n"
+        + "\n".join(f"  {f}" for f in found)
+    )
+
+
+def test_the_scanner_catches_the_handler_that_produced_189():
+    """A scanner that cannot fail its own case proves nothing.
+
+    This is the handler as it stood in
+    `src/pipeline/stages/modeling/orchestrator.py` while the walk-forward
+    stability rung was silently off for every pooled context.
+    """
+    from tests.contracts._silent_failure_scan import _Scanner
+
+    source = "\n".join([
+        "def f():",
+        "    try:",
+        "        return evaluate()",
+        "    except (ValueError, TypeError) as e:",
+        "        logger.debug(f'not evaluable ({e})')",
+        "        return None",
+        "",
+    ])
+
+    scanner = _Scanner("sample.py")
+    scanner.visit(ast.parse(source))
+    assert "QUIET_THEN_EMPTY" in {f.kind for f in scanner.findings}, (
+        "the scanner no longer detects the shape it was written for"
+    )
+
+    loud = source.replace("logger.debug", "logger.error")
+    scanner = _Scanner("sample.py")
+    scanner.visit(ast.parse(loud))
+    assert "QUIET_THEN_EMPTY" not in {f.kind for f in scanner.findings}, (
+        "a loud report is LOGGED_THEN_EMPTY's business, not this shape's"
+    )
+
+    reraised = source.replace("        return None", "        raise")
+    scanner = _Scanner("sample.py")
+    scanner.visit(ast.parse(reraised))
+    assert "QUIET_THEN_EMPTY" not in {f.kind for f in scanner.findings}, (
+        "a handler that re-raises hides nothing from its caller"
     )
 
 

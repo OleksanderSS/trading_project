@@ -172,8 +172,14 @@ def test_every_path_that_abandons_a_context_records_why():
             if not isinstance(node, ast.Continue):
                 continue
             window = "\n".join(lines[max(0, node.lineno - 16): node.lineno])
+            # `_replay_context` is the third way a context leaves this loop
+            # with no champion, added 2026-08-31 with the resume ledger. It
+            # satisfies the same invariant by a different route: it appends
+            # the STORED refusal, so the context still appears in the
+            # artifact rather than vanishing from it.
             if not ("_collect_gate_refusal" in window
-                    or "_record_unprepared_context" in window):
+                    or "_record_unprepared_context" in window
+                    or "_replay_context" in window):
                 unrecorded.append(node.lineno)
 
     assert not unrecorded, (

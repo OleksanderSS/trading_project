@@ -44,6 +44,10 @@ def test_macro_normalizer_rejects_nonempty_data_without_availability():
 
 def test_fred_collector_preserves_vintage_and_source_locator():
     class Response:
+        # A real httpx.Response always carries this; the collector reads it to
+        # detect FRED's 400 on series whose vintage count exceeds its cap.
+        status_code = 200
+
         def raise_for_status(self):
             return None
 
@@ -77,6 +81,10 @@ def test_fred_collector_preserves_vintage_and_source_locator():
 
 def test_fred_collector_rejects_observation_without_vintage():
     class Response:
+        # A real httpx.Response always carries this; the collector reads it to
+        # detect FRED's 400 on series whose vintage count exceeds its cap.
+        status_code = 200
+
         def raise_for_status(self):
             return None
 
@@ -112,6 +120,10 @@ def test_fred_runtime_scope_overrides_static_config(monkeypatch):
 
 def test_fred_fetch_encodes_vintage_and_observation_cutoff():
     class Response:
+        # A real httpx.Response always carries this; the collector reads it to
+        # detect FRED's 400 on series whose vintage count exceeds its cap.
+        status_code = 200
+
         def raise_for_status(self):
             return None
 

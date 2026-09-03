@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
+    balanced_accuracy_score,
     f1_score,
     log_loss,
     mean_absolute_error,
@@ -97,7 +98,25 @@ class MLEvaluator(BaseMetricCalculator):
             'Precision': float(precision_score(y_true, y_pred, average=
             'binary', zero_division=0)), 'Recall': float(recall_score(
             y_true, y_pred, average='binary', zero_division=0)), 'F1':
-            float(f1_score(y_true, y_pred, average='binary', zero_division=0))}
+            float(f1_score(y_true, y_pred, average='binary', zero_division=0)),
+            # The metric a one-class predictor cannot win.
+            #
+            # Measured on the champion of 2026-08-31, holdout of 30,494 rows
+            # with a 26.2% event rate:
+            #
+            #                    F1     Accuracy   Balanced
+            #     model        0.4197     0.3459     0.5257
+            #     always yes   0.4151     0.2619     0.5000
+            #     always no    0.0000     0.7381     0.5000
+            #
+            # F1 with average='binary' scores the positive class only, so it
+            # is maximised by saying yes more often -- and the model had
+            # learned exactly that, predicting 1 on 86.5% of rows. Accuracy
+            # fails the other way, handing 0.7381 to a predictor that never
+            # fires. Balanced accuracy gives BOTH constants exactly 0.5, so
+            # anything above it is a statement about the model rather than
+            # about the class balance.
+            'BalancedAccuracy': float(balanced_accuracy_score(y_true, y_pred))}
         if y_prob is not None:
             try:
                 metrics['ROC_AUC'] = float(roc_auc_score(y_true, y_prob))
