@@ -693,12 +693,24 @@ class BaseTrainer(ABC):
         holdout = results['winner_holdout_metrics']
         opponent = holdout.pop('_baseline_prediction', None)
         if opponent is not None:
+            # How many rows share one timestamp. Measured from the frame
+            # itself rather than from any ticker count, exactly as the purge
+            # is scaled in `walk_forward_validation`, so a single-series
+            # holdout measures 1.0 and the old behaviour is unchanged.
+            rows_per_bar = 1.0
+            index = getattr(X_holdout, "index", None)
+            if index is not None and len(X_holdout):
+                distinct = int(pd.Index(index).nunique())
+                if distinct:
+                    rows_per_bar = max(1.0, len(X_holdout) / distinct)
+            holdout['baseline_margin_rows_per_bar'] = float(rows_per_bar)
             holdout['baseline_margin_sigma'] = self._block_bootstrap_sigma(
                 np.asarray(y_holdout).ravel(),
                 np.asarray(preds).ravel(),
                 np.asarray(opponent).ravel(),
                 task_type=task_type,
                 metric_key=metric_key,
+                rows_per_bar=rows_per_bar,
             )
             holdout['baseline_margin'] = (
                 None if holdout.get('score') is None
@@ -1373,7 +1385,8 @@ class BaseTrainer(ABC):
 
     def _block_bootstrap_sigma(self, y_true: np.ndarray, model: np.ndarray,
                                baseline: np.ndarray, *, task_type: str,
-                               metric_key: str) -> float | None:
+                               metric_key: str,
+                               rows_per_bar: float = 1.0) -> float | None:
         """How far apart model and opponent could be by luck alone.
 
         The gate compared the two scores and promoted on any difference at
@@ -1397,7 +1410,36 @@ class BaseTrainer(ABC):
         series and adjacent rows are dependent, so resampling single rows
         would understate the spread and hand back a margin that looks
         significant because the resampling pretended the data were
-        independent. Block length is the usual n^(1/3).
+        independent.
+
+        THE BLOCK IS COUNTED IN DATES, NOT IN ROWS (REGISTER #200). The
+        familiar n^(1/3) rule takes n to be the number of independent
+        observations. On a pooled frame it is not: the daily holdout holds
+        140,945 rows and **110 of them are one date**, one row per instrument.
+        n^(1/3) gave a block of 52 -- less than half a single day -- so the
+        resampling shuffled names *within* a date as though they were
+        independent draws, when 110 names on one day are largely one event
+        moved by a common market factor. Effective sample size is ~1,280
+        dates, not 140,945 rows.
+
+        So the rule is applied to the DATES, which are the units that repeat,
+        and expanded back into rows:
+
+            per_date = rows / distinct timestamps      (110 on the daily frame)
+            dates    = (n / per_date) ** (1/3)         (~11)
+            block    = per_date * dates                (~1,210 rows)
+
+        A single-series frame measures per_date = 1.0 and comes out exactly
+        where it was, so nothing changes for the case the old rule was
+        written for. Starts are aligned to date boundaries: an arbitrary
+        offset would cut a date in half and reintroduce the same mixing the
+        block length exists to prevent.
+
+        This can only WIDEN sigma, so every margin measured before it is an
+        upper bound on the evidence, never a lower one. That direction is
+        deliberate -- #175 established the principle on a different target,
+        where an edge of 0.041 sat inside an opponent whose own weekly figure
+        moved by 0.07.
 
         Returns None when the holdout is too short to resample, which the
         caller must treat as "no margin could be measured" rather than as a
@@ -1406,15 +1448,26 @@ class BaseTrainer(ABC):
         n = int(len(y_true))
         if n < 60:
             return None
-        block = max(1, int(round(n ** (1.0 / 3.0))))
+        per_date = max(1, int(round(float(rows_per_bar))))
+        if per_date >= n // 3:
+            # Fewer than three dates in the holdout. A block bootstrap over
+            # two units measures nothing, and returning a small sigma here
+            # would read as a precise margin -- the exact confusion #202 is
+            # about. Say "not measured" instead.
+            return None
+        dates = max(1, int(round((n / per_date) ** (1.0 / 3.0))))
+        block = min(per_date * dates, n)
         blocks_needed = int(np.ceil(n / block))
         rng = np.random.default_rng(0)          # fixed: the gate must be reproducible
         offsets = np.arange(block)
+        # Aligned starts, in whole dates.
+        last_start = max(0, (n - block) // per_date)
 
         differences: list[float] = []
         for _ in range(self.MARGIN_BOOTSTRAP_RESAMPLES):
-            starts = rng.integers(0, n - block + 1, size=blocks_needed)
+            starts = rng.integers(0, last_start + 1, size=blocks_needed) * per_date
             rows = (starts[:, None] + offsets).ravel()[:n]
+            rows = np.minimum(rows, n - 1)
             truth = y_true[rows]
             try:
                 a = float(self.evaluator.calculate(
