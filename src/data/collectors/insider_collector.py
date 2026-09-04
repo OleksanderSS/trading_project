@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import logging
+import re
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
@@ -17,6 +18,12 @@ from src.data.management.data_manager import DataManager
 from .base_collector import BaseCollector
 
 logger = logging.getLogger(__name__)
+
+#: The only values this source writes in `trade_type`, measured against
+#: the stored table: "P - Purchase", "S - Sale", "S - Sale+OE". A cell
+#: that does not look like one of these is not a trade type, it is
+#: whatever the column shift put there.
+_TRADE_TYPE = re.compile(r"^[A-Z]\s*-\s*[A-Za-z]")
 
 class InsiderCollector(BaseCollector):
     """
@@ -194,6 +201,7 @@ class InsiderCollector(BaseCollector):
         # Every mapped index must actually exist in the row.
         required_width = max(index_by_field.values()) + 1
 
+        shifted: list[str] = []
         for row in rows:
             cells = [td.get_text(strip=True) for td in row.find_all("td")]
             if len(cells) < required_width:
@@ -203,8 +211,41 @@ class InsiderCollector(BaseCollector):
                 field_name: cells[col_idx]
                 for field_name, col_idx in index_by_field.items()
             }
+            # WIDTH IS NOT ENOUGH. Columns are addressed by fixed index, so any
+            # variation in the page layout shifts a row by one and it still
+            # passes the width check above. Measured 2026-09-04 on the stored
+            # table: 8,349 of 9,744 rows carry a PRICE in `trade_type` --
+            #
+            #   whole   title='CHAIRPERSON, CEO'  trade_type='S - Sale+OE'
+            #   shifted title='S - Sale'          trade_type='$307.75'
+            #
+            # -- and on those rows `value` is empty, so the enricher, whose own
+            # logic is correct, rolls up nothing: insider_net_value_30d_1d is
+            # 77% zeros with 31 distinct small integers across 29 names, and it
+            # still passed the leadingness screen into the 46 survivors.
+            #
+            # Checking the ONE field with a known vocabulary turns a silent
+            # corruption into a counted one.
+            if not _TRADE_TYPE.match(trade_data.get("trade_type", "")):
+                shifted.append(trade_data.get("trade_type", ""))
+                continue
             if trade_data:
                 parsed_trades.append(trade_data)
+
+        if shifted:
+            share = len(shifted) / max(len(shifted) + len(parsed_trades), 1)
+            # A few odd rows are ordinary; most of them means the mapping no
+            # longer matches the page, and every row stored from it is wrong in
+            # a way nothing downstream can see.
+            report = self.logger.error if share >= 0.2 else self.logger.warning
+            report(
+                "insider: %d of %d rows at %s carry an unrecognised trade_type "
+                "(%.0f%%) and were dropped rather than stored shifted. Samples: "
+                "%s. Columns are addressed by fixed index, so this means the "
+                "page layout moved and column_mapping is out of sync.",
+                len(shifted), len(shifted) + len(parsed_trades), url,
+                share * 100, shifted[:3],
+            )
 
         if not parsed_trades and rows:
             self.logger.warning(
