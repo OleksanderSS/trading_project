@@ -56,7 +56,14 @@ from src.pipeline.stages.evaluation.metrics_calculator import (  # noqa: E402
 BATCH = PROJECT_ROOT / "data" / "colab" / "accumulated" / "main_database"
 FEATURE = "CDL_UPPER_WICK_RATIO_1d"
 TARGET = "target_return_1d"
-SEALED_FROM = pd.Timestamp("2023-09-01", tz="UTC")
+from src.pipeline.sealed_period import SEAL_START  # noqa: E402
+
+#: Imported, never restated. Eight diagnostics each kept their own copy of this
+#: date until 2026-09-04. The policy in docs/SEALED_HOLDOUT.md says moving the
+#: seal EARLIER is "always safe" -- with eight copies it would have been safe in
+#: one file and silently ignored in the other seven, which is the duplication
+#: family this codebase's defects come from.
+SEALED_FROM = SEAL_START
 
 
 def _panel(feature: str) -> pd.DataFrame:

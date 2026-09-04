@@ -18,7 +18,8 @@ arithmetic goes first: if the trade cannot work, there is nothing to search.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, "D:/trading_project")
+from pathlib import Path  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import numpy as np
 import pandas as pd
@@ -27,7 +28,14 @@ import yaml
 from src.targets.calculators.regression_calculator import RegressionCalculator
 
 BATCH = Path("D:/trading_project/data/colab/accumulated/main_database")
-SEALED = pd.Timestamp("2023-09-01", tz="UTC")
+from src.pipeline.sealed_period import SEAL_START  # noqa: E402
+
+#: Imported, never restated. Eight diagnostics each kept their own copy of this
+#: date until 2026-09-04. The policy in docs/SEALED_HOLDOUT.md says moving the
+#: seal EARLIER is "always safe" -- with eight copies it would have been safe in
+#: one file and silently ignored in the other seven, which is the duplication
+#: family this codebase's defects come from.
+SEALED = SEAL_START
 
 costs = yaml.safe_load(
     Path("D:/trading_project/src/config/targets.yaml").read_text(encoding="utf-8")

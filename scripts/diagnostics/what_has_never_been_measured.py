@@ -70,7 +70,14 @@ import pyarrow.parquet as pq  # noqa: E402
 BATCH = PROJECT_ROOT / "data" / "colab" / "accumulated" / "main_database"
 ROLES = PROJECT_ROOT / "diagnostic_reports" / "feature_roles_1d.csv"
 OUT = PROJECT_ROOT / "diagnostic_reports" / "batch_inventory_1d.csv"
-SEALED = pd.Timestamp("2023-09-01", tz="UTC")
+from src.pipeline.sealed_period import SEAL_START  # noqa: E402
+
+#: Imported, never restated. Eight diagnostics each kept their own copy of this
+#: date until 2026-09-04. The policy in docs/SEALED_HOLDOUT.md says moving the
+#: seal EARLIER is "always safe" -- with eight copies it would have been safe in
+#: one file and silently ignored in the other seven, which is the duplication
+#: family this codebase's defects come from.
+SEALED = SEAL_START
 IDENT = {"ticker", "datetime", "interval"}
 CHUNK = 40
 
