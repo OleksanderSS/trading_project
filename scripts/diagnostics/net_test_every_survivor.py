@@ -222,6 +222,13 @@ def main() -> int:
               + f"{'best net':>10}{'at hold':>9}{'phase sd':>10}")
     print(f"{'BUY EVERYTHING (the opponent)':<34}"
           + "".join(f"{const_sharpe[h]:>9.3f}" for h in args.holds))
+    # SURVIVORSHIP: these are today's names carried back, so this number is
+    # an upper bound and NOT what the market gave. Measured 2026-09-04: the
+    # 1996-2003 slice returns 20.55% a year at Sharpe 1.144, through the
+    # dot-com crash, and only 61 of the 110 names existed in 1996. Valid as
+    # a RELATIVE opponent -- both books trade the same names -- and
+    # misleading as a market benchmark (CLAIMS R34).
+    print(f"{chr(32)*34}survivorship-inflated: an upper bound, not the market")
     print()
     print(header)
     print("-" * len(header))

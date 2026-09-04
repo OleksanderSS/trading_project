@@ -251,6 +251,13 @@ def main() -> int:
     constant_daily = np.nanmean(own_everything, axis=1)
     print(f"{'BUY EVERYTHING (the opponent)':<34}{_sharpe(constant_daily):>9.3f}"
           f"   annualised Sharpe, no turnover cost\n")
+    # SURVIVORSHIP: these are today's names carried back, so this number is
+    # an upper bound and NOT what the market gave. Measured 2026-09-04: the
+    # 1996-2003 slice returns 20.55% a year at Sharpe 1.144, through the
+    # dot-com crash, and only 61 of the 110 names existed in 1996. Valid as
+    # a RELATIVE opponent -- both books trade the same names -- and
+    # misleading as a market benchmark (CLAIMS R34).
+    print(f"{chr(32)*34}survivorship-inflated: an upper bound, not the market")
 
     header = (f"{'hold':>6}{'events used':>14}{'avg names held':>16}"
               f"{'gross Sharpe':>14}{'NET Sharpe':>12}{'net ann.ret':>13}")
