@@ -86,13 +86,15 @@ jobs:
         # defect got through once, and every one of them was decorative while
         # this step did not exist.
         #
-        # 4 skips are expected and named in their own skip reasons (a
-        # disabled analyzer, an archived calibration engine, and two
-        # financial-math tests whose modules are absent). A skip is not a
-        # pass: `src.risk_management` does not exist while
-        # src/config/risk_management.yaml does, which is the same shape as
-        # `critical: true` declared in config and read nowhere. Recorded
-        # rather than fixed here.
+        # 2 skips remain and are named in their own skip reasons: a disabled
+        # analyzer whose module is gone, and an archived calibration engine.
+        #
+        # There were 4. Reading the reasons -- rather than counting the skips
+        # -- found that both financial-math tests had been skipping since they
+        # were written, on module paths that do not exist and a class name
+        # that is spelled VaRCalculator. The arithmetic under every Sharpe
+        # claim in CLAIMS was unverified while the suite reported green.
+        # A skip is not a pass; read the reasons (#261).
 
       - name: Run pytest with coverage
         env:

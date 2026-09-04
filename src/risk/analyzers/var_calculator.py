@@ -9,12 +9,25 @@ class VaRCalculator:
         """
         Main entry point for VaR calculation.
         Routes to historical VaR if data is provided.
+
+        Returns NaN, never 0.0, when there is nothing to measure. A VaR of
+        zero means "this position cannot lose money"; a VaR of NaN means "we
+        do not know", and the two must never share a value. This method
+        returned 0.0 for empty input until 2026-09-04 -- it has no live caller
+        (`adaptive_position_sizer` uses `calculate_var_historical` directly and
+        guards on NaN), so nothing depended on the old value, but the docstring
+        calls this the main entry point and the next caller would have
+        inherited "no data means no risk".
+
+        The inner `calculate_var_historical` already returned
+        {'var': nan, 'status': 'insufficient_data'} for this case. This method
+        was the only place the distinction was thrown away.
         """
         if data is None or len(data) == 0:
-            return 0.0
-            
+            return float('nan')
+
         result = self.calculate_var_historical(data)
-        return result.get('var', 0.0)
+        return result.get('var', float('nan'))
 
 
     def calculate_var_historical(self, returns, confidence=0.95, time_horizon=1):
