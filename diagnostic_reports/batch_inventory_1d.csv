@@ -1,0 +1,1391 @@
+feature,measured,dtype,history,coverage,uniq,mode_share,varies,verdict
+AATR_14_1d,True,float32,623398,1.0,615002,5.61439080651526e-05,1.0,can carry a cross-sectional signal
+ABB_Lower_1d,True,float32,623398,1.0,618724,1.924933990805232e-05,1.0,can carry a cross-sectional signal
+ABB_Mid_1d,True,float32,623398,1.0,618015,2.0853451567056678e-05,1.0,can carry a cross-sectional signal
+ABB_Upper_1d,True,float32,623398,1.0,618670,1.924933990805232e-05,1.0,can carry a cross-sectional signal
+ACCELERATION_10_1d,True,float32,623398,1.0,564501,0.0003480922300039461,1.0,can carry a cross-sectional signal
+ACCELERATION_5_1d,True,float32,623398,1.0,548623,0.0005309609591304432,1.0,can carry a cross-sectional signal
+AEMA_20_1d,True,float32,623398,1.0,619198,4.331101479311772e-05,1.0,can carry a cross-sectional signal
+ARSI_14_1d,True,float32,623398,1.0,592784,0.001506260847805094,1.0,can carry a cross-sectional signal
+ATR_14_1d,True,float32,623398,1.0,619035,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+AUTOCORR_1d,True,float32,623398,1.0,620773,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+BB_Lower_1d,True,float32,623398,1.0,617919,5.453979640614824e-05,1.0,can carry a cross-sectional signal
+BB_Middle_1d,True,float32,623398,1.0,613106,5.453979640614824e-05,1.0,can carry a cross-sectional signal
+BB_Upper_1d,True,float32,623398,1.0,617916,5.453979640614824e-05,1.0,can carry a cross-sectional signal
+CCI_1d,True,float32,623398,1.0,619785,0.00011068370447130084,1.0,can carry a cross-sectional signal
+CDL_BODY_RATIO_1d,True,float32,623398,1.0,273357,0.013189006060333847,1.0,can carry a cross-sectional signal
+CDL_DOJI_1d,True,float64,623398,1.0,2,0.8956461201351303,0.995735294117647,can carry a cross-sectional signal
+CDL_INSIDE_BAR_1d,True,float64,623398,1.0,2,0.8742216048174681,0.9847058823529412,can carry a cross-sectional signal
+CDL_LOWER_WICK_RATIO_1d,True,float32,623398,1.0,245165,0.06415323757856137,1.0,can carry a cross-sectional signal
+CDL_UPPER_WICK_RATIO_1d,True,float32,623398,1.0,241839,0.07434095072489806,1.0,can carry a cross-sectional signal
+CURRENT_DRAWDOWN_1d,True,float32,623398,1.0,535223,0.00013314126769736187,1.0,can carry a cross-sectional signal
+EMA_100_1d,True,float32,623398,1.0,618907,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+EMA_10_1d,True,float32,623398,1.0,619087,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+EMA_200_1d,True,float32,623398,1.0,618921,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+EMA_20_1d,True,float32,623398,1.0,619025,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+EMA_50_1d,True,float32,623398,1.0,618985,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+EMA_5_1d,True,float32,623398,1.0,619051,1.764522824904796e-05,1.0,can carry a cross-sectional signal
+HURST_EXPONENT_1d,True,float32,623398,1.0,620736,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+KURTOSIS_1d,True,float32,623398,1.0,619661,6.41644663601744e-06,1.0,can carry a cross-sectional signal
+LAG_10_1d,True,float32,623398,1.0,533732,0.00013795360267437496,1.0,can carry a cross-sectional signal
+LAG_1_1d,True,float32,623398,1.0,534049,0.00013795360267437496,1.0,can carry a cross-sectional signal
+LAG_20_1d,True,float32,623398,1.0,533385,0.00013795360267437496,1.0,can carry a cross-sectional signal
+LAG_5_1d,True,float32,623398,1.0,533908,0.00013795360267437496,1.0,can carry a cross-sectional signal
+LEVEL_DIST_RESISTANCE_20_1d,True,float32,623398,1.0,599147,0.002847298194732739,0.9994117647058823,can carry a cross-sectional signal
+LEVEL_DIST_SUPPORT_20_1d,True,float32,623398,1.0,598439,0.0003689456815710028,1.0,can carry a cross-sectional signal
+LEVEL_POSITION_20_1d,True,float32,623398,1.0,594129,0.0005662514156285391,1.0,can carry a cross-sectional signal
+MACD_1d,True,float32,623398,1.0,621750,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+MACD_Histogram_1d,True,float32,623398,1.0,621842,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+MACD_Signal_1d,True,float32,623398,1.0,621735,4.81233497701308e-06,1.0,can carry a cross-sectional signal
+MARKET_PREMIUM_1d,True,float32,623398,1.0,621264,6.41644663601744e-06,1.0,can carry a cross-sectional signal
+MAX_DRAWDOWN_1d,True,float32,623398,1.0,534805,0.0012014796325942657,1.0,can carry a cross-sectional signal
+MOMENTUM_ZSCORE_1d,True,float32,623398,1.0,620603,7.539324797320492e-05,1.0,can carry a cross-sectional signal
+ROLLING_KURT_10_1d,True,float32,623398,1.0,617736,0.0001443700493103924,1.0,can carry a cross-sectional signal
+ROLLING_KURT_20_1d,True,float32,623398,1.0,617602,8.0205582950218e-05,1.0,can carry a cross-sectional signal
+ROLLING_SKEW_10_1d,True,float32,623398,1.0,619009,0.00014597416096939677,1.0,can carry a cross-sectional signal
+ROLLING_SKEW_20_1d,True,float32,623398,1.0,619807,8.0205582950218e-05,1.0,can carry a cross-sectional signal
+ROLLING_VOL_10_1d,True,float32,623398,1.0,615222,0.0001363494910153706,1.0,can carry a cross-sectional signal
+ROLLING_VOL_20_1d,True,float32,623398,1.0,614701,7.539324797320492e-05,1.0,can carry a cross-sectional signal
+RSI_14_1d,True,float32,623398,1.0,597936,6.576857801917876e-05,1.0,can carry a cross-sectional signal
+RSI_VELOCITY_1d,True,float32,623398,1.0,620183,0.0002935524335977979,1.0,can carry a cross-sectional signal
+SHARPE_RATIO_1d,True,float32,623398,1.0,619447,6.41644663601744e-06,1.0,can carry a cross-sectional signal
+SKEWNESS_1d,True,float32,623398,1.0,621226,6.41644663601744e-06,1.0,can carry a cross-sectional signal
+SMA_100_1d,True,float32,623398,1.0,618043,8.0205582950218e-06,1.0,can carry a cross-sectional signal
+SMA_10_1d,True,float32,623398,1.0,608624,8.662202958623544e-05,1.0,can carry a cross-sectional signal
+SMA_200_1d,True,float32,623398,1.0,618442,6.41644663601744e-06,1.0,can carry a cross-sectional signal
+SMA_20_1d,True,float32,623398,1.0,613106,5.453979640614824e-05,1.0,can carry a cross-sectional signal
+SMA_50_1d,True,float32,623398,1.0,616707,3.849867981610464e-05,1.0,can carry a cross-sectional signal
+SMA_5_1d,True,float32,623398,1.0,602381,0.00010747548115329212,1.0,can carry a cross-sectional signal
+SORTINO_RATIO_1d,True,float32,623398,1.0,619711,6.41644663601744e-06,1.0,can carry a cross-sectional signal
+Stoch_D_1d,True,float32,623398,1.0,608739,0.00020372218069355372,1.0,can carry a cross-sectional signal
+Stoch_K_1d,True,float32,623398,1.0,569999,0.0075553659139105354,1.0,can carry a cross-sectional signal
+VELOCITY_10_1d,True,float32,623398,1.0,538081,0.0031488711866255585,1.0,can carry a cross-sectional signal
+VELOCITY_1_1d,True,float32,623398,1.0,444528,0.012407803682398725,1.0,can carry a cross-sectional signal
+VELOCITY_5_1d,True,float32,623398,1.0,516264,0.004910185788212346,1.0,can carry a cross-sectional signal
+VOLATILITY_20_1d,True,float32,623398,1.0,614701,7.539324797320492e-05,1.0,can carry a cross-sectional signal
+VOLATILITY_50_1d,True,float32,623398,1.0,614194,4.1706903134113356e-05,1.0,can carry a cross-sectional signal
+VOLATILITY_5_1d,True,float32,623398,1.0,616104,0.0002085345156705668,1.0,can carry a cross-sectional signal
+Williams_R_1d,True,float32,623398,1.0,580279,0.006912117138649787,1.0,can carry a cross-sectional signal
+atr_14_1d,True,float32,623398,1.0,604480,0.00010266314617627904,1.0,can carry a cross-sectional signal
+close,True,float32,623398,1.0,534069,0.00013795360267437496,1.0,can carry a cross-sectional signal
+context_fingerprint_1d,False,object,623398,1.0,2066,0.01758266789434679,1.0,can carry a cross-sectional signal
+context_pattern_id_1d,True,object,623398,1.0,619416,0.0001636193892184447,1.0,can carry a cross-sectional signal
+context_pattern_seq_1d,False,object,623398,1.0,619463,0.0001636193892184447,1.0,can carry a cross-sectional signal
+context_stability_1d,True,float32,623398,1.0,110,0.033651054382593464,1.0,can carry a cross-sectional signal
+context_velocity_1d,True,float32,623398,1.0,11,0.6925415224302933,0.9997058823529412,can carry a cross-sectional signal
+context_velocity_rank_1d,True,float32,621308,0.9966474066326809,468443,0.0007999253188434722,0.9972058823529412,can carry a cross-sectional signal
+days_since_last_significant_1d,True,float32,623398,1.0,365,0.1764586989371156,0.9998529411764706,can carry a cross-sectional signal
+fund_current_ratio_1d,True,float32,240664,0.3860519283026253,3831,0.0010346375029086194,0.5301470588235294,can carry a cross-sectional signal
+fund_data_available_1d,True,float64,623398,1.0,2,0.5406096907593544,0.5308823529411765,can carry a cross-sectional signal
+fund_days_since_report_1d,True,float32,286383,0.4593903092406456,201,0.015887814569998916,0.5301470588235294,can carry a cross-sectional signal
+fund_debt_to_equity_1d,True,float32,174017,0.2791426985649617,2722,0.010815035312641868,0.5301470588235294,can carry a cross-sectional signal
+fund_earnings_yield_1d,True,float32,261501,0.41947680294129913,249416,0.0001453149318740655,0.5301470588235294,can carry a cross-sectional signal
+fund_price_to_book_1d,True,float32,250635,0.4020465256545578,238697,0.00015161489815867696,0.5301470588235294,can carry a cross-sectional signal
+fund_return_on_equity_1d,True,float32,238742,0.3829688256940189,3823,0.004678690804299202,0.5301470588235294,can carry a cross-sectional signal
+gk_volatility_1d,True,float32,623398,1.0,618957,7.378913631420056e-05,1.0,can carry a cross-sectional signal
+hash,False,object,623398,1.0,623398,1.60411165900436e-06,1.0,can carry a cross-sectional signal
+high,True,float32,623398,1.0,577184,0.00014116182599238367,1.0,can carry a cross-sectional signal
+insider_available_1d,True,float64,623398,1.0,2,0.8282204947722,0.6141176470588235,can carry a cross-sectional signal
+insider_net_value_30d_1d,True,float32,107087,0.1717795052277999,32,0.7715782494607188,0.5816176470588236,can carry a cross-sectional signal
+is_significant_1d,True,object,623398,1.0,2,0.8235413010628844,0.9897058823529412,can carry a cross-sectional signal
+is_significant_decayed_1d,True,float32,623398,1.0,365,0.1764586989371156,0.9998529411764706,can carry a cross-sectional signal
+low,True,float32,623398,1.0,577254,0.0001283289327203488,1.0,can carry a cross-sectional signal
+macro_composite_score_1d,True,float32,623165,0.999626241983452,377262,0.00010591095456259578,0.9988235294117647,can carry a cross-sectional signal
+market_breadth_1d,True,float32,623398,1.0,2770,0.005946441919929163,0.9995588235294117,can carry a cross-sectional signal
+market_context_market_breadth_1d,True,float32,623398,1.0,2,0.5957991523873993,0.9927941176470588,can carry a cross-sectional signal
+market_context_price_to_ma20_1d,True,float32,623398,1.0,620864,8.662202958623544e-05,1.0,can carry a cross-sectional signal
+market_context_rsi_current_1d,True,float32,623398,1.0,597936,6.576857801917876e-05,1.0,can carry a cross-sectional signal
+market_context_trend_20d_1d,True,float32,623398,1.0,621187,8.180969460922236e-05,1.0,can carry a cross-sectional signal
+market_context_trend_5d_1d,True,float32,623398,1.0,568286,0.0007138296882569402,1.0,can carry a cross-sectional signal
+market_context_trend_alignment_1d,True,float32,623398,1.0,3,0.5838036054013648,0.9995588235294117,can carry a cross-sectional signal
+market_context_volatility_20d_1d,True,float32,623398,1.0,614677,7.539324797320492e-05,1.0,can carry a cross-sectional signal
+market_context_volatility_5d_1d,True,float32,623398,1.0,616104,0.0002085345156705668,1.0,can carry a cross-sectional signal
+market_context_volatility_ratio_1d,True,float32,623398,1.0,611448,0.00013314126769736187,1.0,can carry a cross-sectional signal
+market_context_volume_ratio_1d,True,float32,623398,1.0,603436,0.00011710015110731828,1.0,can carry a cross-sectional signal
+market_return_1d,True,float32,623398,1.0,617442,1.924933990805232e-05,1.0,can carry a cross-sectional signal
+obv_1d,True,float32,623398,1.0,612701,6.576857801917876e-05,1.0,can carry a cross-sectional signal
+open,True,float32,623398,1.0,578115,0.00013314126769736187,1.0,can carry a cross-sectional signal
+peer_breadth_1d,True,float32,617434,0.990433078065698,65,0.1412377679233732,0.9994117647058823,can carry a cross-sectional signal
+peer_breadth_excess_1d,True,float32,617434,0.990433078065698,28594,0.0035890475743156356,0.9995588235294117,can carry a cross-sectional signal
+peer_count_1d,True,float32,623398,1.0,15,0.2542837801853711,1.0,can carry a cross-sectional signal
+peer_divergence_1d,True,float32,617434,0.990433078065698,614657,1.7815669367090247e-05,1.0,can carry a cross-sectional signal
+peer_return_1d,True,float32,617434,0.990433078065698,614208,0.000513415199033419,1.0,can carry a cross-sectional signal
+peer_return_excess_1d,True,float32,617434,0.990433078065698,614621,9.71763783659468e-06,1.0,can carry a cross-sectional signal
+peer_volatility_1d,True,float32,617434,0.990433078065698,607504,0.0035032084400923825,0.9998529411764706,can carry a cross-sectional signal
+price_volume_trend_1d,True,float32,623398,1.0,614584,0.012422240687329764,1.0,can carry a cross-sectional signal
+returns_1d,True,float32,623398,1.0,609421,0.012407803682398725,1.0,can carry a cross-sectional signal
+significance_intensity_7d_1d,True,float32,623398,1.0,8,0.40486815806274645,1.0,can carry a cross-sectional signal
+significant_events_30d_1d,True,float32,623398,1.0,31,0.1332583678484692,1.0,can carry a cross-sectional signal
+significant_events_7d_1d,True,float32,623398,1.0,8,0.40486815806274645,1.0,can carry a cross-sectional signal
+state_AATR_14_1d,True,float64,623398,1.0,3,0.49546357222833565,0.9998529411764706,can carry a cross-sectional signal
+state_ABB_Lower_1d,True,float64,623398,1.0,3,0.5005678555272876,0.9992647058823529,can carry a cross-sectional signal
+state_ABB_Mid_1d,True,float64,623398,1.0,3,0.3904006750101861,0.9988235294117647,can carry a cross-sectional signal
+state_ABB_Upper_1d,True,float64,623398,1.0,3,0.46875030077093605,0.9992647058823529,can carry a cross-sectional signal
+state_ACCELERATION_10_1d,True,float64,623398,1.0,3,0.7488346128797333,0.9976470588235294,can carry a cross-sectional signal
+state_ACCELERATION_5_1d,True,float64,623398,1.0,3,0.7530774882177999,0.9986764705882353,can carry a cross-sectional signal
+state_AEMA_20_1d,True,float64,623398,1.0,3,0.40133750830127785,0.9989705882352942,can carry a cross-sectional signal
+state_ARSI_14_1d,True,float64,623398,1.0,3,0.497786325910574,0.9998529411764706,can carry a cross-sectional signal
+state_ATR_14_1d,True,float64,623398,1.0,3,0.41362500360925125,0.9964705882352941,can carry a cross-sectional signal
+state_AUTOCORR_1d,True,float64,623398,1.0,3,0.5774657602366385,1.0,can carry a cross-sectional signal
+state_BB_Lower_1d,True,float64,623398,1.0,3,0.46156388053859654,0.9994117647058823,can carry a cross-sectional signal
+state_BB_Middle_1d,True,float64,623398,1.0,3,0.435615770342542,0.9970588235294118,can carry a cross-sectional signal
+state_BB_Upper_1d,True,float64,623398,1.0,3,0.4543469821847359,0.9982352941176471,can carry a cross-sectional signal
+state_CCI_1d,True,float64,623398,1.0,3,0.7333661641519543,0.9988235294117647,can carry a cross-sectional signal
+state_CDL_BODY_RATIO_1d,True,float64,623398,1.0,3,0.6223488044555805,1.0,can carry a cross-sectional signal
+state_CDL_LOWER_WICK_RATIO_1d,True,float64,623398,1.0,3,0.5996859149371669,1.0,can carry a cross-sectional signal
+state_CDL_UPPER_WICK_RATIO_1d,True,float64,623398,1.0,3,0.5698285846281188,1.0,can carry a cross-sectional signal
+state_CURRENT_DRAWDOWN_1d,True,float64,623398,1.0,3,0.5415497001915309,0.9995588235294117,can carry a cross-sectional signal
+state_EMA_100_1d,True,float64,623398,1.0,3,0.5328570191113863,0.9777941176470588,can carry a cross-sectional signal
+state_EMA_10_1d,True,float64,623398,1.0,3,0.3633553524393726,0.9961764705882353,can carry a cross-sectional signal
+state_EMA_200_1d,True,float64,623398,1.0,3,0.575412497313113,0.9627941176470588,can carry a cross-sectional signal
+state_EMA_20_1d,True,float64,623398,1.0,3,0.4111995867808366,0.9933823529411765,can carry a cross-sectional signal
+state_EMA_50_1d,True,float64,623398,1.0,3,0.4833028017414236,0.985735294117647,can carry a cross-sectional signal
+state_EMA_5_1d,True,float64,623398,1.0,3,0.40504942268021393,0.9979411764705882,can carry a cross-sectional signal
+state_HURST_EXPONENT_1d,True,float64,623398,1.0,3,0.5813894173545632,0.9998529411764706,can carry a cross-sectional signal
+state_KURTOSIS_1d,True,float64,623398,1.0,3,0.5792559488480874,0.9960294117647058,can carry a cross-sectional signal
+state_LAG_10_1d,True,float64,623398,1.0,3,0.4529305515898351,1.0,can carry a cross-sectional signal
+state_LAG_1_1d,True,float64,623398,1.0,3,0.45422506969865156,0.9998529411764706,can carry a cross-sectional signal
+state_LAG_20_1d,True,float64,623398,1.0,3,0.45162640881106453,1.0,can carry a cross-sectional signal
+state_LAG_5_1d,True,float64,623398,1.0,3,0.4537085457444522,1.0,can carry a cross-sectional signal
+state_LEVEL_DIST_RESISTANCE_20_1d,True,float64,623398,1.0,3,0.657506119685979,0.9972058823529412,can carry a cross-sectional signal
+state_LEVEL_DIST_SUPPORT_20_1d,True,float64,623398,1.0,3,0.6445497098162009,0.9998529411764706,can carry a cross-sectional signal
+state_LEVEL_POSITION_20_1d,True,float64,623398,1.0,3,0.6201720249343117,0.9998529411764706,can carry a cross-sectional signal
+state_MACD_1d,True,float64,623398,1.0,3,0.6141004623049802,1.0,can carry a cross-sectional signal
+state_MACD_Histogram_1d,True,float64,623398,1.0,3,0.7451467601756823,0.9991176470588236,can carry a cross-sectional signal
+state_MACD_Signal_1d,True,float64,623398,1.0,3,0.5534730621529104,1.0,can carry a cross-sectional signal
+state_MARKET_PREMIUM_1d,True,float64,623398,1.0,3,0.721510174880253,0.9997058823529412,can carry a cross-sectional signal
+state_MAX_DRAWDOWN_1d,True,float64,623398,1.0,3,0.5467085232868889,0.9995588235294117,can carry a cross-sectional signal
+state_MOMENTUM_ZSCORE_1d,True,float64,623398,1.0,3,0.7134687631336643,0.9982352941176471,can carry a cross-sectional signal
+state_ROLLING_KURT_10_1d,True,float64,623398,1.0,3,0.7642453135877882,0.9997058823529412,can carry a cross-sectional signal
+state_ROLLING_KURT_20_1d,True,float64,623398,1.0,3,0.7585298637467557,1.0,can carry a cross-sectional signal
+state_ROLLING_SKEW_10_1d,True,float64,623398,1.0,3,0.7537415904446276,0.9995588235294117,can carry a cross-sectional signal
+state_ROLLING_SKEW_20_1d,True,float64,623398,1.0,3,0.7511252843287916,0.9998529411764706,can carry a cross-sectional signal
+state_ROLLING_VOL_10_1d,True,float64,623398,1.0,3,0.6281364393212683,0.9986764705882353,can carry a cross-sectional signal
+state_ROLLING_VOL_20_1d,True,float64,623398,1.0,3,0.6521259291816784,0.9970588235294118,can carry a cross-sectional signal
+state_RSI_14_1d,True,float64,623398,1.0,3,0.4502532892309568,0.9983823529411765,can carry a cross-sectional signal
+state_RSI_VELOCITY_1d,True,float64,623398,1.0,3,0.7432378673014671,1.0,can carry a cross-sectional signal
+state_SHARPE_RATIO_1d,True,float64,623398,1.0,3,0.5120821690156209,0.9997058823529412,can carry a cross-sectional signal
+state_SKEWNESS_1d,True,float64,623398,1.0,3,0.5899938722934626,0.9948529411764706,can carry a cross-sectional signal
+state_SMA_100_1d,True,float64,623398,1.0,3,0.5690120917936856,0.9885294117647059,can carry a cross-sectional signal
+state_SMA_10_1d,True,float64,623398,1.0,3,0.3757567396751353,0.9985294117647059,can carry a cross-sectional signal
+state_SMA_200_1d,True,float64,623398,1.0,3,0.6198447861558747,0.9776470588235294,can carry a cross-sectional signal
+state_SMA_20_1d,True,float64,623398,1.0,3,0.435615770342542,0.9970588235294118,can carry a cross-sectional signal
+state_SMA_50_1d,True,float64,623398,1.0,3,0.5144418172660162,0.9951470588235294,can carry a cross-sectional signal
+state_SMA_5_1d,True,float64,623398,1.0,3,0.39530765257508044,0.9992647058823529,can carry a cross-sectional signal
+state_SORTINO_RATIO_1d,True,float64,623398,1.0,3,0.5158951424290742,0.9997058823529412,can carry a cross-sectional signal
+state_Stoch_D_1d,True,float64,623398,1.0,3,0.5203481563944703,0.9995588235294117,can carry a cross-sectional signal
+state_Stoch_K_1d,True,float64,623398,1.0,3,0.5390216202169401,1.0,can carry a cross-sectional signal
+state_VELOCITY_10_1d,True,float64,623398,1.0,3,0.7342067186612726,0.9988235294117647,can carry a cross-sectional signal
+state_VELOCITY_1_1d,True,float64,623398,1.0,3,0.6860159962014636,0.9997058823529412,can carry a cross-sectional signal
+state_VELOCITY_5_1d,True,float64,623398,1.0,3,0.7414508869133363,0.9994117647058823,can carry a cross-sectional signal
+state_VOLATILITY_20_1d,True,float64,623398,1.0,3,0.6521259291816784,0.9970588235294118,can carry a cross-sectional signal
+state_VOLATILITY_50_1d,True,float64,623398,1.0,3,0.6481172541458265,0.9942647058823529,can carry a cross-sectional signal
+state_VOLATILITY_5_1d,True,float64,623398,1.0,3,0.6156404094976243,0.9992647058823529,can carry a cross-sectional signal
+state_Williams_R_1d,True,float64,623398,1.0,3,0.5297707082794619,1.0,can carry a cross-sectional signal
+state_atr_14_1d,True,float64,623398,1.0,3,0.45965498766438134,0.9998529411764706,can carry a cross-sectional signal
+state_close_1d,True,float64,623398,1.0,3,0.4541945915771305,0.9998529411764706,can carry a cross-sectional signal
+state_days_since_last_significant_1d,True,float64,623398,1.0,3,0.5953917080260123,0.9995588235294117,can carry a cross-sectional signal
+state_fund_days_since_report_1d,True,float64,623398,1.0,3,0.8782687785331361,0.5270588235294118,can carry a cross-sectional signal
+state_gk_volatility_1d,True,float64,623398,1.0,3,0.5797772851372638,0.9975,can carry a cross-sectional signal
+state_high_1d,True,float64,623398,1.0,3,0.47359632209278824,0.9998529411764706,can carry a cross-sectional signal
+state_is_significant_decayed_1d,True,float64,623398,1.0,3,0.6051832055925749,0.9998529411764706,can carry a cross-sectional signal
+state_low_1d,True,float64,623398,1.0,3,0.4681118643306523,0.9998529411764706,can carry a cross-sectional signal
+state_macro_composite_score_1d,True,float64,623398,1.0,3,0.5584073096160077,0.9120588235294118,can carry a cross-sectional signal
+state_market_breadth_1d,True,float64,623398,1.0,3,0.6363928020301637,0.8191176470588235,can carry a cross-sectional signal
+state_market_return_1d,True,float64,623398,1.0,3,0.7192531897760339,0.7711764705882352,can carry a cross-sectional signal
+state_obv_1d,True,float64,623398,1.0,3,0.41572799399420596,1.0,can carry a cross-sectional signal
+state_open_1d,True,float64,623398,1.0,3,0.4534615125489655,0.9998529411764706,can carry a cross-sectional signal
+state_peer_breadth_1d,True,float64,623398,1.0,3,0.6134941080978765,0.9994117647058823,can carry a cross-sectional signal
+state_peer_breadth_excess_1d,True,float64,623398,1.0,3,0.6768099993904376,0.9994117647058823,can carry a cross-sectional signal
+state_peer_divergence_1d,True,float64,623398,1.0,3,0.7265326484845958,1.0,can carry a cross-sectional signal
+state_peer_return_1d,True,float64,623398,1.0,3,0.7260722684384615,0.9973529411764706,can carry a cross-sectional signal
+state_peer_return_excess_1d,True,float64,623398,1.0,3,0.722591346138422,0.9997058823529412,can carry a cross-sectional signal
+state_peer_volatility_1d,True,float64,623398,1.0,3,0.5468240193263373,0.9998529411764706,can carry a cross-sectional signal
+state_price_volume_trend_1d,True,float64,623398,1.0,3,0.7352317460113763,0.9994117647058823,can carry a cross-sectional signal
+state_returns_1d,True,float64,623398,1.0,3,0.6862084896005441,0.9997058823529412,can carry a cross-sectional signal
+state_significance_intensity_7d_1d,True,float64,623398,1.0,3,0.8231867923862444,0.9961764705882353,can carry a cross-sectional signal
+state_significant_events_30d_1d,True,float64,623398,1.0,3,0.7954805758119211,0.9991176470588236,can carry a cross-sectional signal
+state_significant_events_7d_1d,True,float64,623398,1.0,3,0.8231916047212214,0.9961764705882353,can carry a cross-sectional signal
+state_volatility_10_1d,True,float64,623398,1.0,3,0.6279583829271188,0.9988235294117647,can carry a cross-sectional signal
+state_volatility_20_1d,True,float64,623398,1.0,3,0.6519719344624141,0.9972058823529412,can carry a cross-sectional signal
+state_volatility_5_1d,True,float64,623398,1.0,3,0.6156035149294672,0.9992647058823529,can carry a cross-sectional signal
+state_volume_1d,True,float64,623398,1.0,3,0.4855004347142596,0.9997058823529412,can carry a cross-sectional signal
+state_volume_roc_1d,True,float64,623398,1.0,3,0.7565503899595443,0.9989705882352942,can carry a cross-sectional signal
+state_volume_rs_1d,True,float64,623398,1.0,3,0.4849486203035621,0.9998529411764706,can carry a cross-sectional signal
+state_volume_sma_10_1d,True,float64,623398,1.0,3,0.45638099576835345,0.9998529411764706,can carry a cross-sectional signal
+state_volume_sma_5_1d,True,float64,623398,1.0,3,0.4605260202952207,0.9997058823529412,can carry a cross-sectional signal
+volatility_10_1d,True,float32,623398,1.0,615221,0.0001363494910153706,1.0,can carry a cross-sectional signal
+volatility_20_1d,True,float32,623398,1.0,614700,7.539324797320492e-05,1.0,can carry a cross-sectional signal
+volatility_5_1d,True,float32,623398,1.0,616002,0.0002085345156705668,1.0,can carry a cross-sectional signal
+volatility_regime_1d,False,category,623398,1.0,5,0.32768311736643363,0.9967647058823529,can carry a cross-sectional signal
+volume,True,float32,623398,1.0,369685,0.0003416757833679287,1.0,can carry a cross-sectional signal
+volume_roc_1d,True,float32,623398,1.0,619361,0.00035611278829896794,1.0,can carry a cross-sectional signal
+volume_rs_1d,True,float32,623398,1.0,610557,0.00034969634166295046,1.0,can carry a cross-sectional signal
+volume_sma_10_1d,True,float32,623398,1.0,571387,0.00010266314617627904,1.0,can carry a cross-sectional signal
+volume_sma_5_1d,True,float32,623398,1.0,530373,0.0001684317241954578,1.0,can carry a cross-sectional signal
+entity_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+fear_greed_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+filing_data_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+hour_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+hour_cos_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+hour_sin_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+hype_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+hype_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+keyword_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+keyword_entity_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+market_context_hour_of_day_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+market_session_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+news_coverage_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+news_freshness_hours_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+news_impact_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+news_impact_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+news_intensity_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+news_quality_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+news_quality_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+news_significance_level_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+news_source_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+nlp_sentiment_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+sentiment_decay_weighted_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_ema_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_mean_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_neg_threshold_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_pos_threshold_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_sma_20_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_sma_50_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_sma_5_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_20_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_50_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_5_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_stat_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_velocity_1d,True,float32,623398,1.0,1,1.0,0.0,constant
+state_FRED_BAMLC0A0CM_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_FRED_BAMLH0A0HYM2_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_entity_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_fear_greed_index_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_count_30d_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_days_since_last_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_material_30d_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_periodic_30d_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_hype_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_keyword_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_keyword_entity_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_news_freshness_hours_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_news_impact_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_news_impact_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_news_quality_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_news_quality_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_news_significance_level_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_news_source_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_nlp_cluster_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_nlp_sentiment_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_nlp_subjectivity_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_ema_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_mean_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_neg_threshold_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_pos_threshold_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_std_stat_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+FRED_CAPUTLB50001SQ_1d,True,float32,225649,0.3619661917426748,111,0.011194377107809031,0.0,market-wide: no cross-sectional variation
+FRED_CCSA_1d,True,float32,355548,0.5703386921356822,627,0.007565785772947675,0.0,market-wide: no cross-sectional variation
+FRED_CPIAUCSL_1d,True,float32,621397,0.9967901725703323,318,0.009163224154606476,0.0,market-wide: no cross-sectional variation
+FRED_CSUSHPINSA_1d,True,float32,231147,0.3707855976438808,106,0.011853928452456662,0.0,market-wide: no cross-sectional variation
+FRED_DCOILWTICO_1d,True,float32,623165,0.999626241983452,4669,0.0011120650229072557,0.0,market-wide: no cross-sectional variation
+FRED_DEXCHUS_1d,True,float32,623165,0.999626241983452,3429,0.028920109441319716,0.0,market-wide: no cross-sectional variation
+FRED_DEXUSEU_1d,True,float32,585328,0.938931469141704,3586,0.0015922696334362955,0.0,market-wide: no cross-sectional variation
+FRED_DGORDER_1d,True,float32,574105,0.9209285239926981,592,0.00509662866548802,0.0,market-wide: no cross-sectional variation
+FRED_DGS10_1d,True,float32,623165,0.999626241983452,629,0.0049794195758747686,0.0,market-wide: no cross-sectional variation
+FRED_DSPIC96_1d,True,float32,620731,0.9957218342054354,326,0.007753761291122886,0.0,market-wide: no cross-sectional variation
+FRED_FEDFUNDS_1d,True,float32,619397,0.9935819492523236,161,0.06725573420601004,0.0,market-wide: no cross-sectional variation
+FRED_GDP_1d,True,float32,620792,0.9958196850166346,320,0.007583860616760525,0.0,market-wide: no cross-sectional variation
+FRED_GS10_1d,True,float32,623348,0.9999197944170498,234,0.016958424507658644,0.0,market-wide: no cross-sectional variation
+FRED_GS2_1d,True,float32,623348,0.9999197944170498,233,0.013969724776529323,0.0,market-wide: no cross-sectional variation
+FRED_HOUST_1d,True,float32,621336,0.996692321759133,292,0.01166196711602096,0.0,market-wide: no cross-sectional variation
+FRED_ICSA_1d,True,float32,362249,0.5810878443626704,333,0.01610770492120061,0.0,market-wide: no cross-sectional variation
+FRED_INDPRO_1d,True,float32,621336,0.996692321759133,347,0.004656095896584135,0.0,market-wide: no cross-sectional variation
+FRED_MANEMP_1d,True,float32,621885,0.9975729790599264,302,0.014787299902715132,0.0,market-wide: no cross-sectional variation
+FRED_NFCI_1d,True,float32,623043,0.9994305403610535,700,0.007824500074633693,0.0,market-wide: no cross-sectional variation
+FRED_PAYEMS_1d,True,float32,621885,0.9975729790599264,319,0.007364705693174783,0.0,market-wide: no cross-sectional variation
+FRED_PCEPILFE_1d,True,float32,554374,0.8892777968488831,272,0.012253460660131969,0.0,market-wide: no cross-sectional variation
+FRED_PCEPI_1d,True,float32,554374,0.8892777968488831,271,0.00868186458960918,0.0,market-wide: no cross-sectional variation
+FRED_PCU334413334413_1d,True,float32,221899,0.3559507730214085,66,0.05184340623436789,0.0,market-wide: no cross-sectional variation
+FRED_PERMIT_1d,True,float32,573405,0.919805645831395,462,0.008391974259031574,0.0,market-wide: no cross-sectional variation
+FRED_PPIACO_1d,True,float32,619031,0.992994844385128,264,0.01643051801929144,0.0,market-wide: no cross-sectional variation
+FRED_RRPONTSYD_1d,True,float32,502657,0.8063179541801546,2221,0.15158050121653532,0.0,market-wide: no cross-sectional variation
+FRED_RSAFS_1d,True,float32,536778,0.8610518480970424,285,0.007977227084567549,0.0,market-wide: no cross-sectional variation
+FRED_SAHMREALTIME_1d,True,float32,108898,0.17468455144225678,26,0.174245624345718,0.0,market-wide: no cross-sectional variation
+FRED_T10Y2Y_1d,True,float32,623165,0.999626241983452,391,0.011107812537610425,0.0,market-wide: no cross-sectional variation
+FRED_T10Y3M_1d,True,float32,623165,0.999626241983452,547,0.005127053027689296,0.0,market-wide: no cross-sectional variation
+FRED_T10YIE_1d,True,float32,504748,0.8096721516591326,253,0.0200397029804972,0.0,market-wide: no cross-sectional variation
+FRED_T5YIE_1d,True,float32,504748,0.8096721516591326,355,0.01041113585393107,0.0,market-wide: no cross-sectional variation
+FRED_T5YIFR_1d,True,float32,504748,0.8096721516591326,204,0.017436423720351542,0.0,market-wide: no cross-sectional variation
+FRED_TOTALSA_1d,True,float32,275628,0.44213808834805374,142,0.06310679611650485,0.0,market-wide: no cross-sectional variation
+FRED_UMCSENT_1d,True,float32,592762,0.9508564352147424,225,0.013155364210256393,0.0,market-wide: no cross-sectional variation
+FRED_UNRATE_1d,True,float32,621885,0.9975729790599264,67,0.04333920258568706,0.0,market-wide: no cross-sectional variation
+FRED_VIXCLS_1d,True,float32,623165,0.999626241983452,2424,0.00226264312020091,0.0,market-wide: no cross-sectional variation
+FRED_WALCL_1d,True,float32,505500,0.8108784436267039,1080,0.0010880316518298715,0.0,market-wide: no cross-sectional variation
+FRED_WPU01_1d,True,float32,223974,0.3592793047138425,100,0.0204800557207533,0.0,market-wide: no cross-sectional variation
+FRED_WPU055_1d,True,float32,223974,0.3592793047138425,99,0.01865395090501576,0.0,market-wide: no cross-sectional variation
+FRED_WPU0561_1d,True,float32,223974,0.3592793047138425,101,0.023230374954235758,0.0,market-wide: no cross-sectional variation
+FRED_WPU101_1d,True,float32,223974,0.3592793047138425,100,0.020283604346933125,0.0,market-wide: no cross-sectional variation
+FRED_WTREGEN_1d,True,float32,505500,0.8108784436267039,1062,0.0018061325420375865,0.0,market-wide: no cross-sectional variation
+cftc_available_1d,True,float64,623398,1.0,2,0.9371877997683663,0.020441176470588237,market-wide: no cross-sectional variation
+cftc_crude_ls_ratio_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_crude_net_pct_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_dow_ls_ratio_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_dow_net_pct_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_gold_ls_ratio_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_gold_net_pct_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_nasdaq_ls_ratio_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_nasdaq_net_pct_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_sp500_ls_ratio_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+cftc_sp500_net_pct_1d,True,float32,187651,0.30101315692382713,367,0.003511838466088643,0.0,market-wide: no cross-sectional variation
+context_anxiety_index_1d,True,float64,623398,1.0,2,0.991150115977273,0.4844117647058824,market-wide: no cross-sectional variation
+day_of_month_1d,True,float64,623398,1.0,31,0.033941398592873255,0.0,market-wide: no cross-sectional variation
+day_of_week_1d,True,float64,623398,1.0,5,0.2054016856005313,0.0,market-wide: no cross-sectional variation
+day_of_week_cos_1d,True,float32,623398,1.0,4,0.40152198114206333,0.0,market-wide: no cross-sectional variation
+day_of_week_sin_1d,True,float32,623398,1.0,5,0.2054016856005313,0.0,market-wide: no cross-sectional variation
+day_of_year_1d,True,float64,623398,1.0,365,0.0029740230157940836,0.0,market-wide: no cross-sectional variation
+market_context_day_of_week_1d,True,float32,623398,1.0,5,0.2054016856005313,0.0,market-wide: no cross-sectional variation
+market_context_fed_funds_trend_1d,True,float32,623398,1.0,381,0.1004783460967151,0.3610294117647059,market-wide: no cross-sectional variation
+market_context_fed_funds_velocity_1d,True,float32,623398,1.0,320,0.2587865216121964,0.1625,market-wide: no cross-sectional variation
+market_context_yield_curve_inverted_1d,True,float32,623398,1.0,2,0.8762572225127446,0.0,market-wide: no cross-sectional variation
+market_context_yield_curve_slope_1d,True,float32,623398,1.0,403,0.008496979457746094,0.0,market-wide: no cross-sectional variation
+month_of_year_1d,True,float64,623398,1.0,12,0.08913086022091826,0.0,market-wide: no cross-sectional variation
+quarter_1d,True,float64,623398,1.0,4,0.2535667422737962,0.0,market-wide: no cross-sectional variation
+state_CDL_ENGULFING_BEAR_1d,True,float64,623398,1.0,2,0.9923323462699591,0.3922058823529412,market-wide: no cross-sectional variation
+state_CDL_ENGULFING_BULL_1d,True,float64,623398,1.0,2,0.9934744737711703,0.36470588235294116,market-wide: no cross-sectional variation
+state_CDL_MARUBOZU_1d,True,float64,623398,1.0,2,0.9916297453633153,0.4648529411764706,market-wide: no cross-sectional variation
+state_CDL_SHOOTING_STAR_1d,True,float64,623398,1.0,2,0.9936076150388676,0.3845588235294118,market-wide: no cross-sectional variation
+state_FRED_CAPUTLB50001SQ_1d,True,float64,623398,1.0,3,0.9814580733335686,0.0,market-wide: no cross-sectional variation
+state_FRED_CCSA_1d,True,float64,623398,1.0,3,0.9159397367331945,0.0,market-wide: no cross-sectional variation
+state_FRED_CPIAUCSL_1d,True,float64,623398,1.0,3,0.9540213475179581,0.0,market-wide: no cross-sectional variation
+state_FRED_CSUSHPINSA_1d,True,float64,623398,1.0,3,0.9836717474229946,0.0,market-wide: no cross-sectional variation
+state_FRED_DCOILWTICO_1d,True,float64,623398,1.0,3,0.41454736781317875,0.0,market-wide: no cross-sectional variation
+state_FRED_DEXCHUS_1d,True,float64,623398,1.0,3,0.5026451801256981,0.0,market-wide: no cross-sectional variation
+state_FRED_DEXUSEU_1d,True,float64,623398,1.0,3,0.4619873660165737,0.0,market-wide: no cross-sectional variation
+state_FRED_DGORDER_1d,True,float64,623398,1.0,3,0.9281518387931947,0.0,market-wide: no cross-sectional variation
+state_FRED_DGS10_1d,True,float64,623398,1.0,3,0.3942264813169115,0.0,market-wide: no cross-sectional variation
+state_FRED_DSPIC96_1d,True,float64,623398,1.0,3,0.9533492247328352,0.0,market-wide: no cross-sectional variation
+state_FRED_FEDFUNDS_1d,True,float64,623398,1.0,3,0.9625889078887003,0.0,market-wide: no cross-sectional variation
+state_FRED_GDP_1d,True,float64,623398,1.0,3,0.957322609312189,0.0,market-wide: no cross-sectional variation
+state_FRED_GS10_1d,True,float64,623398,1.0,3,0.9541801545721995,0.0,market-wide: no cross-sectional variation
+state_FRED_GS2_1d,True,float64,623398,1.0,3,0.9550319378631308,0.0,market-wide: no cross-sectional variation
+state_FRED_HOUST_1d,True,float64,623398,1.0,3,0.9537310033076782,0.0,market-wide: no cross-sectional variation
+state_FRED_ICSA_1d,True,float64,623398,1.0,3,0.9128325724497031,0.0,market-wide: no cross-sectional variation
+state_FRED_INDPRO_1d,True,float64,623398,1.0,3,0.9495571047709489,0.0,market-wide: no cross-sectional variation
+state_FRED_MANEMP_1d,True,float64,623398,1.0,3,0.9552308477088474,0.0,market-wide: no cross-sectional variation
+state_FRED_NFCI_1d,True,float64,623398,1.0,3,0.8121938151870876,0.0,market-wide: no cross-sectional variation
+state_FRED_PAYEMS_1d,True,float64,623398,1.0,3,0.9548362362407322,0.0,market-wide: no cross-sectional variation
+state_FRED_PCEPILFE_1d,True,float64,623398,1.0,3,0.9598538975100979,0.0,market-wide: no cross-sectional variation
+state_FRED_PCEPI_1d,True,float64,623398,1.0,3,0.9588946387380133,0.0,market-wide: no cross-sectional variation
+state_FRED_PCU334413334413_1d,True,float64,623398,1.0,3,0.9844561580242478,0.0,market-wide: no cross-sectional variation
+state_FRED_PERMIT_1d,True,float64,623398,1.0,3,0.9295169378150074,0.0,market-wide: no cross-sectional variation
+state_FRED_PPIACO_1d,True,float64,623398,1.0,3,0.952914510473245,0.0,market-wide: no cross-sectional variation
+state_FRED_RRPONTSYD_1d,True,float64,623398,1.0,3,0.8409266632231737,0.0,market-wide: no cross-sectional variation
+state_FRED_RSAFS_1d,True,float64,623398,1.0,3,0.9575311438278595,0.0,market-wide: no cross-sectional variation
+state_FRED_SAHMREALTIME_1d,True,float64,623398,1.0,3,0.9937295275249519,0.0,market-wide: no cross-sectional variation
+state_FRED_T10Y2Y_1d,True,float64,623398,1.0,3,0.43274761869624223,0.0,market-wide: no cross-sectional variation
+state_FRED_T10Y3M_1d,True,float64,623398,1.0,3,0.4350270613636874,0.0,market-wide: no cross-sectional variation
+state_FRED_T10YIE_1d,True,float64,623398,1.0,3,0.5209849887230951,0.0,market-wide: no cross-sectional variation
+state_FRED_T5YIE_1d,True,float64,623398,1.0,3,0.5227591362179539,0.0,market-wide: no cross-sectional variation
+state_FRED_T5YIFR_1d,True,float64,623398,1.0,3,0.5427335345958761,0.0,market-wide: no cross-sectional variation
+state_FRED_TOTALSA_1d,True,float64,623398,1.0,3,0.9726001687525465,0.0,market-wide: no cross-sectional variation
+state_FRED_UMCSENT_1d,True,float64,623398,1.0,3,0.9556366879585754,0.0,market-wide: no cross-sectional variation
+state_FRED_UNRATE_1d,True,float64,623398,1.0,3,0.9639860891436931,0.0,market-wide: no cross-sectional variation
+state_FRED_VIXCLS_1d,True,float64,623398,1.0,3,0.43822245178842406,0.0,market-wide: no cross-sectional variation
+state_FRED_WALCL_1d,True,float64,623398,1.0,3,0.8654936332808254,0.0,market-wide: no cross-sectional variation
+state_FRED_WPU01_1d,True,float64,623398,1.0,3,0.9826034090580977,0.0,market-wide: no cross-sectional variation
+state_FRED_WPU055_1d,True,float64,623398,1.0,3,0.9829354601715116,0.0,market-wide: no cross-sectional variation
+state_FRED_WPU0561_1d,True,float64,623398,1.0,3,0.9834632129073241,0.0,market-wide: no cross-sectional variation
+state_FRED_WPU101_1d,True,float64,623398,1.0,3,0.9832851565131746,0.0,market-wide: no cross-sectional variation
+state_FRED_WTREGEN_1d,True,float64,623398,1.0,3,0.8661481108376992,0.0,market-wide: no cross-sectional variation
+state_LEVEL_BREAKOUT_DOWN_20_1d,True,float64,623398,1.0,2,0.991199843438702,0.36,market-wide: no cross-sectional variation
+state_cftc_available_1d,True,float64,623398,1.0,2,0.9730605487986808,0.07147058823529412,market-wide: no cross-sectional variation
+state_cftc_crude_ls_ratio_1d,True,float64,623398,1.0,3,0.9500062560354701,0.0,market-wide: no cross-sectional variation
+state_cftc_crude_net_pct_1d,True,float64,623398,1.0,3,0.9500190889287422,0.0,market-wide: no cross-sectional variation
+state_cftc_dow_ls_ratio_1d,True,float64,623398,1.0,3,0.9491528686328798,0.0,market-wide: no cross-sectional variation
+state_cftc_dow_net_pct_1d,True,float64,623398,1.0,3,0.9529546132647201,0.0,market-wide: no cross-sectional variation
+state_cftc_gold_ls_ratio_1d,True,float64,623398,1.0,3,0.9483492086917186,0.0,market-wide: no cross-sectional variation
+state_cftc_gold_net_pct_1d,True,float64,623398,1.0,3,0.948843275082692,0.0,market-wide: no cross-sectional variation
+state_cftc_nasdaq_ls_ratio_1d,True,float64,623398,1.0,3,0.9476610447900058,0.0,market-wide: no cross-sectional variation
+state_cftc_nasdaq_net_pct_1d,True,float64,623398,1.0,3,0.9541432600040424,0.0,market-wide: no cross-sectional variation
+state_cftc_sp500_ls_ratio_1d,True,float64,623398,1.0,3,0.9496709966987382,0.0,market-wide: no cross-sectional variation
+state_cftc_sp500_net_pct_1d,True,float64,623398,1.0,3,0.9549790021783836,0.0,market-wide: no cross-sectional variation
+state_champion_1d,True,float64,623398,1.0,2,0.6359629001055506,0.0,market-wide: no cross-sectional variation
+state_day_of_week_cos_1d,True,float64,623398,1.0,3,0.41399555340248123,0.0,market-wide: no cross-sectional variation
+state_day_of_week_sin_1d,True,float64,623398,1.0,2,0.6075220003914032,0.0,market-wide: no cross-sectional variation
+state_fear_greed_available_1d,True,float64,623398,1.0,2,0.999990375330046,0.000588235294117647,market-wide: no cross-sectional variation
+state_filing_data_available_1d,True,float64,623398,1.0,2,0.999987167106728,0.0008823529411764706,market-wide: no cross-sectional variation
+state_fund_current_ratio_1d,True,float64,623398,1.0,3,0.9975954366231524,0.1363235294117647,market-wide: no cross-sectional variation
+state_fund_data_available_1d,True,float64,623398,1.0,2,0.9998700669556206,0.007058823529411765,market-wide: no cross-sectional variation
+state_fund_debt_to_equity_1d,True,float64,623398,1.0,3,0.9989541191983291,0.07617647058823529,market-wide: no cross-sectional variation
+state_fund_return_on_equity_1d,True,float64,623398,1.0,3,0.9977205573325548,0.12794117647058822,market-wide: no cross-sectional variation
+state_insider_available_1d,True,float64,623398,1.0,2,0.9999534807618888,0.0017647058823529412,market-wide: no cross-sectional variation
+state_news_intensity_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_peer_count_1d,True,float64,623398,1.0,3,0.9482513578805194,0.4472058823529412,market-wide: no cross-sectional variation
+state_sentiment_decay_weighted_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_sma_20_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_sma_50_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_sma_5_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_std_20_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_std_50_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_std_5_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_velocity_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_wiki_attention_available_1d,True,float64,623398,1.0,2,0.9999197944170498,0.0029411764705882353,market-wide: no cross-sectional variation
+state_wiki_attention_z_1d,True,float64,623398,1.0,3,0.9473466389048409,0.2948529411764706,market-wide: no cross-sectional variation
+state_wiki_views_1d,True,float64,623398,1.0,3,0.9447479780172539,0.295,market-wide: no cross-sectional variation
+week_of_year_1d,True,float64,623398,1.0,53,0.020126788985527704,0.0,market-wide: no cross-sectional variation
+wiki_attention_available_1d,True,float64,623398,1.0,2,0.6716223022852175,0.29514705882352943,market-wide: no cross-sectional variation
+wiki_attention_z_1d,True,float32,204656,0.3282910756851963,193475,0.00021010867015870533,0.295,market-wide: no cross-sectional variation
+wiki_views_1d,True,float32,204710,0.32837769771478253,3873,0.13544526403204532,0.29514705882352943,market-wide: no cross-sectional variation
+CDL_ENGULFING_BEAR_1d,True,float64,623398,1.0,2,0.9592828337594923,0.7905882352941176,"tie hazard: ranks are ties, book would be one-sided"
+CDL_ENGULFING_BULL_1d,True,float64,623398,1.0,2,0.9616280450049567,0.7777941176470589,"tie hazard: ranks are ties, book would be one-sided"
+CDL_HAMMER_1d,True,float64,623398,1.0,2,0.9533011013830651,0.8719117647058824,"tie hazard: ranks are ties, book would be one-sided"
+CDL_MARUBOZU_1d,True,float64,623398,1.0,2,0.9575231232695646,0.8808823529411764,"tie hazard: ranks are ties, book would be one-sided"
+CDL_OUTSIDE_BAR_1d,True,float64,623398,1.0,2,0.902136355907462,0.981764705882353,"tie hazard: ranks are ties, book would be one-sided"
+CDL_SHOOTING_STAR_1d,True,float64,623398,1.0,2,0.9622456279936734,0.8408823529411765,"tie hazard: ranks are ties, book would be one-sided"
+LEVEL_BREAKOUT_DOWN_20_1d,True,float64,623398,1.0,2,0.9511211136384782,0.7363235294117647,"tie hazard: ranks are ties, book would be one-sided"
+LEVEL_BREAKOUT_UP_20_1d,True,float64,623398,1.0,2,0.9148681901449797,0.8823529411764706,"tie hazard: ranks are ties, book would be one-sided"
+state_CDL_DOJI_1d,True,float64,623398,1.0,2,0.9416279808404904,0.9822058823529412,"tie hazard: ranks are ties, book would be one-sided"
+state_CDL_HAMMER_1d,True,float64,623398,1.0,2,0.9894401329487743,0.5283823529411765,"tie hazard: ranks are ties, book would be one-sided"
+state_CDL_INSIDE_BAR_1d,True,float64,623398,1.0,2,0.9126079968174424,0.9720588235294118,"tie hazard: ranks are ties, book would be one-sided"
+state_CDL_OUTSIDE_BAR_1d,True,float64,623398,1.0,2,0.9438609042698244,0.9435294117647058,"tie hazard: ranks are ties, book would be one-sided"
+state_LEVEL_BREAKOUT_UP_20_1d,True,float64,623398,1.0,2,0.9766232807933295,0.6563235294117648,"tie hazard: ranks are ties, book would be one-sided"
+state_fund_earnings_yield_1d,True,float64,623398,1.0,3,0.9123032156022316,0.5279411764705882,"tie hazard: ranks are ties, book would be one-sided"
+state_fund_price_to_book_1d,True,float64,623398,1.0,3,0.9087966275156482,0.528235294117647,"tie hazard: ranks are ties, book would be one-sided"
+AATR_14_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ABB_Lower_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ABB_Mid_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ABB_Upper_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ACCELERATION_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ACCELERATION_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+AEMA_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ARSI_14_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ATR_14_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+AUTOCORR_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+BB_Lower_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+BB_Middle_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+BB_Upper_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+CCI_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+CDL_BODY_RATIO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+CDL_DOJI_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_ENGULFING_BEAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_ENGULFING_BULL_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_HAMMER_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_INSIDE_BAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_LOWER_WICK_RATIO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+CDL_MARUBOZU_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_OUTSIDE_BAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_SHOOTING_STAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+CDL_UPPER_WICK_RATIO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+CURRENT_DRAWDOWN_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+EMA_100_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+EMA_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+EMA_200_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+EMA_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+EMA_50_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+EMA_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_BAMLC0A0CM_1d,True,float32,110,0.0001764522824904796,1,1.0,0.0,too little history
+FRED_BAMLC0A0CM_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_BAMLH0A0HYM2_1d,True,float32,110,0.0001764522824904796,1,1.0,0.0,too little history
+FRED_BAMLH0A0HYM2_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_CAPUTLB50001SQ_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_CCSA_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_CPIAUCSL_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_CSUSHPINSA_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_DCOILWTICO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_DEXCHUS_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_DEXUSEU_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_DGORDER_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_DGS10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_DSPIC96_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_FEDFUNDS_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_GDP_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_GS10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_GS2_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_HOUST_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_ICSA_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_INDPRO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_MANEMP_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_NFCI_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_PAYEMS_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_PCEPILFE_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_PCEPI_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_PCU334413334413_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_PERMIT_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_PPIACO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_RRPONTSYD_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_RSAFS_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_SAHMREALTIME_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_T10Y2Y_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_T10Y3M_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_T10YIE_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_T5YIE_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_T5YIFR_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_TOTALSA_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_UMCSENT_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_UNRATE_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_VIXCLS_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_WALCL_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_WPU01_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_WPU055_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_WPU0561_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_WPU101_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+FRED_WTREGEN_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+HURST_EXPONENT_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+KURTOSIS_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+LAG_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+LAG_1_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+LAG_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+LAG_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+LEVEL_BREAKOUT_DOWN_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+LEVEL_BREAKOUT_UP_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+LEVEL_DIST_RESISTANCE_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+LEVEL_DIST_SUPPORT_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+LEVEL_POSITION_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+MACD_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+MACD_Histogram_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+MACD_Signal_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+MARKET_PREMIUM_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+MAX_DRAWDOWN_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+MOMENTUM_ZSCORE_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ROLLING_KURT_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ROLLING_KURT_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ROLLING_SKEW_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ROLLING_SKEW_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ROLLING_VOL_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ROLLING_VOL_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+RSI_14_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+RSI_VELOCITY_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SHARPE_RATIO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SKEWNESS_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SMA_100_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SMA_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SMA_200_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SMA_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SMA_50_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SMA_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+SORTINO_RATIO_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+Stoch_D_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+Stoch_K_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+VELOCITY_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+VELOCITY_1_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+VELOCITY_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+VOLATILITY_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+VOLATILITY_50_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+VOLATILITY_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+Williams_R_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+atr_14_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+cftc_crude_ls_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_crude_net_pct_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_dow_ls_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_dow_net_pct_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_gold_ls_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_gold_net_pct_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_nasdaq_ls_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_nasdaq_net_pct_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_sp500_ls_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+cftc_sp500_net_pct_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+context_anxiety_index_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+context_fingerprint_60m,False,object,0,0.0,0,1.0,0.0,too little history
+context_pattern_id_60m,False,object,0,0.0,0,1.0,0.0,too little history
+context_pattern_seq_60m,False,object,0,0.0,0,1.0,0.0,too little history
+context_stability_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+context_velocity_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+context_velocity_rank_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_AATR_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ABB_Lower_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ABB_Mid_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ABB_Upper_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ACCELERATION_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ACCELERATION_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_AEMA_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ARSI_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ATR_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_AUTOCORR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_BB_Lower_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_BB_Middle_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_BB_Upper_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CCI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_BODY_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_DOJI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_ENGULFING_BEAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_ENGULFING_BULL_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_HAMMER_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_INSIDE_BAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_LOWER_WICK_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_MARUBOZU_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_OUTSIDE_BAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_SHOOTING_STAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CDL_UPPER_WICK_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_CURRENT_DRAWDOWN_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_EMA_100_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_EMA_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_EMA_200_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_EMA_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_EMA_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_EMA_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_BAMLC0A0CM_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_BAMLH0A0HYM2_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_CAPUTLB50001SQ_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_CCSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_CPIAUCSL_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_CSUSHPINSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_DCOILWTICO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_DEXCHUS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_DEXUSEU_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_DGORDER_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_DGS10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_DSPIC96_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_FEDFUNDS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_GDP_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_GS10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_GS2_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_HOUST_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_ICSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_INDPRO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_MANEMP_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_NFCI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_PAYEMS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_PCEPILFE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_PCEPI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_PCU334413334413_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_PERMIT_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_PPIACO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_RRPONTSYD_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_RSAFS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_SAHMREALTIME_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_T10Y2Y_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_T10Y3M_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_T10YIE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_T5YIE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_T5YIFR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_TOTALSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_UMCSENT_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_UNRATE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_VIXCLS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_WALCL_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_WPU01_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_WPU055_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_WPU0561_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_WPU101_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_FRED_WTREGEN_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_HURST_EXPONENT_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_KURTOSIS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LAG_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LAG_1_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LAG_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LAG_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LEVEL_BREAKOUT_DOWN_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LEVEL_BREAKOUT_UP_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LEVEL_DIST_RESISTANCE_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LEVEL_DIST_SUPPORT_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_LEVEL_POSITION_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_MACD_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_MACD_Histogram_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_MACD_Signal_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_MARKET_PREMIUM_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_MAX_DRAWDOWN_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_MOMENTUM_ZSCORE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ROLLING_KURT_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ROLLING_KURT_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ROLLING_SKEW_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ROLLING_SKEW_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ROLLING_VOL_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_ROLLING_VOL_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_RSI_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_RSI_VELOCITY_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SHARPE_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SKEWNESS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SMA_100_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SMA_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SMA_200_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SMA_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SMA_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SMA_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_SORTINO_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_Stoch_D_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_Stoch_K_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_VELOCITY_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_VELOCITY_1_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_VELOCITY_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_VOLATILITY_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_VOLATILITY_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_VOLATILITY_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_Williams_R_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_atr_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_available_at,True,"datetime64[ns, UTC]",0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_crude_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_crude_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_dow_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_dow_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_gold_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_gold_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_nasdaq_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_nasdaq_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_sp500_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_cftc_sp500_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_close,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_context_anxiety_index_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_context_fingerprint_1d,False,object,0,0.0,0,1.0,0.0,too little history
+ctx_1d_context_pattern_id_1d,False,object,0,0.0,0,1.0,0.0,too little history
+ctx_1d_context_pattern_seq_1d,False,object,0,0.0,0,1.0,0.0,too little history
+ctx_1d_context_stability_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_context_velocity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_context_velocity_rank_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_day_of_month_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_day_of_week_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_day_of_week_cos_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_day_of_week_sin_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_day_of_year_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_days_since_last_significant_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_entity_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fear_greed_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fear_greed_index_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_filing_count_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_filing_data_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_filing_days_since_last_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_filing_material_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_filing_periodic_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fund_current_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fund_data_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fund_days_since_report_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fund_debt_to_equity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fund_earnings_yield_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fund_price_to_book_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_fund_return_on_equity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_gk_volatility_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_high,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_hour_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_hour_cos_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_hour_sin_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_hype_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_hype_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_insider_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_insider_net_value_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_is_significant_1d,False,object,0,0.0,0,1.0,0.0,too little history
+ctx_1d_is_significant_decayed_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_keyword_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_keyword_entity_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_low,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_macro_composite_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_breadth_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_day_of_week_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_fed_funds_trend_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_fed_funds_velocity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_hour_of_day_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_market_breadth_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_price_to_ma20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_rsi_current_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_trend_20d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_trend_5d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_trend_alignment_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_volatility_20d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_volatility_5d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_volatility_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_volume_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_yield_curve_inverted_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_context_yield_curve_slope_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_return_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_market_session_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_month_of_year_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_coverage_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_freshness_hours_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_impact_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_impact_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_intensity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_quality_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_quality_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_significance_level_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_news_source_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_nlp_cluster_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_nlp_sentiment_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_nlp_subjectivity_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_obv_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_open,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_peer_breadth_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_peer_breadth_excess_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_peer_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_peer_divergence_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_peer_return_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_peer_return_excess_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_peer_volatility_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_price_volume_trend_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_quarter_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_returns_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_decay_weighted_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_ema_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_mean_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_neg_threshold_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_pos_threshold_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_sma_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_sma_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_sma_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_std_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_std_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_std_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_std_stat_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_sentiment_velocity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_significance_intensity_7d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_significant_events_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_significant_events_7d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_source_datetime,True,"datetime64[ns, UTC]",0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_AATR_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ABB_Lower_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ABB_Mid_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ABB_Upper_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ACCELERATION_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ACCELERATION_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_AEMA_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ARSI_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ATR_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_AUTOCORR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_BB_Lower_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_BB_Middle_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_BB_Upper_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CCI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_BODY_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_DOJI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_ENGULFING_BEAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_ENGULFING_BULL_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_HAMMER_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_INSIDE_BAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_LOWER_WICK_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_MARUBOZU_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_OUTSIDE_BAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_SHOOTING_STAR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CDL_UPPER_WICK_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_CURRENT_DRAWDOWN_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_EMA_100_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_EMA_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_EMA_200_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_EMA_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_EMA_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_EMA_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_BAMLC0A0CM_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_BAMLH0A0HYM2_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_CAPUTLB50001SQ_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_CCSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_CPIAUCSL_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_CSUSHPINSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_DCOILWTICO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_DEXCHUS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_DEXUSEU_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_DGORDER_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_DGS10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_DSPIC96_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_FEDFUNDS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_GDP_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_GS10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_GS2_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_HOUST_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_ICSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_INDPRO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_MANEMP_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_NFCI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_PAYEMS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_PCEPILFE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_PCEPI_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_PCU334413334413_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_PERMIT_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_PPIACO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_RRPONTSYD_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_RSAFS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_SAHMREALTIME_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_T10Y2Y_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_T10Y3M_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_T10YIE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_T5YIE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_T5YIFR_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_TOTALSA_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_UMCSENT_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_UNRATE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_VIXCLS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_WALCL_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_WPU01_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_WPU055_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_WPU0561_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_WPU101_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_FRED_WTREGEN_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_HURST_EXPONENT_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_KURTOSIS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LAG_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LAG_1_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LAG_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LAG_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LEVEL_BREAKOUT_DOWN_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LEVEL_BREAKOUT_UP_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LEVEL_DIST_RESISTANCE_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LEVEL_DIST_SUPPORT_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_LEVEL_POSITION_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_MACD_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_MACD_Histogram_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_MACD_Signal_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_MARKET_PREMIUM_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_MAX_DRAWDOWN_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_MOMENTUM_ZSCORE_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ROLLING_KURT_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ROLLING_KURT_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ROLLING_SKEW_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ROLLING_SKEW_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ROLLING_VOL_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_ROLLING_VOL_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_RSI_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_RSI_VELOCITY_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SHARPE_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SKEWNESS_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SMA_100_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SMA_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SMA_200_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SMA_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SMA_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SMA_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_SORTINO_RATIO_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_Stoch_D_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_Stoch_K_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_VELOCITY_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_VELOCITY_1_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_VELOCITY_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_VOLATILITY_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_VOLATILITY_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_VOLATILITY_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_Williams_R_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_atr_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_crude_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_crude_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_dow_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_dow_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_gold_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_gold_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_nasdaq_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_nasdaq_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_sp500_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_cftc_sp500_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_champion_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_close_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_day_of_week_cos_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_day_of_week_sin_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_days_since_last_significant_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_entity_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fear_greed_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fear_greed_index_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_filing_count_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_filing_data_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_filing_days_since_last_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_filing_material_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_filing_periodic_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fund_current_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fund_data_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fund_days_since_report_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fund_debt_to_equity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fund_earnings_yield_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fund_price_to_book_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_fund_return_on_equity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_gk_volatility_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_high_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_hype_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_insider_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_is_significant_decayed_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_keyword_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_keyword_entity_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_low_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_macro_composite_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_market_breadth_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_market_return_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_freshness_hours_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_impact_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_impact_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_intensity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_quality_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_quality_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_significance_level_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_news_source_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_nlp_cluster_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_nlp_sentiment_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_nlp_subjectivity_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_obv_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_open_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_peer_breadth_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_peer_breadth_excess_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_peer_count_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_peer_divergence_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_peer_return_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_peer_return_excess_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_peer_volatility_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_price_volume_trend_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_returns_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_decay_weighted_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_ema_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_mean_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_neg_threshold_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_pos_threshold_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_sma_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_sma_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_sma_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_std_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_std_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_std_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_std_stat_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_sentiment_velocity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_significance_intensity_7d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_significant_events_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_significant_events_7d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volatility_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volatility_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volatility_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volume_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volume_roc_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volume_rs_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volume_sma_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_volume_sma_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_wiki_attention_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_wiki_attention_z_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_state_wiki_views_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volatility_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volatility_20_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volatility_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volatility_regime_1d,False,category,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volume,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volume_roc_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volume_rs_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volume_sma_10_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_volume_sma_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_week_of_year_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_wiki_attention_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_wiki_attention_z_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+ctx_1d_wiki_views_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+day_of_month_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+day_of_week_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+day_of_week_cos_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+day_of_week_sin_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+day_of_year_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+days_since_last_significant_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+entity_count_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+fear_greed_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+fear_greed_index_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+fear_greed_index_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_count_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_count_30d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_data_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+filing_days_since_last_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_days_since_last_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_material_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_material_30d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_periodic_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+filing_periodic_30d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+fund_current_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+fund_data_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+fund_days_since_report_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+fund_debt_to_equity_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+fund_earnings_yield_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+fund_price_to_book_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+fund_return_on_equity_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+gk_volatility_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+hour_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+hour_cos_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+hour_sin_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+hype_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+hype_score_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+insider_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+insider_net_value_30d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+is_significant_60m,False,object,0,0.0,0,1.0,0.0,too little history
+is_significant_decayed_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+keyword_count_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+keyword_entity_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+macro_composite_score_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_breadth_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_day_of_week_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_fed_funds_trend_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_fed_funds_velocity_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_hour_of_day_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_market_breadth_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_price_to_ma20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_rsi_current_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_trend_20d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_trend_5d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_trend_alignment_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_volatility_20d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_volatility_5d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_volatility_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_volume_ratio_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_yield_curve_inverted_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_context_yield_curve_slope_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_return_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+market_session_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+month_of_year_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+news_coverage_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+news_freshness_hours_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+news_impact_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+news_impact_score_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+news_intensity_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+news_quality_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+news_quality_score_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+news_significance_level_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+news_source_count_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+nlp_cluster_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+nlp_cluster_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+nlp_sentiment_score_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+nlp_subjectivity_score_1d,False,float32,0,0.0,0,1.0,0.0,too little history
+nlp_subjectivity_score_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+obv_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+peer_breadth_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+peer_breadth_excess_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+peer_count_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+peer_divergence_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+peer_return_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+peer_return_excess_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+peer_volatility_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+price_volume_trend_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+quarter_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+returns_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+sentiment_decay_weighted_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_ema_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_mean_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_neg_threshold_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_pos_threshold_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_sma_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_sma_50_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_sma_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_std_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_std_50_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_std_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_std_stat_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+sentiment_velocity_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+significance_intensity_7d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+significant_events_30d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+significant_events_7d_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+state_AATR_14_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ABB_Lower_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ABB_Mid_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ABB_Upper_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ACCELERATION_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ACCELERATION_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_AEMA_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ARSI_14_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ATR_14_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_AUTOCORR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_BB_Lower_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_BB_Middle_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_BB_Upper_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CCI_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_BODY_RATIO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_DOJI_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_ENGULFING_BEAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_ENGULFING_BULL_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_HAMMER_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_INSIDE_BAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_LOWER_WICK_RATIO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_MARUBOZU_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_OUTSIDE_BAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_SHOOTING_STAR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CDL_UPPER_WICK_RATIO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_CURRENT_DRAWDOWN_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_EMA_100_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_EMA_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_EMA_200_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_EMA_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_EMA_50_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_EMA_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_BAMLC0A0CM_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_BAMLH0A0HYM2_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_CAPUTLB50001SQ_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_CCSA_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_CPIAUCSL_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_CSUSHPINSA_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_DCOILWTICO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_DEXCHUS_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_DEXUSEU_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_DGORDER_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_DGS10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_DSPIC96_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_FEDFUNDS_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_GDP_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_GS10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_GS2_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_HOUST_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_ICSA_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_INDPRO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_MANEMP_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_NFCI_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_PAYEMS_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_PCEPILFE_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_PCEPI_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_PCU334413334413_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_PERMIT_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_PPIACO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_RRPONTSYD_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_RSAFS_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_SAHMREALTIME_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_T10Y2Y_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_T10Y3M_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_T10YIE_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_T5YIE_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_T5YIFR_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_TOTALSA_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_UMCSENT_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_UNRATE_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_VIXCLS_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_WALCL_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_WPU01_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_WPU055_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_WPU0561_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_WPU101_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_FRED_WTREGEN_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_HURST_EXPONENT_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_KURTOSIS_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LAG_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LAG_1_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LAG_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LAG_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LEVEL_BREAKOUT_DOWN_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LEVEL_BREAKOUT_UP_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LEVEL_DIST_RESISTANCE_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LEVEL_DIST_SUPPORT_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_LEVEL_POSITION_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_MACD_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_MACD_Histogram_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_MACD_Signal_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_MARKET_PREMIUM_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_MAX_DRAWDOWN_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_MOMENTUM_ZSCORE_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ROLLING_KURT_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ROLLING_KURT_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ROLLING_SKEW_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ROLLING_SKEW_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ROLLING_VOL_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_ROLLING_VOL_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_RSI_14_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_RSI_VELOCITY_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SHARPE_RATIO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SKEWNESS_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SMA_100_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SMA_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SMA_200_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SMA_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SMA_50_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SMA_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_SORTINO_RATIO_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_Stoch_D_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_Stoch_K_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_VELOCITY_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_VELOCITY_1_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_VELOCITY_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_VOLATILITY_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_VOLATILITY_50_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_VOLATILITY_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_Williams_R_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_atr_14_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_crude_ls_ratio_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_crude_net_pct_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_dow_ls_ratio_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_dow_net_pct_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_gold_ls_ratio_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_gold_net_pct_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_nasdaq_ls_ratio_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_nasdaq_net_pct_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_sp500_ls_ratio_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_cftc_sp500_net_pct_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_champion_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_close_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_day_of_week_cos_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_day_of_week_sin_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_days_since_last_significant_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_entity_count_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fear_greed_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fear_greed_index_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_filing_count_30d_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_filing_data_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_filing_days_since_last_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_filing_material_30d_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_filing_periodic_30d_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fund_current_ratio_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fund_data_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fund_days_since_report_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fund_debt_to_equity_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fund_earnings_yield_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fund_price_to_book_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_fund_return_on_equity_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_gk_volatility_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_high_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_hour_cos_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_hour_sin_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_hype_score_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_insider_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_insider_net_value_30d_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_is_significant_decayed_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_keyword_count_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_keyword_entity_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_low_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_macro_composite_score_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_market_breadth_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_market_return_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_market_session_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_freshness_hours_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_impact_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_impact_score_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_intensity_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_quality_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_quality_score_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_significance_level_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_news_source_count_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_nlp_cluster_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_nlp_sentiment_score_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_nlp_subjectivity_score_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_obv_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_open_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_peer_breadth_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_peer_breadth_excess_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_peer_count_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_peer_divergence_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_peer_return_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_peer_return_excess_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_peer_volatility_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_price_volume_trend_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_returns_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_decay_weighted_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_ema_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_mean_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_neg_threshold_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_pos_threshold_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_sma_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_sma_50_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_sma_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_std_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_std_50_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_std_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_std_stat_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_sentiment_velocity_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_significance_intensity_7d_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_significant_events_30d_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_significant_events_7d_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volatility_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volatility_20_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volatility_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volume_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volume_roc_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volume_rs_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volume_sma_10_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_volume_sma_5_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_wiki_attention_z_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+state_wiki_views_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+volatility_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+volatility_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+volatility_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+volatility_regime_60m,False,category,0,0.0,0,1.0,0.0,too little history
+volume_roc_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+volume_rs_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+volume_sma_10_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+volume_sma_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+week_of_year_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+wiki_attention_available_60m,False,float64,0,0.0,0,1.0,0.0,too little history
+wiki_attention_z_60m,False,float32,0,0.0,0,1.0,0.0,too little history
+wiki_views_60m,False,float32,0,0.0,0,1.0,0.0,too little history

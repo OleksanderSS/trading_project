@@ -104,10 +104,24 @@ def _thresholds(attempts: int) -> tuple[float, float]:
     a free parameter chosen after seeing the answer.
     """
     bonferroni = float(norm.ppf(1.0 - 0.025 / attempts)) * SHARPE_SE
+    if attempts <= 1:
+        # One pre-registered test: no correction, and the "expected maximum of
+        # one draw" is just the one-sided 5% point. Guarded rather than left to
+        # crash on log(1), because a family of one is not a corner case here --
+        # it is the whole point of the sealed period, where a single hypothesis
+        # formed in the open data is tested once.
+        return float(norm.ppf(0.975)) * SHARPE_SE, float(norm.ppf(0.95)) * SHARPE_SE
     log_n = math.log(attempts)
     root = math.sqrt(2.0 * log_n)
     noise_max = (root - (math.log(log_n) + math.log(4.0 * math.pi)) / (2.0 * root))
-    return bonferroni, noise_max * SHARPE_SE
+    # The Gumbel approximation to the expected maximum is asymptotic and goes
+    # WRONG below a few dozen draws: at 6 attempts it returns 1.07 sigma, which
+    # is less than the 1.645 a SINGLE draw exceeds 5% of the time. A maximum
+    # over more draws cannot be smaller than that, so the single-draw point is
+    # the floor. Caught by running _thresholds(1) and _thresholds(6) after
+    # guarding the log(1) crash -- the guard is what made this defect visible.
+    floor = float(norm.ppf(0.95))
+    return bonferroni, max(noise_max, floor) * SHARPE_SE
 
 
 def _sharpe(series: np.ndarray, per_year: float) -> float:
