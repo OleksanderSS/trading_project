@@ -44,6 +44,9 @@ class FeatureEngineeringStage(BaseStage):
         self.logger = ProjectLogger.get_logger('FeatureEngineeringStage')
 
         # Initialize Core Components
+        #: What the invariant gate said per timeframe, so a later stage or
+        #: report can tell an unchecked batch from a clean one.
+        self._invariant_verdicts: dict[str, str] = {}
         self.selector = get_enhanced_smart_selector(config_manager)
 
         # Initialize Specialized Modular Components
@@ -306,6 +309,10 @@ class FeatureEngineeringStage(BaseStage):
 
             enriched_data[tf] = enriched_df
             self._checkpoint_enriched(tf, enriched_df)
+            # The verdict is kept, not just logged: 'could not run' must be
+            # distinguishable from 'ran and passed' by something other than
+            # a human reading the log.
+            self._invariant_verdicts[tf] = self._gate_on_invariants(tf)
 
         # 4. Feature Selection (on the primary timeframe)
         with self._phase('combine timeframes'):
@@ -485,6 +492,113 @@ class FeatureEngineeringStage(BaseStage):
             len(frame), frame.shape[1],
         )
         return frame
+
+    #: Which frames a corrupt checkpoint may stop the run on.
+    #:
+    #: Measured 2026-09-04 (REGISTER #275). The daily frame passes every
+    #: blocking check with the whole scale to spare on three of four -- macro
+    #: agreement 0 of 45 against a 1% threshold, context agreement 0,
+    #: fabricated median 0 columns -- and 1.2 points on the fourth, indicator
+    #: recomputation at 99.2% against a floor of 98%. Gating it costs nothing
+    #: today.
+    #:
+    #: The intraday frames are NOT gated, and that is deliberate rather than
+    #: timid: 60m fails two blocking checks right now -- indicators at 96.6%,
+    #: below the floor (#164, worse than the 2.2% recorded there), and
+    #: `news_freshness_hours_60m` 77% on the sentinel 999. Gating them would
+    #: kill every intraday run on defects nobody is fixing, because intraday
+    #: is out of analysis entirely (CLAIMS R26). A check that fires on a known
+    #: condition gets switched off, and this script already spent its life
+    #: switched off for exactly that reason.
+    _GATED_TIMEFRAMES = ("1d",)
+
+    #: Measured: 144s on the daily checkpoint, against 8.1 hours of enrichment
+    #: and a twelve-hour run. It buys ending a bad rebuild at minute fifty.
+    _INVARIANT_TIMEOUT_SECONDS = 900
+
+    def _gate_on_invariants(self, timeframe: str) -> str:
+        """Stop the run when the checkpoint just written is corrupt.
+
+        REGISTER #170: `batch_invariants.py` says in its own docstring that its
+        exit code can gate a run, and had ZERO callers for its whole life. It
+        held, unrun, the answers to a full day of measurement.
+
+        Run as a subprocess on purpose: the exit code is the contract the
+        script already declares, it is the same path a human runs, and a
+        checker cannot corrupt this stage's memory from outside it. Measured
+        cost 144s on the daily checkpoint, against 8.1 hours of enrichment.
+
+        A failure blocks only when it is CORRUPTION. The script separates that
+        from advisory findings itself, so a batch that is merely thin does not
+        stop anything -- which is what made it wireable at all.
+
+        RETURNS A VERDICT, not None, and the caller records it. Three of the
+        branches below mean "the check could not run", and with a bare `return`
+        they were indistinguishable from a pass to everything except a human
+        reading the log -- which is the shape `_silent_failure_scan` exists to
+        catch, and it caught this on the first run after the gate was written.
+        The verdict makes the state available where the run can carry it.
+        """
+        import subprocess
+        import sys as _sys
+
+        from src.core.exceptions import DataProcessingError
+
+        if timeframe not in self._GATED_TIMEFRAMES:
+            self.logger.info(
+                "Invariants not gated for %s (gated: %s). REGISTER #275: the "
+                "intraday frames carry two blocking failures nobody is fixing, "
+                "and a check that fires on a known condition gets switched off.",
+                timeframe, ", ".join(self._GATED_TIMEFRAMES),
+            )
+            return "not_gated"
+
+        script = Path("scripts") / "diagnostics" / "batch_invariants.py"
+        checkpoint = (Path("data") / "checkpoints" / "enriched"
+                      / f"enriched_{timeframe}.parquet")
+        if not script.exists() or not checkpoint.exists():
+            # NOT a pass. The lesson every neighbour of this file records: a
+            # check that could not run must not read like one that ran.
+            self.logger.error(
+                "Invariant gate could not run for %s: script exists=%s, "
+                "checkpoint exists=%s. The batch is UNCHECKED, not clean.",
+                timeframe, script.exists(), checkpoint.exists(),
+            )
+            return "unchecked: artefact missing"
+
+        try:
+            completed = subprocess.run(
+                [_sys.executable, str(script), str(checkpoint),
+                 "--interval", timeframe],
+                capture_output=True, text=True,
+                timeout=self._INVARIANT_TIMEOUT_SECONDS,
+            )
+        except (subprocess.TimeoutExpired, OSError) as error:
+            self.logger.error(
+                "Invariant gate could not run for %s (%s: %s). The batch is "
+                "UNCHECKED, not clean.",
+                timeframe, type(error).__name__, error,
+            )
+            return f"unchecked: {type(error).__name__}"
+
+        report = (completed.stdout or "").strip()
+        if completed.returncode == 0:
+            self.logger.info("Invariants passed for %s. %s", timeframe, report)
+            return "passed"
+        if completed.returncode != 1:
+            self.logger.error(
+                "Invariant gate returned %s for %s, which is neither pass nor "
+                "fail. The batch is UNCHECKED. %s",
+                completed.returncode, timeframe,
+                report or (completed.stderr or "").strip(),
+            )
+            return f"unchecked: exit {completed.returncode}"
+
+        raise DataProcessingError(
+            f"Enriched checkpoint for {timeframe} failed a blocking invariant. "
+            f"A rebuild started from it would carry corruption into the batch, "
+            f"and every later stage would report success on it. {report}"
+        )
 
     def _checkpoint_enriched(self, timeframe: str, frame: "pd.DataFrame") -> None:
         """Write one enriched timeframe to disk as soon as it is finished.
