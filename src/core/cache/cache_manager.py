@@ -15,6 +15,21 @@ from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
 
 
+#: Tables whose contents decide whether a cached answer is still valid.
+#:
+#: One definition, imported by everyone who needs it. There were two: this
+#: module defaulted to ['news', 'market_data'], neither of which exists, while
+#: `cli/pipeline_executor.py` carried the correct ten-table list. The wrong
+#: copy was the one inside the cache salt (REGISTER #166) -- two places
+#: declaring one thing is how every half-landed fix in this project happened.
+DEFAULT_TRACKED_TABLES = [
+    'news_articles', 'google_news', 'rss_news', 'newsapi_articles',
+    'sec_filings', 'hugging_face_news',
+    'market_data_raw', 'market_data',
+    'fred_data', 'economic_calendar',
+]
+
+
 class CacheManager:
     """Централізоване кешування з підтримкою DuckDB метаданих, стиснення та просторів імен."""
 
@@ -45,7 +60,8 @@ class CacheManager:
         """
         try:
             # Використовуємо список таблиць, які відслідковуємо для змін
-            tracked_tables = self.config.get('cache.tracked_tables', ['news', 'market_data'])
+            tracked_tables = self.config.get(
+                'cache.tracked_tables', DEFAULT_TRACKED_TABLES)
 
             table_states = []
 
@@ -72,7 +88,26 @@ class CacheManager:
                     table_states.append(f"{table_name}:missing")
 
             state_string = "_".join(table_states)
-            self.logger.info(f"Generated DB salt based on table states: {state_string}")
+            # A SALT BUILT ENTIRELY FROM MISSING TABLES IS NOT A SALT.
+            #
+            # REGISTER #166. The default here was ['news', 'market_data'] and
+            # neither table has ever existed -- the real ones are
+            # market_data_raw, google_news, rss_news, newsapi_articles. So every
+            # run logged "table states: news:missing_market_data:missing", the
+            # hash of that constant string, and the cache key never moved no
+            # matter what arrived in the database. A mechanism whose whole
+            # purpose is to invalidate on change was frozen, and it looked like
+            # it was working because it printed a salt every time.
+            if all(state.endswith(":missing") for state in table_states):
+                self.logger.error(
+                    "Cache salt is built from %d tracked tables and NONE of "
+                    "them exists: %s. The salt is a constant, so the cache "
+                    "will never invalidate when the data changes.",
+                    len(table_states), state_string,
+                )
+            else:
+                self.logger.info(
+                    f"Generated DB salt based on table states: {state_string}")
             return hashlib.sha256(state_string.encode()).hexdigest()
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:

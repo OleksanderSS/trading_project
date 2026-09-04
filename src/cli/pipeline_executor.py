@@ -18,13 +18,13 @@ from src.pipeline.target_column_utils import is_direct_target_column, split_mode
 logger = ProjectLogger.get_logger(__name__)
 
 _FINGERPRINT_FILE = 'raw_db_fingerprint.json'
-# Tables tracked for change detection (fallback if config unavailable)
-_DEFAULT_TRACKED_TABLES = [
-    'news_articles', 'google_news', 'rss_news', 'newsapi_articles',
-    'sec_filings', 'hugging_face_news',
-    'market_data_raw', 'market_data',
-    'fred_data', 'economic_calendar',
-]
+# Tables tracked for change detection. Imported, not restated: this list and
+# the cache salt's copy disagreed, and the salt's copy -- ['news',
+# 'market_data'], neither of which exists -- froze the cache key permanently
+# (REGISTER #166).
+from src.core.cache.cache_manager import (  # noqa: E402
+    DEFAULT_TRACKED_TABLES as _DEFAULT_TRACKED_TABLES,
+)
 
 def profile_execution(func):
     """Decorator to log execution time of async functions."""
