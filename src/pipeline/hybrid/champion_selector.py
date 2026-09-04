@@ -143,6 +143,39 @@ def select_champions(models_metadata: dict[str, Any], target_types: dict[str, st
             }
             continue
 
+        # TWO METRICS ARE NOT A RANKING (REGISTER #153).
+        #
+        # `score` is what the GATE judged a model by -- balanced accuracy
+        # against a naive opponent, over folds. The Colab cell emits none: it
+        # reports val_accuracy, val_auc, accuracy and auc from ONE validation
+        # split, with zero mentions of folds, balanced accuracy, a naive
+        # baseline or the sealed period in its 2,077 lines (measured
+        # 2026-09-04).
+        #
+        # So a group holding a local model and a heavy one ranked balanced
+        # accuracy against raw accuracy and called the larger number the
+        # winner. Raw accuracy is the metric this project measured handing
+        # 0.7381 to a predictor that never fires while the model itself scored
+        # 0.5257 balanced (#187) -- so the heavy model wins by being scored
+        # more generously, not by being better.
+        #
+        # When any candidate faced the gate, only gated candidates compete.
+        # The rest are recorded, named, and excluded from the comparison
+        # rather than silently losing or silently winning.
+        gated = [item for item in scored if item[1] == "score"]
+        excluded = []
+        if gated and len(gated) != len(scored):
+            excluded = [
+                {
+                    "model_type": entry.get("model_type"),
+                    "metric": score_name,
+                    "reason": "not judged by the gate's metric",
+                }
+                for _score, score_name, _key, entry in scored
+                if score_name != "score"
+            ]
+            scored = gated
+
         scored.sort(key=lambda item: item[0], reverse=True)
         best_score, best_score_name, best_source_key, best_entry = scored[0]
         champions[key] = {
@@ -159,6 +192,11 @@ def select_champions(models_metadata: dict[str, Any], target_types: dict[str, st
             "source_key": best_source_key,
             "candidates_considered": len(entries),
             "candidates_comparable": len(scored),
+            # Whether this champion faced the gate at all. A champion chosen on
+            # raw accuracy never met a naive opponent, never saw a fold, and
+            # must not read downstream like one that did.
+            "gated": best_score_name == "score",
+            "excluded_incomparable": excluded,
             "ranking": [
                 {
                     "model_type": entry.get("model_type"),
