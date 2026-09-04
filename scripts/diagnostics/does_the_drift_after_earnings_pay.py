@@ -97,6 +97,73 @@ def thresholds(attempts: int) -> tuple[float, float]:
     return bonferroni, max(gumbel, float(norm.ppf(0.95))) * SHARPE_SE
 
 
+#: A quarterly EPS row, decided by the MEASURED period length rather than by
+#: the `fiscal_period` label. The label cannot be trusted: measured 2026-09-04,
+#: rows tagged FY have a median duration of 91 days -- a quarter -- while rows
+#: tagged Q2 and Q3 sit at 167 and 165, which is a half-year. Building a
+#: seasonal surprise on the label would silently subtract a half-year figure
+#: from a quarterly one.
+QUARTER_DAYS = (80, 100)
+
+#: Quarters of seasonal differences used for the scaling deviation. Eight is
+#: the standard window in the Foster-Olsen-Shevlin formulation and is fixed
+#: here BEFORE the run so it cannot become a parameter chosen after seeing the
+#: answer.
+SUE_WINDOW = 8
+
+
+def _quarterly_eps() -> pd.DataFrame:
+    """First-filed quarterly diluted EPS per (ticker, period_end).
+
+    `filed` is the only honest date -- the figure is private until the filing
+    lands -- and the FIRST filing is the point-in-time one: a later 10-Q
+    restates the same quarter as a comparative, and up to 33 filings mention a
+    single quarter. Taking the earliest is what stops a restatement from
+    rewriting history the book could not have known.
+    """
+    import duckdb
+
+    connection = duckdb.connect(str(PROJECT_ROOT / "data" / "trading_data.duckdb"),
+                                read_only=True)
+    frame = connection.execute(
+        """
+        select ticker, period_end, min(filed) as filed, min(value) as eps
+        from sec_fundamentals
+        where concept = 'EarningsPerShareDiluted'
+          and period_start is not null
+          and date_diff('day', period_start, period_end) between ? and ?
+        group by ticker, period_end
+        """, list(QUARTER_DAYS)).fetch_df()
+    connection.close()
+    frame["filed"] = pd.to_datetime(frame["filed"], utc=True)
+    frame["period_end"] = pd.to_datetime(frame["period_end"], utc=True)
+    return frame.sort_values(["ticker", "period_end"]).reset_index(drop=True)
+
+
+def _sue_events() -> pd.DataFrame:
+    """Standardised unexpected earnings, seasonal-random-walk definition.
+
+    surprise = EPS(q) - EPS(q-4), scaled by the deviation of the previous
+    SUE_WINDOW surprises for that name. No analyst estimates: this is the
+    classical formulation precisely because it needs only reported earnings,
+    which SEC XBRL gives away.
+    """
+    eps = _quarterly_eps()
+    eps["prior_year"] = eps.groupby("ticker")["period_end"].shift(4)
+    eps["eps_lag4"] = eps.groupby("ticker")["eps"].shift(4)
+    # The lag must actually be a year: a name with a missing quarter would
+    # otherwise have its "same quarter last year" silently be a different one.
+    gap = (eps["period_end"] - eps["prior_year"]).dt.days
+    eps.loc[(gap < 330) | (gap > 400), "eps_lag4"] = np.nan
+    eps["surprise"] = eps["eps"] - eps["eps_lag4"]
+    # Scaled by PAST surprises only -- shift(1) before rolling, or the quarter
+    # being judged helps set its own yardstick.
+    eps["scale"] = (eps.groupby("ticker")["surprise"]
+                    .transform(lambda s: s.shift(1).rolling(SUE_WINDOW, min_periods=4).std()))
+    eps["sue"] = eps["surprise"] / eps["scale"].replace(0.0, np.nan)
+    return eps.dropna(subset=["sue"])
+
+
 def _panel() -> pd.DataFrame:
     frame = pd.read_parquet(
         BATCH / "features.parquet",
@@ -118,6 +185,23 @@ def _sharpe(daily: np.ndarray) -> float:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--holds", type=int, nargs="+", default=[5, 20, 40, 60])
+    parser.add_argument("--skip-bars", type=int, default=2,
+                        help="extra bars between the signal becoming public "
+                             "and the position earning anything. `filed` is "
+                             "stored with its time truncated to midnight, so "
+                             "one bar cannot be shown to be enough: if the "
+                             "filing landed after the close, the first bar's "
+                             "return IS the announcement jump. Default 2 -- "
+                             "the conservative reading, chosen because the "
+                             "stored time is unusable, NOT because of what it "
+                             "does to the answer. At 1 the best net Sharpe is "
+                             "0.642 and at 2 it is 0.250, so the default is "
+                             "the one that costs us the headline.")
+    parser.add_argument("--signal", choices=["announcement", "sue"],
+                        default="announcement",
+                        help="announcement: sign of the return around the "
+                             "report. sue: standardised unexpected earnings "
+                             "from reported EPS, no analyst estimates needed.")
     args = parser.parse_args()
 
     frame = _panel()
@@ -167,27 +251,54 @@ def main() -> int:
     print(header)
     print("-" * len(header))
 
+    # THE SIGNAL, built once. Both variants produce (entry day, name, side)
+    # with the side known strictly before the entry bar.
+    name_of = dict(zip(frame["ticker"], frame["name"]))
+    signals: list[tuple[int, int, float]] = []
+    if args.signal == "announcement":
+        for index in events:
+            day = int(frame.at[index, "day"])
+            name = int(frame.at[index, "name"])
+            if day + 1 >= n_days or day - 1 < 0:
+                continue
+            before, after = returns[day, name], returns[day + 1, name]
+            if not np.isfinite(before) or not np.isfinite(after):
+                continue
+            side = float(np.sign((1.0 + before) * (1.0 + after) - 1.0))
+            if side and day + 2 < n_days:
+                signals.append((day + 2, name, side))
+    else:
+        sue = _sue_events()
+        sue = sue[sue["filed"] < SEAL_START]
+        print(f"SUE        {len(sue):,} quarters with a surprise, "
+              f"{sue['ticker'].nunique()} names, "
+              f"{str(sue['filed'].min())[:10]} to "
+              f"{str(sue['filed'].max())[:10]}")
+        print()
+        # searchsorted compares raw datetime64, so both sides must be naive
+        # UTC. Mixing an aware Timestamp with a naive array raises rather than
+        # silently shifting, which is the good outcome -- but it has to be
+        # handled, not caught.
+        naive_dates = pd.DatetimeIndex(dates).tz_localize(None).to_numpy()             if pd.DatetimeIndex(dates).tz is not None else np.asarray(dates)
+        for row in sue.itertuples():
+            name = name_of.get(row.ticker)
+            if name is None:
+                continue
+            # Enter on the first trading bar STRICTLY after the filing lands.
+            filed = row.filed.tz_convert("UTC").tz_localize(None).to_datetime64()
+            day = int(np.searchsorted(naive_dates, filed, side="right"))
+            day += args.skip_bars - 1
+            side = float(np.sign(row.sue))
+            if side and day < n_days:
+                signals.append((day, int(name), side))
+
     results = {}
     for hold in args.holds:
         position = np.zeros((n_days, n_names))
         traded = np.zeros((n_days, n_names))
         used = 0
-        for index in events:
-            day = int(frame.at[index, "day"])
-            name = int(frame.at[index, "name"])
-            # The announcement return spans the bar before the event and the
-            # bar after it; the position opens at the LATER close, so the
-            # signal is known before any money moves.
-            if day + 1 >= n_days or day - 1 < 0:
-                continue
-            before = returns[day, name]
-            after = returns[day + 1, name]
-            if not np.isfinite(before) or not np.isfinite(after):
-                continue
-            side = np.sign((1.0 + before) * (1.0 + after) - 1.0)
-            if side == 0:
-                continue
-            entry, exit_ = day + 2, min(day + 2 + hold, n_days)
+        for entry, name, side in signals:
+            exit_ = min(entry + hold, n_days)
             if entry >= n_days:
                 continue
             position[entry:exit_, name] = side
