@@ -197,6 +197,12 @@ def main() -> int:
                              "does to the answer. At 1 the best net Sharpe is "
                              "0.642 and at 2 it is 0.250, so the default is "
                              "the one that costs us the headline.")
+    parser.add_argument("--weight", choices=["sign", "rank"], default="sign",
+                        help="sign: +-1, which throws the magnitude away. "
+                             "rank: the surprise's cross-sectional rank within "
+                             "its own filing QUARTER, mapped to [-1, +1]. The "
+                             "quarter is the natural unit for earnings, so this "
+                             "adds no tuned window.")
     parser.add_argument("--signal", choices=["announcement", "sue"],
                         default="announcement",
                         help="announcement: sign of the return around the "
@@ -280,6 +286,22 @@ def main() -> int:
         # silently shifting, which is the good outcome -- but it has to be
         # handled, not caught.
         naive_dates = pd.DatetimeIndex(dates).tz_localize(None).to_numpy()             if pd.DatetimeIndex(dates).tz is not None else np.asarray(dates)
+        if args.weight == "rank":
+            # Rank WITHIN the filing quarter: every name in that reporting
+            # season is compared with its peers, which is what "surprise
+            # relative to others" means. Centred on 0 so the book is already
+            # balanced before the daily demeaning.
+            quarter = sue["filed"].dt.to_period("Q")
+            sue = sue.assign(
+                weight=2.0 * (sue.groupby(quarter)["sue"].rank(pct=True) - 0.5))
+            small = sue.groupby(quarter)["sue"].transform("size") < 5
+            # A quarter with four names cannot rank anything: the extremes are
+            # the whole sample. Dropped rather than ranked on nothing.
+            sue = sue[~small]
+            print(f"           ranked within {quarter.nunique()} filing "
+                  f"quarters; {int(small.sum())} events dropped from quarters "
+                  f"with fewer than 5 names")
+            print()
         for row in sue.itertuples():
             name = name_of.get(row.ticker)
             if name is None:
@@ -288,7 +310,8 @@ def main() -> int:
             filed = row.filed.tz_convert("UTC").tz_localize(None).to_datetime64()
             day = int(np.searchsorted(naive_dates, filed, side="right"))
             day += args.skip_bars - 1
-            side = float(np.sign(row.sue))
+            side = (float(row.weight) if args.weight == "rank"
+                    else float(np.sign(row.sue)))
             if side and day < n_days:
                 signals.append((day, int(name), side))
 
@@ -328,12 +351,18 @@ def main() -> int:
               f"{_sharpe(gross_daily[live]):>14.3f}{results[hold]:>12.3f}"
               f"{net_daily[live].mean() * 252:>12.2%}")
 
-    attempts = len(args.holds)
+    # ATTEMPTS ARE CUMULATIVE ALONG A LINE OF ENQUIRY, not per run. The SUE
+    # book has now been tried two ways -- by sign and by rank -- and both are
+    # searches for the same thing, so the family is eight rather than four.
+    # Counting each run separately is how a threshold gets quietly halved.
+    attempts = len(args.holds) * (2 if args.signal == "sue" else 1)
     bonferroni, noise_max = thresholds(attempts)
     best = max(results, key=lambda h: (results[h] if np.isfinite(results[h]) else -9))
 
     print("\n" + "=" * len(header))
-    print(f"attempts, declared before the run            {attempts}")
+    print(f"attempts in this family                      {attempts}"
+          + ("   (4 holds x sign and rank, cumulative)"
+             if args.signal == "sue" else "   (declared before the run)"))
     print(f"standard error over {YEARS:.0f} years                  {SHARPE_SE:.3f}")
     print(f"expected maximum of {attempts} noise draws           {noise_max:.3f}")
     print(f"Bonferroni family-wise 5%                    {bonferroni:.3f}")
