@@ -66,8 +66,14 @@ for _stream in (sys.stdout, sys.stderr):
 
 ROOT = Path(__file__).resolve().parents[2]
 REGISTER = ROOT / "docs" / "REGISTER.md"
+ARCHIVE = ROOT / "docs" / "AUDIT_HISTORY.md"
 ROADMAP = ROOT / "docs" / "ROADMAP.md"
 CONTRACTS = ROOT / "tests" / "contracts"
+
+#: Only these are entry states. A digit-leading table row that carries
+#: anything else in its second cell belongs to some other table in the same
+#: file, and must not be read as an entry.
+STATES = {"закрито", "відкрито", "знято", "неперевірюване", "?"}
 
 CLOSED_STATES = ("закрито", "знято")
 UNSETTLED_STATES = ("?", "відкрито")
@@ -153,11 +159,34 @@ def _read(path: Path) -> str:
 
 
 def register_rows() -> dict[int, tuple[str, str]]:
+    """Every entry, wherever its body now lives.
+
+    Settled entries were moved to AUDIT_HISTORY.md on 04.09 because the
+    register had stopped being readable in one pass -- which is what let four
+    wrong `закрито` marks sit unnoticed. The register keeps a one-line index
+    of them. Rules D, E and G read BODIES, so a scanner that read only the
+    register would go quiet on 253 entries the moment they were archived, and
+    a check that silently stops checking is the defect this whole file exists
+    to catch (#202).
+
+    The archive row wins where both files carry the same number: the index
+    line is a summary, the archived row is the entry.
+    """
     rows: dict[int, tuple[str, str]] = {}
-    for line in _read(REGISTER).splitlines():
-        match = re.match(r"\|\s*(\d+)\s*\|\s*([^|]*?)\s*\|", line)
-        if match:
-            rows[int(match.group(1))] = (match.group(2).strip(), line)
+    pattern = re.compile(r"\|\s*(\d+)\s*\|\s*([^|]*?)\s*\|")
+    for path in (REGISTER, ARCHIVE):
+        if not path.exists():
+            continue
+        for line in _read(path).splitlines():
+            match = pattern.match(line)
+            if not match:
+                continue
+            number = int(match.group(1))
+            state = match.group(2).strip()
+            if state not in STATES:
+                continue
+            if path is ARCHIVE or number not in rows:
+                rows[number] = (state, line)
     return rows
 
 

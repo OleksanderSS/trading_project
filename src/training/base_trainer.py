@@ -875,8 +875,15 @@ class BaseTrainer(ABC):
             )
             return []
 
-    @staticmethod
-    def _score_single_feature_baseline(data: dict, is_classif: bool,
+    #: How many of the most-correlated columns are actually tried as
+    #: opponents. Ten because the prefilter is only a proxy: on the measured
+    #: case (#171/#188) the better opponent sat below the top correlation but
+    #: well inside the first handful. Every one of them is an attempt, and the
+    #: count travels with the score.
+    SINGLE_FEATURE_CANDIDATES = 10
+
+    @classmethod
+    def _score_single_feature_baseline(cls, data: dict, is_classif: bool,
                                        task_type: str, metric_key: str,
                                        evaluator: Any) -> dict[str, Any]:
         """Can ONE column and a straight line do what the model does?
@@ -954,18 +961,73 @@ class BaseTrainer(ABC):
             if corr.empty:
                 out['single_feature_status'] = 'no_usable_feature'
                 return out
-            best = str(corr.idxmax())
-            a, b = np.polyfit(xt[best].fillna(0.0), yt, 1)   # one column, one line
-            pred = a * xh[best].fillna(0.0).to_numpy() + b
-            if is_classif:
-                # Threshold where the train event rate says to, so the baseline
-                # fires as often as the target actually occurs.
-                cut = np.quantile(a * xt[best].fillna(0.0).to_numpy() + b,
-                                  1.0 - float(yt.mean()))
-                pred = (pred >= cut).astype(int)
-            score = evaluator.calculate(yh.to_numpy(), pred, task_type=task_type)
+
+            # RANKED BY THE GOVERNING METRIC, NOT BY CORRELATION (#188).
+            #
+            # Taking `corr.idxmax()` picked the most linearly correlated
+            # column and called it the strongest single-column opponent. Those
+            # are different things, and the project has a measured example of
+            # the gap: on `target_hourly_breakout_1h` the rung chose `CCI_15m`
+            # (0.7915) while #171 had already measured distance to the upper
+            # Bollinger band at AUC 0.9666 on the same target -- earning the
+            # same money as the model at matched selectivity. A better
+            # opponent existed, documented, and the rung never tried it,
+            # because it correlated less.
+            #
+            # So correlation is demoted to what it is good at: a cheap
+            # prefilter over two thousand columns. The candidates are then
+            # scored the way the gate scores, and the best one wins.
+            #
+            # SELECTED ON TRAIN, NOT ON THE HOLDOUT, and this deviates from
+            # the fix as written in #188 ("оцінювати їх керівною метрикою на
+            # відкладеному наборі"). Choosing one of ten on the holdout makes
+            # the opponent's own score the maximum of ten draws on the very
+            # data it is then reported against -- an opponent biased upward by
+            # its own selection, which can block a good model for a reason
+            # that is not about the model. Each candidate is one column and a
+            # straight line, two parameters, so ranking them on train carries
+            # no meaningful overfitting, and the holdout stays what it is for.
+            candidates = [str(name) for name in
+                          corr.sort_values(ascending=False)
+                              .head(cls.SINGLE_FEATURE_CANDIDATES).index]
+
+            def _fit_and_predict(column: str):
+                train_column = xt[column].fillna(0.0).to_numpy()
+                a, b = np.polyfit(train_column, yt, 1)  # one column, one line
+                on_train = a * train_column + b
+                on_holdout = a * xh[column].fillna(0.0).to_numpy() + b
+                if is_classif:
+                    # Threshold where the train event rate says to, so the
+                    # baseline fires as often as the target actually occurs.
+                    cut = np.quantile(on_train, 1.0 - float(yt.mean()))
+                    return (on_train >= cut).astype(int), (on_holdout >= cut).astype(int)
+                return on_train, on_holdout
+
+            best, best_train_score, best_holdout = None, -np.inf, None
+            for column in candidates:
+                try:
+                    train_pred, holdout_pred = _fit_and_predict(column)
+                    train_score = float(evaluator.calculate(
+                        yt.to_numpy(), train_pred,
+                        task_type=task_type).get(metric_key, np.nan))
+                except (ValueError, TypeError, np.linalg.LinAlgError):
+                    continue
+                if np.isfinite(train_score) and train_score > best_train_score:
+                    best, best_train_score, best_holdout = column, train_score, holdout_pred
+
+            if best is None:
+                out['single_feature_status'] = 'no_usable_feature'
+                return out
+
+            score = evaluator.calculate(yh.to_numpy(), best_holdout,
+                                        task_type=task_type)
             out['single_feature_score'] = float(score.get(metric_key, 0.0))
             out['single_feature_name'] = best
+            # How many opponents this rung actually tried. The project counts
+            # attempts everywhere else; a rung that quietly searches ten
+            # columns and reports one is the same omission in a smaller place.
+            out['single_feature_candidates'] = len(candidates)
+            out['single_feature_train_score'] = best_train_score
             out['single_feature_status'] = 'measured'
         except Exception as exc:  # noqa: BLE001 - a baseline must not kill training
             out['single_feature_status'] = f'failed: {type(exc).__name__}'
