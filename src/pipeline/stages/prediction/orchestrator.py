@@ -55,6 +55,16 @@ from src.pipeline.stages.prediction.output_contract import (
 from src.pipeline.stages.prediction.prediction_context_manager import PredictionContextManager
 from src.pipeline.stages.prediction.scaler_service import ScalerService
 
+#: Above this an anomaly score is worth saying out loud.
+#:
+#: Named rather than inline because the number IS the check: the previous
+#: form was `if anomaly_score < 0.8`, which fired on every ordinary bar and
+#: therefore said nothing (REGISTER #151). Observed scores on the 2026-08-29
+#: run ran 0.06 to 0.71, all of them normal data announced as anomalies.
+#: 0.8 on the correct side means a bar three standard deviations from its
+#: own history, or one the isolation forest calls an outlier outright.
+ANOMALY_WARNING_THRESHOLD = 0.8
+
 
 @dataclass
 class PredictionResultRequest:
@@ -605,16 +615,39 @@ class PredictionStage(BaseStage):
         confidence_info = self.anomaly_engine.calculate_ensemble_confidence(
             models=request.models or {}, X=request.ticker_df_clean, prediction=request.
             adjusted_prediction, context_id=request.context_id)
-        raw_confidence = confidence_info.get('score', 0.5) * anomaly_score
+        # ANOMALY IS A PENALTY, NOT A MULTIPLIER (REGISTER #151).
+        #
+        # `calculate_anomaly_score` says in its own docstring "Higher -> more
+        # anomalous", and both of its parts agree: the z-score branch returns
+        # |z|/3, and the isolation-forest branch returns 1.0 exactly when the
+        # point is an outlier. Multiplying confidence BY it gave a perfectly
+        # ordinary bar (anomaly 0.0) a confidence of zero and left an outlier
+        # (1.0) at full confidence -- the relationship inverted end to end.
+        #
+        # The data-quality factor is what remains after the anomaly, so the
+        # multiplier is (1 - score). Checked for a compensating inversion
+        # first: `calculate_ensemble_confidence` returns an ordinary
+        # confidence built from consensus, dispersion, diary accuracy and
+        # volatility, so there is none.
+        raw_confidence = confidence_info.get('score', 0.5) * (
+            1.0 - anomaly_score)
         try:
             final_confidence = float(get_confidence_calibrator().calibrate(raw_confidence))
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f'Confidence calibration unavailable, using raw score: {e}')
             final_confidence = raw_confidence
-        if anomaly_score < 0.8:
+        # And the warning fired on the WRONG SIDE, which is why it printed on
+        # every row: the observed scores were 0.06 to 0.71 -- ordinary data --
+        # and every one of them was announced as "potential data anomaly".
+        # A warning that fires on every row equals a warning switched off, and
+        # this one was worse: it looked like a working control.
+        if anomaly_score > ANOMALY_WARNING_THRESHOLD:
             self.logger.warning(
-                f'Low anomaly score ({anomaly_score:.2f}) - potential data anomaly!'
-                )
+                'HIGH anomaly score (%.2f > %.2f): this bar is unlike its own '
+                'history, and its prediction confidence has been reduced '
+                'accordingly.',
+                anomaly_score, ANOMALY_WARNING_THRESHOLD,
+            )
         pred_value = self.prediction_generator.extract_prediction_value(request
             .adjusted_prediction)
         # Log the number that is USED, not a fourth one nobody consumes.

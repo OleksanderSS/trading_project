@@ -21,9 +21,29 @@ class PredictionAdjuster(IAnalyzer):
         """
         self.rules: list[dict[str, Any]] = (config or {}).get('rules', [])
         if not self.rules:
+            # SAY WHAT WAS READ, not just that it was empty (REGISTER #165).
+            #
+            # "initialized with no rules" was true on every run and pointed
+            # nowhere, so the component sat in the stage's component list for
+            # months looking like a working layer. Reading the code showed two
+            # mismatches at once: the caller passes
+            # `analysis.prediction_adjustment`, which does not exist in any
+            # config file, while `strategy.yaml` carries a
+            # `context_prediction_adjustment` block -- under a different name
+            # AND in a different shape, weights and multipliers rather than a
+            # `rules` list. Neither end can reach the other.
+            #
+            # Naming the keys that WERE present turns "no rules" from a state
+            # into a lead.
             logger.warning(
-                'PredictionAdjuster initialized with no rules. No adjustments will be made.'
-                )
+                "PredictionAdjuster initialized with no rules, so it will "
+                "change nothing. It looked for a 'rules' list; the config it "
+                "was handed has keys %s. See REGISTER #165: the caller reads "
+                "analysis.prediction_adjustment, and strategy.yaml declares "
+                "context_prediction_adjustment with weights/multipliers "
+                "instead -- a different name in a different shape.",
+                sorted((config or {}).keys()) or "none",
+            )
         else:
             logger.info(
                 f'PredictionAdjuster initialized with {len(self.rules)} adjustment rules.'
