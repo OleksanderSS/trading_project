@@ -176,11 +176,26 @@ class FileManager:
         return data
 
     def _remove_timezone(self, df: pd.DataFrame) ->pd.DataFrame:
-        """Removes timezone information from all datetime columns in a DataFrame."""
-        for col in df.columns:
-            if pd.api.types.is_datetime64tz_dtype(df[col]):
-                df[col] = df[col].dt.tz_localize(None)
-        return df
+        """Timezone stripped from every datetime column, WITHOUT touching `df`.
+
+        This used to assign into its argument and return it, so the caller had
+        to defend itself with a full deep copy of the frame -- and did, on
+        every save, in both branches. `assign` builds the replacement columns
+        and returns a new frame, so the caller needs no copy at all and a
+        function named "remove" no longer edits what it was handed.
+
+        Saving a frame does not modify it, so the other branch's copy was
+        pointless outright.
+        """
+        tz_columns = [
+            column for column in df.columns
+            if pd.api.types.is_datetime64tz_dtype(df[column])
+        ]
+        if not tz_columns:
+            return df
+        return df.assign(**{
+            column: df[column].dt.tz_localize(None) for column in tz_columns
+        })
 
     def _write_dataframe(self, df: pd.DataFrame, path: Path, format: str, **kwargs) -> None:
         """Write DataFrame to file in specified format."""
@@ -220,8 +235,7 @@ class FileManager:
         """
         path = self._resolve_path(file_path)
         self.ensure_directory(path.parent)
-        df_to_save = self._remove_timezone(df.copy()
-            ) if remove_tz else df.copy()
+        df_to_save = self._remove_timezone(df) if remove_tz else df
 
         def write_task(p: Path):
             self._write_dataframe(df_to_save, p, format, **kwargs)

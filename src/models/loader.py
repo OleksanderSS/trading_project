@@ -299,6 +299,17 @@ class ModelLoaderStrategy:
                 model = load_model(str(trusted_path), compile=False,
                     safe_mode=True)
             except TypeError:
+                # `safe_mode` is refused by older Keras, and the fallback is
+                # not the same operation: without it, deserialisation may
+                # execute lambdas stored in the artifact. Falling back is
+                # right; falling back in SILENCE is not, because the log then
+                # cannot distinguish a model loaded safely from one that was
+                # not.
+                self.logger.warning(
+                    "Keras refused safe_mode for %s (older version); loading "
+                    "WITHOUT it, which permits code embedded in the artifact.",
+                    path.name,
+                )
                 model = load_model(str(trusted_path), compile=False)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'✅ Keras model loaded directly: {path.name}')
@@ -408,8 +419,20 @@ class ModelLoaderStrategy:
                 loaded_obj = torch.load(
                     trusted_path, map_location='cpu', weights_only=True)
             except TypeError:
-                # Fallback for older torch versions, trusted_path is validated by resolve_trusted_artifact_path
-                # trust path is verified by resolve_trusted_artifact_path
+                # Fallback for older torch versions; trusted_path is validated
+                # by resolve_trusted_artifact_path.
+                #
+                # But dropping `weights_only=True` is a downgrade, not a
+                # detail: it goes from reading tensors to unpickling whatever
+                # the file contains, which can run code. The fallback is
+                # correct and it must not be silent -- an artifact loaded this
+                # way and one loaded safely looked identical in every log this
+                # project has.
+                self.logger.warning(
+                    "torch refused weights_only for %s (older version); "
+                    "loading WITHOUT it, which unpickles arbitrary objects "
+                    "from the artifact.", path.name,
+                )
                 loaded_obj = torch.load(trusted_path, map_location='cpu')  # NOSONAR
             except (EOFError, ImportError, AttributeError, RuntimeError, OSError) as e:
                 self.logger.warning(f'Initial torch.load failed: {e}')
