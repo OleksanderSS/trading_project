@@ -656,11 +656,43 @@ class ModelingStage(BaseStage):
                 "Pooling tickers: one model per (timeframe, target) across "
                 "every name, instead of one per ticker."
             )
+        # WHICH CADENCES ARE MODELLED AT ALL, as opposed to collected.
+        #
+        # Until 2026-09-03 the pipeline could not express "collect this and do
+        # not model it", and the owner's decision to drop intraday needed
+        # exactly that: intraday bars accumulate FORWARD ONLY -- Yahoo serves
+        # sixty days of 15m -- so stopping collection is irreversible, while
+        # stopping analysis costs nothing and can be undone in a line.
+        #
+        # The decision itself rests on three measurements, of which the third
+        # is the one that settles it:
+        #   R8   the smallest annualised Sharpe those frames can tell from
+        #        zero is 6.01 at 15m and 2.07 at 60m -- not attainable.
+        #   R26  100% of intraday bars fall inside the sealed period, so there
+        #        is nothing there to explore with even if it were worth it.
+        #   R22/R25  friction of 11bp a round trip already destroys a DAILY
+        #        book against a per-bar edge of 1.7bp. Intraday is the same
+        #        turnover multiplied, so it cannot survive what daily did not.
+        #
+        # Empty or absent means every cadence, which is the behaviour this
+        # replaces; a cadence dropped here is named in the log, because a
+        # frame that vanishes without a line is how three of this project's
+        # defects hid (REGISTER #205, #229, #240).
+        modelled = self.modeling_config.get('timeframes') or None
+        if modelled:
+            modelled = {str(name) for name in modelled}
+
         wanted = getattr(self, '_requested_tickers', None)
         skipped = 0
+        skipped_cadences: dict[str, int] = {}
         for ticker, timeframe, frame in iter_model_contexts(
             enriched_data, pool_tickers=pooled
         ):
+            if modelled and str(timeframe) not in modelled:
+                skipped_cadences[str(timeframe)] = (
+                    skipped_cadences.get(str(timeframe), 0) + 1
+                )
+                continue
             if wanted and is_pooled(ticker):
                 # A pooled context is not dropped, it is NARROWED.
                 #
@@ -693,6 +725,18 @@ class ModelingStage(BaseStage):
             logger.info(
                 "Modeling skipped %d context(s) outside the requested "
                 "ticker list (%d name(s) asked for).", skipped, len(wanted),
+            )
+        if skipped_cadences:
+            # At WARNING, not INFO: a cadence that is collected, enriched and
+            # written to the batch but never trained on is a third of a run
+            # producing nothing, and the batch metadata will not say so. That
+            # exact silence cost two hours on 2026-09-02 (REGISTER #229).
+            logger.warning(
+                "Cadences collected but NOT modelled, by configuration: %s. "
+                "They are still enriched and written to the batch; only "
+                "training skips them. Set modeling.timeframes to change this.",
+                ", ".join(f"{name} x{count}"
+                          for name, count in sorted(skipped_cadences.items())),
             )
 
     async def _process_ticker_with_async(

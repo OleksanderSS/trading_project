@@ -79,6 +79,28 @@ modeling:
   # false, доки не порівняємо обидва режими на однакових даних.
   pool_tickers: true
 
+  # WHICH CADENCES ARE MODELLED. Collection is untouched by this.
+  #
+  # Decision of 2026-09-03: intraday is dropped from ANALYSIS and kept in
+  # COLLECTION. Three measurements, and the third is the one that settles it:
+  #
+  #   R8   the smallest annualised Sharpe 15m and 60m can distinguish from
+  #        zero is 6.01 and 2.07. Not attainable in liquid US equities.
+  #   R26  100% of intraday bars lie inside the sealed period (against 11.6%
+  #        of the daily frame), so there is nothing there to explore with.
+  #   R22, R25  round-trip friction of 11bp already destroys a DAILY book
+  #        against a per-bar edge of 1.7bp -- gross Sharpe 2.24, net -4.35.
+  #        Intraday is that turnover multiplied by ten or more.
+  #
+  # Collection CONTINUES, and that asymmetry is the whole point: Yahoo serves
+  # sixty days of 15m, so intraday history accumulates forward and can never
+  # be refetched. Stopping collection is irreversible; stopping analysis is a
+  # line in this file. The project already paid for that lesson once
+  # (REGISTER #218, #228).
+  #
+  # Empty or absent means every cadence.
+  timeframes: ["1d"]
+
   # Чи можна перезапустити прогін, не рахуючи наново те, що вже пораховано.
   #
   # Стадія 4 ЗАВЖДИ пише журнал контекстів
