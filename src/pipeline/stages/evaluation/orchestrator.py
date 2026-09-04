@@ -532,9 +532,28 @@ class EvaluationStage(BaseStage):
             # Configurable, because the right number depends on the feature
             # count and the machine; and now that a timeout says so in the
             # result, the next run reports whether this one is enough.
+            # A BUDGET PAID ONCE IS NOT A BUDGET PAID 330 TIMES.
+            #
+            # The 90s above is a PER-CONTEXT budget, chosen to stop a
+            # five-hour Stage 7. The invariant analyzers run in the first
+            # context only, so judging them by it is a category error -- and
+            # it is why REGISTER #221 stood open: feature drift has never been
+            # measured in this project's history, because its single run timed
+            # out and the other 329 contexts then reported
+            # `skipped_inputs_unchanged`, a state meaning "already computed"
+            # for something never computed once.
+            #
+            # Measured 2026-09-04 after capping the drift check to 50,000
+            # evenly-spaced rows: 66.9s alone on a 623,398 x 120 frame. That
+            # fits 90s with 23s to spare, which is not enough spare when ten
+            # analyzers share a thread pool. The first context gets a budget
+            # sized for something paid once; every later context keeps the
+            # tight one.
             result = self.analytics_engine.run_full_analysis(
                 context_data_map,
                 timeout=self.config_manager.get(
+                    'analysis.engine.invariant_timeout_seconds', 300
+                ) if not index else self.config_manager.get(
                     'analysis.engine.context_timeout_seconds', 90
                 ),
                 skip=skip,

@@ -88,6 +88,32 @@ class FeatureDriftMonitor:
     #: minutes on the full ~1,940-column frame, and Stage 7 runs one
     #: check per (ticker, timeframe) context.
     MAX_DRIFT_FEATURES = 100
+
+    #: Ceiling on ROWS per drift check, and the reason REGISTER #221 stood
+    #: open: the cap above was put on one axis of a two-axis cost.
+    #:
+    #: Feature drift has never been measured in this project's history. The
+    #: single run that reaches it timed out at 90s, and the other 329 contexts
+    #: then reported `skipped_inputs_unchanged` -- a state meaning "already
+    #: computed" for something never computed once.
+    #:
+    #: Timed 2026-09-04 against this monitor, 100 features:
+    #:
+    #:      5,000 rows   22.3s        (includes Evidently warm-up)
+    #:     20,000 rows   20.3s
+    #:     50,000 rows   31.1s
+    #:    200,000 rows   over five minutes, still running when abandoned
+    #:
+    #: 50,000 is the largest measured size that fits the 90s budget with room
+    #: for the other analyzers running beside it. More rows do not buy
+    #: accuracy worth having: a two-sample test at 50,000 against 50,000
+    #: detects differences far smaller than anything worth acting on.
+    #:
+    #: Sampled EVENLY, not from the head, for the same reason the features
+    #: are: these frames are time-ordered, so `head(50_000)` would compare the
+    #: oldest rows of one period against the oldest of another and call it
+    #: drift over the whole span.
+    MAX_DRIFT_ROWS = 50_000
     """
     Monitors feature drift using Evidently AI.
 
@@ -128,6 +154,19 @@ class FeatureDriftMonitor:
         """Set or update reference data."""
         self.reference_data = reference_data.copy()
         logger.info(f"✅ Reference data set: {len(reference_data)} rows, {len(reference_data.columns)} columns")
+
+    def _even_row_sample(self, frame: "pd.DataFrame") -> "pd.DataFrame":
+        """At most MAX_DRIFT_ROWS rows, evenly spaced across the frame.
+
+        Evenly spaced rather than the first N: these frames are time-ordered,
+        so taking the head compares the oldest slice of one period against the
+        oldest of another and reports the result as drift over the whole span.
+        """
+        if len(frame) <= self.MAX_DRIFT_ROWS:
+            return frame
+        step = len(frame) / self.MAX_DRIFT_ROWS
+        positions = [int(i * step) for i in range(self.MAX_DRIFT_ROWS)]
+        return frame.iloc[positions]
 
     def check_drift(
         self,
@@ -222,8 +261,26 @@ class FeatureDriftMonitor:
         )
 
         # Prepare data
-        ref_data = self.reference_data[valid_common].copy()
-        cur_data = current_data[valid_common].copy()
+        # SAMPLE BEFORE COPYING, not after.
+        #
+        # `[cols].copy()` then sample duplicated 623,398 x 100 float32 -- about
+        # 250 MB per frame, twice -- to keep 50,000 rows, and measured 109.8s
+        # against a 90s budget even WITH the row cap. Selecting, then slicing,
+        # then copying takes the same 50,000 rows for a fraction of the cost.
+        # The fourth defect family in the audit method, in the fix for the
+        # third.
+        ref_rows_available = len(self.reference_data)
+        cur_rows_available = len(current_data)
+        ref_data = self._even_row_sample(self.reference_data[valid_common]).copy()
+        cur_data = self._even_row_sample(current_data[valid_common]).copy()
+        rows_sampled = (len(ref_data) < ref_rows_available
+                        or len(cur_data) < cur_rows_available)
+        if rows_sampled:
+            logger.info(
+                "   rows evenly sampled: reference %s of %s, current %s of %s",
+                f"{len(ref_data):,}", f"{ref_rows_available:,}",
+                f"{len(cur_data):,}", f"{cur_rows_available:,}",
+            )
 
         # Create Evidently report
         try:
@@ -317,6 +374,12 @@ class FeatureDriftMonitor:
                 'features_checked': len(column_drifts),
                 'features_available': available_count,
                 'features_sampled': available_count > len(column_drifts),
+                # The same honesty the feature cap already carries, for the
+                # other axis: a reader must not take a 50,000-row sample for
+                # the whole frame.
+                'rows_checked': int(len(cur_data)),
+                'rows_available': int(cur_rows_available),
+                'rows_sampled': bool(rows_sampled),
                 'column_drifts': column_drifts,
                 'report_path': str(report_path),
                 'timestamp': timestamp
