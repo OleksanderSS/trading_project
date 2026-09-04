@@ -150,24 +150,63 @@ def test_a_fabricated_median_still_fails(tmp_path, invariants):
     assert result.blocking is True, "fabricated data must block a rebuild"
 
 
-def test_the_script_still_has_no_pipeline_caller(invariants):
-    """Recorded, not enforced. Wiring this into the pipeline decides when runs
-    die, which belongs to the owner (#229, #252). This test exists so the fact
-    is stated somewhere a run can print, rather than rediscovered."""
+def test_the_session_check_names_the_ticker_not_just_a_count(invariants, tmp_path):
+    """REGISTER #164 read as "SMA_20 disagrees on 3.4% of hourly rows" for six
+    days. It was ONE ticker carrying every out-of-session bar in the frame, and
+    a count alone would have left that to be rediscovered."""
+    rows = 3_000
+    session = [14, 15, 16, 17, 18, 19, 20]
+    stamps, tickers = [], []
+    base = pd.Timestamp("2026-01-01", tz="UTC")
+    for day in range(rows // len(session)):
+        for hour in session:
+            for name in ("AAA", "BBB"):
+                stamps.append(base + pd.Timedelta(days=day, hours=hour))
+                tickers.append(name)
+    frame = pd.DataFrame({"ticker": tickers, "_time": stamps})
+    # One ticker also trades pre-market, exactly as AAPL does.
+    extra = pd.DataFrame({
+        "ticker": "AAA",
+        "_time": [base + pd.Timedelta(days=d, hours=9) for d in range(40)],
+    })
+    frame = pd.concat([frame, extra], ignore_index=True)
+
+    result = invariants.check_all_tickers_share_a_session(tmp_path, frame)
+    assert result.ok is False
+    assert "AAA" in result.detail, "the culprit is not named"
+    assert "BBB" not in result.detail, "a clean ticker is being blamed"
+    assert result.blocking is True
+
+
+def test_a_daily_frame_has_no_session_to_disagree_about(invariants, tmp_path):
+    """Every daily bar sits at the same hour. A check that fired here would
+    fail every rebuild on the one frame that is actually gated."""
+    frame = pd.DataFrame({
+        "ticker": ["AAA", "BBB"] * 500,
+        "_time": list(pd.date_range("2020-01-01", periods=1000, tz="UTC")) ,
+    })
+    result = invariants.check_all_tickers_share_a_session(tmp_path, frame)
+    assert result.ok is True
+    assert "daily" in result.detail
+
+
+def test_the_script_is_called_by_the_pipeline(invariants):
+    """It was called by nothing for its whole life (#170). Now the feature
+    stage runs it after each checkpoint, and that must not quietly come undone
+    -- a gate nobody invokes is the state this file was written to end."""
     callers = []
-    for root in ("src", "tests", "scripts/ci"):
+    for root in ("src", "scripts/ci"):
         base = PROJECT_ROOT / root
         if not base.exists():
             continue
         for path in base.rglob("*.py"):
-            if path == Path(__file__) or "__pycache__" in path.parts:
+            if "__pycache__" in path.parts:
                 continue
             if "batch_invariants" in path.read_text(encoding="utf-8", errors="replace"):
                 callers.append(str(path.relative_to(PROJECT_ROOT)))
 
-    # Not an assertion that it MUST stay unwired -- an assertion that the
-    # answer is known. If someone wires it, this test says so and the register
-    # entry gets closed deliberately rather than by accident.
-    assert isinstance(callers, list)
-    if callers:
-        pytest.skip(f"now called from {callers}; close REGISTER #170 deliberately")
+    assert callers, (
+        "batch_invariants.py has no caller in src/ again. It spent its whole "
+        "life in that state while holding the answers to a day of measurement "
+        "(REGISTER #170)."
+    )

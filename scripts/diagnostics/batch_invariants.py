@@ -309,6 +309,54 @@ def check_indicators_match_recomputation(path: Path, frame: pd.DataFrame) -> Res
     )
 
 
+def check_all_tickers_share_a_session(path: Path, frame: pd.DataFrame) -> Result:
+    """On an intraday frame every ticker must trade the same hours.
+
+    A bar-count window means a fixed span of TIME only if the bars are spaced
+    the same way for everyone. `SMA_20` over twenty bars is three days for a
+    ticker with seven bars a day and half that for one with thirteen, so the
+    same column holds two different quantities and any cross-sectional use of
+    it is meaningless.
+
+    This is what REGISTER #164 turned out to be. `--interval 60m` failed the
+    recomputation check at 96.6% against a 98% floor, and it was ONE ticker:
+    AAPL carries all 276 out-of-session bars in the frame -- hours 0, 4 and
+    9-12 UTC, overnight and pre-market -- over 49 days in 2026-03 to 2026-05,
+    while the other 109 tickers have none. Excluding AAPL the same check reads
+    98.4% and passes. The indicators were not wrong; they were computed over a
+    series with a different shape from the one now stored.
+
+    The session is derived from the frame rather than hardcoded: the hours
+    holding the bulk of the bars ARE the session, whatever exchange this is.
+    """
+    if "ticker" not in frame.columns or "_time" not in frame.columns:
+        return Result("all tickers share a session", True, "no ticker column", "")
+    hours = frame["_time"].dt.hour
+    if hours.nunique() <= 1:
+        # A daily frame: every bar sits at the same hour, so there is no
+        # session to disagree about.
+        return Result("all tickers share a session", True,
+                      "single-hour frame (daily)", "")
+
+    counts = hours.value_counts()
+    # The session is where the bars are. A quarter of the median hour is far
+    # below any real trading hour and far above an empty one.
+    session = set(counts[counts >= counts.median() * 0.25].index)
+    outside = ~hours.isin(session)
+    if not outside.any():
+        return Result("all tickers share a session", True,
+                      f"{len(session)} session hours, no bars outside", "")
+
+    culprits = frame.loc[outside, "ticker"].value_counts()
+    return Result(
+        "all tickers share a session", False,
+        f"{int(outside.sum())} bar(s) outside the {len(session)}-hour session "
+        f"on {culprits.size} ticker(s): "
+        + ", ".join(f"{name} {n}" for name, n in culprits.head(3).items()),
+        check_all_tickers_share_a_session.__doc__ or "",
+    )
+
+
 def check_features_learnable(path: Path, frame: pd.DataFrame) -> Result:
     """A feature constant while a model learns cannot be learned.
 
@@ -361,6 +409,7 @@ CHECKS = (
     check_market_wide_series_agree,
     check_context_state_agrees,
     check_nothing_is_mostly_its_median,
+    check_all_tickers_share_a_session,
     check_indicators_match_recomputation,
     check_features_learnable,
 )
