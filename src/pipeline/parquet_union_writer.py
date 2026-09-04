@@ -95,6 +95,58 @@ def _aligned_table(frame: pd.DataFrame, schema: pa.Schema) -> pa.Table:
 ROW_GROUP_ROWS = 128_000
 
 
+def _report_if_this_write_shrinks(present: Mapping[str, pd.DataFrame],
+                                  schema, destination: Path) -> None:
+    """Say so when this write would replace a bigger file with a smaller one.
+
+    REGISTER #138: `features.parquet` is written by more than one component --
+    `colab_manager` and `feature_processor` both call `write_union`, and
+    `colab_manager` also writes the path directly. On the v26 run it was
+    written twice, identically, so nothing was lost. The danger was always
+    structural: the second writer builds its frame from its own path, and
+    NOTHING compared what was about to be written with what already lay on
+    disk. A filtered or partial frame would have replaced a good batch in
+    silence.
+
+    A smaller write is not always wrong -- `--tickers AAPL` and single-frame
+    runs are legitimate -- so this reports rather than refuses. What it removes
+    is the silence: the shapes are named, and a shrinking overwrite is an
+    ERROR rather than an unremarked one.
+
+    Reads parquet METADATA only, so it costs nothing on a 969 MiB file.
+    """
+    if not destination.exists():
+        return
+    try:
+        existing = pq.ParquetFile(destination)
+        old_rows = existing.metadata.num_rows
+        old_cols = len(existing.schema_arrow.names)
+    except Exception as error:  # noqa: BLE001 - reported, never swallowed
+        logger.warning(
+            "Could not read the existing %s to compare shapes (%s: %s); "
+            "writing over it unchecked.",
+            destination.name, type(error).__name__, error,
+        )
+        return
+
+    new_rows = sum(len(frame) for frame in present.values())
+    new_cols = len(schema.names)
+    if new_rows < old_rows or new_cols < old_cols:
+        logger.error(
+            "OVERWRITING %s WITH LESS: on disk %d rows x %d columns, about to "
+            "write %d x %d (%+d rows, %+d columns). More than one component "
+            "writes this file (REGISTER #138); if this write came from a "
+            "filtered or partial run, a good batch is being replaced.",
+            destination.name, old_rows, old_cols, new_rows, new_cols,
+            new_rows - old_rows, new_cols - old_cols,
+        )
+    else:
+        logger.info(
+            "Replacing %s: on disk %d rows x %d columns, writing %d x %d.",
+            destination.name, old_rows, old_cols, new_rows, new_cols,
+        )
+
+
 def write_union(frames: Mapping[str, pd.DataFrame], destination: Path,
                 compression: str = "snappy",
                 row_group_rows: int = ROW_GROUP_ROWS) -> dict[str, int]:
@@ -113,6 +165,7 @@ def write_union(frames: Mapping[str, pd.DataFrame], destination: Path,
         return {}
 
     schema = union_schema(present)
+    _report_if_this_write_shrinks(present, schema, destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     written: dict[str, int] = {}
