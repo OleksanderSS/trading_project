@@ -340,14 +340,55 @@ class FeatureOrchestrator:
                     enricher.name, dropped,
                 )
 
-            if len(before) == len(after) and "hash" in before.columns and "hash" in after.columns:
-                if not before["hash"].to_numpy().tolist() == after["hash"].to_numpy().tolist():
-                    logger.warning(
-                        "Enricher '%s' returned the same %d rows in a DIFFERENT "
-                        "ORDER. Any positional reattachment of columns after this "
-                        "point pairs values with the wrong bars.",
-                        enricher.name, len(after),
-                    )
+            # SAY WHEN THE ORDER GUARD CANNOT RUN, not only when it fires.
+            #
+            # REGISTER #170: `_restore_input_row_order` has five exits and only
+            # ONE of them means "nothing needed". The other four mean "I could
+            # not check", and all five returned in the same silence -- so a
+            # guard that did not run looked exactly like a guard that ran and
+            # found nothing. The row-count case is the worst of them: the
+            # warning below required len(before) == len(after), so an enricher
+            # that DROPS a row disabled the reorder protection AND said
+            # nothing, which is the combination that put 54,000 bars on the
+            # wrong dates in the 2026-08-06 batch.
+            #
+            # Filtering rows is an enricher's right. Doing it invisibly is not:
+            # every positional reattachment downstream assumes row i is still
+            # bar i, and after a row count change nothing can restore that.
+            reason = None
+            if len(before) != len(after):
+                logger.warning(
+                    "Enricher '%s' changed the ROW COUNT: %d -> %d (%+d). "
+                    "Filtering is allowed, but the row-order guard cannot run "
+                    "across a count change, so any positional reattachment "
+                    "after this point is unprotected.",
+                    enricher.name, len(before), len(after),
+                    len(after) - len(before),
+                )
+                reason = "row_count_changed"
+            elif "hash" not in before.columns or "hash" not in after.columns:
+                reason = "no hash column to align on"
+            elif not before["hash"].is_unique or not after["hash"].is_unique:
+                reason = "hash is not unique on one side"
+            elif set(before["hash"]) != set(after["hash"]):
+                reason = "the same count but a different SET of rows"
+
+            if reason and reason != "row_count_changed":
+                logger.warning(
+                    "Enricher '%s': the row-order guard could not run (%s). "
+                    "This is not the same as finding nothing wrong.",
+                    enricher.name, reason,
+                )
+            elif reason is None and not (
+                before["hash"].to_numpy().tolist()
+                == after["hash"].to_numpy().tolist()
+            ):
+                logger.warning(
+                    "Enricher '%s' returned the same %d rows in a DIFFERENT "
+                    "ORDER. Any positional reattachment of columns after this "
+                    "point pairs values with the wrong bars.",
+                    enricher.name, len(after),
+                )
         except (AttributeError, TypeError, ValueError) as e:  # never block the pipeline
             logger.debug(f"Row-identity check skipped for '{getattr(enricher, 'name', '?')}': {e}")
 

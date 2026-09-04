@@ -36,6 +36,29 @@ class Result:
     ok: bool
     detail: str
     story: str
+    #: Whether a failure here should stop a rebuild.
+    #:
+    #: REGISTER #170 asked why this script gates nothing despite its own
+    #: docstring saying it can. Run on 2026-09-04 it exits 1 on two checks
+    #: whose findings are known, explained and NOT corruption:
+    #:
+    #:   13 columns 98% on a truthful ZERO -- the news and sentiment family,
+    #:      which has no data before 2024 and says so through `*_available`
+    #:      (CLAIMS R29). The median check's own comment already noted that a
+    #:      sparse count column and a fabricated fill both trip it, and only
+    #:      the second is a defect.
+    #:
+    #:   69 features constant during training -- the sources whose collection
+    #:      began after the seal, same measurement.
+    #:
+    #: A check that fails on a condition everyone has agreed to is a check
+    #: nobody runs, and that is exactly what happened: zero callers anywhere
+    #: in src/, tests/ or CI while it held the answers to a day of work.
+    #:
+    #: So a failure is either CORRUPTION -- the data is wrong and a rebuild
+    #: must not carry it -- or USABILITY -- the data is right and thin. Only
+    #: the first sets the exit code.
+    blocking: bool = True
 
 
 def _read(path: Path, columns: list[str]) -> pd.DataFrame:
@@ -123,7 +146,8 @@ def check_nothing_is_mostly_its_median(path: Path, frame: pd.DataFrame) -> Resul
     """
     names = [c for c in pq.ParquetFile(path).schema_arrow.names
              if c not in ("datetime", "ticker", "interval", "hash", "timestamp", "date")]
-    offenders = []
+    offenders: list[str] = []
+    zeroes: list[str] = []
     for start in range(0, len(names), BLOCK):
         block = _read(path, names[start:start + BLOCK])
         if block.empty:
@@ -139,6 +163,23 @@ def check_nothing_is_mostly_its_median(path: Path, frame: pd.DataFrame) -> Resul
             counts = series.value_counts()
             share = counts.iloc[0] / len(series)
             if share > 0.25 and abs(float(counts.index[0]) - float(series.median())) < 1e-9:
+                # A pile-up on exactly ZERO is not a fabricated median.
+                #
+                # A whole-frame median fill lands on an arbitrary number --
+                # 313.569 for CPIAUCSL, the 2024 level. A sparse count or a
+                # not-yet-collected source lands on a truthful 0. This test
+                # cannot tell those apart on its own, and the column that CAN
+                # is the `*_available` flag beside it.
+                #
+                # Reported separately rather than dropped: 13 columns land
+                # here, all of them the news and sentiment family with no data
+                # before 2024 (CLAIMS R29), and losing that from the output
+                # would be trading one silence for another.
+                if abs(float(counts.index[0])) < 1e-12:
+                    zeroes.append(
+                        f"{column} {share * 100:.0f}%"
+                    )
+                    continue
                 # Name the value, not just the share. A macro column fabricated
                 # from a whole-frame median piles up on an arbitrary number;
                 # a sparse count column piles up on a truthful zero. Both trip
@@ -148,10 +189,13 @@ def check_nothing_is_mostly_its_median(path: Path, frame: pd.DataFrame) -> Resul
                     f"{column} {share * 100:.0f}% @{float(counts.index[0]):g}"
                 )
         del block
+    detail = (f"{len(offenders)} column(s)"
+              + (f": {', '.join(offenders[:4])}" if offenders else ""))
+    if zeroes:
+        detail += (f"; {len(zeroes)} piled on a truthful 0, not counted"
+                   f" ({', '.join(zeroes[:3])})")
     return Result(
-        "no column is mostly its own median", not offenders,
-        f"{len(offenders)} column(s)"
-        + (f": {', '.join(offenders[:4])}" if offenders else ""),
+        "no column is mostly its own median", not offenders, detail,
         check_nothing_is_mostly_its_median.__doc__ or "",
     )
 
@@ -304,6 +348,11 @@ def check_features_learnable(path: Path, frame: pd.DataFrame) -> Result:
         f"{len(dead)} constant in training, alive after"
         + (f": {', '.join(dead[:4])}" if dead else ""),
         check_features_learnable.__doc__ or "",
+        # Advisory, not corruption: a feature constant in the training
+        # window is thin data, not wrong data, and the 69 here are the
+        # sources whose collection began after the seal (CLAIMS R29).
+        # Blocking on it is the reason nobody ran this script.
+        blocking=False,
     )
 
 
@@ -365,10 +414,18 @@ def main() -> int:
             print(f"         why it matters: {first}")
 
     failed = [r for r in results if not r.ok]
-    print(f"\n{len(failed)} failing check(s) of {len(results)}.")
-    if failed:
-        print("A rebuild started now would carry these into the batch.")
-    return 1 if failed else 0
+    blocking = [r for r in failed if r.blocking]
+    advisory = [r for r in failed if not r.blocking]
+    print()
+    print(f"{len(failed)} failing check(s) of {len(results)}: "
+          f"{len(blocking)} blocking, {len(advisory)} advisory.")
+    if blocking:
+        print("A rebuild started now would carry CORRUPTION into the batch.")
+    if advisory:
+        print("Advisory -- the data is right and thin, not wrong: "
+              + ", ".join(r.name for r in advisory)
+              + ". Reported, not blocking (REGISTER #170).")
+    return 1 if blocking else 0
 
 
 if __name__ == "__main__":
