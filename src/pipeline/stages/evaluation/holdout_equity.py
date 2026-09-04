@@ -78,6 +78,28 @@ def build_holdout_equity(
     frame['position'] = np.sign(frame['prediction'].astype(float))
     frame['strategy_return'] = frame['position'] * frame['actual'].astype(float)
 
+    # NET EXPOSURE AND THE NAIVE OPPONENT, both measured, neither changed.
+    #
+    # `sign(prediction)` says nothing about how one-sided the book is. A model
+    # that predicts up for almost every name produces positions of +1 almost
+    # everywhere, and this curve is then the MARKET rather than the strategy.
+    # That is not hypothetical: on 2026-09-04 seven features cleared a
+    # Bonferroni correction at net Sharpe 1.016 in the diagnostics, and the
+    # constant opponent -- hold everything, same clock, same friction -- scored
+    # 1.018. All seven were that opponent (CLAIMS R28).
+    #
+    # The strategy definition is NOT changed here. Demeaning the position would
+    # convert this into a dollar-neutral book, which is a decision about what
+    # the pipeline trades and belongs to the owner, not to a fix. What is added
+    # is the two numbers that make the substitution visible: how one-sided the
+    # book is, and what owning everything would have returned over the same
+    # bars.
+    mean_position = float(frame['position'].mean())
+    constant_per_bar = (
+        frame.groupby('datetime')['actual'].apply(lambda s: s.astype(float).mean())
+        .sort_index()
+    )
+
     # Average across whatever contexts hold a position on that bar: an
     # equal-weight portfolio. Summing instead would make the return depend on
     # how many contexts happened to be trained, which is a property of the
@@ -94,10 +116,31 @@ def build_holdout_equity(
     portfolio_history = pd.DataFrame({'total_value': equity})
     portfolio_history.index.name = 'datetime'
 
+    constant_equity = initial_capital * (1.0 + constant_per_bar).cumprod()
+    constant_return = (float(constant_equity.iloc[-1] / initial_capital - 1.0)
+                       if len(constant_equity) else 0.0)
+    strategy_return = (float(equity.iloc[-1] / initial_capital - 1.0)
+                       if len(equity) else 0.0)
+
     logger.info(
         'Built holdout equity curve: %d bars across %d contexts, %d tickers',
         len(per_bar), frame['context'].nunique(), frame['ticker'].nunique(),
     )
+    if abs(mean_position) >= ONE_SIDED_WARNING:
+        logger.warning(
+            'The holdout book is %.0f%% one-sided (mean position %+.3f). Owning '
+            'everything over the same bars returned %+.2f%%; this curve returned '
+            '%+.2f%%. A curve this directional is mostly the market, and the '
+            'difference is the only part the model earned.',
+            abs(mean_position) * 100, mean_position,
+            constant_return * 100, strategy_return * 100,
+        )
+    else:
+        logger.info(
+            'Holdout book net exposure %+.3f; buy-everything returned %+.2f%% '
+            'over the same bars, against %+.2f%% for this curve.',
+            mean_position, constant_return * 100, strategy_return * 100,
+        )
     return {
         'status': 'built',
         'portfolio_history': portfolio_history,
@@ -106,8 +149,17 @@ def build_holdout_equity(
         'context_count': int(frame['context'].nunique()),
         'ticker_count': int(frame['ticker'].nunique()),
         'source': 'holdout_predictions',
+        'mean_position': mean_position,
+        'total_return': strategy_return,
+        'constant_opponent_return': constant_return,
+        'excess_over_constant': strategy_return - constant_return,
     }
 
+
+#: How one-sided a book may be before the curve is reported as mostly market
+#: exposure. At 0.5 the book is three-quarters on one side; below that the
+#: constant opponent is still reported, just without the warning.
+ONE_SIDED_WARNING = 0.5
 
 #: Round-trip cost already subtracted from every return target by
 #: targets.yaml (commission 0.1% + spread 0.05% + slippage 0.1%, doubled).

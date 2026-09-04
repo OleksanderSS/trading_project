@@ -55,6 +55,16 @@ print(f"annualised if rebalanced daily: {cost.mean() * 252:.1%}\n")
 
 ranks = frame.groupby("datetime")[FEATURE].rank(pct=True)
 position = np.sign((ranks - 0.5).to_numpy())
+# Dollar-neutral, or the answer is the market (CLAIMS R28). A column with
+# heavy ties ranks every name just above 0.5, so `sign` sends them all the
+# same way and the "book" is buy-and-hold. CDL_UPPER_WICK_RATIO_1d has
+# 241,839 distinct values and a net exposure of +0.011, so this line changes
+# nothing for the feature this script is pinned to -- it exists so that the
+# next feature someone points it at cannot silently become the market.
+position = position - pd.Series(position).groupby(
+    frame["datetime"].to_numpy()).transform("mean").to_numpy()
+print(f"net exposure after centring: {position.mean():+.4f}")
+print()
 raw = frame[TARGET].to_numpy() + cost.to_numpy()          # undo the long-only subtraction
 honest = position * raw - np.abs(position) * cost.to_numpy()   # both legs pay
 

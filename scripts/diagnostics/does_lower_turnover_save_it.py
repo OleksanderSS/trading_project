@@ -90,6 +90,26 @@ def main() -> int:
         frame.groupby("datetime")[args.feature].rank(pct=True) - 0.5
     )
 
+    # DOLLAR-NEUTRAL, OR THE ANSWER IS THE MARKET (CLAIMS R28).
+    #
+    # `sign(rank - 0.5)` on a column with heavy ties gives +1 to EVERYONE:
+    # pandas ranks ties by their average, so a flag that is 98.9% one value
+    # ranks just above 0.5 for every name and the "long/short book" is long
+    # everything. Measured 2026-09-04: seven such columns scored net Sharpe
+    # ~1.00 and the constant opponent -- own every name, same clock, same
+    # friction -- scored 1.018.
+    #
+    # This script takes the feature as an ARGUMENT, so it is one `--feature`
+    # away from reproducing that. Subtracting the per-date mean removes the
+    # exposure and leaves a degenerate column with no position at all.
+    frame["position"] = frame["position"] - frame.groupby("datetime")[
+        "position"].transform("mean")
+    exposure = float(frame["position"].mean())
+    print(f"net exposure after centring: {exposure:+.4f} "
+          "(0 = dollar-neutral; anything else is market "
+          "beta in the curve)")
+    print()
+
     header = (f"{'hold':>6}{'order $':>10}{'friction/rt':>13}{'cost/year':>11}"
               f"{'gross Sharpe':>14}{'NET Sharpe':>12}{'net ann.ret':>13}")
     print(header)
