@@ -107,7 +107,7 @@ DECISION_PATH_CEILING = 3
 #:
 #: Raising a ceiling would have hidden the same two entries with no
 #: justification attached, and a ceiling raised once is raised again.
-QUIET_THEN_EMPTY_EXEMPT = {
+EXEMPT_SITES = {
     # _file_mtime_iso and _age_hours returned the CURRENT time and 0.0 when a
     # timestamp could not be read, so an artifact of unknown age passed every
     # freshness threshold. They now return None, and the caller at
@@ -120,6 +120,26 @@ QUIET_THEN_EMPTY_EXEMPT = {
     # any. The empty value makes the caller do more work, never less, so it
     # cannot be mistaken for a pass -- the opposite of the sites this counts.
     "src/pipeline/stages/modeling/context_ledger.py:82",
+    # ModelingStage returning {} after "Enriched data not found. Skipping
+    # Modeling Stage." -- the exact line this whole scanner was written for,
+    # quoted in the docstring at the top of this file.
+    #
+    # It is exempt because the CALLER was changed and the change was verified
+    # end to end on 2026-09-04, not assumed:
+    #   pipeline_orchestrator.py:533  _validate_stage_output sees a falsy
+    #       output from a stage in _STAGES_REQUIRING_OUTPUT and raises
+    #       DataProcessingError rather than returning None.
+    #   pipeline_orchestrator.py:462  _execute_stage catches it, logs, and
+    #       RE-RAISES as RuntimeError, so the run dies instead of reporting
+    #       {'status': 'success'} and continuing on the previous stage's data.
+    # That was the actual failure once: "a run that trained nothing still
+    # ended with 'Pipeline execution completed successfully'".
+    #
+    # Kept as an exemption rather than a fixed site because the empty dict IS
+    # the distinct state here -- the scanner sees one function and cannot see
+    # the caller. Raising the ceiling instead would have hidden this with no
+    # justification attached, and a ceiling raised once is raised again.
+    "src/pipeline/stages/modeling/orchestrator.py:276",
 }
 
 
@@ -132,7 +152,7 @@ def findings():
 def test_silent_failure_shapes_do_not_spread(findings, kind):
     found = [
         f for f in findings.get(kind, [])
-        if f"{f.module}:{f.line}" not in QUIET_THEN_EMPTY_EXEMPT
+        if f"{f.module}:{f.line}" not in EXEMPT_SITES
     ]
     ceiling = CEILINGS[kind]
 
@@ -152,7 +172,7 @@ def test_a_broken_check_never_reads_as_a_passed_check(findings):
     found = [
         f for f in findings.get("QUIET_THEN_EMPTY", [])
         if f.module.startswith(DECISION_PATH)
-        and f"{f.module}:{f.line}" not in QUIET_THEN_EMPTY_EXEMPT
+        and f"{f.module}:{f.line}" not in EXEMPT_SITES
     ]
 
     assert len(found) <= DECISION_PATH_CEILING, (

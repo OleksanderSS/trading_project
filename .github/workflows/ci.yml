@@ -67,18 +67,50 @@ jobs:
         # src/ modules go unnoticed for days in 2026-07, since the actual
         # test step below can't fail no matter what.
 
+      - name: Contract tests (blocking)
+        env:
+          PYTHONPATH: .
+        run: pytest tests/contracts -q
+        # Deliberately has NO `|| true`. tests/contracts went green on
+        # 2026-09-04 -- 194 passed, 4 skipped, 0 failed -- when the last
+        # LOGGED_THEN_EMPTY site over the ceiling was exempted with its caller
+        # named and verified. Until then the whole suite ran behind the
+        # `|| true` below and NOTHING in it could fail a build.
+        #
+        # This is the half of the suite worth gating on: the ratchets live
+        # here. `_frame_copy_scan`, `_lookahead_scan` and
+        # `_silent_failure_scan` carry ceilings that may only fall, and a
+        # ceiling that cannot fail CI is a comment. The same is true of the
+        # promotion-family reconciliation, the sealed-period checks and the
+        # naive-opponent contracts -- every one of them exists because a
+        # defect got through once, and every one of them was decorative while
+        # this step did not exist.
+        #
+        # 4 skips are expected and named in their own skip reasons (a
+        # disabled analyzer, an archived calibration engine, and two
+        # financial-math tests whose modules are absent). A skip is not a
+        # pass: `src.risk_management` does not exist while
+        # src/config/risk_management.yaml does, which is the same shape as
+        # `critical: true` declared in config and read nowhere. Recorded
+        # rather than fixed here.
+
       - name: Run pytest with coverage
         env:
           PYTHONPATH: .
         run: pytest --cov=src --cov-report=xml --cov-report=lcov || true
         # NOTE: this `|| true` means this step can never fail the build,
-        # regardless of how many tests fail. As of 2026-07-25 there are 10
-        # known, individually-documented pre-existing failures (see
-        # tests/dean_os and tests/contracts) -- removing `|| true` today
-        # would start failing every CI run on those, not on new breakage.
-        # Recommended next step: mark those 10 as explicit `@pytest.mark.xfail`
-        # (with reasons) so a clean pass/fail baseline can be established,
-        # then remove `|| true` here so this step actually gates merges.
+        # regardless of how many tests fail. It stays for now because
+        # tests/dean_os still carries known pre-existing failures, AND
+        # because that suite silently skips about a thousand tests when run
+        # as a directory -- a green run there is not evidence, so gating on
+        # it would gate on nothing.
+        #
+        # What changed on 2026-09-04: tests/contracts no longer hides behind
+        # this line. It runs above as its own blocking step, so a broken
+        # ratchet now fails the build even though this step still cannot.
+        # Remaining work to remove `|| true` entirely: give tests/dean_os a
+        # by-name run with asserted counts, then mark its known failures
+        # `@pytest.mark.xfail` with reasons.
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4.4.3  # Фікс під Node.js 24
