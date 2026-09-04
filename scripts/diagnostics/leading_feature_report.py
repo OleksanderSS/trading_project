@@ -132,6 +132,15 @@ def per_date_ic(values: np.ndarray, outcome: np.ndarray, mask: np.ndarray,
 
     Returns (mean IC, t-statistic, dates used).
     """
+    # Cleared FIRST. The series is published on a function attribute, and
+    # every early return below used to leave the PREVIOUS feature's series in
+    # place -- so a column that could not be measured at all inherited its
+    # neighbour's stability, its latest-quarter t, and now its HAC t. The
+    # order of the loop decided which neighbour. Found 2026-09-04 while
+    # wiring #143; it is the same shape as a default that does not say it was
+    # a default.
+    per_date_ic.last_series = None
+
     usable = mask & np.isfinite(values) & np.isfinite(outcome)
     if usable.sum() < MIN_ROWS:
         return float("nan"), float("nan"), 0
@@ -164,6 +173,124 @@ def per_date_ic(values: np.ndarray, outcome: np.ndarray, mask: np.ndarray,
     t = mean / (spread / np.sqrt(len(daily))) if spread > 0 else float("nan")
     per_date_ic.last_series = daily
     return mean, float(t), int(len(daily))
+
+
+def horizon_of(target: str) -> int:
+    """Trading days of forward overlap implied by the target's own name.
+
+    `target_relative_return_5d` on consecutive dates shares four of its five
+    days, so neighbouring daily ICs cannot be independent whatever the feature
+    does. This is the part of the dependence that is known in advance rather
+    than estimated.
+    """
+    tail = target.rsplit("_", 1)[-1]
+    if tail.endswith("d") and tail[:-1].isdigit():
+        return max(int(tail[:-1]), 1)
+    return 1
+
+
+def hac_t(daily: pd.Series, lag: int) -> tuple[float, int, float]:
+    """t for the mean of the daily IC series, with autocorrelation paid for.
+
+    REGISTER #143. The date-level t already removed the ORDER of the
+    exaggeration that pooling produced -- but it still divides by
+    sd/sqrt(T), which assumes the T daily coefficients are independent draws.
+    For a slow feature they are not. `MAX_DRAWDOWN_1d` gave t -6.64 over
+    1,945 dates while a name's drawdown barely moves day to day: that is one
+    nearly-constant bet repeated 1,945 times, not 1,945 observations.
+
+    Newey-West replaces the variance of the mean with
+
+        S = g0 + 2 * sum_l (1 - l/(L+1)) * g_l
+
+    which counts each autocovariance the series actually has. Bartlett
+    weights keep S non-negative.
+
+    WHICH BANDWIDTH, decided by measuring rather than by citation. The
+    familiar 4*(T/100)^(2/9) rule gives L=7 at T=1945 whatever the series
+    does, and on simulated AR(1) paths with a known long-run variance that is
+    not nearly enough:
+
+        phi     naive t   L=7 rule   Andrews L    truth
+        0.00      -0.88      -0.81    -0.87 (1)    0.88
+        0.90     +39.90     +16.18   +10.56 (61)  +8.82
+        0.99     +18.80      +6.74    +2.09 (146) +1.76
+
+    The fixed rule leaves 1.8x to 3.8x of the inflation unpaid on exactly the
+    slow features #143 is about. The Andrews (1991) AR(1) plug-in scales the
+    bandwidth with the persistence it measures, and lands within ~20% of the
+    truth in both cases while behaving identically on white noise. It is
+    still an upper bound -- 20% is not 0% -- and that is the honest reading.
+
+    Floored at the target's own overlap, which is known rather than
+    estimated, and capped at T/4 so the estimator keeps some sample.
+
+    Returns (t, lag used, ratio naive_t / hac_t). The ratio is the multiplier
+    #143 said was still unpaid; a value of 1 means the series had no usable
+    autocorrelation and the naive t was already honest.
+    """
+    if daily is None or len(daily) < 30:
+        return float("nan"), 0, float("nan")
+    x = pd.Series(daily).sort_index().to_numpy(dtype=float)
+    x = x[np.isfinite(x)]
+    n = len(x)
+    if n < 30:
+        return float("nan"), 0, float("nan")
+    centred = x - x.mean()
+    denominator = float(centred @ centred)
+    if denominator <= 0:
+        return float("nan"), 0, float("nan")
+    rho = float(centred[1:] @ centred[:-1]) / denominator
+    # Clipped before it is used: at |rho| -> 1 the plug-in diverges, and a
+    # bandwidth of half the sample is not an estimate of anything.
+    rho = float(np.clip(rho, -0.97, 0.97))
+    alpha = 4.0 * rho ** 2 / ((1.0 - rho) ** 2 * (1.0 + rho) ** 2)
+    andrews = int(round(1.1447 * (alpha * n) ** (1.0 / 3.0))) if alpha > 0 else 1
+    lag = max(int(lag), andrews, 1)
+    lag = min(lag, max(n // 4, 1), n - 2)
+    total = denominator / n
+    for l in range(1, lag + 1):
+        gamma = float(centred[l:] @ centred[:-l]) / n
+        total += 2.0 * (1.0 - l / (lag + 1.0)) * gamma
+    if total <= 0:
+        # A strongly negatively autocorrelated series can drive the Bartlett
+        # sum non-positive. Refusing to report is the honest outcome; a
+        # clipped variance would manufacture a t.
+        return float("nan"), lag, float("nan")
+    t = float(x.mean() / np.sqrt(total / n))
+    naive = float(x.mean() / (x.std(ddof=1) / np.sqrt(n))) if x.std(ddof=1) > 0 else float("nan")
+    ratio = abs(naive / t) if np.isfinite(naive) and t != 0 else float("nan")
+    return t, lag, ratio
+
+
+def block_bootstrap_t(daily: pd.Series, block: int, draws: int = 1000,
+                      seed: int = 0) -> float:
+    """Second opinion on the same question, assuming nothing about the shape.
+
+    Newey-West assumes the dependence dies off smoothly within L lags. A
+    moving-block bootstrap assumes only that blocks of that length are
+    exchangeable, so if the two disagree the disagreement is itself the
+    finding. Reported for the features that would otherwise be claimed --
+    computing it for every column would cost minutes to reprice numbers that
+    are already inside the noise.
+    """
+    if daily is None or len(daily) < 60:
+        return float("nan")
+    x = pd.Series(daily).sort_index().to_numpy(dtype=float)
+    x = x[np.isfinite(x)]
+    n = len(x)
+    block = max(int(block), 1)
+    if n < block * 3:
+        return float("nan")
+    count = int(np.ceil(n / block))
+    rng = np.random.default_rng(seed)
+    starts = rng.integers(0, n - block + 1, size=(draws, count))
+    index = starts[:, :, None] + np.arange(block)[None, None, :]
+    means = x[index.reshape(draws, -1)[:, :n]].mean(axis=1)
+    spread = float(means.std(ddof=1))
+    if spread <= 0:
+        return float("nan")
+    return float(x.mean() / spread)
 
 
 def _t_of(daily: pd.Series) -> float:
@@ -205,6 +332,11 @@ def _demean(values: np.ndarray, keys: np.ndarray) -> np.ndarray:
     return (series - series.groupby(pd.Series(keys)).transform("mean")).to_numpy()
 
 
+#: The daily IC series per feature, kept so the block bootstrap can be run on
+#: the survivors without a second pass over a 969 MiB file. ~15 KiB each.
+_SERIES: dict[str, pd.Series] = {}
+
+
 def _examine(name: str, values: np.ndarray, book: dict) -> dict:
     outcome, is_train = book["outcome"], book["is_train"]
     finite = np.isfinite(values)
@@ -218,12 +350,25 @@ def _examine(name: str, values: np.ndarray, book: dict) -> dict:
     ic_daily, t_daily, n_dates = per_date_ic(
         values, outcome, ~is_train, book["dates"]
     )
-    blocks_agree, t_recent = stability(getattr(per_date_ic, "last_series", None))
+    series = getattr(per_date_ic, "last_series", None)
+    blocks_agree, t_recent = stability(series)
+    t_hac, hac_lag, hac_ratio = hac_t(series, book.get("horizon", 1) - 1)
+    if series is not None:
+        _SERIES[name] = series
     # The p-value that feeds the correction comes from the DATE series, not
     # from the pooled rows. See per_date_ic for why the pooled one is unusable.
+    #
+    # And it comes from the HAC t, not the naive one (REGISTER #143): the
+    # naive t assumes the daily coefficients are independent draws, which for
+    # a slow feature is false by construction. The naive value is kept beside
+    # it so the size of the correction stays visible instead of being
+    # absorbed.
     from scipy.stats import t as _t
-    p_out = (float(2 * _t.sf(abs(t_daily), df=max(n_dates - 1, 1)))
-             if np.isfinite(t_daily) else float("nan"))
+    df = max(n_dates - 1, 1)
+    p_out = (float(2 * _t.sf(abs(t_hac), df=df))
+             if np.isfinite(t_hac) else float("nan"))
+    p_naive = (float(2 * _t.sf(abs(t_daily), df=df))
+               if np.isfinite(t_daily) else float("nan"))
     within = _safe_ic(_demean(values, book["tickers"]),
                       book["outcome_demeaned"], ~is_train)
 
@@ -239,7 +384,11 @@ def _examine(name: str, values: np.ndarray, book: dict) -> dict:
         "n_dates": n_dates,
         "blocks_agree": blocks_agree,
         "t_recent": t_recent,
+        "t_hac": t_hac,
+        "hac_lag": hac_lag,
+        "hac_ratio": hac_ratio,
         "p_out": p_out,
+        "p_naive": p_naive,
         "kept_sign": bool(np.isfinite(ic_in) and np.isfinite(ic_out)
                           and np.sign(ic_in) == np.sign(ic_out)),
         "ic_within": within,
@@ -303,6 +452,8 @@ def main() -> int:
         "is_train": (targets["datetime"] <= cut).to_numpy(),
         "dates": targets["datetime"],
         "tickers": targets["ticker"].to_numpy(),
+        # Known overlap, not estimated: see horizon_of.
+        "horizon": horizon_of(args.target),
     }
     print(f"target {args.target} | daily rows {len(targets):,} | split {cut.date()} "
           f"| {targets['ticker'].nunique()} names\n")
@@ -348,6 +499,10 @@ def main() -> int:
     # that already look good is the same mistake in a different place.
     threshold = benjamini_hochberg(report["p_out"].to_numpy())
     report["passes_fdr"] = report["p_out"].le(threshold).fillna(False)
+    # The same correction on the OLD p-values, kept only so the cost of
+    # #143 is a number rather than an assertion.
+    naive_threshold = benjamini_hochberg(report["p_naive"].to_numpy())
+    report["passes_fdr_naive"] = report["p_naive"].le(naive_threshold).fillna(False)
     report["verdict"] = report.apply(_verdict, axis=1)
     report = report.reindex(
         report["ic_out"].abs().sort_values(ascending=False, na_position="last").index
@@ -380,6 +535,34 @@ def main() -> int:
     print(f"  For contrast only: a naive p<0.05 cutoff applied {measurable:,}")
     print(f"  times would hand back about {measurable * 0.05:.0f} features from pure noise.")
     print()
+
+    # === what assuming independent days was worth (REGISTER #143) ===
+    #
+    # Printed before the survivors, because it decides which list the reader
+    # is looking at.
+    ratios = report["hac_ratio"].replace([np.inf, -np.inf], np.nan).dropna()
+    lost = report[report["passes_fdr_naive"] & ~report["passes_fdr"]]
+    gained = report[report["passes_fdr"] & ~report["passes_fdr_naive"]]
+    print("=== #143: what the independent-days assumption was worth ===")
+    print(f"  lag used: max(Newey-West rule, {horizon_of(args.target) - 1} days of "
+          f"target overlap)")
+    if len(ratios):
+        print(f"  naive t / HAC t over {len(ratios):,} measurable features: "
+              f"median {ratios.median():.2f}, "
+              f"90th pct {ratios.quantile(0.90):.2f}, max {ratios.max():.2f}")
+        print(f"  features whose t was inflated by 1.5x or more: "
+              f"{int((ratios >= 1.5).sum()):,}")
+        print(f"  features where HAC RAISED the t (negative autocorrelation): "
+              f"{int((ratios < 1.0).sum()):,}")
+    print(f"  passed the old FDR and no longer pass: {len(lost)}")
+    for _, row in lost.head(15).iterrows():
+        print(f"    {row['feature'][:38]:38s} t {row['t_daily']:+6.2f} -> "
+              f"HAC {row['t_hac']:+6.2f} (lag {int(row['hac_lag'])})")
+    print(f"  pass now and did not before: {len(gained)}")
+    for _, row in gained.head(15).iterrows():
+        print(f"    {row['feature'][:38]:38s} t {row['t_daily']:+6.2f} -> "
+              f"HAC {row['t_hac']:+6.2f} (lag {int(row['hac_lag'])})")
+    print()
     survivors = report[report["verdict"] == "survives, worth testing"]
 
     # The survivors are the result, so they are printed in full -- always.
@@ -390,8 +573,18 @@ def main() -> int:
     if len(survivors):
         print("=== every feature that survived, regardless of the cut above ===")
         for _, row in survivors.iterrows():
+            # The block bootstrap is computed only here, on the features a
+            # claim would actually be made about. It assumes nothing about
+            # the shape of the dependence, so agreeing with HAC is evidence
+            # and disagreeing is a finding.
+            boot = block_bootstrap_t(
+                _SERIES.get(row["feature"]),
+                block=int(row["hac_lag"]) + 1,
+            )
             print(f"  {row['feature'][:38]:38s} ic/date {row['ic_daily']:+.4f} "
-                  f"t {row['t_daily']:+6.2f} over {row['n_dates']:,} dates, "
+                  f"t {row['t_daily']:+6.2f} -> HAC {row['t_hac']:+6.2f} "
+                  f"-> block bootstrap {boot:+6.2f} "
+                  f"over {row['n_dates']:,} dates, "
                   f"coverage {row['coverage']:.0%}, "
                   f"latest quarter t {row['t_recent']:+.2f}, "
                   f"{row['blocks_agree']}/4 quarters agree")
