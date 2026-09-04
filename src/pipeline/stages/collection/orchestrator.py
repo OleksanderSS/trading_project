@@ -432,6 +432,57 @@ class CollectionStage(BaseStage):
         if failed:
             self.logger.error(f"Failed outright: {', '.join(sorted(failed))}.")
 
+        self._critical_sources_empty = self._critical_shortfall(silent, failed)
+        if self._critical_sources_empty:
+            # `critical: true` has been declared in collectors.yaml for twenty
+            # collectors since before this audit and was read NOWHERE in src/
+            # -- the same shape as the promotion family size, which promised a
+            # reconciliation that did not exist (REGISTER #235, #252).
+            #
+            # Only yahoo_finance carries it, and that is the right choice: it
+            # is the price source. A run whose prices did not arrive is not a
+            # run with less data, it is a run about nothing, and the collectors
+            # return an empty list both when a source is genuinely empty and
+            # when it failed -- so "no new rows" reads identically either way.
+            self.logger.error(
+                "CRITICAL SOURCE DELIVERED NOTHING: %s. Every later stage will "
+                "work from whatever is already in the database, and will "
+                "report success on it. Declared critical in collectors.yaml.",
+                ", ".join(sorted(self._critical_sources_empty)),
+            )
+
+    def _critical_shortfall(self, silent: list[str], failed: list[str]) -> list[str]:
+        """Which sources declared critical produced nothing this run.
+
+        Read from the collector config rather than a second list here, so the
+        declaration and the check cannot drift apart -- a field declared in one
+        place and enforced from another is how `family_size` came to be
+        promised and never verified.
+        """
+        # No try/except here on purpose. The first version wrapped this in
+        # `except (AttributeError, KeyError, TypeError): return []` and the
+        # silent-failure ratchet caught it immediately -- a handler that
+        # returns an empty value is the very shape this check was added to
+        # expose, and writing one INSIDE the check would have been comic.
+        # An explicit guard says the same thing and swallows nothing.
+        manager = getattr(self, 'config_manager', None)
+        if manager is None:
+            return []
+        config = manager.get_config('collectors') or {}
+        if not isinstance(config, dict):
+            return []
+        sources = config.get('collectors', config) or {}
+        if not isinstance(sources, dict):
+            return []
+        quiet = set(silent) | set(failed)
+        return [
+            name for name, body in sources.items()
+            if isinstance(body, dict)
+            and body.get('critical')
+            and body.get('enabled', True)
+            and name in quiet
+        ]
+
     def _normalize_dataframe(self, result) -> pd.DataFrame | None:
         """
         Нормалізує результат в DataFrame.
