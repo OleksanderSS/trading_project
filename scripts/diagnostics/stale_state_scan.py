@@ -115,7 +115,8 @@ RULE_NAMES = {
 FIX_PROPOSED = (
     "Виправлення:", "Виправлення —", "Виправлення -",
     "Перевірка до виправлення", "Наступний крок",
-    "має брати", "має бути", "має перелічувати",
+    "Правка:", "Правка —", "мусить", "Треба ", "треба ",
+    "має брати", "має бути", "має перелічувати", "має мати",
     "не зроблен", "не реалізован", "Що з цим робити",
 )
 
@@ -123,8 +124,18 @@ FIX_PROPOSED = (
 #: row: the entry says the work happened, and this scanner does not second
 #: guess a report -- rules E and F do that from the other side.
 FIX_REPORTED = (
-    "Виправлено", "ВИПРАВЛЕНО", "виправлено й", "ЗАКРИТО",
-    "контрактн", "тестами", "закрито цим", "Зроблено",
+    # Matched on the STEM, not on a phrase: the first version listed
+    # "виправлено й" and "тестами", so a row ending "виправлено в межах однієї
+    # правки" and one ending "6 тестів" both read as unfinished. A rule with
+    # false positives gets switched off, which is #181 and the `|| true` in
+    # ci.yml.
+    "виправлено", "ВИПРАВЛЕНО", "ЗАКРИТО", "закрито й", "Зроблено",
+    "контрактн", "тест", "закрито цим", "перевірено",
+    # The canonical form, added 04.09 at the owner's instruction: a settled
+    # row ENDS with what came out, stated as an outcome and not as a plan.
+    # Everything above is the older prose this rule had to tolerate; new rows
+    # use the marker, and then the check is one word long.
+    "**РЕЗУЛЬТАТ", "**Результат",
     # A closed row MAY end by proposing a fix -- if it says where that fix is
     # tracked. That is the whole difference between #191, which handed its
     # remainder to #199, and #188, which named a successor for nobody and sat
