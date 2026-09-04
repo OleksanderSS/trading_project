@@ -383,13 +383,31 @@ class ModelingStage(BaseStage):
             # surviving champion worth conditioning.
             #
             # What changes here is only that the fallback stops being silent.
-            current_pattern = self._latest_context_value(
+            # ASK FOR NOTHING, NOT FOR 'normal' (REGISTER #182).
+            #
+            # `default='normal'` made "the column is absent" and "the column
+            # says normal" the same answer, so the warning below fired on both
+            # -- and a warning that fires on a legitimate state is one that
+            # gets switched off. Today it is always the first case, because
+            # the batch holds zero MARKET_REGIME columns; the moment
+            # MARKET_REGIME_FEATURES=1 is set it would become the second, and
+            # the message would be a lie about data that had arrived.
+            #
+            # This is the audit method's own invariant: a default must be
+            # accompanied by something saying it WAS a default.
+            found_pattern = self._latest_context_value(
                 df,
                 ("MARKET_REGIME", "market_regime", "regime"),
-                default='normal',
+                default=None,
                 timeframe=str(timeframe),
-            ) or 'normal'
-            if current_pattern == 'normal':
+            )
+            # A blank label is not a regime either: the helper stringifies
+            # whatever it finds, so an empty cell would arrive as "" and slip
+            # past an `is None` test into the key as a real value.
+            if isinstance(found_pattern, str):
+                found_pattern = found_pattern.strip() or None
+            current_pattern = found_pattern or 'normal'
+            if found_pattern is None:
                 logger.warning(
                     "Ticker %s/%s has no MARKET_REGIME column, so its "
                     "champions are keyed by the literal 'normal'. The regime "
