@@ -434,6 +434,23 @@ class CollectionStage(BaseStage):
 
         self._critical_sources_empty = self._critical_shortfall(silent, failed)
         if self._critical_sources_empty:
+            # WHAT MATTERS IS THE STORE, NOT THE COLLECTOR.
+            #
+            # A collector that added nothing because everything was already
+            # saved is a SUCCESS, and this pipeline runs that way often --
+            # `--mode continue` and every cache hit work from thirty years of
+            # daily bars without collecting one. Failing a run because Yahoo
+            # answered 429 would make the thing brittle, and a check that
+            # fires on ordinary recoverable conditions gets switched off. That
+            # is not a hypothesis here: `|| true` has sat in ci.yml for six
+            # weeks because the suite went red for environmental reasons, and
+            # eight contract tests errored on a busy database until 2026-09-03
+            # for the same reason.
+            #
+            # So the verdict separates "no NEW data" from "no data": the first
+            # is a warning, the second is a failure, and only the store can
+            # tell them apart.
+            self._price_store_state = self._price_store_freshness()
             # `critical: true` has been declared in collectors.yaml for twenty
             # collectors since before this audit and was read NOWHERE in src/
             # -- the same shape as the promotion family size, which promised a
@@ -444,12 +461,92 @@ class CollectionStage(BaseStage):
             # run with less data, it is a run about nothing, and the collectors
             # return an empty list both when a source is genuinely empty and
             # when it failed -- so "no new rows" reads identically either way.
-            self.logger.error(
-                "CRITICAL SOURCE DELIVERED NOTHING: %s. Every later stage will "
-                "work from whatever is already in the database, and will "
-                "report success on it. Declared critical in collectors.yaml.",
-                ", ".join(sorted(self._critical_sources_empty)),
+            names = ", ".join(sorted(self._critical_sources_empty))
+            state = self._price_store_state
+            if state.get("usable"):
+                self.logger.warning(
+                    "Critical source delivered nothing this run (%s), but the "
+                    "store holds usable prices: newest bar %s, %s day(s) old, "
+                    "%s rows over %s names. The run continues on data already "
+                    "collected -- which is legitimate, and is why this is not "
+                    "a failure.",
+                    names, state.get("newest"), state.get("age_days"),
+                    f"{state.get('rows', 0):,}", state.get("names"),
+                )
+            else:
+                self.logger.error(
+                    "NO USABLE PRICES: critical source delivered nothing (%s) "
+                    "and the store cannot supply them either -- %s. Every "
+                    "later stage would work from this and report success on "
+                    "it. Declared critical in collectors.yaml.",
+                    names, state.get("reason", "reason unavailable"),
+                )
+
+    #: How old the newest stored bar may be before the store stops counting as
+    #: a source of prices, in calendar days.
+    #:
+    #: A number is required, not a feeling: without one, "the store has
+    #: prices" is true forever and the check never fires, which is the mirror
+    #: of firing too often. Seven calendar days covers a long weekend plus a
+    #: holiday and a failed run; measured 2026-09-03, the newest daily bar was
+    #: three days old, so this threshold would not have fired today -- which is
+    #: the point.
+    _MAX_PRICE_AGE_DAYS = 7
+
+    def _price_store_freshness(self) -> dict:
+        """What the store can supply, as a verdict rather than a row count.
+
+        Returns `usable` with the numbers behind it, or `usable=False` with the
+        reason. Any failure to read is itself "not usable": a store that cannot
+        be queried is not a store the run can rely on, and reporting that as
+        healthy would be the exact substitution this check exists to prevent.
+        """
+        import datetime as _dt
+
+        manager = getattr(self, 'db_manager', None)
+        if manager is None:
+            return {"usable": False, "reason": "no database manager on the stage"}
+        try:
+            rows = manager.fetch_all(
+                "select interval, max(datetime) as newest, count(*) as rows, "
+                "count(distinct ticker) as names from market_data_raw "
+                "group by interval"
             )
+        except Exception as error:  # noqa: BLE001 - reported, never swallowed
+            return {"usable": False,
+                    "reason": f"the price table could not be read: "
+                              f"{type(error).__name__}: {error}"}
+        if not rows:
+            return {"usable": False, "reason": "the price table is empty"}
+
+        now = _dt.datetime.now(_dt.UTC)
+        best = None
+        for row in rows:
+            newest = row.get("newest")
+            if newest is None:
+                continue
+            stamp = pd.Timestamp(newest)
+            stamp = stamp.tz_localize("UTC") if stamp.tzinfo is None else stamp
+            age = (now - stamp.to_pydatetime()).days
+            candidate = {
+                "usable": age <= self._MAX_PRICE_AGE_DAYS,
+                "interval": row.get("interval"),
+                "newest": str(stamp.date()),
+                "age_days": age,
+                "rows": int(row.get("rows") or 0),
+                "names": int(row.get("names") or 0),
+            }
+            if best is None or age < best["age_days"]:
+                best = candidate
+        if best is None:
+            return {"usable": False, "reason": "no stored bar carries a timestamp"}
+        if not best["usable"]:
+            best["reason"] = (
+                f"the newest stored bar is {best['newest']}, "
+                f"{best['age_days']} days old, past the "
+                f"{self._MAX_PRICE_AGE_DAYS}-day limit"
+            )
+        return best
 
     def _critical_shortfall(self, silent: list[str], failed: list[str]) -> list[str]:
         """Which sources declared critical produced nothing this run.

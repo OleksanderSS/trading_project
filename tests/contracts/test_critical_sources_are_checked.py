@@ -116,3 +116,89 @@ def test_the_field_is_read_by_the_stage_and_not_only_declared():
         "the collection stage no longer reads `critical`, so the field is "
         "back to being a promise in a config file"
     )
+
+
+# ---------------------------------------------------------------------------
+# The second half: what matters is the STORE, not the collector.
+#
+# A collector that added nothing because everything was already saved is a
+# success, and this pipeline runs that way often. Failing on that would make
+# the thing brittle, and a check that fires on ordinary recoverable conditions
+# gets switched off -- `|| true` has been in ci.yml for six weeks for exactly
+# that reason, and eight contract tests errored on a busy database until
+# 2026-09-03 for the same one.
+#
+# So "no NEW data" is a warning and "no data" is a failure, and only the store
+# can tell them apart.
+
+
+class _Store:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def fetch_all(self, query, params=None):
+        if self._rows is None:
+            raise RuntimeError("database is locked by another process")
+        return self._rows
+
+
+def _stage_with_store(rows):
+    stage = CollectionStage.__new__(CollectionStage)
+    stage.config_manager = _Config({})
+    stage.db_manager = _Store(rows)
+    return stage
+
+
+def _bar(days_old: int, interval: str = "1d"):
+    import datetime as dt
+
+    return {
+        "interval": interval,
+        "newest": dt.datetime.now(dt.UTC) - dt.timedelta(days=days_old),
+        "rows": 719_169,
+        "names": 112,
+    }
+
+
+def test_a_recent_store_is_usable_so_a_quiet_collector_is_only_a_warning():
+    """Measured 2026-09-03: the newest daily bar was three days old. A
+    threshold that fires on that would fire on every long weekend."""
+    state = _stage_with_store([_bar(3)])._price_store_freshness()
+    assert state["usable"] is True
+    assert state["age_days"] == 3
+
+
+def test_a_stale_store_is_not_usable():
+    state = _stage_with_store([_bar(30)])._price_store_freshness()
+    assert state["usable"] is False
+    assert "30 days old" in state["reason"]
+
+
+def test_an_empty_table_is_not_usable():
+    state = _stage_with_store([])._price_store_freshness()
+    assert state["usable"] is False
+    assert "empty" in state["reason"]
+
+
+def test_a_store_that_cannot_be_read_is_not_reported_as_healthy():
+    """The substitution this whole file exists to prevent: an unreadable store
+    is not a working one, and saying otherwise is how a failure becomes a
+    success."""
+    state = _stage_with_store(None)._price_store_freshness()
+    assert state["usable"] is False
+    assert "could not be read" in state["reason"]
+
+
+def test_the_freshest_cadence_decides():
+    """Intraday is collected too, and 15m being current says the feed works
+    even if a daily bar lags. Taking the OLDEST would fail runs that are fine."""
+    state = _stage_with_store([_bar(30, "1d"), _bar(2, "15m")])._price_store_freshness()
+    assert state["usable"] is True
+    assert state["interval"] == "15m"
+
+
+def test_the_threshold_is_a_number_and_not_a_feeling():
+    """Without a stated limit, "the store has prices" is true forever and the
+    check never fires -- the mirror of firing too often."""
+    assert isinstance(CollectionStage._MAX_PRICE_AGE_DAYS, int)
+    assert 1 <= CollectionStage._MAX_PRICE_AGE_DAYS <= 30
