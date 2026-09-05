@@ -18,6 +18,11 @@ from src.pipeline.modeling_context import is_pooled, iter_model_contexts
 from src.pipeline.stages.base_stage import BaseStage
 from src.pipeline.stages.modeling import pipeline_control_artifacts
 from src.pipeline.stages.modeling.context_ledger import ContextLedger
+from src.pipeline.stages.modeling.check_coverage import (
+    dead_checks,
+    format_report,
+    summarise_checks,
+)
 from src.pipeline.stages.modeling.walk_forward_validation import (
     PipelineWalkForwardValidationEvaluator,
     WalkForwardValidationConfig,
@@ -272,8 +277,27 @@ class ModelingStage(BaseStage):
         )
         enriched_data = kwargs.get('enriched_data')
         if enriched_data is None or (isinstance(enriched_data, pd.DataFrame) and enriched_data.empty):
+            # A VERDICT, NOT AN EMPTY DICT.
+            #
+            # This line is the example in `_silent_failure_scan`'s own
+            # docstring: the stage logged and returned `{}`, and `{}` reads
+            # downstream as "ran fine, produced no models" -- the same
+            # sentence a clean run with no champions produces. The ratchet
+            # came back over its ceiling on 2026-09-05 and the rule is to fix
+            # one rather than raise the bar, so the canonical instance is the
+            # one to fix.
+            #
+            # `status` follows the convention the evaluation stage already
+            # uses (`{'status': 'no_holdout_artifact'}`) rather than inventing
+            # a second shape.
             logger.error('Enriched data not found. Skipping Modeling Stage.')
-            return {}
+            return {
+                'status': 'no_enriched_data',
+                'reason': ('the modeling stage was handed no enriched frame, '
+                           'so nothing was trained and nothing was judged -- '
+                           'this is not a run that found no champions'),
+                'models_metadata': {},
+            }
 
         if kwargs.get("walk_forward_review_only"):
             return self._run_walk_forward_review_only(
@@ -466,8 +490,30 @@ class ModelingStage(BaseStage):
                 len(self._artifact_write_failures),
                 ', '.join(self._artifact_write_failures[:10]),
             )
+        # WHICH CHECKS ACTUALLY RAN, said once, here (REGISTER #201).
+        #
+        # The three dead ladder rungs of 31.08 were each invisible inside
+        # their own context and obvious the moment all of them were counted
+        # together. Per-context logging cannot show this: a rung that never
+        # fires produces no line to read. So the verdict is formed at the
+        # stage boundary, where every context has been seen.
+        #
+        # Champions plus refusals is every context, and both already carry the
+        # rung scores, so this is a reading of evidence the run already wrote
+        # rather than a new measurement.
+        coverage = summarise_checks(champions, self._gate_refusals)
+        report = format_report(coverage)
+        dead = dead_checks(coverage)
+        if dead:
+            logger.error("Check coverage for this run:\n%s", report)
+        else:
+            logger.info("Check coverage for this run:\n%s", report)
+
         self._reconcile_promotion_family()
         return {
+            'check_coverage': {name: dict(item.states)
+                               for name, item in coverage.items()},
+            'dead_checks': dead,
             'models_metadata': champions,
             'processed_data': enriched_data,
             'pipeline_control_metric_artifacts': metric_artifacts,
@@ -1623,6 +1669,22 @@ class ModelingStage(BaseStage):
             "baseline_clock_scheme": holdout.get("baseline_clock_scheme"),
             "single_feature_score": holdout.get("single_feature_score"),
             "single_feature_name": holdout.get("single_feature_name"),
+            # THE MARGIN AND ITS ERROR, recorded because the refusal turns on
+            # them (REGISTER #201).
+            #
+            # The reasons string already quotes both -- "margin -0.0359, sigma
+            # 0.0048" -- but a number inside prose cannot be re-aggregated,
+            # compared across runs, or checked against a later fix. The
+            # coverage report found this on its first run: the margin's
+            # standard error was the ONE check absent from every refusal row,
+            # and it is the number #192 and #200 are both about.
+            #
+            # `baseline_margin_rows_per_bar` travels with it so the block
+            # length behind sigma can be reconstructed rather than trusted.
+            "baseline_margin": holdout.get("baseline_margin"),
+            "baseline_margin_sigma": holdout.get("baseline_margin_sigma"),
+            "baseline_margin_rows_per_bar": holdout.get(
+                "baseline_margin_rows_per_bar"),
             "holdout_rows": holdout.get("holdout_sample_count"),
             "holdout_events": holdout.get("holdout_event_count"),
         })
@@ -1720,6 +1782,15 @@ class ModelingStage(BaseStage):
             "baseline_clock_scheme": None,
             "single_feature_score": None,
             "single_feature_name": None,
+            # Kept in step with the row above -- the comment two lines up says
+            # the schemas must match, and a field added to one and not the
+            # other is how a ragged frame gets invented (#201 found the
+            # margin missing from BOTH; adding it to one only would have made
+            # the coverage report read "not recorded" on half the rows and
+            # "not measured" on the rest, which is a third wrong answer).
+            "baseline_margin": None,
+            "baseline_margin_sigma": None,
+            "baseline_margin_rows_per_bar": None,
             "holdout_rows": None,
             "holdout_events": None,
         })
