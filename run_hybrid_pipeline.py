@@ -274,7 +274,11 @@ async def main():
     # Log completion
     failed = run_failed(results, args)
     if not failed:
-        logger.info(f"✅ Pipeline completed successfully for batch: {args.batch_name}")
+        logger.info(
+            "✅ Pipeline completed successfully for batch: %s | mode %s | "
+            "stages that ran: %s",
+            args.batch_name, getattr(args, 'mode', '?'), _stages_ran(results),
+        )
     else:
         logger.error(f"❌ Pipeline failed for batch: {args.batch_name}")
         sys.exit(1)
@@ -331,6 +335,34 @@ def _timeframes_missing(results: object) -> list:
 
 def _requested(results: object) -> list:
     return list(results.get('timeframes_requested') or []) if isinstance(results, dict) else []
+
+
+def _stages_ran(results: object) -> str:
+    """Which stages this run actually executed, for the success line.
+
+    REGISTER #205. On run 7 the pipeline finished stage 4 at 06:59:41 and
+    reported "Pipeline completed successfully" TWENTY-TWO SECONDS later. The
+    whole log held exactly one stage. Stages 5-7 neither ran nor were
+    mentioned.
+
+    That is not a bug in `--mode light`, which is meant to train light models
+    only. It is a bug in the SENTENCE: "completed successfully" does not
+    distinguish "the pipeline ran every stage" from "the pipeline ran the one
+    stage it was allowed to", and the two need different reactions from a
+    reader. The price was already paid -- I twice recommended against stopping
+    a twelve-hour run to check stages 5-7, on the strength of a success line
+    that was about stage 4.
+
+    Says "not recorded" rather than guessing when the payload carries no
+    stage list: a made-up list would be worse than the bare sentence it
+    replaces.
+    """
+    if isinstance(results, dict):
+        stages = (results.get('stages_completed') or results.get('stages')
+                  or results.get('stages_run'))
+        if stages:
+            return ", ".join(str(stage) for stage in stages)
+    return "not recorded in the run's own payload"
 
 
 def _delivered(results: object) -> list:

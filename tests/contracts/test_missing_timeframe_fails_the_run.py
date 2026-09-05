@@ -153,3 +153,55 @@ def test_the_flag_exists_on_the_command_line():
     args = create_argument_parser().parse_args(["--allow-missing-timeframes"])
     assert args.allow_missing_timeframes is True
     assert create_argument_parser().parse_args([]).allow_missing_timeframes is False
+
+
+# ---------------------------------------------------------------------------
+# REGISTER #205: "completed successfully" must say WHAT completed.
+#
+# Run 7 finished stage 4 at 06:59:41 and printed "Pipeline completed
+# successfully" twenty-two seconds later. The whole log held exactly ONE
+# stage; 5, 6 and 7 neither ran nor were mentioned.
+#
+# That is not a bug in `--mode light`, which trains light models on purpose.
+# It is a bug in the SENTENCE: it does not distinguish "ran every stage" from
+# "ran the one stage it was allowed to", and those need different reactions.
+# The price was already paid -- twice I advised against interrupting a
+# twelve-hour run to check stages 5-7, on the strength of a success line that
+# was about stage 4.
+# ---------------------------------------------------------------------------
+
+
+def test_the_success_line_names_the_stages_that_ran(runner):
+    assert runner._stages_ran(
+        {"stages_completed": ["collection", "features", "modeling"]}
+    ) == "collection, features, modeling"
+
+
+def test_an_alternative_field_name_is_still_read(runner):
+    """Two writers record this: `metadata_manager` as `stages_completed` and
+    `pipeline_runner` as `stages`. Reading one and not the other would make
+    the line honest on half the runs."""
+    assert runner._stages_ran({"stages": ["light_models"]}) == "light_models"
+
+
+def test_a_payload_without_stages_says_so_rather_than_guessing(runner):
+    """A made-up list is worse than the bare sentence it replaces: it would
+    read as evidence."""
+    for payload in ({}, None, [], "done"):
+        assert "not recorded" in runner._stages_ran(payload)
+
+
+def test_the_success_line_itself_carries_the_stages():
+    """The helper existing is not the same as the message using it."""
+    from pathlib import Path
+
+    source = Path("run_hybrid_pipeline.py").read_text(encoding="utf-8")
+    marker = source.index("Pipeline completed successfully")
+    window = source[marker - 200:marker + 400]
+    assert "_stages_ran(results)" in window, (
+        "the success line still says only that the batch completed, which is "
+        "the sentence #205 is about"
+    )
+    assert "mode" in window, (
+        "the mode is not named, so a light run and a full one read the same"
+    )

@@ -61,9 +61,42 @@ class FredCollector(BaseCollector):
             self.logger.warning(f"Unsupported period format for FRED: {period}. Defaulting to 1 year.")
             return (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
 
+    def _hash_keys_for(self, series_id: str) -> list[str]:
+        """Which columns identify a record -- and it depends on the series.
+
+        REGISTER #142. The configured key is
+        ["series_id", "date", "realtime_start", "value"], and for an UNREVISED
+        daily series `realtime_start` is the day we asked (#130 measured that:
+        FRED stamps a non-vintage request with the request date). So every
+        collection minted a fresh hash for an observation whose value had not
+        moved, `filter_new_records` filtered nothing, and the table grew by
+        one full copy per run.
+
+        Measured on the live table 2026-09-05:
+
+            485,010 rows for 97,130 distinct (series, date) pairs -- 4.99x
+            85,478 rows added on 2026-09-02 alone, and 85,469 and 85,467 on
+              the two runs before it
+            of the 18 unrevised series' 398,042 rows, 308,200 (77.4%) carry a
+              value that already existed under a different collection date
+
+        Dropping `realtime_start` for those series keys them on the fact
+        rather than on when we asked. `value` STAYS in the key: for a series
+        FRED does not revise, a changed value is news, not a duplicate.
+
+        REVISED series keep the vintage. That is not a detail -- #131 restored
+        exactly this structure after a dedup collapsed 314,062 rows to 97,090
+        and destroyed it. Applying the shorter key to CPI or GDP would undo
+        that fix, so the branch is on the series, never on the table.
+        """
+        if series_id in self.UNREVISED_DAILY_SERIES:
+            return [key for key in self.hash_keys if key != "realtime_start"]
+        return list(self.hash_keys)
+
     def _generate_hash(self, row: pd.Series) -> str:
         """Generates a stable hash for a record."""
-        hash_string = "|".join(str(row.get(key, "")) for key in self.hash_keys)
+        keys = self._hash_keys_for(str(row.get("series_id", "")))
+        hash_string = "|".join(str(row.get(key, "")) for key in keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
     def _validate_config(self, **kwargs) -> tuple[str | None, list[str] | None]:
