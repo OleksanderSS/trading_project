@@ -20,7 +20,13 @@ from tests.contracts._frame_copy_scan import scan
 
 #: Measured 2026-08-22, after eight were fixed on the pipeline's hot path.
 #: Lower this when findings are fixed; never raise it.
-CEILING = 116
+#:
+#: 116 -> 115 on 2026-09-05. REGISTER #203 recorded this ratchet as BREACHED
+#: at 117; the count is 115 today, so the row was stale in the direction that
+#: matters least and the ceiling was stale in the direction that matters most:
+#: a ratchet left one above the real count is a ratchet with a free slot, and
+#: the next copy slips in without failing anything.
+CEILING = 115
 
 #: Modules where the frame is the wide stage-3 feature frame or the full news
 #: frame. A deep copy here is not a wart, it is an out-of-memory crash: v6 died
