@@ -22,7 +22,12 @@ with the reason.
 
 from __future__ import annotations
 
+import json
+import logging
+
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 #: Nothing at or after this timestamp may be read during exploration.
 #:
@@ -87,3 +92,61 @@ def apply_seal(frame: pd.DataFrame, column: str = "datetime",
 def describe() -> str:
     return (f"sealed from {SEAL_START.date()} onward "
             f"(declared {SEALED_ON.date()}); exploration sees earlier data only")
+
+#: The file that carries the seal to a machine without this repository.
+#:
+#: REGISTER #153. The Colab cell is a standalone 2,077-line file pasted into a
+#: notebook, and its own comment describes the real workflow: "one real
+#: workflow copies features.parquet and targets.parquet from a local machine
+#: to Drive". In that workflow there IS no `src/`, so the cell cannot import
+#: this module -- and it has been splitting off the last 20% of each series as
+#: validation with no notion of a seal at all.
+#:
+#: Measured 2026-09-05: the batch it reads spans 1996-08-26 to 2026-09-01 and
+#: holds 82,094 sealed daily rows (11.6%), and the last 20% of the daily rows
+#: begins 2021-07-12 -- so the cell's validation window runs straight through
+#: the sealed period. Champions selected there were selected on the one
+#: un-spent confirmation this project has.
+#:
+#: Writing the date beside the parquets is the only route that survives the
+#: copy. It is NOT a tenth definition (#264 found nine): the value comes from
+#: SEAL_START above and nowhere else, and the reader is told to refuse rather
+#: than guess when the file is absent.
+SEAL_FILE = "sealed_period.json"
+
+
+def export_to(directory: "Path | str") -> "Path | None":
+    """Write the seal beside a batch, so a machine without src/ can honour it.
+
+    Returns the path written, or None when the directory does not exist --
+    which is logged rather than raised, because a batch write must not fail
+    for want of a sidecar. The cell's refusal is what makes the absence
+    matter; this end only has to try.
+    """
+    from pathlib import Path as _Path
+
+    target = _Path(directory)
+    if not target.is_dir():
+        logger.warning(
+            "Cannot write %s beside %s: the directory does not exist, so a "
+            "reader without this repository has nothing to honour "
+            "(REGISTER #153).", SEAL_FILE, target,
+        )
+        return None
+
+    path = target / SEAL_FILE
+    payload = {
+        "seal_start": SEAL_START.isoformat(),
+        "seal_share": SEAL_SHARE,
+        "sealed_on": SEALED_ON.isoformat(),
+        "source": "src/pipeline/sealed_period.py",
+        "meaning": (
+            "Rows at or after seal_start are the untouched holdout. Anything "
+            "that trains, validates or SELECTS on them spends the one "
+            "confirmation this project has. A reader that cannot find this "
+            "file must refuse to train, not assume there is no seal."
+        ),
+    }
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    logger.info("Seal exported to %s (%s)", path, SEAL_START.date())
+    return path

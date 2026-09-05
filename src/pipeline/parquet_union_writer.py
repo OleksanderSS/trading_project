@@ -191,4 +191,21 @@ def write_union(frames: Mapping[str, pd.DataFrame], destination: Path,
         destination.name, sum(written.values()), len(written),
         len(schema.names), destination.stat().st_size / 2 ** 20,
     )
+    # THE SEAL TRAVELS WITH THE BATCH (REGISTER #153).
+    #
+    # The Colab cell is pasted into a notebook and, by its own description,
+    # often sees only the parquet files copied to Drive -- no `src/`, so it
+    # cannot import `sealed_period`. It has therefore been splitting off the
+    # last 20% of each series as validation with no notion of a seal, and
+    # measured on 2026-09-05 that window runs straight through the sealed
+    # period: the batch spans 1996-08-26 to 2026-09-01 and holds 82,094
+    # sealed daily rows.
+    #
+    # Written HERE because both writers of this artefact go through this
+    # function (#138), so the sidecar cannot be attached to one path and
+    # missed by the other. The value comes from `sealed_period.SEAL_START`
+    # and nowhere else -- this is a delivery, not a tenth definition (#264).
+    from src.pipeline.sealed_period import export_to
+
+    export_to(destination.parent)
     return written

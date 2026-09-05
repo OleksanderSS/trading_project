@@ -462,7 +462,105 @@ class ColabDataLoader:
             self.targets_df['datetime'] = pd.to_datetime(self.targets_df['datetime']).dt.tz_localize(None)
 
         print("✅ Timezone нормалізовано")
+
+        self._apply_seal()
         return self.features_df, self.targets_df
+
+    #: The sidecar the local pipeline writes beside the parquets.
+    SEAL_FILE = "sealed_period.json"
+
+    def _apply_seal(self):
+        """Drop the sealed tail, or REFUSE to go on.
+
+        REGISTER #153. This file is pasted into a notebook and usually sees
+        only `features.parquet` and `targets.parquet` copied to Drive, so it
+        cannot import the project's `sealed_period` module -- and until now it
+        had no notion of a seal at all. It splits off the last 20% of each
+        series as validation.
+
+        Measured 2026-09-05: the batch spans 1996-08-26 to 2026-09-01 and
+        holds 82,094 sealed daily rows (11.6%), while the last 20% of the
+        daily rows begins 2021-07-12. So this cell's validation window ran
+        straight through the sealed period, and every champion it selected was
+        selected on the one un-spent confirmation the project has.
+
+        REFUSING is the point. Reading a missing sidecar as "there is no seal"
+        would restore the defect the moment someone copies two files without
+        the third -- a default that does not announce itself, which is #182.
+        So a missing file stops the run and says what to copy.
+        """
+        seal_path = self.batch_dir / self.SEAL_FILE
+        if not seal_path.exists():
+            raise FileNotFoundError(
+                f"{self.SEAL_FILE} is not in {self.batch_dir}. This cell will "
+                f"not train without it: the last 20% of every series is used "
+                f"as validation, and without the seal date that window runs "
+                f"through the untouched holdout. Copy {self.SEAL_FILE} from "
+                f"the batch directory alongside the parquet files (the local "
+                f"pipeline writes it there). REGISTER #153."
+            )
+
+        import json as _json
+        payload = _json.loads(seal_path.read_text(encoding="utf-8"))
+        absolute = pd.to_datetime(payload["seal_start"]).tz_localize(None)
+        share = float(payload.get("seal_share") or 0.20)
+
+        # PER TIMEFRAME, NOT ONE ABSOLUTE DATE -- and measuring caught this.
+        #
+        # The first version of this method used the absolute date alone. On
+        # the live batch that withheld 380,938 of 380,938 sixty-minute rows:
+        # ONE HUNDRED PERCENT, because that frame's history is shorter than
+        # the distance back to 2023-09-01. `sealed_period.py` already carries
+        # the note for exactly this -- "a seal that leaves nothing to explore
+        # is not a stricter seal, it is a broken one" -- and I had reproduced
+        # the defect the note was written about.
+        #
+        # The rule is the module's `seal_start_for`: the later of the absolute
+        # date and the frame's own last `share` of DISTINCT timestamps, and
+        # the frame's own tail when the absolute date lies past its end.
+        # Distinct timestamps rather than rows, because a frame holds many
+        # names per bar and a row-count seal would move with the ticker list.
+        def _seal_for(stamps):
+            distinct = pd.Series(pd.to_datetime(stamps).dropna().unique()).sort_values()
+            if distinct.empty:
+                return absolute
+            by_span = pd.Timestamp(distinct.quantile(1.0 - share))
+            if distinct.iloc[-1] >= absolute:
+                return max(absolute, by_span)
+            return by_span
+
+        before = len(self.features_df)
+        column = "interval" if "interval" in self.features_df.columns else None
+        seals = {}
+        if column:
+            for value, group in self.features_df.groupby(column):
+                seals[value] = _seal_for(group["datetime"])
+        else:
+            seals[None] = _seal_for(self.features_df["datetime"])
+
+        for name in ("features_df", "targets_df"):
+            frame = getattr(self, name)
+            if frame is None or "datetime" not in frame.columns:
+                continue
+            if column and column in frame.columns:
+                keep = frame.apply(
+                    lambda row: row["datetime"] < seals.get(
+                        row[column], absolute), axis=1)
+            else:
+                keep = frame["datetime"] < next(iter(seals.values()))
+            setattr(self, name, frame[keep].copy())
+
+        withheld = before - len(self.features_df)
+        stated = ", ".join(f"{key or 'all'}={value.date()}"
+                           for key, value in sorted(seals.items(), key=str))
+        print(f"🔒 Печатка ({stated}), заявлена {payload.get('sealed_on', '?')[:10]}: "
+              f"{withheld:,} рядків відкладено, {len(self.features_df):,} лишилось")
+        if not len(self.features_df):
+            raise ValueError(
+                "The seal removed every row. That is not a stricter seal, it "
+                "is a broken one: there is nothing left to train on, and the "
+                "point of a holdout is to have something outside it."
+            )
 
 # ==============================================================================
 # 6. MAIN CONTROLLER
