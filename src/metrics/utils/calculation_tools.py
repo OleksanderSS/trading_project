@@ -58,7 +58,18 @@ def calculate_rolling_volatility(returns: pd.Series, window: int = 20) -> pd.Ser
     Returns:
         pd.Series: Серія значень волатильності.
     """
-    return returns.rolling(window=window, min_periods=1).std() * np.sqrt(252)
+    # Cadence off the series, not a constant that means "daily" (#183).
+    #
+    # Imported inside the function on purpose: `financial_metrics_library`
+    # re-exports this module at import time, so a module-level import here
+    # would close the cycle. A lazy import is the smaller wrong than a second
+    # copy of the inference, which is the shape half this repository's defects
+    # have.
+    from src.metrics.financial.financial_metrics_library import (
+        infer_periods_per_year,
+    )
+    return (returns.rolling(window=window, min_periods=1).std()
+            * np.sqrt(infer_periods_per_year(returns)))
 
 def calculate_drawdown_series(equity_curve: pd.Series) -> pd.Series:
     """

@@ -4,6 +4,7 @@ Unified collection of financial, statistical, and econometric metrics.
 Provides core calculation logic for portfolios, assets, and benchmarks.
 """
 
+import sys
 from typing import Any
 
 import numpy as np
@@ -20,38 +21,82 @@ from src.metrics.utils.calculation_tools import (  # noqa: F401
 )
 
 
+#: A series shorter than this can honestly fail to show its cadence, so the
+#: fallback is silent below it. Longer than this and a missing DatetimeIndex is
+#: a caller passing the wrong thing, which is worth hearing about.
+_ROWS_THAT_SHOULD_SHOW_A_CADENCE = 20
+
+#: One warning per (caller, reason) per process. A fallback inside a rolling
+#: loop would otherwise print thousands of identical lines, and a message that
+#: floods is a message that gets filtered out — which is how #181 happened.
+_WARNED_FALLBACKS: set[tuple[str, str]] = set()
+
+
+def periods_per_year_with_reason(returns: pd.Series) -> tuple[int, str]:
+    """The annualisation factor AND how it was arrived at.
+
+    REGISTER #183. Replacing a hard-coded `sqrt(252)` with a call to the
+    inference below changes nothing if the inference silently returns 252 for
+    the same reason the constant was wrong — a series with no DatetimeIndex.
+    The caller would then be annualising 15-minute bars by 252 while the code
+    reads as cadence-aware, which is worse than the constant because the
+    constant at least admits what it is.
+
+    So the reason travels with the number, and `infer_periods_per_year` says
+    out loud when it defaulted on a series long enough to have shown its
+    cadence. A default must be accompanied by something saying it was a
+    default -- the same invariant as #182.
+    """
+    if not isinstance(returns.index, pd.DatetimeIndex):
+        return 252, "default: the index is not a DatetimeIndex"
+    if len(returns) < 2:
+        return 252, "default: fewer than two observations"
+
+    gaps = returns.index.to_series().diff().dropna()
+    if gaps.empty:
+        return 252, "default: no usable gaps between observations"
+
+    median_seconds = gaps.median().total_seconds()
+    for limit, value, label in (
+        (90, 252 * 390, "inferred: 1-minute bars"),
+        (1200, 252 * 26, "inferred: 15-minute bars"),
+        (5400, 252 * 7, "inferred: hourly bars"),
+        (100_000, 252, "inferred: daily bars"),
+        (800_000, 52, "inferred: weekly bars"),
+        (2_800_000, 12, "inferred: monthly bars"),
+    ):
+        if median_seconds <= limit:
+            return value, label
+    return 4, "inferred: quarterly bars"
+
+
 def infer_periods_per_year(returns: pd.Series) -> int:
     """Infer annualisation factor from the DatetimeIndex of *returns*.
 
     Falls back to 252 (daily) when the index is not a DatetimeIndex or the
-    median gap cannot be determined reliably. Moved here from
+    median gap cannot be determined reliably, AND SAYS SO when the series was
+    long enough to have shown a cadence (#183). Moved here from
     src/algorithms/metrics_mixin.py so a single canonical Sharpe
     implementation (below) can offer cadence-aware annualisation to every
     caller, not just the backtest engine — this project runs 15m/1h/1d
     timeframes side by side, and a fixed 252 assumes daily bars regardless
     of what's actually being measured.
     """
-    if not isinstance(returns.index, pd.DatetimeIndex) or len(returns) < 2:
-        return 252
+    value, reason = periods_per_year_with_reason(returns)
+    if reason.startswith("default") and len(returns) >= _ROWS_THAT_SHOULD_SHOW_A_CADENCE:
+        frame = sys._getframe(1)
+        where = f"{frame.f_globals.get('__name__', '?')}:{frame.f_lineno}"
+        key = (where, reason)
+        if key not in _WARNED_FALLBACKS:
+            _WARNED_FALLBACKS.add(key)
+            logger.warning(
+                "annualising %d observations by 252 (%s) at %s -- if these are "
+                "not daily bars the figure is wrong by sqrt(bars per day) "
+                "(REGISTER #183)",
+                len(returns), reason, where,
+            )
+    return value
 
-    gaps = returns.index.to_series().diff().dropna()
-    if gaps.empty:
-        return 252
-
-    median_seconds = gaps.median().total_seconds()
-    if median_seconds <= 90:           # ≤ 1.5 min → 1-minute bars
-        return 252 * 390
-    if median_seconds <= 1200:         # ≤ 20 min → 15-minute bars
-        return 252 * 26
-    if median_seconds <= 5400:         # ≤ 90 min → 1-hour bars
-        return 252 * 7
-    if median_seconds <= 100_000:      # ≤ ~1.15 days → daily
-        return 252
-    if median_seconds <= 800_000:      # ≤ ~9 days → weekly
-        return 52
-    if median_seconds <= 2_800_000:    # ≤ ~32 days → monthly
-        return 12
-    return 4                           # quarterly
 
 #: Fallback when config carries no `metrics.risk_free_rate`. 0.0 is the
 #: convention calculate_sharpe_ratio already defaults to, so this constant

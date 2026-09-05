@@ -18,6 +18,8 @@ from datetime import datetime
 from typing import Any
 
 import numpy as np
+
+from src.metrics.financial.financial_metrics_library import infer_periods_per_year
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
@@ -114,8 +116,16 @@ class RiskDecompositionAnalyzer(IAnalyzer):
 
         weighted_returns = returns.values @ np.array([weights.get(t,
             0.0) for t in returns.columns])
-        weighted_returns = pd.Series(weighted_returns, dtype=float).replace(
-            [np.inf, -np.inf], np.nan).dropna().to_numpy()
+        # KEEP THE INDEX (REGISTER #183). The portfolio series was rebuilt
+        # from a numpy array, which dropped the DatetimeIndex `returns`
+        # carried -- and two lines below it was annualised by a flat 252. The
+        # cadence was available the whole time and thrown away one statement
+        # before it was needed.
+        weighted_series = pd.Series(weighted_returns, index=returns.index,
+                                    dtype=float).replace(
+            [np.inf, -np.inf], np.nan).dropna()
+        periods_per_year = infer_periods_per_year(weighted_series)
+        weighted_returns = weighted_series.to_numpy()
         if weighted_returns.size == 0:
             raise DataProcessingError(
                 'Portfolio returns contain no finite observations for risk metrics.'
@@ -125,7 +135,7 @@ class RiskDecompositionAnalyzer(IAnalyzer):
         if not np.isfinite(weighted_std) or weighted_std <= 1e-12:
             raise DataProcessingError("Portfolio has zero variance, cannot calculate risk metrics.")
 
-        realized_vol = weighted_std * np.sqrt(252)
+        realized_vol = weighted_std * np.sqrt(periods_per_year)
         var_05_threshold = np.percentile(weighted_returns, 5)  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
         cvar_05_threshold = weighted_returns[weighted_returns <=
             var_05_threshold].mean()
@@ -135,8 +145,8 @@ class RiskDecompositionAnalyzer(IAnalyzer):
         peak_nav = np.maximum.accumulate(wealth_index)
         max_dd = ((wealth_index - peak_nav) / peak_nav).min()
         annual_rf = 0.02
-        excess_mean = np.mean(weighted_returns) - annual_rf / 252
-        realized_sharpe = excess_mean / weighted_std * np.sqrt(252)
+        excess_mean = np.mean(weighted_returns) - annual_rf / periods_per_year
+        realized_sharpe = excess_mean / weighted_std * np.sqrt(periods_per_year)
         return {'annualized_volatility': float(realized_vol),
             'value_at_risk_95': var_loss_positive,
             'conditional_var_95': cvar_loss_positive,

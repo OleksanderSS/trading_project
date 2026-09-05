@@ -1,5 +1,7 @@
 
 import numpy as np
+
+from src.metrics.financial.financial_metrics_library import infer_periods_per_year
 import pandas as pd
 
 from src.core.exceptions import DataProcessingError
@@ -32,12 +34,12 @@ class RegimeDetector:
         try:
             if 'close' in market_data.columns:
                 returns = market_data['close'].pct_change(fill_method=None).dropna()
-                return float(returns.std() * np.sqrt(252))
+                return float(returns.std() * np.sqrt(infer_periods_per_year(returns)))
             price_cols = [col for col in market_data.columns if 'price' in
                 col.lower() or col in ['open', 'high', 'low', 'close']]
             if price_cols:
                 returns = market_data[price_cols[0]].pct_change(fill_method=None).dropna()
-                return float(returns.std() * np.sqrt(252))
+                return float(returns.std() * np.sqrt(infer_periods_per_year(returns)))
             return 0.0
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Error calculating volatility: {e}")

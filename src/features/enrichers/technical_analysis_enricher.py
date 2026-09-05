@@ -2,6 +2,8 @@ import os
 import logging
 
 import numpy as np
+
+from src.metrics.financial.financial_metrics_library import infer_periods_per_year
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
@@ -409,7 +411,27 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 if returns is None:
                     returns = df_enriched['close'].pct_change(fill_method=None)
 
-                window = 252
+                # 252 MEANT DAYS, IN BOTH PLACES IT APPEARED (REGISTER #183).
+                #
+                # This block wrote SHARPE_RATIO and SORTINO_RATIO as feature
+                # columns on every timeframe, and the number 252 was doing two
+                # different jobs, wrong in both on anything but the daily
+                # frame:
+                #
+                #   the WINDOW -- 252 bars is a year of daily bars and about
+                #     1.6 DAYS of 15-minute bars, so "rolling annual Sharpe"
+                #     on the intraday frames measured a day and a half. That
+                #     changes what the feature IS, not merely its scale.
+                #
+                #   the ANNUALISATION -- sqrt(252) understates a 15-minute
+                #     Sharpe by sqrt(26), a factor of 5.1.
+                #
+                # Both now come from the series' own cadence. On the daily
+                # frame the inference returns 252 and nothing changes, which
+                # is the point: the fix is invisible exactly where the old
+                # code was right.
+                periods = infer_periods_per_year(returns)
+                window = periods
                 min_periods = 30
 
                 rolling_mean = returns.rolling(window=window, min_periods=min_periods).mean()
@@ -419,7 +441,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 # Guard against zero/near-zero std to prevent inf/nan
                 sharpe_denominator = rolling_std.copy()
                 sharpe_denominator[sharpe_denominator < 1e-10] = np.nan
-                sharpe = (rolling_mean / sharpe_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
+                sharpe = (rolling_mean / sharpe_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(periods)
                 df_enriched['SHARPE_RATIO'] = sharpe.fillna(np.nan)
 
                 # Sortino Ratio
@@ -431,7 +453,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 # Guard against zero/near-zero std to prevent inf/nan
                 sortino_denominator = rolling_downside_std.copy()
                 sortino_denominator[sortino_denominator < 1e-10] = np.nan
-                sortino = (rolling_mean / sortino_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
+                sortino = (rolling_mean / sortino_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(periods)
                 df_enriched['SORTINO_RATIO'] = sortino.fillna(np.nan)
 
                 logger.info('Added rolling risk-reward features')

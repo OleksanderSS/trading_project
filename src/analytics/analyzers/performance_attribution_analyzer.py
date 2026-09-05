@@ -2,6 +2,11 @@ from datetime import datetime
 from typing import Any
 
 import numpy as np
+
+from src.metrics.financial.financial_metrics_library import (
+    get_risk_free_rate,
+    infer_periods_per_year,
+)
 import pandas as pd
 
 from src.core.exceptions import DataProcessingError
@@ -246,7 +251,14 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
         vr_b = np.var(b_ret)
         bta = float(cvr / vr_b) if vr_b > 0 else 1.0
 
-        rf_baseline = 0.02 / 252
+        # The SAME 252, doing the opposite job three lines apart: here it
+        # turns an annual risk-free rate into a per-period one, below it
+        # turns a per-period alpha back into an annual one. Both were fixed
+        # to the same cadence, so on 15-minute data the rate charged was 26
+        # times too large and the alpha reported 26 times too small.
+        # Measured once, used twice (REGISTER #183).
+        periods_per_year = infer_periods_per_year(p_ret)
+        rf_baseline = get_risk_free_rate() / periods_per_year
         expected_p = rf_baseline + bta * (b_ret - rf_baseline)
         j_alpha = float((p_ret - expected_p).mean())
 
@@ -264,7 +276,10 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
 
         return {'jensen_alpha': float(j_alpha), 'm2_measure': float(
             m2_measure), 'realized_beta': bta,
-            'annualized_risk_adjusted_alpha': float(j_alpha * 252)}
+            # Cadence off the portfolio series rather than a constant
+            # that means 'daily' (REGISTER #183).
+            'annualized_risk_adjusted_alpha': float(
+                j_alpha * periods_per_year)}
 
     def _temporal_attribution_analysis(self, portfolio: pd.DataFrame,
         benchmark: pd.DataFrame) ->dict[str, Any]:

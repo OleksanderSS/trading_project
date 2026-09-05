@@ -12,6 +12,8 @@ from enum import Enum
 from typing import Any
 
 import numpy as np
+
+from src.metrics.financial.financial_metrics_library import infer_periods_per_year
 import pandas as pd
 from scipy import stats
 
@@ -134,8 +136,14 @@ class SimulationEngine:
                 var_99 = float(np.percentile(returns, 1))
                 es_95 = float(returns[returns <= var_95].mean()) if len(returns[returns <= var_95]) > 0 else var_95
                 
-                # Sharpe (annualized assuming daily data for simplicity in simulation)
-                sharpe_ratio = float(returns.mean() / returns.std() * np.sqrt(252)) if returns.std() != 0 else 0.0
+                # Was "annualized assuming daily data for simplicity" -- the
+                # simulation runs on whatever cadence it was handed, and a
+                # comment admitting an assumption does not make the number
+                # right (REGISTER #183).
+                sharpe_ratio = float(
+                    returns.mean() / returns.std()
+                    * np.sqrt(infer_periods_per_year(returns))
+                ) if returns.std() != 0 else 0.0
                 
                 # Max Drawdown
                 cum_returns = (1 + returns).cumprod()
