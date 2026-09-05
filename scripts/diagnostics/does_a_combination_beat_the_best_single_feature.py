@@ -105,6 +105,12 @@ MODELS = ("top5", "top20", "ridge")
 #: matrix-vector product.
 CONTROLS = 200
 
+#: How many of the permuted-target fits are re-run as name-neutral books. The
+#: neutral construction costs a second pass over the train rows per draw, and
+#: 60 draws already resolve a p of 0.017 -- enough against a Bonferroni
+#: requirement of 0.008 to say whether it is close.
+PERMUTED_NEUTRAL = 60
+
 #: Substrings that name the volatility family. Excluded with --without-vol,
 #: because the best single column at four of six holds is one of these and a
 #: combination that merely rediscovers the low-volatility anomaly is a real
@@ -223,6 +229,10 @@ def main() -> int:
     parser.add_argument("--permutations", type=int, default=200,
                         help="how many times the ridge is refitted against a "
                              "target permuted WITHIN each date")
+    parser.add_argument("--no-late-entrants", action="store_true",
+                        help="drop names whose first bar falls inside the test "
+                             "window -- an investor at the split could not "
+                             "have known to include them")
     parser.add_argument("--without-vol", action="store_true",
                         help="drop the volatility family, to see whether the "
                              "combination is anything but low-vol")
@@ -250,6 +260,30 @@ def main() -> int:
 
     unique_dates = np.sort(pd.unique(dates))
     cut = unique_dates[int(len(unique_dates) * TRAIN_FRACTION)]
+
+    if args.no_late_entrants:
+        # SURVIVORSHIP BY INCLUSION (REGISTER #169).
+        #
+        # Nine of the 110 names have their FIRST bar inside the test window:
+        # BILI, COIN, DOW, FOXA, LI, NIO, PDD, RIOT, XPEV. They are in the
+        # universe because they exist and are large TODAY -- an investor
+        # standing at the split date could not have known to include them.
+        # Five of them are among the six most extreme static positions the
+        # fitted book takes (CLAIMS Р41), so this is not a hypothetical.
+        #
+        # Removing them does not fix survivorship: the universe still holds
+        # ZERO names that died, measured on this panel, where 0 of 110 stop
+        # before the end in twenty-seven years. It removes only the half of
+        # the bias that can be removed without price history we do not have.
+        first_bar = frame.groupby("ticker")["datetime"].transform("min").to_numpy()
+        early_enough = first_bar < cut
+        dropped = sorted(set(frame.loc[~early_enough, "ticker"]))
+        print(f"--no-late-entrants: dropping {len(dropped)} names that first "
+              f"appear inside the test window: {', '.join(dropped)}")
+        frame = frame.loc[early_enough].reset_index(drop=True)
+        order = order[early_enough]
+        dates = frame["datetime"].to_numpy()
+
     is_train = dates < cut
     test_years = (pd.Timestamp(unique_dates[-1]) - pd.Timestamp(cut)).days / 365.25
     print(f"split at {pd.Timestamp(cut).date()}: "
@@ -311,6 +345,8 @@ def main() -> int:
     control_draws: dict[int, np.ndarray] = {}
     permuted: dict[int, np.ndarray] = {}
     ridge_score: dict[int, np.ndarray] = {}
+    name_neutral: dict[int, float] = {}
+    name_neutral_null: dict[int, np.ndarray] = {}
     shuffled: dict[int, float] = {}
     ridge_curve: dict[int, np.ndarray] = {}
 
@@ -403,13 +439,14 @@ def main() -> int:
         # was 2e9 comparisons per draw; this is one sort.
         train_codes = _Dates(dates[train]).codes
         base_order = np.lexsort((np.arange(len(y)), train_codes))
-        permuted_scores = []
+        permuted_scores, permuted_weights = [], []
         for _ in range(args.permutations):
             shuffled_y = np.empty_like(y)
             shuffled_y[base_order] = y[np.lexsort((rng.random(len(y)),
                                                    train_codes))]
             sham = np.linalg.solve(
                 gram, (x.T @ shuffled_y.astype(np.float32)).astype(np.float64))
+            permuted_weights.append(sham)
             value, _ = _book_sharpe(matrix[test] @ sham.astype(np.float32),
                                     index, forwards[hold][test],
                                     friction[test], hold)
@@ -444,6 +481,58 @@ def main() -> int:
                                                forwards[hold][test],
                                                friction[test])
                 ridge_score[hold] = score
+
+                # THE BOOK THAT CANNOT EARN THE SURVIVORS' PREMIUM.
+                #
+                # The decomposition printed further down removes each name's
+                # mean position over the TEST period, which looks forward
+                # inside the test and is therefore a diagnostic, not a book.
+                # This one removes the mean position the same weights would
+                # have taken on the TRAIN period -- known at the split, so it
+                # is a book someone could have run.
+                #
+                # It matters because the universe holds ZERO names that died
+                # in twenty-seven years (#169), so a persistent long in the
+                # survivors is guaranteed to pay and is not evidence of
+                # anything. What is left after removing every persistent
+                # name bet is the part survivorship cannot explain.
+                train_score = matrix[train] @ weights.astype(np.float32)
+                train_idx = _Dates(dates[train])
+                train_pos = np.nan_to_num(np.sign(train_idx.demean(train_score)))
+                train_pos = train_idx.demean(train_pos)
+                name_mean = (pd.Series(train_pos)
+                             .groupby(frame["ticker"].to_numpy()[train]).mean())
+                test_pos = np.nan_to_num(np.sign(index.demean(score)))
+                test_pos = index.demean(test_pos)
+                offset = (frame["ticker"].to_numpy()[test]
+                          if len(name_mean) else None)
+                bias = pd.Series(offset).map(name_mean).fillna(0.0).to_numpy()
+                honest = index.demean(test_pos - bias)
+                net = (honest * np.nan_to_num(forwards[hold][test])
+                       - np.abs(honest) * friction[test])
+                name_neutral[hold], _ = _sharpe_all_phases(
+                    index.mean_by_date(net), hold)
+
+                # And its own permutation null, because a smaller book needs
+                # its own bar rather than the one measured for the larger.
+                neutral_null = []
+                for draw in permuted_weights[:PERMUTED_NEUTRAL]:
+                    ts = matrix[test] @ draw.astype(np.float32)
+                    p_pos = np.nan_to_num(np.sign(index.demean(ts)))
+                    p_pos = index.demean(p_pos)
+                    tr = matrix[train] @ draw.astype(np.float32)
+                    tr_pos = np.nan_to_num(np.sign(train_idx.demean(tr)))
+                    tr_pos = train_idx.demean(tr_pos)
+                    nm = (pd.Series(tr_pos)
+                          .groupby(frame["ticker"].to_numpy()[train]).mean())
+                    b = pd.Series(offset).map(nm).fillna(0.0).to_numpy()
+                    h_pos = index.demean(p_pos - b)
+                    n = (h_pos * np.nan_to_num(forwards[hold][test])
+                         - np.abs(h_pos) * friction[test])
+                    value, _ = _sharpe_all_phases(index.mean_by_date(n), hold)
+                    if np.isfinite(value):
+                        neutral_null.append(value)
+                name_neutral_null[hold] = np.asarray(neutral_null)
         print(f"  hold {hold} done", flush=True)
 
     print()
@@ -547,6 +636,24 @@ def main() -> int:
         value, _ = _sharpe_all_phases(index.mean_by_date(net), hold)
         print(f"        Sharpe of the TIME-VARYING part only: {value:.3f}"
               f"   (whole book {combos[('ridge', hold)]:.3f})")
+
+    print()
+    print("=== the book that CANNOT earn the survivors' premium ===")
+    print("Each name's persistent position, measured on TRAIN and removed from")
+    print("the test book -- known at the split, so this is a book, not a")
+    print("decomposition. The universe holds ZERO names that died in 27 years,")
+    print("so a permanent long in the survivors pays by construction.")
+    for hold in args.holds:
+        null = name_neutral_null.get(hold, np.asarray([]))
+        p = (float(np.mean(null >= name_neutral[hold])) if len(null)
+             else float("nan"))
+        print(f"  h{hold}: name-neutral book {name_neutral[hold]:+.3f}"
+              f"   (whole book {combos[('ridge', hold)]:+.3f},"
+              f" buy everything {constant[hold]:+.3f})")
+        if len(null):
+            print(f"        its own permutation null: mean "
+                  f"{np.mean(null):+.3f}, sd {np.std(null, ddof=1):.3f}, "
+                  f"max {np.max(null):+.3f}, p {p:.3f} over {len(null)} draws")
 
     print()
     print("=== does the ridge book hold up across the test period? ===")
