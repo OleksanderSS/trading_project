@@ -1441,10 +1441,44 @@ class ModelingStage(BaseStage):
             float(fold.get('validation_metrics', {}).get('balanced_accuracy', 0.0))
             for fold in folds
         ]
-        above = sum(
-            1 for fold, score in zip(folds, fold_scores)
-            if score > 0.5 + self._chance_margin(fold)
-        )
+        # THE BAR IS THE STRONGEST OPPONENT ON THAT FOLD, NOT CHANCE (#192).
+        #
+        # `0.5 + chance margin` asks whether the model beats a coin. The
+        # ladder asks whether it beats the strongest opponent -- but only
+        # once, on the holdout -- so nobody asked whether that MARGIN survives
+        # more than one window. `volatility_spike_1h` was promoted on a gap of
+        # 0.0138 with a standard error of 0.0061 while this check reported
+        # "2 of 2 folds" against the majority class.
+        #
+        # The regression path has compared each fold against max(train mean,
+        # persistence) all along. This is the same check finally asking the
+        # same question: one check had two implementations with different
+        # opponents, which is family C inside a single class.
+        #
+        # Where the opponent COULD NOT be built the fold keeps the chance bar
+        # and says so, rather than silently passing on a bar nobody computed.
+        opponents = [
+            fold.get('validation_metrics', {}).get('persistence_balanced_accuracy')
+            for fold in folds
+        ]
+        unmeasured = sum(1 for value in opponents if value is None)
+        above = 0
+        for fold, score, opponent in zip(folds, fold_scores, opponents):
+            bar = 0.5 + self._chance_margin(fold)
+            if opponent is not None:
+                bar = max(bar, float(opponent) + self._chance_margin(fold))
+            if score > bar:
+                above += 1
+        if unmeasured:
+            logger.info(
+                "%s: the persistence opponent could not be built on %d of %d "
+                "folds, which keep the chance bar -- %s (#192)",
+                context_key, unmeasured, len(folds),
+                "; ".join(sorted({
+                    str(fold.get('validation_metrics', {}).get('persistence_reason'))
+                    for fold, value in zip(folds, opponents) if value is None
+                })),
+            )
         worst = min(fold_scores) if fold_scores else payload.get(
             'minimum_validation_balanced_accuracy'
         )

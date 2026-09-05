@@ -370,6 +370,31 @@ class PipelineWalkForwardValidationEvaluator:
             validation_target,
             validation_prediction,
         )
+        # THE OPPONENT, PER FOLD (REGISTER #192).
+        #
+        # Two checks ask different questions of a champion and neither asks
+        # this one. The ladder asks "does the model beat the strongest
+        # opponent" -- once, on the holdout. Stability asks "does the model
+        # beat CHANCE" -- on every fold. Nobody asks whether the MARGIN over
+        # the strongest opponent survives more than one window, which is the
+        # question a narrow margin lives or dies on: `volatility_spike_1h` was
+        # promoted on 0.7553 against a clock at 0.7415, a gap of 0.0138 with a
+        # standard error of 0.0061, and stability reported "2 of 2 folds"
+        # while comparing against the majority class.
+        #
+        # The regression path already compares each fold against
+        # max(train mean, persistence) -- `_regression_fold_stability`. The
+        # classification path compared against 0.5. One check, two
+        # implementations, different opponents: family C inside a single
+        # class.
+        #
+        # LAGGED WITHIN THE NAME. A pooled validation window interleaves 110
+        # tickers at each timestamp, so `y[t-h]` by row is another company a
+        # few minutes earlier -- #189, which is the defect this module already
+        # carries a comment about twenty lines up.
+        validation_metrics.update(
+            _persistence_opponent(validation, validation_target, target_name)
+        )
         stability = build_feature_distribution_stability_analysis(
             train_matrix,
             validation_matrix,
@@ -754,6 +779,58 @@ def _classification_metrics(
             float(prediction_values.mean()),
             6,
         ),
+    }
+
+
+def _persistence_opponent(
+    frame: pd.DataFrame,
+    target: pd.Series,
+    target_name: str,
+) -> dict[str, Any]:
+    """"The same label, h bars ago", scored on this fold's validation window.
+
+    REGISTER #192. Returns the opponent's balanced accuracy, the horizon used
+    and how many rows carried a predecessor -- or a REASON when it could not
+    be built. "Could not measure" must not read as "the opponent scored
+    nothing", which is #202 and would quietly hand every fold a free pass.
+
+    The lag is taken inside each ticker. On a pooled window `y[t-h]` by row is
+    another company at the same timestamp, and an opponent measuring that is
+    an opponent measuring nothing.
+    """
+    if "ticker" not in frame.columns:
+        return {"persistence_balanced_accuracy": None,
+                "persistence_reason": "no ticker column: the lag would cross names"}
+
+    horizon = max(1, int(_get_target_horizon_rows(target_name) or 1))
+    # Lag the TARGET THAT WAS PASSED, grouped by the frame's ticker -- not
+    # `frame[target_name]`. The two are the same in the caller today, and a
+    # function that silently requires them to be is one that breaks the first
+    # time a caller hands it a cleaned or recoded series. Caught by its own
+    # tests before it ever ran on real data.
+    lagged = target.groupby(frame["ticker"].to_numpy(), sort=False).shift(horizon)
+    usable = lagged.notna() & target.notna()
+    if int(usable.sum()) < 10:
+        return {"persistence_balanced_accuracy": None,
+                "persistence_horizon_bars": horizon,
+                "persistence_rows": int(usable.sum()),
+                "persistence_reason":
+                    "fewer than ten rows have a predecessor at this horizon"}
+
+    truth = target[usable].astype(int)
+    guess = lagged[usable].astype(int)
+    if truth.nunique() < 2:
+        return {"persistence_balanced_accuracy": None,
+                "persistence_horizon_bars": horizon,
+                "persistence_rows": int(usable.sum()),
+                "persistence_reason": "one class in the usable rows"}
+
+    scored = _classification_metrics(truth, guess)
+    return {
+        "persistence_balanced_accuracy": scored["balanced_accuracy"],
+        "persistence_horizon_bars": horizon,
+        "persistence_rows": int(usable.sum()),
+        "persistence_reason": None,
     }
 
 
