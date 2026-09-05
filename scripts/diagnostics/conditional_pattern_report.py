@@ -43,7 +43,7 @@ import pyarrow.parquet as pq
 # The diagnostics run as scripts, not as part of the package, so the
 # project root has to be on the path before src/ can be imported.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from src.pipeline.sealed_period import SEAL_START, describe
+from src.pipeline.sealed_period import seal_and_describe
 
 DEFAULT = Path("data/colab/accumulated/main_database/features.parquet")
 TRAIN_FRACTION = 0.70
@@ -167,11 +167,27 @@ def main() -> int:
     frame = add_outcome(
         load(path, args.interval, args.condition), args.horizon, args.quantile
     )
-    # The sealed stretch is not read here either.
-    before = len(frame)
-    frame = frame.loc[frame["_time"] < SEAL_START]
-    print(describe())
-    print(f"  {before - len(frame):,} rows withheld; {len(frame):,} remain.")
+    # The sealed stretch is not read here either -- through the module's own
+    # function, not a hand-rolled comparison (REGISTER #264).
+    #
+    # This report takes `--interval`, and on a frame shorter than the distance
+    # back to the absolute date `< SEAL_START` withholds EVERY row: on the live
+    # batch, 380,938 of 380,938 sixty-minute rows. It would then have printed
+    # "0 remain" and a base rate of nan -- a statement about the seal that
+    # reads as a statement about the market. `by="interval"` seals each cadence
+    # on its own span, so a stacked frame (--interval "") does not inherit the
+    # daily frame's seal.
+    # Described per cadence, because `by="interval"` cuts each one at its own
+    # boundary and a single line would be false about all but one of them --
+    # which is the mistake `describe_for` exists to stop.
+    frame, withheld, seal_note = seal_and_describe(frame, column="_time",
+                                                   by="interval")
+    print(seal_note)
+    print(f"  {withheld:,} rows withheld; {len(frame):,} remain.")
+    if frame.empty:
+        print("  nothing remains after the seal; refusing to report on an "
+              "empty frame rather than calling it 'no pattern'.")
+        return 1
     print()
 
     split = frame["_time"].quantile(TRAIN_FRACTION)

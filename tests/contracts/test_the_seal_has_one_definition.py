@@ -142,3 +142,96 @@ def test_the_seal_module_still_exports_what_callers_import(name):
         f"collection, which CI blocks on -- but a caller that silently stopped "
         f"importing it would not"
     )
+
+
+#: A hand-rolled comparison against the seal date.
+#:
+#: REGISTER #264, the second half. Importing the constant fixed the DATE
+#: duplication and left the RULE duplicated: twelve diagnostics each wrote
+#: `datetime < SEAL_START` for themselves, and that comparison is only correct
+#: on a frame whose history reaches back past the seal. Measured on the live
+#: batch 2026-09-05:
+#:
+#:     1d    705,492 rows   absolute withholds  82,094   per-frame  82,094
+#:     60m   380,938 rows   absolute withholds 380,938   per-frame  69,502
+#:
+#: `what_the_clock_fix_changes_on_60m.py` defaults to `--interval 60m` and was
+#: therefore reporting on zero rows -- printing "no clock scheme is available
+#: on this frame", which reads as a fact about the market.
+BY_HAND = re.compile(
+    r"""[<>]=?\s*SEAL(?:ED|_START)?\b|\bSEAL(?:ED|_START)?\s*[<>]=?[^=]"""
+)
+
+#: What makes a hand-rolled comparison safe: the file only ever holds the daily
+#: frame, which is what the absolute date was chosen for.
+PINS_DAILY = ('"interval"] == "1d"', "'interval'] == '1d'",
+              '"interval"].astype(str).eq("1d")',
+              '"interval"] == "1d"', '["interval"] == "1d"')
+
+
+def test_a_hand_rolled_seal_comparison_only_appears_where_the_frame_is_daily():
+    """The rule, not just the date.
+
+    Nine diagnostics still compare by hand and all nine pin `interval == "1d"`
+    (checked 2026-09-05, one file at a time rather than by counting). That is
+    allowed: on the daily frame the two rules give the same 82,094 rows. What
+    is forbidden is the comparison in a file that can be handed a shorter
+    frame -- there it withholds everything and says nothing about it.
+    """
+    offenders = []
+    for path in _python_files():
+        if path == DEFINITION:
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if "SEAL" not in text:
+            continue
+        if any(token in text for token in PINS_DAILY):
+            continue
+        for number, line in enumerate(text.splitlines(), start=1):
+            stripped = line.strip()
+            if stripped.startswith("#") or not BY_HAND.search(stripped):
+                continue
+            offenders.append(
+                f"{path.relative_to(PROJECT_ROOT)}:{number}  {stripped}")
+
+    assert not offenders, (
+        "the seal is compared by hand in a file that does not pin the daily "
+        "frame. On a frame that begins after 2023-09-01 this withholds every "
+        "row, and the diagnostic then reports an absent effect rather than an "
+        "absent frame:\n"
+        + "\n".join(f"  {entry}" for entry in offenders)
+        + "\n\nUse the rule instead:  "
+        "from src.pipeline.sealed_period import apply_seal\n"
+        "  frame, withheld = apply_seal(frame)          # one cadence\n"
+        "  frame, withheld = apply_seal(frame, by='interval')  # stacked"
+    )
+
+
+def test_the_hand_rolled_pattern_catches_its_own_case():
+    """The planted case, because a scanner that cannot fail proves nothing."""
+    assert BY_HAND.search('frame = frame[frame["datetime"] < SEAL_START]')
+    assert BY_HAND.search('block = block[block["datetime"] < SEALED]')
+    assert not BY_HAND.search("from src.pipeline.sealed_period import apply_seal")
+    assert not BY_HAND.search("assert SEAL_START == other"), (
+        "the pattern matches equality, so it fires on tests and docs that "
+        "merely mention the constant"
+    )
+
+
+def test_the_two_diagnostics_that_can_see_a_short_frame_use_the_rule():
+    """Named, not counted. Both take `--interval`, neither pins 1d, and
+    `what_the_clock_fix_changes_on_60m.py` defaults to the frame the absolute
+    date deletes entirely."""
+    for name in ("what_the_clock_fix_changes_on_60m.py",
+                 "conditional_pattern_report.py"):
+        path = PROJECT_ROOT / "scripts" / "diagnostics" / name
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        # Either entry point: `seal_and_describe` calls `apply_seal`, so both
+        # are the one rule. This assertion named the function rather than the
+        # rule and fired on the correct fix the same afternoon.
+        assert "apply_seal(" in text or "seal_and_describe(" in text, (
+            f"{name} takes a cadence argument and no longer routes through "
+            f"the seal module; on 60m the absolute date leaves it zero rows"
+        )

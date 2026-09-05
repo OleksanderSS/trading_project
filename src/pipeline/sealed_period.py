@@ -76,22 +76,98 @@ def seal_start_for(stamps: pd.Series) -> pd.Timestamp:
 
 
 def apply_seal(frame: pd.DataFrame, column: str = "datetime",
-               allow_sealed: bool = False) -> tuple[pd.DataFrame, int]:
+               allow_sealed: bool = False,
+               by: str | None = None) -> tuple[pd.DataFrame, int]:
     """Drop rows at or after the seal. Returns the frame and how many went.
 
     `allow_sealed` exists for the single confirmation run, and the caller has
     to say so out loud in its own output.
+
+    USES THE PER-FRAME RULE, not the bare date (REGISTER #264). It used the
+    bare `SEAL_START`, which is right for the daily frame and deletes a short
+    one outright. Measured on the live batch 2026-09-05:
+
+        1d    705,492 rows   absolute withholds  82,094   per-frame  82,094
+        60m   380,938 rows   absolute withholds 380,938   per-frame  69,502
+
+    One hundred percent of the hourly frame, and a diagnostic handed zero rows
+    reports "nothing to measure" -- which reads as a statement about the
+    market rather than about the seal. The module's own note has said so since
+    the seal was declared: "a seal that leaves nothing to explore is not a
+    stricter seal, it is a broken one".
+
+    `by` seals each group on its own span -- pass "interval" for a frame that
+    stacks several cadences, where one seal for all of them is the same
+    mistake at a smaller scale.
     """
     if allow_sealed or column not in frame.columns:
         return frame, 0
     stamps = pd.to_datetime(frame[column], errors="coerce", utc=True)
-    keep = stamps < SEAL_START
+
+    if by and by in frame.columns:
+        keep = pd.Series(False, index=frame.index)
+        for _, rows in frame.groupby(by, sort=False).groups.items():
+            group = stamps.loc[rows]
+            keep.loc[rows] = group < seal_start_for(group)
+    else:
+        keep = stamps < seal_start_for(stamps)
+
     return frame.loc[keep], int((~keep).sum())
 
 
 def describe() -> str:
     return (f"sealed from {SEAL_START.date()} onward "
             f"(declared {SEALED_ON.date()}); exploration sees earlier data only")
+
+
+def describe_for(stamps: pd.Series) -> str:
+    """What was ACTUALLY withheld from this frame, which is not always the date.
+
+    Caught 2026-09-05, one command after `conditional_pattern_report` was
+    routed through `apply_seal`: it printed "sealed from 2023-09-01 onward"
+    while keeping 60m rows through 2026-04-22. The sentence was false about
+    the run that printed it -- the same defect family as the seal itself, a
+    decision taken in one place and described by another that does not know
+    about it. A reader checking the output would have concluded the hourly
+    report was reading sealed data.
+    """
+    boundary = pd.Timestamp(seal_start_for(stamps))
+    if boundary == SEAL_START:
+        return describe()
+    return (f"sealed from {boundary.date()} onward -- the last "
+            f"{SEAL_SHARE:.0%} of THIS frame's own span, because its history "
+            f"begins after the declared {SEAL_START.date()} and that date "
+            f"would withhold all of it (declared {SEALED_ON.date()})")
+
+
+def seal_and_describe(frame: pd.DataFrame, column: str = "datetime",
+                      by: str | None = None,
+                      allow_sealed: bool = False,
+                      ) -> tuple[pd.DataFrame, int, str]:
+    """Seal a frame and say what was done, in one call that cannot be misordered.
+
+    Two functions in the right order is a convention, and this module exists
+    because conventions do not hold. Caught immediately after `describe_for`
+    was written: the first call site passed the ALREADY-SEALED frame, whose
+    own tail is now the boundary, so it would have printed a date later than
+    the one actually applied -- a wrong number produced by the very function
+    added to stop wrong numbers.
+
+    Returns the sealed frame, how many rows went, and one line per cadence.
+    """
+    if by and by in frame.columns:
+        stamps = pd.to_datetime(frame[column], errors="coerce", utc=True)
+        lines = [f"[{cadence}] {describe_for(stamps.loc[rows])}"
+                 for cadence, rows in frame.groupby(by, sort=True).groups.items()]
+        note = "\n".join(lines)
+    else:
+        note = describe_for(frame[column]) if column in frame.columns else describe()
+
+    kept, withheld = apply_seal(frame, column=column, by=by,
+                                allow_sealed=allow_sealed)
+    if allow_sealed:
+        note = "SEAL DELIBERATELY OPENED -- " + describe()
+    return kept, withheld, note
 
 #: The file that carries the seal to a machine without this repository.
 #:

@@ -41,6 +41,18 @@ Each rule below exists because a real row was found in that shape on
        does `corr.idxmax()`. A gate rung read as verified for four days
        because one word in one cell said so.
 
+    H  a CLOSED row declares a part of itself unfixed, ANYWHERE in the row.
+       Rule G reads only the last 420 characters, because that is where a
+       verdict sits -- and it therefore cannot see an admission made in the
+       middle. #264 closes with a proper result and says, two thirds of the
+       way through, "**Друга знахідка, НЕ виправлена:** `apply_seal` ... має
+       нуль викликачів". That is a live defect inside a closed entry, and it
+       survived every pass rule G made. Found on 2026-09-05 by reading the
+       row a person had chosen from a list, which is the method rule H
+       automates. That remainder was then fixed the same day, and the row
+       now records the result -- so rule H no longer fires on #264, which
+       is what a rule doing its job looks like.
+
 Nothing here is proof. Like `row_order_dependency_scan.py`, it does not show
 that the tables are clean -- it shows the places worth a human minute, and
 refuses to guess on their behalf.
@@ -118,7 +130,24 @@ RULE_NAMES = {
     "E": "REGISTER: unsettled while a later closed row cites it",
     "F": "REGISTER: unsettled while a contract test names it",
     "G": "REGISTER: closed, but the closing text describes a fix in the future",
+    "H": "REGISTER: closed, but the row declares a part of itself unfixed",
 }
+
+#: Written where a row admits, mid-text, that something in it was not done.
+#: Distinct from FIX_PROPOSED: those phrases describe what a fix WOULD be,
+#: these announce that a named part of the entry remains open. A closed row
+#: may legitimately contain one -- #264 does -- but it must then be visible,
+#: which is the whole difference between a recorded remainder and a lost one.
+#: Only phrases that announce a REMAINDER. "нуль викликачів" and "мертвий
+#: код" were on this list for ten minutes and came off it: they are DIAGNOSIS
+#: vocabulary, and #170 uses "нуль викликачів" to describe the finding it then
+#: fixed in the same row. A rule that cannot tell "we found zero callers and
+#: wired it" from "it still has zero callers" reports the fix as the fault --
+#: the same lesson as "більше не " against "більше немає", one rule earlier.
+DECLARED_UNFIXED = (
+    "НЕ виправлена", "НЕ виправлено", "не виправлена", "не виправлено",
+    "лишається відкрит", "лишилось відкрит", "лишається за власником",
+)
 
 #: Written where a fix is being PROPOSED. Read only in the tail of the row,
 #: because a row that proposes a fix and then reports making it ends with the
@@ -254,6 +283,17 @@ def main() -> int:
             findings["F"].append(
                 f"REGISTER #{number} [{state}]  named by a contract test"
             )
+
+    for number, (state, line) in sorted(rows.items()):
+        if state not in CLOSED_STATES:
+            continue
+        for phrase in DECLARED_UNFIXED:
+            if phrase in line:
+                findings["H"].append(
+                    f"REGISTER #{number} [{state}]  declares \"{phrase}\" "
+                    f"inside a settled row"
+                )
+                break
 
     for number, (state, line) in sorted(rows.items()):
         if state != "закрито":

@@ -41,14 +41,21 @@ from src.metrics.model.ml_evaluator import MLEvaluator  # noqa: E402
 from src.training.batch_trainer import BatchTrainer  # noqa: E402
 
 BATCH = PROJECT_ROOT / "data" / "colab" / "accumulated" / "main_database"
-from src.pipeline.sealed_period import SEAL_START  # noqa: E402
+from src.pipeline.sealed_period import seal_and_describe  # noqa: E402
 
-#: Imported, never restated. Eight diagnostics each kept their own copy of this
+#: Applied, never restated. Eight diagnostics each kept their own copy of this
 #: date until 2026-09-04. The policy in docs/SEALED_HOLDOUT.md says moving the
 #: seal EARLIER is "always safe" -- with eight copies it would have been safe in
 #: one file and silently ignored in the other seven, which is the duplication
 #: family this codebase's defects come from.
-SEALED = SEAL_START
+#:
+#: Importing the constant was not enough (REGISTER #264). This file compared
+#: `datetime < SEAL_START` on a frame it defaults to reading at 60m, and the
+#: hourly history begins 2024-08-19 -- AFTER the seal. Measured on the live
+#: batch 2026-09-05: 380,938 of 380,938 sixty-minute rows withheld, zero left.
+#: A diagnostic named for the 60m frame could not see the 60m frame at all,
+#: and it does not crash on that -- it prints "no clock scheme is available on
+#: this frame", which reads as a fact about the data.
 
 
 def _trainer() -> BatchTrainer:
@@ -71,10 +78,17 @@ def main() -> int:
                               columns=ident + [args.target])
     block = targets[targets["interval"] == args.interval].copy()
     block["datetime"] = pd.to_datetime(block["datetime"], utc=True)
-    block = block[block["datetime"] < SEALED].dropna(subset=[args.target])
+    block, withheld, seal_note = seal_and_describe(block)
+    block = block.dropna(subset=[args.target])
     block = block.sort_values(["datetime", "ticker"]).reset_index(drop=True)
 
     n = len(block)
+    if n == 0:
+        print(f"the seal left nothing on {args.interval} ({withheld:,} withheld); "
+              "refusing to report an empty frame as an absent effect")
+        return 1
+    print(seal_note)
+    print(f"  {withheld:,} rows withheld by the seal, {n:,} remain")
     train_end, val_end = int(n * 0.6), int(n * 0.7)
     print(f"{args.target} on {args.interval}: {n:,} rows, "
           f"{block['ticker'].nunique()} names, "

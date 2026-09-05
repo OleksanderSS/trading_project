@@ -113,3 +113,34 @@ def test_every_rule_runs(rule):
         capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT),
         check=True,
     )
+
+
+def test_a_settled_row_that_declares_a_remainder_is_visible():
+    """Rule H, advisory rather than blocking, and the reason is the point.
+
+    Rule G reads the last 420 characters of a row, because that is where a
+    verdict sits. It therefore cannot see an admission made in the MIDDLE, and
+    #264 makes one: it closes with a proper result and says, two thirds of the
+    way through, "**Друга знахідка, НЕ виправлена:** `apply_seal` ... має нуль
+    викликачів". A live defect inside a closed entry, invisible to every pass
+    rule G made, found on 2026-09-05 by a person reading a row from a list.
+    It was fixed that day and the row now carries the measurement instead,
+    so this rule no longer names #264 -- the example is history, not a
+    current hit, and the phrase list is what the test still guards.
+
+    Advisory because a closed row may legitimately carry a remainder -- #138
+    leaves the artefact's owner to the owner, #266 records that repairing
+    8,349 shifted rows would open nothing. What must not happen is that the
+    remainder becomes INVISIBLE, and that is what this counts.
+
+    Its first run also caught one of mine: #183 still said "та сама форма живе
+    ще в шести файлах" hours after I had fixed all ten places.
+    """
+    hits = _findings("H")
+    assert isinstance(hits, list)
+    # Not asserted empty: the count is a reading list, not a defect count.
+    # What IS asserted is that the rule still runs and still discriminates --
+    # "нуль викликачів" came off its phrase list within ten minutes because
+    # #170 uses it to describe a finding it fixed in the same row.
+    from tests.contracts import _formula_scan  # noqa: F401  (import sanity)
+    assert all("declares" in hit for hit in hits)
