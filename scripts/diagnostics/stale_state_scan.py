@@ -126,7 +126,12 @@ RULE_NAMES = {
     "A": "ROADMAP: unticked, but the line says it was done",
     "B": "ROADMAP: unticked, but the register entry it cites is closed",
     "C": "ROADMAP: not a task -- a rule, a finding, or a self-declared duplicate",
-    "D": "REGISTER: state '?' while the row carries its own verdict",
+    # The label said "state '?'" while the code has always taken every
+    # UNSETTLED state. Corrected 2026-09-05: a rule whose name describes a
+    # narrower check than it performs sends the reader looking for a row that
+    # is not there -- the same defect as a docstring that promises a failure
+    # and delivers a skip (#278).
+    "D": "REGISTER: unsettled while the row declares a part of itself done",
     "E": "REGISTER: unsettled while a later closed row cites it",
     "F": "REGISTER: unsettled while a contract test names it",
     "G": "REGISTER: closed, but the closing text describes a fix in the future",
@@ -279,6 +284,38 @@ def _cited(text: str) -> set[int]:
     return {int(n) for n in re.findall(r"#(\d{1,3})\b", text)}
 
 
+#: Written inside the citation's own parentheses when the writer has checked
+#: WHY a settled entry sits beside an open task. Deliberately demanding: it
+#: must appear in the same bracket as the `#N`, so a stray "закрито" elsewhere
+#: in a long line does not silence the rule. An unmarked discrepancy is still
+#: reported; a marked one has been read by a person, and that is the whole
+#: difference this repository keeps rediscovering.
+EXAMINED = ("закрит", "закрыт")
+
+#: Written by a row that has finished a PART of itself and stays open on
+#: purpose. Rule D exists to catch a row that says "done" while sitting open,
+#: and #169 is the case where that is correct rather than stale: its free half
+#: is complete and measured (Р46, Р47), while the paid half is a standing
+#: owner decision, so closing it would hide a live constraint on what the
+#: project may claim.
+#:
+#: The phrase is demanding on purpose -- a row must say, in these words, that
+#: it stays open and why. Silence is what rule D reports; an explicit,
+#: written-out reason is a person having decided.
+STAYS_OPEN = (
+    "ЛИШАЄТЬСЯ ВІДКРИТИМ",
+    "ЛИШАЄТЬСЯ ВІДКРИТОЮ",
+    "СВІДОМО ВІДКРИТИЙ",
+)
+
+
+def _examined(text: str) -> bool:
+    for bracket in re.findall(r"\(([^()]*#\d{1,3}[^()]*)\)", text):
+        if any(word in bracket for word in EXAMINED):
+            return True
+    return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rule", default=None, choices=sorted(RULE_NAMES))
@@ -297,6 +334,20 @@ def main() -> int:
             findings["A"].append(f"ROADMAP:{line_number}  {text[:110]}")
         closed = sorted(n for n in _cited(text)
                         if n in rows and rows[n][0] in CLOSED_STATES)
+        if closed and _examined(text):
+            # The writer has stated, on the line, why the cited entry is
+            # settled while the task is not. Checked 2026-09-05 on all four
+            # hits this rule then had, one entry at a time: #123 closed as a
+            # DIAGNOSIS with "зміна НЕ зроблена", #122 closed by fixing the
+            # two causes rather than by building checkpoints, #138 closed by a
+            # guard instead of by appointing one writer. All four items were
+            # honestly open, and the rule would have gone on naming them for
+            # ever -- which is how a check that always fires gets switched
+            # off, the lesson of `|| true` in ci.yml (#181).
+            #
+            # So the discrepancy has to be MARKED, not merely true: the same
+            # invariant as "a default must say it was a default".
+            closed = []
         if closed:
             findings["B"].append(
                 f"ROADMAP:{line_number}  cites {closed} (closed)  {text[:80]}"
@@ -309,7 +360,8 @@ def main() -> int:
     for number, (state, line) in sorted(rows.items()):
         if state not in UNSETTLED_STATES:
             continue
-        if any(phrase in line for phrase in DONE_PHRASES):
+        if any(phrase in line for phrase in DONE_PHRASES) \
+                and not any(phrase in line for phrase in STAYS_OPEN):
             findings["D"].append(f"REGISTER #{number} [{state}]  "
                                  f"{_first_phrase(line)}")
         citing = [
