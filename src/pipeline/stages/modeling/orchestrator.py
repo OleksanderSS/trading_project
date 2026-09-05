@@ -1135,7 +1135,27 @@ class ModelingStage(BaseStage):
 
             beat_baseline = 0
             margins: list[float] = []
-            for fold in folds:
+            # WHY A FOLD VANISHED, RECORDED PER FOLD (REGISTER #199, #202).
+            #
+            # `fold_count` is len(margins) -- folds that produced a
+            # comparison -- and the three `continue` branches below dropped
+            # folds in silence. On the run behind #191 that reported
+            # `fold_count = 2`, which was read as the GEOMETRY leaving room
+            # for only two folds, and #199 was filed to shrink the training
+            # window and get more.
+            #
+            # Measured 2026-09-05, and it refutes both: the geometry gives
+            # EXACTLY FOUR folds at every pooled size, by construction --
+            # min_train = n/2 and validation = n/8 run from n/2 to n in four
+            # steps. 900 rows: 3. 30,494: 4. 127,424: 4. 352,000: 4. 623,398:
+            # 4. So two of the four were dropped in this loop, and nothing
+            # said which or why.
+            #
+            # A dropped fold and a passed fold looked identical from outside,
+            # which is family B in the check that exists to measure
+            # stability.
+            skipped: list[dict[str, Any]] = []
+            for index, fold in enumerate(folds):
                 train = slice(0, fold['train_end'])
                 validate = slice(fold['validation_start'], fold['validation_end'])
                 x_train, y_train = numeric.iloc[train], y_all.iloc[train]
@@ -1149,12 +1169,23 @@ class ModelingStage(BaseStage):
                 # complete across all of them.
                 labelled = y_train.notna()
                 if labelled.sum() < 30 or y_validate.notna().sum() < 10:
+                    skipped.append({
+                        'fold': index, 'reason': 'too few labelled rows',
+                        'labelled_train': int(labelled.sum()),
+                        'labelled_validation': int(y_validate.notna().sum()),
+                    })
                     continue
                 columns = self._top_correlated(
                     x_train[labelled], y_train[labelled], config.max_features
                 )
                 usable = labelled & x_train[columns].notna().all(axis=1)
                 if usable.sum() < 30:
+                    skipped.append({
+                        'fold': index,
+                        'reason': 'too few rows complete on the chosen features',
+                        'usable_train': int(usable.sum()),
+                        'features': len(columns),
+                    })
                     continue
                 model = RandomForestRegressor(
                     n_estimators=config.n_estimators,
@@ -1167,6 +1198,13 @@ class ModelingStage(BaseStage):
 
                 valid = y_validate.notna() & x_validate[columns].notna().all(axis=1)
                 if valid.sum() < 10:
+                    skipped.append({
+                        'fold': index,
+                        'reason': 'too few validation rows complete on the '
+                                  'chosen features',
+                        'usable_validation': int(valid.sum()),
+                        'features': len(columns),
+                    })
                     continue
                 predicted = model.predict(x_validate.loc[valid, columns])
                 actual = y_validate[valid].to_numpy(dtype=float)
@@ -1181,9 +1219,20 @@ class ModelingStage(BaseStage):
                     beat_baseline += 1
 
             measured_folds = len(margins)
+            if skipped:
+                logger.warning(
+                    "%s: %d of %d walk-forward folds produced no comparison "
+                    "and were dropped -- %s. A fold that could not be measured "
+                    "is not a fold that passed (#199, #202).",
+                    context_key, len(skipped), len(folds),
+                    "; ".join(f"fold {item['fold']}: {item['reason']}"
+                              for item in skipped),
+                )
             if measured_folds < self._MIN_STABLE_FOLDS:
                 return {'passed': True, 'measured': False,
                         'fold_count': measured_folds,
+                        'folds_built': len(folds),
+                        'folds_skipped': skipped,
                         'reason': 'too few usable folds to measure stability'}
 
             required = max(self._MIN_STABLE_FOLDS,
@@ -1192,6 +1241,11 @@ class ModelingStage(BaseStage):
                 'passed': beat_baseline >= required,
                 'measured': True,
                 'fold_count': measured_folds,
+                # Built vs measured, side by side and always: reading
+                # `fold_count` alone is what turned "two folds were dropped"
+                # into "the geometry only fits two folds" and produced #199.
+                'folds_built': len(folds),
+                'folds_skipped': skipped,
                 'folds_above_majority': beat_baseline,
                 'folds_required': required,
                 'worst_fold_margin': round(min(margins), 6),
