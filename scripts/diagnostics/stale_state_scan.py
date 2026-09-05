@@ -82,6 +82,25 @@ ARCHIVE = ROOT / "docs" / "AUDIT_HISTORY.md"
 ROADMAP = ROOT / "docs" / "ROADMAP.md"
 CONTRACTS = ROOT / "tests" / "contracts"
 
+#: Tests that guard the RECORDS rather than the code, and therefore quote row
+#: numbers as data.
+#:
+#: Rule F reads "a contract test names this open row" as evidence the row may
+#: have been fixed -- somebody wrote a ratchet for it. That inference is void
+#: for a test whose subject IS the register: on 2026-09-05 rule F reported #48
+#: because a comment in the counter test explains why #48 stopped being `?`,
+#: and #202 because the state scanner's own test lists the rules. Neither is a
+#: ratchet on anything the rows describe.
+#:
+#: Named individually rather than pattern-matched, so a new bookkeeping test
+#: has to be added here deliberately and cannot quietly blind the rule.
+BOOKKEEPING_TESTS = frozenset({
+    "test_register_counter_matches_the_table.py",
+    "test_the_recorded_state_matches_the_evidence.py",
+    "test_the_archive_keeps_what_the_register_learned.py",
+    "test_an_unchanged_observation_is_not_a_new_row.py",
+})
+
 #: Only these are entry states. A digit-leading table row that carries
 #: anything else in its second cell belongs to some other table in the same
 #: file, and must not be read as an entry.
@@ -325,6 +344,7 @@ def main() -> int:
     items = roadmap_items()
     contract_text = "\n".join(
         _read(path) for path in sorted(CONTRACTS.glob("test_*.py"))
+        if path.name not in BOOKKEEPING_TESTS
     )
 
     findings: dict[str, list[str]] = {key: [] for key in RULE_NAMES}
