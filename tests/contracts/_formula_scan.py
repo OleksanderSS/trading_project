@@ -51,6 +51,26 @@ METRIC_NAMES = (
     "sharpe", "sortino", "calmar", "drawdown", "win_rate", "profit_factor",
 )
 
+#: Assigning a risk-free rate to a literal, anywhere but the canonical module.
+#:
+#: REGISTER #203, family C -- "a decision made in one place and not carried to
+#: its consumers". `get_risk_free_rate` was written on 2026-08-10 precisely
+#: because stage 7 published TWO Sharpe ratios for one equity curve, the gap
+#: reproducing exactly as an assumed 2% against a configured 0%. Its own
+#: docstring names three offenders. Two weeks later, on 2026-09-05, SIX live
+#: sites still assigned 0.02 by hand: performance_attribution (twice),
+#: risk_decomposition, hedge_fund_analyzer, portfolio_metrics -- the very key
+#: the docstring called out -- and the Black-Litterman dataclass default.
+#:
+#: The fix existing is not the same as the fix arriving, and that gap is the
+#: family. This is a NAMED rule for a NAMED decision rather than a general
+#: family-C scanner: two general rules were measured on 2026-09-05 and both
+#: missed -- the same-constant-different-value rule found 5 names, all
+#: legitimately per-script, and the config-leaf-key rule found 47, almost all
+#: structural keys like `type` and `description`.
+RISK_FREE_NAMES = ("risk_free", "risk_free_rate", "rf_rate", "annual_rf",
+                   "rf_baseline", "rf_daily", "const_rf")
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -104,6 +124,40 @@ class _Scanner(ast.NodeVisitor):
                 "np.std without ddof (population, not sample)",
             ))
         self.generic_visit(node)
+
+    # -- a risk-free rate assigned by hand ---------------------------------
+    def visit_Assign(self, node: ast.Assign) -> None:
+        self._check_risk_free(node.targets, node.value, node.lineno)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        if node.value is not None:
+            self._check_risk_free([node.target], node.value, node.lineno)
+        self.generic_visit(node)
+
+    def _check_risk_free(self, targets, value, lineno: int) -> None:
+        if self._canonical:
+            return
+        # `rf_baseline = 0.02 / 252` is a BinOp, not a Constant, and it was the
+        # live shape in performance_attribution -- the first version of this
+        # rule matched the other five sites and walked straight past the one
+        # that had two defects in it at once. Unwrap the left operand.
+        while isinstance(value, ast.BinOp):
+            value = value.left
+        if not isinstance(value, ast.Constant):
+            return
+        if not isinstance(value.value, float) or value.value == 0.0:
+            return
+        for target in targets:
+            name = getattr(target, "attr", None) or getattr(target, "id", None)
+            if not isinstance(name, str):
+                continue
+            lowered = name.lower()
+            if any(token in lowered for token in RISK_FREE_NAMES):
+                self.findings.append(Finding(
+                    "RISK_FREE", self.module, lineno,
+                    f"{name} = {value.value} instead of get_risk_free_rate()",
+                ))
 
     # -- rival metric implementations --------------------------------------
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:

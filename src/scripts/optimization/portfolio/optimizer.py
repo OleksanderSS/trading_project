@@ -2,7 +2,7 @@
 Portfolio Optimization Module
 Оптимізація портфоліо: Markowitz, Black-Litterman, Risk Parity, Hierarchical Risk Parity, Kelly Criterion
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -13,6 +13,7 @@ from scipy.optimize import minimize
 from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
 from src.core.logging.logger import ProjectLogger
 from src.metrics.calculator import MetricsCalculator
+from src.metrics.financial.financial_metrics_library import get_risk_free_rate
 from src.scripts.optimization.base import BaseOptimizer
 
 
@@ -21,7 +22,10 @@ class BlackLittermanParams:
     """Parameters for Black-Litterman optimization"""
     views: dict[str, float] | None = None
     tau: float = 0.025
-    risk_free_rate: float = 0.02
+    # A dataclass default is evaluated once at import, so it cannot be a
+    # config read -- `default_factory` defers it to instantiation, which is
+    # when the project's single rate is knowable (REGISTER #203, family C).
+    risk_free_rate: float = field(default_factory=get_risk_free_rate)
     benchmark_ticker: str = 'SPY'
 
 

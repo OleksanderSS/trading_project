@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Any
 
 import numpy as np
+
+from src.metrics.financial.financial_metrics_library import get_risk_free_rate
 import pandas as pd
 import statsmodels.api as sm
 
@@ -37,7 +39,11 @@ class HedgeFundAnalyzer(IAnalyzer):
             **kwargs: Configuration like risk_free_rate and style_thresholds.
         """
         self.factor_provider = factor_provider or FamaFrenchFactors()
-        self.risk_free_rate = kwargs.get('risk_free_rate', 0.02)
+        # Default from the project's single source, so a caller that
+        # passes nothing gets the SAME rate every other metric uses
+        # (REGISTER #203, family C).
+        self.risk_free_rate = kwargs.get('risk_free_rate',
+                                         get_risk_free_rate())
         self.periods_per_year = kwargs.get('periods_per_year', 252)
         self.style_thresholds = kwargs.get('style_thresholds', {
             'alpha_significance': 0.05})

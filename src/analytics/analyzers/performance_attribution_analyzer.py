@@ -113,7 +113,12 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
         bench_annual = (1 + bench_total) ** (ppy / observation_days) - 1
 
         port_vol = port_returns.std() * np.sqrt(ppy)
-        const_rf_daily = 0.02 / ppy
+        # The project's one risk-free rate, not a fourth copy of 0.02
+        # (REGISTER #203, family C). `get_risk_free_rate` exists
+        # because stage 7 once published two Sharpe ratios for the same
+        # equity curve and the gap reproduced exactly as the difference
+        # between an assumed rate and a configured one.
+        const_rf_daily = get_risk_free_rate() / ppy
 
         # Avoid division by zero
         port_std = port_returns.std()
@@ -136,7 +141,9 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             bench_variance = np.var(combined['b'].values)
             realized_beta = float(covariance / bench_variance) if bench_variance > 0 else 1.0
 
-        realized_alpha = port_annual - (0.02 + realized_beta * (bench_annual - 0.02))
+        annual_rf = get_risk_free_rate()
+        realized_alpha = port_annual - (
+            annual_rf + realized_beta * (bench_annual - annual_rf))
 
         tracking_diff = port_returns.values - bench_returns.values
         tracking_error = np.std(tracking_diff)

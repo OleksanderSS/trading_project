@@ -19,7 +19,10 @@ from typing import Any
 
 import numpy as np
 
-from src.metrics.financial.financial_metrics_library import infer_periods_per_year
+from src.metrics.financial.financial_metrics_library import (
+    get_risk_free_rate,
+    infer_periods_per_year,
+)
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
@@ -144,7 +147,9 @@ class RiskDecompositionAnalyzer(IAnalyzer):
         wealth_index = np.cumprod(1 + weighted_returns)
         peak_nav = np.maximum.accumulate(wealth_index)
         max_dd = ((wealth_index - peak_nav) / peak_nav).min()
-        annual_rf = 0.02
+        # One rate for the whole project, read rather than assumed
+        # (REGISTER #203, family C).
+        annual_rf = get_risk_free_rate()
         excess_mean = np.mean(weighted_returns) - annual_rf / periods_per_year
         realized_sharpe = excess_mean / weighted_std * np.sqrt(periods_per_year)
         return {'annualized_volatility': float(realized_vol),

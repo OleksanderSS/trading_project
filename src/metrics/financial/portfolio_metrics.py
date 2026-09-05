@@ -7,6 +7,8 @@ from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.metrics.base import BaseMetricCalculator
 
+from src.metrics.financial.financial_metrics_library import get_risk_free_rate
+
 
 class PortfolioMetricsCalculator(BaseMetricCalculator):
     """
@@ -20,7 +22,13 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
 
         # Отримання параметрів з конфігурації
         self._trading_days_per_year = self.config.get('metrics.trading_days_per_year', 252)
-        self._risk_free_rate = self.config.get('metrics.risk_free_rate', 0.02) # Default to 2%
+        # NAMED AS AN OFFENDER IN `get_risk_free_rate`'s own docstring
+        # and still reading its own default two weeks later: this is
+        # the `metrics.risk_free_rate` key that no YAML defines, so the
+        # 0.02 here WAS the answer while the library answered 0.0.
+        # That gap is the one that produced two Sharpe ratios for one
+        # equity curve (REGISTER #203, family C).
+        self._risk_free_rate = get_risk_free_rate()
 
     @property
     def category(self) -> str:

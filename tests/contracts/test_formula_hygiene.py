@@ -43,6 +43,10 @@ from tests.contracts._formula_scan import by_kind, scan
 # is the mechanism working on my own change.
 CEILINGS = {
     "ANNUALISATION": 0,
+    # RISK_FREE joins at zero on the day it is added, because the six sites it
+    # was written for were fixed first. A rule introduced with a budget is a
+    # rule that never binds.
+    "RISK_FREE": 0,
     "POPULATION_STD": 37,
     "RIVAL_METRIC": 22,
     "SIGNED_RATIO": 10,
@@ -96,6 +100,7 @@ def test_the_scanner_still_recognises_the_defects_it_was_built_for():
     sample = (
         "import numpy as np\n"
         "def calculate_sharpe(returns):\n"
+        "    rf_baseline = 0.02 / 252\n"
         "    return np.mean(returns) / np.std(returns) * np.sqrt(252)\n"
         "def promote(a, b):\n"
         "    return a > b * 1.15\n"
@@ -104,7 +109,8 @@ def test_the_scanner_still_recognises_the_defects_it_was_built_for():
     scanner.visit(ast.parse(sample))
     kinds = {finding.kind for finding in scanner.findings}
 
-    assert kinds == {"ANNUALISATION", "POPULATION_STD", "RIVAL_METRIC", "SIGNED_RATIO"}
+    assert kinds == {"ANNUALISATION", "POPULATION_STD", "RISK_FREE",
+                     "RIVAL_METRIC", "SIGNED_RATIO"}
 
 
 def test_clean_arithmetic_is_not_flagged():
