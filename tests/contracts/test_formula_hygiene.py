@@ -31,12 +31,21 @@ import pytest
 
 from tests.contracts._formula_scan import by_kind, scan
 
-# Measured 2026-08-02. Lower these as findings are resolved; never raise.
+# Measured 2026-08-02, re-pinned 2026-09-05. Lower these as findings are
+# resolved; never raise.
+#
+# ANNUALISATION went 17 -> ZERO with #183: every live `sqrt(252)`, `* 252` and
+# `/ 252` outside the metrics library now reads its cadence off the series.
+# Zero is the strongest form this ratchet takes -- the next one to appear
+# fails the build rather than hiding inside a budget. It was the ratchet that
+# demanded this: the count fell far below its ceiling and
+# `test_the_ceilings_are_kept_honest` refused to let the slack stand, which
+# is the mechanism working on my own change.
 CEILINGS = {
-    "ANNUALISATION": 17,
-    "POPULATION_STD": 43,
+    "ANNUALISATION": 0,
+    "POPULATION_STD": 37,
     "RIVAL_METRIC": 22,
-    "SIGNED_RATIO": 12,
+    "SIGNED_RATIO": 10,
 }
 
 
