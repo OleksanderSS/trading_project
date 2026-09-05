@@ -11,22 +11,24 @@ Alpha Vantage's LISTING_STATUS returns, per symbol, `ipoDate` and
 calling it: the public demo key returned 14,411 active symbols, and 425
 delisted ones for the single date the documentation uses.
 
-WHAT THE DEMO KEY CAN AND CANNOT DO, because a partial store that looks
-complete is worse than no store:
+WHAT EACH KEY CAN DO, measured rather than assumed, because a partial store
+that looks complete is worse than no store:
 
-    active symbols, no date      WORKS  -> 14,411 rows with ipoDate
-    delisted, date=2014-07-10    WORKS  -> 425 rows with delistingDate
-    delisted, any other date     REFUSED -> returns `{}`
-    delisted, no date            REFUSED -> returns `{}`
+                                 demo key            personal key
+    active, no date              14,411 rows         14,411 rows
+    delisted, NO date            REFUSED, `{}`       **9,458 rows,
+                                                     1997-04-01..2026-09-04**
+    delisted, date=2014-07-10    425 rows            425 rows
+    delisted, any other date     REFUSED, `{}`       REFUSED, `{}`
 
-So without a key of your own the store covers one delisting date. That is
-enough to build and test the mechanism and NOT enough to measure with, and the
-store records which it is in `source_detail` so nobody later mistakes one for
-the other.
+The row that matters is the second one. With a personal key the WHOLE
+delisting history arrives in a single request, so the `date` parameter is not
+needed at all and a sweep of dates -- which the free tier's 25 requests a day
+would have rationed -- was never necessary. Finding that out cost one request.
 
-A free key lifts the date restriction. Getting one is thirty seconds at
-alphavantage.co/support/#api-key and I do not do it for you: creating accounts
-is yours to do. Put it in `.env` as ALPHAVANTAGE_API_KEY and rerun.
+Without a key the store covers one delisting date: enough to build and test
+the mechanism, not enough to measure with. `source_detail` records which it
+is, so nobody later mistakes one for the other.
 
     python scripts/data/fetch_universe_membership.py --dry-run
     python scripts/data/fetch_universe_membership.py
@@ -51,9 +53,17 @@ for _stream in (sys.stdout, sys.stderr):
 
 import pandas as pd  # noqa: E402
 
+# The project's own .env loader, not a second copy of one. Without this the
+# key sits in .env and `os.environ` does not have it, so the script silently
+# takes the demo path and writes a store covering ONE delisting date while
+# reporting success -- which is precisely the shape `source_detail` exists to
+# make visible, reached by a different road.
+from src.core.security.secure_secrets_manager import load_dotenv  # noqa: E402
 from src.data.universe_membership import (  # noqa: E402
     COLUMNS, DEFAULT_STORE, coverage, save,
 )
+
+load_dotenv()
 
 ENDPOINT = "https://www.alphavantage.co/query"
 
@@ -117,8 +127,16 @@ def main() -> int:
 
     key = os.environ.get("ALPHAVANTAGE_API_KEY", "").strip()
     if key:
+        # WITH A REAL KEY THE `date` PARAMETER IS NOT NEEDED, and finding that
+        # out cost one request rather than a sweep. Asking for delisted
+        # symbols with NO date returns the whole history in one call --
+        # measured 2026-09-05: 9,458 rows spanning 1997-04-01 to 2026-09-04.
+        # Asking with a recent date returns `{}`.
+        #
+        # So the loop below runs zero times unless --dates is given
+        # explicitly, and the free tier's 25 requests a day are spent on two.
         detail = "personal key"
-        dates = args.dates or [DEMO_DATE]
+        dates = args.dates or []
     else:
         detail = (f"demo key -- delisted symbols available only for {DEMO_DATE}; "
                   "set ALPHAVANTAGE_API_KEY for other dates")
@@ -137,6 +155,19 @@ def main() -> int:
     active = _as_frame(_get({"function": "LISTING_STATUS", "apikey": key}),
                        detail, fetched_at)
     print(f"  active symbols: {len(active):,}")
+    if len(active) and detail == "personal key":
+        time.sleep(PAUSE_SECONDS)
+        whole = _as_frame(
+            _get({"function": "LISTING_STATUS", "state": "delisted",
+                  "apikey": key}),
+            f"{detail}; delisted, whole history in one call", fetched_at)
+        if len(whole):
+            print(f"  delisted, whole history: {len(whole):,}")
+            parts.append(whole)
+        else:
+            print("  delisted, whole history: REFUSED -- falling back to "
+                  "dated snapshots")
+            dates = dates or [DEMO_DATE]
     if len(active):
         parts.append(active)
     else:
