@@ -90,7 +90,12 @@ DONE_PHRASES = (
     "ВИКОНАНО",
     "зроблено й",
     "закрито цим",
-    "більше не",
+    # "більше не мовчить", "більше не падає" -- a behaviour that was fixed.
+    # NOT "більше немає", which is a plain statement about the world and
+    # tripped rule D on #149 ("того кадру в батчі більше немає"). A phrase
+    # that fires on ordinary prose is how a check earns the reputation that
+    # gets it switched off.
+    "більше не ",
 )
 
 #: A line that is a rule or a finding rather than a task. An imperative in

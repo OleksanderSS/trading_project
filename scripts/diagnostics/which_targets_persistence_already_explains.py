@@ -96,6 +96,24 @@ def _r2(truth: np.ndarray, guess: np.ndarray) -> float:
     return float("nan") if total <= 0 else 1.0 - residual / total
 
 
+def _gate_lag_matches_window() -> bool:
+    """Does the promotion gate lag by the window, or by the name?
+
+    Read out of `base_trainer` rather than remembered. This question decides
+    whether the disagreeing targets below are a live defect or a closed one,
+    and taking the answer from a comment is how a diagnostic starts lying.
+    """
+    import inspect
+
+    from src.training.base_trainer import BaseTrainer
+
+    try:
+        source = inspect.getsource(BaseTrainer)
+    except OSError:                                     # pragma: no cover
+        return False
+    return "max(int(named), int(windowed))" in source
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--batch", type=Path, default=BATCH)
@@ -175,13 +193,28 @@ def main() -> int:
               "symptom.")
 
     if oracles:
-        print(f"\n{len(oracles)} target(s) where THE GATE'S OPPONENT IS AN ORACLE: "
-              f"high at the name lag, ordinary at the window lag. "
-              f"`base_trainer` builds its persistence baseline with "
-              f"`target_horizon_bars`, which reads the NAME, so for these it "
-              f"lags by less than the target reaches forward and compares the "
-              f"model against a value nobody could know. That refuses real "
-              f"edges; it does not promote noise.")
+        # WHAT THE GATE ACTUALLY DOES, CHECKED RATHER THAN DESCRIBED.
+        #
+        # This block used to assert that `base_trainer` lags by the NAME. That
+        # was true when it was written and stopped being true on 2026-09-03,
+        # when the gate started taking max(name, window) and logging the
+        # disagreement. A diagnostic that describes production code from
+        # memory goes stale exactly the way the register's states did -- and
+        # this one would have sent a reader to fix something already fixed.
+        #
+        # So it reads the gate's own arithmetic instead of repeating it.
+        gate_uses_window = _gate_lag_matches_window()
+        verdict = (
+            "and the GATE ALREADY USES the window lag -- max(name, window) in "
+            "`base_trainer` -- so these are a property of the TARGETS and not "
+            "a live defect of the opponent"
+            if gate_uses_window else
+            "and the GATE LAGS BY THE NAME, so for these it compares the "
+            "model against a value nobody could know -- which refuses real "
+            "edges rather than promoting noise"
+        )
+        print(f"\n{len(oracles)} target(s) whose two horizons disagree: high "
+              f"at the name lag, ordinary at the window lag, {verdict}.")
         for r in sorted(oracles, key=lambda r: -r[5]):
             print(f"    {r[0]:<34}{r[1]:>5}  lag-{r[2]} {r[5]:.4f}  vs  "
                   f"lag-{r[3]} {r[6]:.4f}")
