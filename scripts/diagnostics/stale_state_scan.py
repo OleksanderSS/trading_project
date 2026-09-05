@@ -149,6 +149,49 @@ DECLARED_UNFIXED = (
     "лишається відкрит", "лишилось відкрит", "лишається за власником",
 )
 
+#: How much of the sentence around the phrase to quote back.
+#:
+#: Naming the phrase alone was not enough to act on: five rows came back as
+#: `declares "не виправлено"` and each still cost opening a body of two to
+#: three thousand characters to learn WHAT was not done. Two of the five
+#: turned out to be already fixed -- #110's absolute velocity gate now prefers
+#: `context_velocity_rank`, #260's two skips were repaired when
+#: `test_financial_math_correctness` was rewritten -- and neither could be
+#: told from the list. A reading list that does not say what to read is a
+#: second list to work through.
+REMAINDER_QUOTE = 240
+
+
+def _remainder(row: str, phrase: str) -> str:
+    """The sentence the phrase sits in, so the list can be acted on directly."""
+    start = row.index(phrase)
+    # Back up to the start of the clause, not the row: the phrase usually
+    # follows a bold lead-in like "**Друга знахідка, не виправлена:**".
+    #
+    # Bold markers alternate, so the nearest one going backwards is as often a
+    # CLOSING marker as an opening one -- #260 quoted back as "** — знову
+    # форма..." and cut off the words that said what was not done. Counting
+    # them decides which: an even index in the list opens, an odd one closes.
+    markers, at = [], row.find("**")
+    while at != -1 and at < start:
+        markers.append(at)
+        at = row.find("**", at + 2)
+    if markers and len(markers) % 2 == 0:   # the last one closed a span
+        markers.pop()
+    opening = markers[-1] if markers else -1
+    if opening == -1 or start - opening > 200:
+        # No lead-in within reach. Cut at a clause boundary rather than a
+        # character count: `start - 60` landed mid-word on #260 ("ву форма
+        # «конфіг оголошує…»") and hid the very words that named the defect.
+        window = row[max(0, start - 200):start]
+        cut = max(window.rfind(". "), window.rfind("— "), window.rfind("; "))
+        opening = (max(0, start - 200) + cut + 2) if cut != -1 else \
+            max(0, start - 200)
+    quoted = " ".join(row[opening:start + REMAINDER_QUOTE].split())
+    ellipsis = "…" if start + REMAINDER_QUOTE < len(row) else ""
+    return f"declares a remainder: {quoted}{ellipsis}"
+
+
 #: Written where a fix is being PROPOSED. Read only in the tail of the row,
 #: because a row that proposes a fix and then reports making it ends with the
 #: report.
@@ -290,8 +333,7 @@ def main() -> int:
         for phrase in DECLARED_UNFIXED:
             if phrase in line:
                 findings["H"].append(
-                    f"REGISTER #{number} [{state}]  declares \"{phrase}\" "
-                    f"inside a settled row"
+                    f"REGISTER #{number} [{state}]  {_remainder(line, phrase)}"
                 )
                 break
 

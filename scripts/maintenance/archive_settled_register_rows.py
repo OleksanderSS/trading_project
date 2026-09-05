@@ -143,7 +143,27 @@ def main() -> int:
                                for row in archived_rows}
     already = len(settled)
 
-    register_head, _ = _split(register_text, INDEX_HEADING)
+    register_head, index_rows = _split(register_text, INDEX_HEADING)
+
+    # A row written into the index section by hand is DESTROYED by the rebuild
+    # below, because the section is regenerated from the archive. The section's
+    # own preamble says editing it makes no sense -- but "no sense" and
+    # "silently deleted" are different promises, and on 2026-09-05 the second
+    # one ate a freshly written #278: the archiver reported "0 newly archived"
+    # and wrote a register without it. Nothing said a row had gone.
+    #
+    # So the numbers in the index are compared against the archive before
+    # anything is overwritten, and an unknown one stops the run with its own
+    # text in hand.
+    strangers = [row for row in index_rows
+                 if int(ID_ROW.match(row).group(1)) not in settled]
+    if strangers:
+        raise SystemExit(
+            "the index section holds rows that are not in the archive, and "
+            "rebuilding it would delete them. Move them into the live table "
+            "above the index heading and run again:\n"
+            + "\n".join(f"  {row[:160]}…" for row in strangers)
+        )
     live: list[str] = []
     for line in register_head.splitlines():
         match = ID_ROW.match(line)
@@ -162,6 +182,53 @@ def main() -> int:
                 "refusing to guess which one is the entry"
             )
         settled[number] = line.rstrip()
+
+    # The header says its counts are "рахується скриптом із самої таблиці, не
+    # друкується руками". That sentence was FALSE until 2026-09-05: no script
+    # wrote it. `test_register_counter_matches_the_table.py` failed when the
+    # numbers diverged -- so the mechanism was a person remembering, with a
+    # test to catch them forgetting, described as automation.
+    #
+    # A document that claims a mechanism it does not have is the same family
+    # as a config declaring a module that is not there. Writing the counts
+    # here makes the sentence true, and this script already parses every row.
+    all_rows = list(settled.values()) + [l for l in live if ID_ROW.match(l)]
+    tally: dict[str, int] = {}
+    for row in all_rows:
+        cells = _cells(row)
+        # cells[0] is the number: `_cells` already drops the leading empty
+        # field, so the state is at 1, not at the 2 the test's own `split("|")`
+        # uses. Reading it at 2 wrote a header of five zeros before this line
+        # was corrected -- and the run reported "written" while doing it.
+        state = cells[1] if len(cells) > 1 else "?"
+        tally[state] = tally.get(state, 0) + 1
+    # A count nobody checked is what the header used to be. Reading the state
+    # from the wrong cell produced five zeros and a cheerful "written" on the
+    # first run of this block, so the numbers have to survive their own
+    # arithmetic before they are allowed into the file.
+    known = {"закрито", "відкрито", "знято", "неперевірюване", "?"}
+    unknown_states = {state for state in tally if state not in known}
+    if unknown_states or sum(tally.values()) != len(all_rows):
+        raise SystemExit(
+            f"refusing to write a header nobody can reproduce: counted "
+            f"{sum(tally.values())} states across {len(all_rows)} rows"
+            + (f", and {sorted(unknown_states)[:5]} are not states at all"
+               if unknown_states else "")
+            + ". The state cell moved, or the table shape changed."
+        )
+
+    counted = (
+        f"| **стан записів** | закрито **{tally.get('закрито', 0)}** · "
+        f"відкрито **{tally.get('відкрито', 0)}** · "
+        f"знято **{tally.get('знято', 0)}** · "
+        f"неперевірюване **{tally.get('неперевірюване', 0)}** · "
+        f"**стан не записаний: {tally.get('?', 0)}** з {len(all_rows)}. "
+        f"Рахується цим скриптом із самої таблиці, не друкується руками — "
+        f"`tests/contracts/test_register_counter_matches_the_table.py` падає, "
+        f"коли розходиться |"
+    )
+    live = [counted if line.startswith("| **стан записів** |") else line
+            for line in live]
 
     live_count = sum(1 for line in live if ID_ROW.match(line))
     print(f"{len(settled) - already} newly archived, {already} already there, "

@@ -133,3 +133,59 @@ def test_the_numbers_never_moved(register):
         "the highest entry number fell, so entries were dropped rather than "
         "moved"
     )
+
+
+def test_a_row_written_into_the_index_section_is_not_silently_deleted():
+    """The index is REBUILT from the archive, so anything else in it is lost.
+
+    That is the design, and the section's own preamble says editing it by hand
+    makes no sense. But "makes no sense" and "is destroyed without a word" are
+    different promises. On 2026-09-05 a freshly written #278 was inserted into
+    the index section by mistake; the archiver printed "0 newly archived" and
+    wrote a register without it. The row was gone from both files, and nothing
+    in the output said so -- it was found only because the next command looked
+    for the number.
+
+    A maintenance script that deletes work while reporting success is worse
+    than one that refuses, which is the whole argument of REGISTER #260 and of
+    the family this suite guards: silence must carry a mark.
+    """
+    import shutil
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # Run against a COPY of the repository's docs, never the real ones: a
+        # test that plants a row in REGISTER.md and crashes leaves it there.
+        work = Path(tmp) / "docs"
+        work.mkdir()
+        shutil.copy(ROOT / "docs" / "REGISTER.md", work / "REGISTER.md")
+        shutil.copy(ROOT / "docs" / "AUDIT_HISTORY.md", work / "AUDIT_HISTORY.md")
+
+        text = (work / "REGISTER.md").read_text(encoding="utf-8").splitlines()
+        anchor = next(i for i, line in enumerate(text)
+                      if re.match(r"\|\s*277\s*\|", line))
+        text.insert(anchor, "| 999 | закрито | дефект | планта | результат |")
+        (work / "REGISTER.md").write_text("\n".join(text), encoding="utf-8")
+
+        script = (ROOT / "scripts" / "maintenance"
+                  / "archive_settled_register_rows.py").read_text(encoding="utf-8")
+        script = script.replace('"REGISTER.md"', f'r"{work / "REGISTER.md"}"')
+        script = script.replace('"AUDIT_HISTORY.md"',
+                                f'r"{work / "AUDIT_HISTORY.md"}"')
+        runner = Path(tmp) / "run.py"
+        runner.write_text(script, encoding="utf-8")
+
+        done = subprocess.run(
+            [sys.executable, str(runner), "--dry-run"],
+            capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT),
+        )
+        output = (done.stdout or "") + (done.stderr or "")
+
+    assert done.returncode != 0, (
+        "the archiver accepted an index-section row it does not have "
+        "archived; rebuilding the section deletes it and reports success"
+    )
+    assert "999" in output, (
+        "it refused, but without naming the row that would have been lost, so "
+        "the text is not recoverable from the message"
+    )

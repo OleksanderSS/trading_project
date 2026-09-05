@@ -63,15 +63,45 @@ def test_an_enabled_analyzer_satisfies_the_interface(entry):
 def test_a_disabled_analyzer_is_disabled_on_purpose(entry):
     """A disabled entry pointing at a module that no longer exists is a
     leftover, not a decision. Kept separate from the enabled checks so the
-    two failures read differently."""
+    two failures read differently.
+
+    IT USED TO SKIP, AND THE DOCSTRING ABOVE SAID "failures". Found 2026-09-05
+    while reading the two remaining skips in the contract suite, which is how
+    `test_financial_math_correctness` was found in #260: a skip is green, and
+    a check that declines to decide has the same colour as one that passed.
+
+    What it could not tell apart was a decision from a leftover -- and the
+    difference is written in the config. `pattern_analysis` carries a
+    `disabled_reason` naming where the module went
+    (`src/archive/patterns/pattern_analyzer.py`), why it must not be re-enabled
+    as it stands (it reads a `patterns` section that exists in no file, and
+    inspects only the LAST bar) and what to do first. That is a decision, and
+    it PASSES. An entry with a vanished module and no reason is the leftover
+    the docstring meant, and it FAILS.
+
+    The same invariant as `test_a_default_says_it_was_a_default.py`: silence
+    must carry a mark saying it was chosen.
+    """
     if entry.get("enabled", True):
         return
     try:
         importlib.import_module(entry["module"])
     except ModuleNotFoundError:
-        pytest.skip(
-            f"{entry['name']} is disabled AND its module is gone; remove the "
-            f"entry or restore {entry['module']}"
+        reason = (entry.get("disabled_reason") or "").strip()
+        assert reason, (
+            f"{entry['name']} is disabled and its module {entry['module']} "
+            f"does not exist, and nothing in analysis.yaml says why. That is "
+            f"a leftover, not a decision: remove the entry, or add a "
+            f"`disabled_reason` saying where the module went and what has to "
+            f"be true before it is enabled again."
+        )
+        # The reason must be a reason, not a word. The shortest real one in
+        # this file is 180 characters; a placeholder like "not needed" tells
+        # the next reader nothing and would restore the green-by-absence.
+        assert len(reason) >= 40, (
+            f"{entry['name']}'s disabled_reason is {len(reason)} characters "
+            f"({reason!r}). A missing module needs an explanation a reader "
+            f"can act on, not a label."
         )
 
 
