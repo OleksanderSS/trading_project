@@ -102,8 +102,16 @@ def test_the_unknown_count_only_falls():
     resolved by reading them.
     """
     counts = collections.Counter(row[2] for row in _rows())
-    assert counts["?"] <= 143, (
-        f"entries with no recorded state rose to {counts['?']}. A new entry "
-        "must say what happened to it; only the pre-2026-09-01 backlog is "
-        "allowed to be unknown."
+    # 143 -> 0 on 2026-09-05. The last one was #48, and it was never really
+    # unknown: its own text said "зміна методу, не дефект; потребує власного
+    # виміру", which IS a state. `?` is honest for a row nobody has read; it
+    # is not a place to put a row whose own sentence answers the question.
+    #
+    # Pinned at zero rather than at 143, because a ceiling nobody can reach is
+    # not a ratchet. Raising this number again means a row was written without
+    # saying what happened to it.
+    assert counts["?"] <= 0, (
+        f"entries with no recorded state rose to {counts['?']}. Every row now "
+        "carries a state, and a new entry has no excuse for an unrecorded "
+        "one: write відкрито, закрито, знято or неперевірюване."
     )
