@@ -595,24 +595,40 @@ class ModelingStage(BaseStage):
         """
         rows: list[dict[str, Any]] = []
         for context_key, champion in champions.items():
-            series = champion.get('holdout_predictions') or []
-            for record in series:
-                rows.append({
-                    'context': context_key,
-                    'ticker': champion.get('ticker'),
-                    'timeframe': champion.get('timeframe'),
-                    'target': champion.get('target_name') or champion.get('target'),
-                    'model_type': champion.get('model_type'),
-                    'datetime': record.get('datetime'),
-                    'prediction': record.get('prediction'),
-                    # The confidence behind the call, not just the call. A
-                    # hard 0/1 makes a coin flip and a near-certainty
-                    # indistinguishable downstream, and this column is
-                    # enumerated by name -- so BaseTrainer producing it is not
-                    # enough on its own for it to reach the artifact.
-                    'probability': record.get('probability'),
-                    'actual': record.get('actual'),
-                })
+            # The tail AND the walk-forward windows, each labelled by where it
+            # came from (REGISTER #47). The tail alone is one market episode;
+            # a `window` column is what lets a reader ask whether a number
+            # survives more than one, and it costs a few hundred rows per
+            # context next to what the frame already carries.
+            labelled: list[tuple[str, list]] = [
+                ('holdout', champion.get('holdout_predictions') or [])
+            ]
+            stability = champion.get('walk_forward_stability') or {}
+            for block in (stability.get('fold_predictions') or []):
+                labelled.append((f"fold_{block.get('fold')}",
+                                 block.get('rows') or []))
+
+            for window, series in labelled:
+                for record in series:
+                    rows.append({
+                        'context': context_key,
+                        'ticker': champion.get('ticker'),
+                        'timeframe': champion.get('timeframe'),
+                        'target': champion.get('target_name') or champion.get('target'),
+                        'model_type': champion.get('model_type'),
+                        # 'holdout' or 'fold_N'. Never blank: a row whose
+                        # window nobody can name is a row nobody can weigh.
+                        'window': window,
+                        'datetime': record.get('datetime'),
+                        'prediction': record.get('prediction'),
+                        # The confidence behind the call, not just the call. A
+                        # hard 0/1 makes a coin flip and a near-certainty
+                        # indistinguishable downstream, and this column is
+                        # enumerated by name -- so BaseTrainer producing it is
+                        # not enough on its own for it to reach the artifact.
+                        'probability': record.get('probability'),
+                        'actual': record.get('actual'),
+                    })
         if not rows:
             logger.info('No holdout predictions to persist.')
             return None
@@ -624,9 +640,16 @@ class ModelingStage(BaseStage):
             f"holdout_predictions_{datetime.datetime.now():%Y%m%d_%H%M%S}.parquet"
         )
         frame.to_parquet(path, index=False)
+        # The window breakdown in the line itself, because "wrote 4,000 rows"
+        # reads as four thousand independent observations when it may be one
+        # tail and nothing else. If `windows` ever says 1, the artifact is
+        # back to a single market episode and #47 has quietly reopened.
+        windows = sorted(frame['window'].unique())
         logger.info(
-            'Wrote %d out-of-sample holdout predictions across %d contexts to %s',
-            len(frame), frame['context'].nunique(), path.name,
+            'Wrote %d out-of-sample rows across %d contexts and %d window(s) '
+            '%s to %s',
+            len(frame), frame['context'].nunique(), len(windows),
+            windows[:6], path.name,
         )
         return path
 
@@ -1556,6 +1579,29 @@ class ModelingStage(BaseStage):
             'folds_above_majority': above,
             'folds_required': required,
             'worst_fold_balanced_accuracy': worst,
+            # THE ROWS, NOT ONLY THE VERDICT (REGISTER #47).
+            #
+            # `walk_forward_validation` has kept `validation_predictions` per
+            # fold since it was written, with a comment explaining why -- and
+            # measured 2026-09-05, NOTHING READ THEM. Produced, unit-tested,
+            # zero consumers: the third time today that shape turned up, after
+            # `apply_seal` (#264) and `universe_as_of` (Р46).
+            #
+            # It matters because of what the champion artifact IS: a single
+            # contiguous tail, `x_test = X.iloc[test_start:]`, so everything
+            # measured out of sample was measured on ONE market episode --
+            # whichever one the data happens to end in. These folds already
+            # walk several disjoint windows. Carrying their rows makes "does
+            # this hold in more than one period" answerable from the artifact
+            # instead of from another training run.
+            'fold_predictions': [
+                {
+                    'fold': fold.get('fold'),
+                    'rows': fold.get('validation_predictions') or [],
+                }
+                for fold in folds
+                if fold.get('validation_predictions')
+            ],
             'reason': '; '.join(reasons) or (
                 f"signal held on {above} of {fold_count} folds, worst fold "
                 f"{worst}"
