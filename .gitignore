@@ -148,3 +148,9 @@ audit/legacy/*.txt
 # code imports it and a fresh clone that lacks it gets the same or a
 # stronger answer from the same grep.
 /audit/legacy/
+
+# Fetched reference artefacts. The universe membership store is rebuilt by
+# scripts/data/fetch_universe_membership.py and its contents depend on which
+# API key is available, so committing one person's partial fetch would make it
+# look like the project's answer (REGISTER #169).
+data/reference/
