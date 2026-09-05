@@ -82,6 +82,7 @@ from scipy.stats import norm  # noqa: E402
 from net_test_every_survivor import (  # noqa: E402
     BATCH, CHUNK, ROLES, _panel, _sharpe_all_phases,
 )
+from src.data.universe_membership import OPPONENT_CAVEAT  # noqa: E402
 from src.targets.calculators.regression_calculator import (  # noqa: E402
     RegressionCalculator,
 )
@@ -258,6 +259,22 @@ def main() -> int:
           f"{frame['datetime'].nunique():,} dates, "
           f"{frame['datetime'].min().date()} to {frame['datetime'].max().date()}")
 
+    # The scale mark, not a filter (Р47). A cross-section of our names is a
+    # cross-section of survivors, and without this line a book measured here
+    # reads as a book measured on the market. Printed at BOTH ends of the
+    # panel because the share changes by a factor of three across it.
+    try:
+        from src.data.universe_membership import load as _load_members
+        from src.data.universe_membership import scale_note as _scale_note
+        _members = _load_members()
+        for _edge in (frame["datetime"].min(), frame["datetime"].max()):
+            _held = frame.loc[frame["datetime"] == _edge, "ticker"].nunique()
+            print("  " + _scale_note(_edge, _held, _members))
+    except FileNotFoundError:
+        print("  universe scale: UNKNOWN -- no membership store on disk; "
+              "run scripts/data/fetch_universe_membership.py")
+    print()
+
     unique_dates = np.sort(pd.unique(dates))
     cut = unique_dates[int(len(unique_dates) * TRAIN_FRACTION)]
 
@@ -315,7 +332,7 @@ def main() -> int:
         constant[hold], _ = _sharpe_all_phases(index.mean_by_date(net), hold)
     print(f"{'BUY EVERYTHING (opponent 1)':<30}"
           + "".join(f"{constant[h]:>9.3f}" for h in args.holds))
-    print(f"{' ' * 30}survivorship-inflated: an upper bound, not the market\n")
+    print(f"{' ' * 30}{OPPONENT_CAVEAT}\n")
 
     # --- load every ranked column once ---
     matrix = np.zeros((len(frame), len(names)), dtype=np.float32)

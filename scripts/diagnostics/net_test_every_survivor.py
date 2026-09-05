@@ -71,6 +71,7 @@ import pandas as pd  # noqa: E402
 import yaml  # noqa: E402
 from scipy.stats import norm  # noqa: E402
 
+from src.data.universe_membership import OPPONENT_CAVEAT  # noqa: E402
 from src.targets.calculators.regression_calculator import (  # noqa: E402
     RegressionCalculator,
 )
@@ -198,6 +199,22 @@ def main() -> int:
           f"{frame['datetime'].nunique():,} dates, "
           f"{frame['datetime'].min().date()} to {frame['datetime'].max().date()}\n")
 
+    # The scale mark, not a filter (Р47). A cross-section of our names is a
+    # cross-section of survivors, and without this line a book measured here
+    # reads as a book measured on the market. Printed at BOTH ends of the
+    # panel because the share changes by a factor of three across it.
+    try:
+        from src.data.universe_membership import load as _load_members
+        from src.data.universe_membership import scale_note as _scale_note
+        _members = _load_members()
+        for _edge in (frame["datetime"].min(), frame["datetime"].max()):
+            _held = frame.loc[frame["datetime"] == _edge, "ticker"].nunique()
+            print("  " + _scale_note(_edge, _held, _members))
+    except FileNotFoundError:
+        print("  universe scale: UNKNOWN -- no membership store on disk; "
+              "run scripts/data/fetch_universe_membership.py")
+    print()
+
     friction = np.asarray(
         RegressionCalculator._round_trip_cost(frame["close"], costs), dtype=float)
     dates = frame["datetime"].to_numpy()
@@ -228,7 +245,7 @@ def main() -> int:
     # dot-com crash, and only 61 of the 110 names existed in 1996. Valid as
     # a RELATIVE opponent -- both books trade the same names -- and
     # misleading as a market benchmark (CLAIMS R34).
-    print(f"{chr(32)*34}survivorship-inflated: an upper bound, not the market")
+    print(f"{' ' * 30}{OPPONENT_CAVEAT}")
     print()
     print(header)
     print("-" * len(header))

@@ -65,6 +65,27 @@ COLUMNS = (
 )
 
 
+#: What to print beside an opponent built from our own names.
+#:
+#: Already printed, in three copies, by `net_test_every_survivor`,
+#: `does_a_combination_beat_the_best_single_feature` and
+#: `does_the_drift_after_earnings_pay` -- as "survivorship-inflated: an upper
+#: bound, not the market". True, and unquantified: a reader could not tell
+#: whether the inflation was 0.05 of a Sharpe or 1.5 of one.
+#:
+#: Р47 measured it on our own data, no dead price required. The equal-weighted
+#: basket of our 105 names beats SPY -- which carries every constituent that
+#: died, at the price it died at -- by 6.86% a year, Sharpe 1.222, t +6.32.
+#: Against VTI: +6.05%, 1.373, t +6.44. Every style tilt the same batch can
+#: express (size, technology, mega-cap) sits under t = 1.1.
+#:
+#: One place, because the same sentence in three files is how a correction
+#: lands in one copy and the other two live on.
+OPPONENT_CAVEAT = (
+    "survivorship-inflated: our list beats the real market by 6.86%/yr "
+    "(Sharpe 1.22, t +6.3, Р47) -- an upper bound, not the market"
+)
+
 class NoCoverage(RuntimeError):
     """The store cannot speak about that date.
 
@@ -208,6 +229,44 @@ def universe_as_of(when: str | date | datetime | pd.Timestamp,
     ended = frame["delisting_date"].notna() & (frame["delisting_date"] < moment)
     return set(frame.loc[started & ~ended, "ticker"].astype(str))
 
+
+def scale_note(when: "str | date | datetime | pd.Timestamp",
+               held: "int | set[str]",
+               frame: "pd.DataFrame | None" = None,
+               store: "Path | str" = DEFAULT_STORE) -> str:
+    """One line saying how much of that day's market a cross-section covers.
+
+    CLAIMS Р47 measured what the absence of this line cost. A book built on our
+    110 names was compared against "buy everything" at Sharpe 0.987 and that
+    was read as the floor -- while the same equal-weighted basket beats the
+    real market, deaths included, by 6.86% a year at t = +6.32. Two thirds of
+    the floor was the list having been written in 2026. Nothing in any report
+    said the cross-section was 65 names of the 2,251 that existed.
+
+    So this is not a filter and not a correction: it is a MARK, printed beside
+    the number, so a cross-sectional result cannot be read as a result about
+    the market. The failure it prevents is a reader's, not the code's.
+
+    On NoCoverage it returns the refusal as text rather than raising: a report
+    that cannot state its scale must SAY it cannot, and must still print its
+    numbers. Swallowing the sentence would be the silent fallback this module
+    exists to forbid.
+    """
+    count = held if isinstance(held, int) else len(held)
+    try:
+        existed = len(universe_as_of(when, frame, store))
+    except NoCoverage as absent:
+        return (f"universe scale: UNKNOWN for {_day(pd.Timestamp(when))} -- "
+                f"{absent}")
+
+    if existed <= 0:                       # pragma: no cover -- store invariant
+        return f"universe scale: the store reports no names on {when}"
+
+    share = 100.0 * count / existed
+    return (f"universe scale: {count:,} names in this cross-section of "
+            f"{existed:,} that existed on {_day(pd.Timestamp(when))} "
+            f"({share:.1f}%), and ours are the ones that survived to today "
+            f"(Р47: the list alone is worth Sharpe 1.22 over the real market)")
 
 def died_between(start, end, frame: pd.DataFrame | None = None,
                  store: Path | str = DEFAULT_STORE) -> pd.DataFrame:

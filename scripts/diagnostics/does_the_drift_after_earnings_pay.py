@@ -70,6 +70,7 @@ import pandas as pd  # noqa: E402
 import yaml  # noqa: E402
 from scipy.stats import norm  # noqa: E402
 
+from src.data.universe_membership import OPPONENT_CAVEAT  # noqa: E402
 from src.pipeline.sealed_period import SEAL_START  # noqa: E402
 from src.targets.calculators.regression_calculator import (  # noqa: E402
     RegressionCalculator,
@@ -257,7 +258,7 @@ def main() -> int:
     # dot-com crash, and only 61 of the 110 names existed in 1996. Valid as
     # a RELATIVE opponent -- both books trade the same names -- and
     # misleading as a market benchmark (CLAIMS R34).
-    print(f"{chr(32)*34}survivorship-inflated: an upper bound, not the market")
+    print(f"{' ' * 30}{OPPONENT_CAVEAT}")
 
     header = (f"{'hold':>6}{'events used':>14}{'avg names held':>16}"
               f"{'gross Sharpe':>14}{'NET Sharpe':>12}{'net ann.ret':>13}")
