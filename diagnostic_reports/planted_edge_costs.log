@@ -1,0 +1,50 @@
+panel 623,398 rows, 110 names, median close $29.21, 1996-08-26 to 2023-08-31
+seal:  nothing at or after 2023-09-01 is touched
+
+1. WHAT THE ROUND TRIP IS MADE OF
+
+    component                         bp    share   annualised
+    ----------------------------------------------------------
+    full round trip                10.94    100%       27.6%
+      commission (per share)        6.94     63%       17.5%
+      spread + slippage             4.00     37%       10.1%
+
+    a per-share fee is a PERCENTAGE that depends on the price:
+
+    close                rows      bp   commission share
+    ----------------------------------------------------
+    under $20         227,396   20.21               80%
+    $20-50            205,427    6.29               36%
+    $50-100           104,268    5.03               21%
+    $100-200           61,303    4.70               15%
+    over $200          25,004    4.70               15%
+
+2. THE CONSTANT OPPONENT at hold 5, printed before any book
+
+    buy everything, full cost         Sharpe +0.659
+    buy everything, commission-free   Sharpe +0.877
+    SPY over this window          Sharpe +0.553  (R48)
+
+3. HOW MUCH WORSE EXECUTION CAN GET, commission-free, market_return_1d
+
+    spread each way        slippage    net Sharpe
+    ---------------------------------------------
+            1 bp                1 bp         0.210
+            2 bp                2 bp        -0.149
+            3 bp                3 bp        -0.508
+            5 bp                5 bp        -1.226
+            8 bp                8 bp        -2.303
+           12 bp               12 bp        -3.739
+
+4. DOES ROTATION CHANGE THE BILL -- if it does, a z is not timing
+
+    feature                     aligned    rotated   change
+    -------------------------------------------------------
+    market_return_1d           0.001151   0.001138   -1.1%
+    peer_breadth_1d            0.001119   0.001108   -1.0%
+    peer_return_1d             0.001139   0.001130   -0.8%
+    state_LAG_5_1d             0.001002   0.000970   -3.2%
+
+    A change of about a percent means both books pay the same and the rotation
+    comparison is about TIMING. A large one means a short-hold z is a cost
+    artefact and has to be thrown away.

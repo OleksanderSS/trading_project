@@ -59,6 +59,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import math
 import sys
 from pathlib import Path
 
@@ -68,6 +69,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import yaml  # noqa: E402
+from scipy.stats import norm  # noqa: E402
 
 from src.targets.calculators.regression_calculator import (  # noqa: E402
     RegressionCalculator,
@@ -125,12 +127,33 @@ def _position(column: np.ndarray, dates: np.ndarray) -> np.ndarray:
                        .transform("mean").to_numpy())
 
 
+def _mean_by_date(values: np.ndarray, codes: np.ndarray, groups: int
+                  ) -> np.ndarray:
+    """Mean per date, NaN-skipping, in date order.
+
+    The same thing `groupby(dates).mean()` returns, by bincount. It is here for
+    speed alone -- a full sweep calls it about eighty times per column, and the
+    pandas path made 235 columns a four-hour run instead of a half-hour one.
+    Verified against the pandas result on the column it matters for.
+    """
+    finite = np.isfinite(values)
+    sums = np.bincount(codes, weights=np.where(finite, values, 0.0),
+                       minlength=groups)
+    counts = np.bincount(codes, weights=finite.astype(float), minlength=groups)
+    return np.where(counts > 0, sums / np.maximum(counts, 1.0), np.nan)
+
+
 def _sharpe_given_position(position: np.ndarray, dates: np.ndarray,
                            forward: np.ndarray, friction: np.ndarray,
-                           hold: int) -> float:
+                           hold: int, codes: np.ndarray | None = None,
+                           groups: int = 0) -> float:
     net = position * forward - np.abs(position) * friction
-    by_date = pd.DataFrame({"d": dates, "net": net}).groupby("d")["net"].mean()
-    mean, _ = NET._sharpe_all_phases(by_date.sort_index().to_numpy(), hold)
+    if codes is None:
+        by_date = (pd.DataFrame({"d": dates, "net": net})
+                   .groupby("d")["net"].mean().sort_index().to_numpy())
+    else:
+        by_date = _mean_by_date(net, codes, groups)
+    mean, _ = NET._sharpe_all_phases(by_date, hold)
     return mean
 
 
@@ -216,15 +239,33 @@ def _shuffled_null(args, frame, order, dates, friction, forwards) -> int:
                   f"it and there is no verdict to check.")
             return 1
         chosen = list(args.only)
+    elif args.all:
+        chosen = list(varying)
     else:
         step = max(1, len(varying) // args.features)
         chosen = varying[::step][:args.features]
-    print(f"null on {len(chosen)} real columns, {args.shuffles} draws each: "
-          f"{', '.join(chosen)}\n")
+    print(f"null on {len(chosen)} real columns, {args.shuffles} rotations each, "
+          f"holds {args.holds}")
+
+    # DECLARED BEFORE THE RUN, from the attempts this run will actually make.
+    # A z-score is a Sharpe divided by its own measured spread, so the bar is
+    # the same multiplicity correction in sigma units -- and it is stated here
+    # rather than after the table, because a bar chosen once the answers are
+    # visible is not a bar.
+    attempts = len(chosen) * len(args.holds)
+    z_bonferroni = float(norm.ppf(1.0 - 0.025 / max(attempts, 1)))
+    log_n = math.log(max(attempts, 2))
+    root = math.sqrt(2.0 * log_n)
+    z_noise = max(root - (math.log(log_n) + math.log(4.0 * math.pi)) / (2.0 * root),
+                  float(norm.ppf(0.95)))
+    print(f"attempts {attempts}  ->  expected maximum of noise z={z_noise:.2f}, "
+          f"Bonferroni family-wise 5% z={z_bonferroni:.2f}\n")
 
     date_codes = pd.factorize(dates)[0]
     in_date_order = np.lexsort((np.arange(dates.size), date_codes))
-    loaded = pd.read_parquet(NET.BATCH / "features.parquet", columns=chosen)
+    # Sorted codes, so a bincount lands in DATE order without a further sort.
+    sorted_codes, uniques = pd.factorize(dates, sort=True)
+    n_groups = len(uniques)
 
     # Lags spread evenly over the record rather than drawn at random: a lag
     # near zero leaves the book almost aligned and would quietly pull the null
@@ -233,59 +274,97 @@ def _shuffled_null(args, frame, order, dates, friction, forwards) -> int:
     lags = [int(round((i + 1) / (args.shuffles + 1) * n_dates))
             for i in range(args.shuffles)]
     rotations = {lag: _rotation_index(frame, lag) for lag in lags}
-    date_mean = lambda v: (pd.Series(v).groupby(dates).transform("mean")
-                           .to_numpy())
+    date_mean = lambda v: _mean_by_date(v, sorted_codes, n_groups)[sorted_codes]
 
-    header = (f"{'feature':<28}{'hold':>5}{'REAL':>8}"
-              f"{'redeal sd':>11}{'ROTATE mean':>13}{'ROTATE sd':>11}"
-              f"{'z(rotate)':>11}")
+    header = (f"{'feature':<32}"
+              + "".join(f"{'z' + str(h):>8}" for h in args.holds)
+              + f"{'best z':>8}{'REAL':>8}{'null':>8}{'sd':>7}")
     print(header)
     print("-" * len(header))
 
     rotate_sd: dict[int, list[float]] = {h: [] for h in args.holds}
     redeal_sd: dict[int, list[float]] = {h: [] for h in args.holds}
     verdicts = []
-    for name in chosen:
-        values = pd.to_numeric(loaded[name], errors="coerce").to_numpy()[order]
-        if pd.Series(values).notna().sum() < 10_000:
-            print(f"{name:<28}   skipped: fewer than 10,000 usable rows")
-            continue
-        position = _position(values, dates)
-        turned = {}
-        for lag in lags:
-            moved = position[rotations[lag]]
-            # Re-neutralise: after the shift the names present on a date are
-            # not the ones the original weights balanced.
-            turned[lag] = moved - date_mean(moved)
-        for hold in args.holds:
-            real = _sharpe_given_position(
-                position, dates, forwards[hold], friction, hold)
-            deals = [_sharpe_given_position(
-                        position, dates,
-                        _shuffle_within_date(forwards[hold], date_codes,
-                                             in_date_order,
-                                             np.random.default_rng(9_000 + i)),
-                        friction, hold)
-                     for i in range(args.shuffles)]
-            turns = [_sharpe_given_position(turned[lag], dates,
-                                            forwards[hold], friction, hold)
-                     for lag in lags]
-            d_sd = float(np.nanstd(deals, ddof=1))
-            r_mean = float(np.nanmean(turns))
-            r_sd = float(np.nanstd(turns, ddof=1))
-            redeal_sd[hold].append(d_sd)
-            rotate_sd[hold].append(r_sd)
-            z = (real - r_mean) / r_sd if r_sd > 0 else float("nan")
-            verdicts.append((name, hold, real, r_mean, r_sd, z))
-            print(f"{name:<28}{hold:>5}{real:>8.3f}{d_sd:>11.3f}"
-                  f"{r_mean:>13.3f}{r_sd:>11.3f}{z:>11.2f}", flush=True)
+    for start in range(0, len(chosen), NET.CHUNK):
+        block = chosen[start:start + NET.CHUNK]
+        loaded = pd.read_parquet(NET.BATCH / "features.parquet",
+                                 columns=list(dict.fromkeys(block)))
+        for name in block:
+            values = pd.to_numeric(loaded[name], errors="coerce").to_numpy()[order]
+            if pd.Series(values).notna().sum() < 10_000:
+                print(f"{name:<32}   skipped: fewer than 10,000 usable rows")
+                continue
+            position = _position(values, dates)
+            if args.skip_bars:
+                # Yesterday's book, today's returns. `_rotation_index(frame, 1)`
+                # maps each row to the previous row of the SAME name, which is
+                # what a one-bar delay is; the roll wraps 110 rows out of
+                # 623,398, which cannot carry a result.
+                for _ in range(args.skip_bars):
+                    position = position[_rotation_index(frame, 1)]
+                position = position - date_mean(position)
+            turned = {}
+            for lag in lags:
+                moved = position[rotations[lag]]
+                # Re-neutralise: after the shift the names present on a date
+                # are not the ones the original weights balanced.
+                turned[lag] = moved - date_mean(moved)
+            per_hold = {}
+            for hold in args.holds:
+                real = _sharpe_given_position(
+                    position, dates, forwards[hold], friction, hold,
+                    sorted_codes, n_groups)
+                if not args.no_redeal:
+                    deals = [_sharpe_given_position(
+                                position, dates,
+                                _shuffle_within_date(
+                                    forwards[hold], date_codes, in_date_order,
+                                    np.random.default_rng(9_000 + i)),
+                                friction, hold, sorted_codes, n_groups)
+                             for i in range(args.shuffles)]
+                    redeal_sd[hold].append(float(np.nanstd(deals, ddof=1)))
+                turns = [_sharpe_given_position(
+                             turned[lag], dates, forwards[hold], friction,
+                             hold, sorted_codes, n_groups)
+                         for lag in lags]
+                r_mean = float(np.nanmean(turns))
+                r_sd = float(np.nanstd(turns, ddof=1))
+                rotate_sd[hold].append(r_sd)
+                z = (real - r_mean) / r_sd if r_sd > 0 else float("nan")
+                per_hold[hold] = (real, r_mean, r_sd, z)
+                verdicts.append((name, hold, real, r_mean, r_sd, z))
+            best = max(per_hold,
+                       key=lambda h: (per_hold[h][3]
+                                      if np.isfinite(per_hold[h][3]) else -99))
+            real, r_mean, r_sd, z = per_hold[best]
+            print(f"{name:<32}"
+                  + "".join(f"{per_hold[h][3]:>8.2f}" for h in args.holds)
+                  + f"{z:>8.2f}{real:>8.3f}{r_mean:>8.3f}{r_sd:>7.3f}",
+                  flush=True)
+            # With a handful of columns the compact row hides the thing that
+            # decides whether a finding is money: REAL at EVERY hold, not just
+            # at the best-z one. A sweep cannot print this without becoming
+            # unreadable; a shortlist must.
+            if len(chosen) <= 10:
+                for h in args.holds:
+                    h_real, h_mean, h_sd, h_z = per_hold[h]
+                    verdict = ("INFORMATION AND MONEY" if h_z >= z_bonferroni
+                               and h_real > 0 else
+                               "information, no money" if h_z >= z_bonferroni
+                               else "")
+                    print(f"    hold {h:>3}   REAL {h_real:>+7.3f}   "
+                          f"null {h_mean:>+7.3f}   sd {h_sd:>5.3f}   "
+                          f"z {h_z:>+6.2f}   {verdict}")
+        del loaded
 
     print("\n" + "=" * len(header))
     print("The spread SHARPE_SE claims to describe, measured two ways:\n")
     for hold in args.holds:
         if not rotate_sd[hold]:
             continue
-        print(f"    hold {hold:>3}: re-deal {np.median(redeal_sd[hold]):.3f}   "
+        deal = (f"re-deal {np.median(redeal_sd[hold]):.3f}   "
+                if redeal_sd[hold] else "")
+        print(f"    hold {hold:>3}: {deal}"
               f"ROTATION {np.median(rotate_sd[hold]):.3f}   "
               f"({np.median(rotate_sd[hold]) / NET.SHARPE_SE:.2f}x the "
               f"asserted {NET.SHARPE_SE})")
@@ -299,10 +378,48 @@ def _shuffled_null(args, frame, order, dates, friction, forwards) -> int:
         print("\n    A threshold set from an ASSERTED spread is a free "
               "parameter wearing a formula.\n    The rotation column is what "
               "this panel actually does when the column knows nothing.")
-    if verdicts:
-        best = max(verdicts, key=lambda row: row[5] if np.isfinite(row[5]) else -9)
-        print(f"\n    strongest of these columns against its own rotated null: "
-              f"{best[0]} at hold {best[1]}, z={best[5]:+.2f}")
+    if not verdicts:
+        return 0
+
+    ranked = sorted((row for row in verdicts if np.isfinite(row[5])),
+                    key=lambda row: -row[5])
+    print("\n" + "=" * len(header))
+    print(f"THE QUESTION THIS RUN WAS FOR: does any column know something "
+          f"about WHEN,\nrather than simply holding a tilt? A column that does "
+          f"scores far above its own\nrotated null. Bar declared before the "
+          f"run: z={z_bonferroni:.2f} (Bonferroni on {attempts} attempts).\n")
+    print(f"{'feature':<32}{'hold':>6}{'REAL':>9}{'null':>9}{'sd':>8}{'z':>8}")
+    print("-" * 72)
+    for name, hold, real, r_mean, r_sd, z in ranked[:12]:
+        print(f"{name:<32}{hold:>6}{real:>9.3f}{r_mean:>9.3f}"
+              f"{r_sd:>8.3f}{z:>8.2f}")
+
+    clearing = [row for row in ranked if row[5] >= z_bonferroni]
+    above_noise = [row for row in ranked if row[5] >= z_noise]
+    print(f"\n    clear Bonferroni z>={z_bonferroni:.2f}:      "
+          f"{len(clearing)} of {len(ranked)}")
+    print(f"    above the noise maximum z>={z_noise:.2f}:  "
+          f"{len(above_noise)} of {len(ranked)}")
+    if not above_noise:
+        print("\n    NOTHING in this batch knows about timing. Every score it "
+              "has is a tilt that\n    survives having its dates shuffled -- "
+              "which is what a factor is, and what a\n    prediction is not.")
+    elif not clearing:
+        print("\n    Above noise, below Bonferroni. Worth stating as a measured "
+              "number, not as a\n    candidate -- and NOT worth another variant "
+              "here: that spends attempts on it.")
+    else:
+        print("\n    A column beats its own rotated null past the declared bar. "
+              "This is the first\n    time that has happened. The next step is "
+              "NOT another variant: it is one\n    pre-registered confirmation "
+              "on the sealed period, which is what the seal is for.")
+    # A book can beat its own null on information and still lose money, which
+    # is a different question and has to be printed as one.
+    if clearing:
+        earners = [row for row in clearing if row[2] > 0]
+        print(f"\n    of those, NET POSITIVE after costs: {len(earners)}. "
+              f"Information and money are\n    separate tests and a column has "
+              f"to pass both.")
     return 0
 
 
@@ -320,6 +437,34 @@ def main() -> int:
                         help="how many real columns to build the shuffled "
                              "null on, in shuffle mode.")
     parser.add_argument("--shuffles", type=int, default=24)
+    parser.add_argument("--no-commission", action="store_true",
+                        help="price the book under a commission-free broker: "
+                             "per-share fee and minimum set to zero, spread "
+                             "and slippage untouched. This is NOT a parameter "
+                             "being tuned -- it is a second BROKER, and the "
+                             "measured split says which of the two the answer "
+                             "depends on: commission is 63%% of the 10.94 bp "
+                             "round trip and 80%% of it under $20 a share. "
+                             "The honest caveat travels with it: a "
+                             "zero-commission broker is paid through order "
+                             "flow, so the 1 bp spread and 1 bp slippage this "
+                             "keeps are the OPTIMISTIC half of the trade.")
+    parser.add_argument("--skip-bars", type=int, default=0,
+                        help="bars between the column being knowable and the "
+                             "position earning. 0 assumes you compute all 110 "
+                             "names' cross-section AT the close and trade at "
+                             "that same close -- zero latency. `peer_return` "
+                             "and `market_return` are same-bar leave-one-out, "
+                             "so that assumption is doing real work and has to "
+                             "be priced: R32 lost a +0.642 headline to exactly "
+                             "this check. 1 is the conservative reading.")
+    parser.add_argument("--all", action="store_true",
+                        help="every column with cross-sectional variation -- "
+                             "the same 235 the real run measured.")
+    parser.add_argument("--no-redeal", action="store_true",
+                        help="skip the within-date re-deal. It is known to be "
+                             "too tight (R50) and costs as much as the "
+                             "rotation, so a full sweep does not pay for it.")
     parser.add_argument("--only", nargs="+", default=None,
                         help="name the columns to build the null on, instead "
                              "of sampling the varying list. The point of the "
@@ -332,6 +477,12 @@ def main() -> int:
     costs = yaml.safe_load(
         (PROJECT_ROOT / "src/config/targets.yaml").read_text(encoding="utf-8")
     )["targets"]["target_return_1d"]["params"]["transaction_costs"]
+    if args.no_commission:
+        costs = dict(costs, per_share_fee=0.0, min_fee_per_order=0.0)
+        print("COSTS: commission-free broker -- spread and slippage only. "
+              "Every number below\n       is under a DIFFERENT trading "
+              "arrangement than the rest of the project's,\n       and may "
+              "not be compared with one measured at full cost.\n")
 
     frame, order = NET._panel([])
     dates = frame["datetime"].to_numpy()

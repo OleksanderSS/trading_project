@@ -1,0 +1,136 @@
+2026-09-06 18:22:26,189 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+2026-09-06 18:22:26,211 - PathSafety - INFO - PathSafety initialized with 6 allowed roots
+2026-09-06 18:22:26,211 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-06 18:22:26,211 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 8 variables into the active environment.
+2026-09-06 18:22:26,211 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-06 18:22:26,226 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-06 18:22:26,227 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-06 18:22:26,228 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-06 18:22:26,228 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-06 18:22:26,244 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-06 18:22:26,244 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-06 18:22:26,259 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-06 18:22:26,260 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-06 18:22:26,260 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-06 18:22:26,260 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-06 18:22:26,278 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-06 18:22:26,293 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-06 18:22:26,294 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-06 18:22:26,294 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-06 18:22:26,294 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-06 18:22:26,294 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-06 18:22:26,294 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-06 18:22:26,311 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-06 18:22:26,326 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-06 18:22:26,327 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-06 18:22:26,331 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-06 18:22:26,361 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-06 18:22:26,377 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-06 18:22:26,377 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-06 18:22:26,394 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-06 18:22:26,411 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-06 18:22:26,411 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-06 18:22:26,411 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-06 18:22:26,411 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-06 18:22:26,411 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-06 18:22:26,411 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-06 18:22:26,411 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-06 18:22:26,411 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-06 18:22:26,411 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-06 18:22:26,411 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 8 variables into the active environment.
+2026-09-06 18:22:26,411 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+2026-09-06 18:22:26,411 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+panel: 623,398 rows, 110 names, 6,800 dates, 1996-08-26 to 2023-08-31
+seal:  nothing at or after 2023-09-01 is touched
+
+null on 7 real columns, 60 rotations each, holds [5, 20, 40, 60, 120]
+attempts 35  ->  expected maximum of noise z=1.95, Bonferroni family-wise 5% z=3.19
+
+feature                               z5     z20     z40     z60    z120  best z    REAL    null     sd
+-------------------------------------------------------------------------------------------------------
+peer_breadth_1d                     5.86    4.13    3.21    2.44    1.64    5.86  -1.026  -1.671  0.110
+    hold   5   REAL  -1.026   null  -1.671   sd 0.110   z  +5.86   information, no money
+    hold  20   REAL  -0.241   null  -0.458   sd 0.053   z  +4.13   information, no money
+    hold  40   REAL  -0.116   null  -0.242   sd 0.040   z  +3.21   information, no money
+    hold  60   REAL  -0.079   null  -0.163   sd 0.034   z  +2.44   
+    hold 120   REAL  -0.042   null  -0.091   sd 0.030   z  +1.64   
+peer_return_1d                      5.64    3.85    2.08    1.79    0.73    5.64  -0.964  -1.617  0.116
+    hold   5   REAL  -0.964   null  -1.617   sd 0.116   z  +5.64   information, no money
+    hold  20   REAL  -0.202   null  -0.397   sd 0.051   z  +3.85   information, no money
+    hold  40   REAL  -0.099   null  -0.179   sd 0.038   z  +2.08   
+    hold  60   REAL  -0.042   null  -0.105   sd 0.035   z  +1.79   
+    hold 120   REAL  -0.014   null  -0.037   sd 0.030   z  +0.73   
+peer_breadth_excess_1d              5.71    4.17    3.13    2.26    1.50    5.71  -1.047  -1.678  0.111
+    hold   5   REAL  -1.047   null  -1.678   sd 0.111   z  +5.71   information, no money
+    hold  20   REAL  -0.238   null  -0.461   sd 0.053   z  +4.17   information, no money
+    hold  40   REAL  -0.122   null  -0.243   sd 0.039   z  +3.13   
+    hold  60   REAL  -0.085   null  -0.163   sd 0.035   z  +2.26   
+    hold 120   REAL  -0.045   null  -0.092   sd 0.031   z  +1.50   
+market_return_1d                   10.07    4.05    2.83    1.55    0.43   10.07  -0.475  -1.616  0.113
+    hold   5   REAL  -0.475   null  -1.616   sd 0.113   z +10.07   information, no money
+    hold  20   REAL  -0.157   null  -0.387   sd 0.057   z  +4.05   information, no money
+    hold  40   REAL  -0.061   null  -0.172   sd 0.039   z  +2.83   
+    hold  60   REAL  -0.047   null  -0.104   sd 0.036   z  +1.55   
+    hold 120   REAL  -0.021   null  -0.040   sd 0.045   z  +0.43   
+peer_return_excess_1d               5.88    3.78    2.13    1.86    0.78    5.88  -0.941  -1.612  0.114
+    hold   5   REAL  -0.941   null  -1.612   sd 0.114   z  +5.88   information, no money
+    hold  20   REAL  -0.198   null  -0.395   sd 0.052   z  +3.78   information, no money
+    hold  40   REAL  -0.094   null  -0.177   sd 0.039   z  +2.13   
+    hold  60   REAL  -0.036   null  -0.103   sd 0.036   z  +1.86   
+    hold 120   REAL  -0.011   null  -0.035   sd 0.031   z  +0.78   
+state_LAG_5_1d                      3.89    2.85    1.68    1.68    1.06    3.89  -1.121  -1.502  0.098
+    hold   5   REAL  -1.121   null  -1.502   sd 0.098   z  +3.89   information, no money
+    hold  20   REAL  -0.229   null  -0.369   sd 0.049   z  +2.85   
+    hold  40   REAL  -0.109   null  -0.175   sd 0.040   z  +1.68   
+    hold  60   REAL  -0.048   null  -0.112   sd 0.038   z  +1.68   
+    hold 120   REAL  -0.011   null  -0.052   sd 0.038   z  +1.06   
+state_LAG_10_1d                     4.06    3.35    1.80    1.50    0.99    4.06  -1.036  -1.486  0.111
+    hold   5   REAL  -1.036   null  -1.486   sd 0.111   z  +4.06   information, no money
+    hold  20   REAL  -0.205   null  -0.365   sd 0.048   z  +3.35   information, no money
+    hold  40   REAL  -0.106   null  -0.176   sd 0.039   z  +1.80   
+    hold  60   REAL  -0.045   null  -0.109   sd 0.042   z  +1.50   
+    hold 120   REAL  -0.013   null  -0.051   sd 0.039   z  +0.99   
+
+=======================================================================================================
+The spread SHARPE_SE claims to describe, measured two ways:
+
+    hold   5: ROTATION 0.111   (0.57x the asserted 0.193)
+    hold  20: ROTATION 0.052   (0.27x the asserted 0.193)
+    hold  40: ROTATION 0.039   (0.20x the asserted 0.193)
+    hold  60: ROTATION 0.036   (0.19x the asserted 0.193)
+    hold 120: ROTATION 0.031   (0.16x the asserted 0.193)
+
+    rotation median 0.040, asserted 0.193  -> thresholds are too HIGH by 4.9x
+
+    A threshold set from an ASSERTED spread is a free parameter wearing a formula.
+    The rotation column is what this panel actually does when the column knows nothing.
+
+=======================================================================================================
+THE QUESTION THIS RUN WAS FOR: does any column know something about WHEN,
+rather than simply holding a tilt? A column that does scores far above its own
+rotated null. Bar declared before the run: z=3.19 (Bonferroni on 35 attempts).
+
+feature                           hold     REAL     null      sd       z
+------------------------------------------------------------------------
+market_return_1d                     5   -0.475   -1.616   0.113   10.07
+peer_return_excess_1d                5   -0.941   -1.612   0.114    5.88
+peer_breadth_1d                      5   -1.026   -1.671   0.110    5.86
+peer_breadth_excess_1d               5   -1.047   -1.678   0.111    5.71
+peer_return_1d                       5   -0.964   -1.617   0.116    5.64
+peer_breadth_excess_1d              20   -0.238   -0.461   0.053    4.17
+peer_breadth_1d                     20   -0.241   -0.458   0.053    4.13
+state_LAG_10_1d                      5   -1.036   -1.486   0.111    4.06
+market_return_1d                    20   -0.157   -0.387   0.057    4.05
+state_LAG_5_1d                       5   -1.121   -1.502   0.098    3.89
+peer_return_1d                      20   -0.202   -0.397   0.051    3.85
+peer_return_excess_1d               20   -0.198   -0.395   0.052    3.78
+
+    clear Bonferroni z>=3.19:      14 of 35
+    above the noise maximum z>=1.95:  21 of 35
+
+    A column beats its own rotated null past the declared bar. This is the first
+    time that has happened. The next step is NOT another variant: it is one
+    pre-registered confirmation on the sealed period, which is what the seal is for.
+
+    of those, NET POSITIVE after costs: 0. Information and money are
+    separate tests and a column has to pass both.
