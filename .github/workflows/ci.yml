@@ -96,6 +96,28 @@ jobs:
         # claim in CLAIMS was unverified while the suite reported green.
         # A skip is not a pass; read the reasons (#261).
 
+      - name: Unit suite may not get worse (blocking)
+        env:
+          PYTHONPATH: .
+        run: python scripts/maintenance/unit_failure_ratchet.py
+        # Blocking, and green today. REGISTER #283: tests/unit held 27
+        # failures against 3,337 passes while this workflow reported green,
+        # because the step below cannot fail and the contracts step does not
+        # cover tests/unit. What was going red to nobody included a ratchet
+        # already breached (24 unbounded joins against a ledger of 22) and
+        # `sec_fundamentals` keying on measurements -- #142 exactly, the shape
+        # that duplicated FRED 4.99x, sitting in a second collector.
+        #
+        # Gating on ZERO would turn this red today and keep it red until 23
+        # unrelated repairs land, which is how a gate gets switched off -- see
+        # the `|| true` two steps down and #181. So the gate is a LEDGER of the
+        # 23 known ids in tests/known_unit_failures.txt: any failure not on
+        # that list fails the build, the list may only shrink, and a test that
+        # starts passing is reported as a gain to lock in.
+        #
+        # A ledger of IDS, not a count: a count lets one failure be fixed while
+        # another appears and calls it no change.
+
       - name: Run pytest with coverage
         env:
           PYTHONPATH: .

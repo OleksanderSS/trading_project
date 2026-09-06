@@ -1,0 +1,32 @@
+# Known failures in tests/unit, one id per line (REGISTER #283).
+#
+# This file is a CEILING, not a to-do list: any failure NOT listed
+# here fails the build. It may only shrink. Rewriting it with
+# --baseline to make a new failure go away is the one use that
+# defeats its purpose -- fix the test or the code instead.
+#
+# Recorded from a full run of tests/unit.
+
+tests/unit/test_active_preset_governs_scope.py::test_the_shipped_preset_is_the_scope_that_was_actually_trained
+tests/unit/test_collector_identity_keys.py::test_every_collector_key_has_been_classified[sec_fundamentals]
+tests/unit/test_collector_identity_keys.py::test_every_column_in_a_live_key_has_been_classified[sec_fundamentals]
+tests/unit/test_collector_identity_keys.py::test_no_identity_key_is_built_from_a_measurement[sec_fundamentals]
+tests/unit/test_identity_columns_are_not_features.py::test_the_real_export_has_exactly_the_six_prefixed_identity_columns
+tests/unit/test_macro_features_offline_policy.py::test_stale_legacy_cache_columns_never_pollute_the_merged_frame
+tests/unit/test_macro_point_in_time_contract.py::test_fred_hash_changes_when_vintage_or_value_changes
+tests/unit/test_only_targets_the_timeframe_carries.py::test_an_hourly_horizon_target_is_kept_on_the_intraday_timeframe
+tests/unit/test_pct_change_fill_policy.py::test_context_map_numeric_state_does_not_treat_missing_gap_as_move
+tests/unit/test_prediction_survives_an_empty_context.py::test_one_failing_context_does_not_end_the_stage
+tests/unit/test_promotion_gate.py::test_a_margin_smaller_than_its_own_noise_is_refused
+tests/unit/test_stage3_causal_diagnostic.py::test_causal_evidence_is_attached_to_run_output_without_changing_selection
+tests/unit/test_stage3_causal_diagnostic.py::test_external_predictor_causality_is_detected_and_does_not_affect_selection
+tests/unit/test_stage3_feature_causality.py::test_market_regime_features_are_prefix_invariant
+tests/unit/test_stage3_timeframe_loss_is_visible.py::test_a_timeframe_whose_rows_all_mismatch_is_announced
+tests/unit/test_stage3_timeframe_loss_is_visible.py::test_matching_rows_are_kept
+tests/unit/test_stage3_timeframe_loss_is_visible.py::test_the_interval_filter_compares_normalised_names
+tests/unit/test_stage4_active_training_contract.py::test_active_stage4_emits_honest_partial_evidence_and_prediction_metadata
+tests/unit/test_stage7_review_boundaries.py::test_stage7_notification_requires_explicit_per_run_authorization
+tests/unit/test_stage7_review_boundaries.py::test_stage7_turns_trading_activity_into_review_candidate_not_learning
+tests/unit/test_unbounded_join_ratchet.py::test_no_file_gained_an_unbounded_join
+tests/unit/test_unbounded_join_ratchet.py::test_the_ledger_is_not_stale
+tests/unit/test_unbounded_join_ratchet.py::test_the_total_never_exceeds_the_ledger
