@@ -120,20 +120,41 @@ def test_retries_are_bounded_and_the_last_response_is_returned():
     assert responder.calls == 3, "expected the original call plus 2 retries"
 
 
-def test_retry_after_is_obeyed_when_the_server_sends_it():
-    """A 429 usually says how long to wait; guessing shorter earns another."""
+def test_retry_after_is_obeyed_when_the_server_sends_it(monkeypatch):
+    """A 429 usually says how long to wait; guessing shorter earns another.
+
+    ASSERTS THE REQUEST, NOT THE WALL CLOCK (2026-09-06). This used to time
+    the call and require `elapsed >= 0.4`. It passed alone, passed beside its
+    neighbours, and failed inside the full `tests/unit` run -- which is the
+    worst kind of test, because it makes a green suite a coin flip and, under
+    the failure ledger added the same week, would fail CI for nothing.
+
+    The property has nothing to do with elapsed time: what must hold is that
+    the client asked to wait as long as the server said. So the sleep is
+    observed instead of endured -- deterministic, and 0.4 seconds faster.
+    """
+    slept: list[float] = []
+
+    async def _record(seconds):
+        slept.append(seconds)
+
+    monkeypatch.setattr(
+        "src.core.clients.http_client_factory.asyncio.sleep", _record
+    )
     responder = _Responder([429, 200], retry_after="0.4")
 
     async def run():
         client = await _client_with(responder, retries=2, backoff_factor=0.0)
-        started = time.monotonic()
-        response = await client.get("https://example.test/data")
-        return response, time.monotonic() - started
+        return await client.get("https://example.test/data")
 
-    response, elapsed = asyncio.run(run())
+    response = asyncio.run(run())
 
     assert response.status_code == 200
-    assert elapsed >= 0.4, f"Retry-After ignored (waited {elapsed:.2f}s)"
+    assert slept, "the client retried without waiting at all"
+    assert max(slept) >= 0.4, (
+        f"Retry-After ignored: the server asked for 0.4s and the longest "
+        f"wait requested was {max(slept)}"
+    )
 
 
 def test_an_unparseable_retry_after_falls_back_to_backoff():

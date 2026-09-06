@@ -220,6 +220,73 @@ class MacroFeaturesEnricher(BaseEnricher):
         # realtime_start and validated in Stage 2; it was simply never
         # consulted here. The observation date is kept alongside for
         # reference and diagnostics.
+        # Derive availability for the series whose vintage stamp is a request
+        # date, so rows already in the table get it without a re-collection
+        # (ROADMAP §22). Measured on the live table 2026-09-06: 359,989 of
+        # 485,010 rows are stamped more than 400 days after their own
+        # observation, the largest gap 10,958 days. The stamp is the day we
+        # asked; for a series FRED never revises, the day the figure existed
+        # is the observation date plus a fixed publication lag.
+        #
+        # ONE definition, called from two places: `FredCollector` stamps new
+        # rows at write time, this stamps old ones at read time. A second
+        # table of lags here is how the same decision ends up with two
+        # answers -- the shape family C is made of.
+        if 'available_at' not in macro_data.columns \
+                and {'series_id', 'date'} <= set(macro_data.columns):
+            from src.data.collectors.fred_collector import FredCollector
+            derived = [
+                FredCollector.availability_for(series, observation)
+                for series, observation in zip(macro_data['series_id'],
+                                               macro_data['date'])
+            ]
+            known = sum(1 for value in derived if value is not None)
+            if known:
+                # Assigned in place, without a defensive copy: this function
+                # already mutates its argument forty lines below
+                # (`macro_data[date_col] = pd.to_datetime(...)`), so a copy
+                # here buys nothing and costs a full duplicate of the macro
+                # frame -- which the deep-copy ratchet caught immediately,
+                # having been tightened to 115 the same morning.
+                macro_data['available_at'] = derived
+
+                # AND NOT WHERE A REVISION REALLY HAPPENED.
+                #
+                # The first version of this overwrote availability for every
+                # row of an "unrevised" series, and three tests in
+                # test_macro_pivot_vintages.py caught it within the hour: a
+                # contract written 2026-08-13 says each vintage appears at its
+                # OWN publication date, so a revision becomes known later
+                # rather than overwriting the original.
+                #
+                # Both are right, for different rows. The stored table holds
+                # 8,048 (series, date) pairs across up to ten rows each, and
+                # only 60 of those pairs carry genuinely DIFFERENT values. The
+                # rest are re-fetches of one number under a fresh request
+                # stamp -- the 74.2% this fix exists for. So: derive
+                # availability where the vintages agree, and leave a real
+                # revision alone.
+                if 'value' in macro_data.columns:
+                    numeric = pd.to_numeric(macro_data['value'], errors='coerce')
+                    spread = numeric.groupby(
+                        [macro_data['series_id'], macro_data['date']]
+                    ).transform('nunique')
+                    macro_data.loc[spread > 1, 'available_at'] = pd.NaT
+
+                # A revised series keeps its real vintage: `available_at` is
+                # NaT there, and falling back per row rather than per column
+                # is what stops this from overwriting #131's work.
+                if 'realtime_start' in macro_data.columns:
+                    macro_data['available_at'] = macro_data['available_at'].fillna(
+                        pd.to_datetime(macro_data['realtime_start'],
+                                       errors='coerce'))
+                logger.info(
+                    'Derived available_at for %d of %d macro rows from the '
+                    'observation date plus the measured publication lag; the '
+                    'rest keep their real vintage (ROADMAP §22).',
+                    known, len(macro_data),
+                )
+
         date_col = None
         for col in ['available_at', 'released_at', 'realtime_start',
                     'date', 'datetime']:

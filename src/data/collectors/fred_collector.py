@@ -39,6 +39,61 @@ class FredCollector(BaseCollector):
         "WALCL", "WTREGEN", "RRPONTSYD", "NFCI",
     })
 
+
+    #: How long after its observation date each unrevised series first appears.
+    #:
+    #: ROADMAP §22. For a series FRED does not revise, `realtime_start` is the
+    #: day we ASKED, not the day the figure existed -- so a 1996 observation
+    #: pulled in a 2026 backfill carries a 2026 stamp and never becomes
+    #: available inside any training window. Measured on the live table
+    #: 2026-09-06: **359,989 of 485,010 rows (74.2%)** are stamped more than
+    #: 400 days after their own observation, the largest gap being 10,958 days
+    #: -- thirty years.
+    #:
+    #: The lag is the MINIMUM observed `realtime_start - date` per series,
+    #: because the minimum is the one stamp that cannot be a backfill: it is
+    #: the earliest that value was ever seen to exist. Measured, per series:
+    #:
+    #:     T10Y2Y T10Y3M T10YIE T5YIE T5YIFR RRPONTSYD   0 days  (same day)
+    #:     DGS10 VIXCLS WALCL WTREGEN DEXUSEU DEXCHUS
+    #:     DCOILWTICO BAMLH0A0HYM2 BAMLC0A0CM            1 day
+    #:     NFCI                                          5 days  (weekly)
+    #:     GS10 GS2                                     29 days  (MONTHLY
+    #:                                                   series, despite
+    #:                                                   sitting in a set
+    #:                                                   named "daily")
+    #:
+    #: The last line is why this is a table and not a constant: two members of
+    #: UNREVISED_DAILY_SERIES are not daily at all, and giving them a one-day
+    #: lag would claim a monthly average was knowable four weeks before it was.
+    PUBLICATION_LAG_DAYS: dict[str, int] = {
+        "T10Y2Y": 0, "T10Y3M": 0, "T10YIE": 0, "T5YIE": 0, "T5YIFR": 0,
+        "RRPONTSYD": 0,
+        "DGS10": 1, "VIXCLS": 1, "WALCL": 1, "WTREGEN": 1,
+        "DEXUSEU": 1, "DEXCHUS": 1, "DCOILWTICO": 1,
+        "BAMLH0A0HYM2": 1, "BAMLC0A0CM": 1,
+        "NFCI": 5,
+        "GS10": 29, "GS2": 29,
+    }
+
+    @classmethod
+    def availability_for(cls, series_id: str, observation) -> "pd.Timestamp | None":
+        """When this figure could first have been read, or None if unknown.
+
+        None means "no better answer than the vintage stamp" -- for a series
+        FRED genuinely revises, `realtime_start` IS the availability and must
+        not be overwritten (#131). Returning None rather than guessing keeps
+        those two cases apart, which is the whole reason this function exists
+        instead of a blanket rule.
+        """
+        lag = cls.PUBLICATION_LAG_DAYS.get(str(series_id))
+        if lag is None:
+            return None
+        stamp = pd.to_datetime(observation, errors="coerce")
+        if pd.isna(stamp):
+            return None
+        return stamp + pd.Timedelta(days=lag)
+
     def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.timeout = self.configs.get('timeout', 20.0)
@@ -198,6 +253,14 @@ class FredCollector(BaseCollector):
             return None
 
         df = pd.DataFrame(all_series_data)
+        # Availability derived where it can be, alongside the vintage
+        # stamp rather than instead of it (ROADMAP §22). For a revised
+        # series this stays NaT and `realtime_start` remains the answer.
+        if 'series_id' in df.columns and 'date' in df.columns:
+            df['available_at'] = [
+                self.availability_for(series, observation)
+                for series, observation in zip(df['series_id'], df['date'])
+            ]
         df['hash'] = df.apply(self._generate_hash, axis=1)
 
         # Dedup against what is already stored -- one bulk query on `hash`.

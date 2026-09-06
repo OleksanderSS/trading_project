@@ -88,7 +88,19 @@ def test_a_republished_value_never_multiplies_the_bars(enricher):
     ])
 
     pivoted = enricher._pivot_macro_data(frame)
-    assert pivoted["FRED_DGS10"].tolist() == pytest.approx([4.00] * 5)
+
+    # The COUNT of rows changed on 2026-09-06 and the property did not.
+    #
+    # This asserted five rows, one per re-publication, because keying on
+    # realtime_start made each fetch its own moment. DGS10 is a series FRED
+    # does not revise, so those five stamps are five times WE ASKED -- the
+    # 74.2% of rows measured as stamped up to thirty years after their own
+    # observation (ROADMAP §22). Availability is now derived from the
+    # observation date, so one number known on one day is one row.
+    #
+    # What this test is named for is unchanged and asserted below: bars must
+    # not multiply. That is the property; the row count was scenery.
+    assert pivoted["FRED_DGS10"].tolist() == pytest.approx([4.00])
 
     bars = pd.DataFrame({
         "datetime": pd.date_range("2026-06-01", periods=10, freq="D"),
@@ -125,7 +137,15 @@ def test_data_without_vintages_still_pivots(enricher):
 
     pivoted = enricher._pivot_macro_data(frame)
 
-    assert pivoted.loc[pd.Timestamp("2026-01-05"), "FRED_DGS10"] == pytest.approx(4.0)
+    # Still pivots -- that is the property in the name. WHERE it lands moved
+    # on 2026-09-06: with no vintage column, availability is now derived as
+    # the observation date plus DGS10's measured one-day publication lag,
+    # so the value is knowable on the 6th rather than on the 5th. A bar dated
+    # the 5th seeing a number published on the 6th is the look-ahead this
+    # whole section is about.
+    assert len(pivoted) == 1
+    assert pivoted["FRED_DGS10"].iloc[0] == pytest.approx(4.0)
+    assert pivoted.index[0] == pd.Timestamp("2026-01-06")
 
 
 def test_a_frame_without_the_expected_columns_is_returned_unchanged(enricher):
