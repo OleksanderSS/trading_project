@@ -157,6 +157,12 @@ class FundamentalsEnricher(BaseEnricher):
         right = (right.sort_values(["filed", "period_end"])
                       .loc[:, ["ticker", "filed", "value"]]
                       .rename(columns={"value": concept}))
+        # unbounded-on-purpose: bounded ALREADY, downstream. `max_staleness_
+        # days` (200) masks every figure older than that, using the filing age
+        # computed by `_latest_filed`. A `tolerance=` here would drop the row
+        # before the age could be measured, so the mask would lose the very
+        # thing it decides on -- and the last figure a company FILED is what
+        # was knowable until it files again, which is the point-in-time answer.
         merged = pd.merge_asof(
             bars.sort_values("_bar"),
             right,
@@ -302,6 +308,11 @@ class FundamentalsEnricher(BaseEnricher):
         right = (facts[["ticker", "filed"]]
                  .sort_values("filed")
                  .assign(_filed_at=lambda part: part["filed"]))
+        # unbounded-on-purpose: and this one is the reason the other is safe.
+        # It answers "how old is the newest filing at this bar", so it MUST
+        # reach back however far: bounding it would return NaT for a company
+        # that stopped filing, making "never filed" and "filed three years ago"
+        # the same answer -- and the staleness mask exists to tell them apart.
         merged = pd.merge_asof(
             bars.sort_values("_bar"), right,
             left_on="_bar", right_on="filed", by="ticker", direction="backward",

@@ -79,12 +79,48 @@ def _has_keyword(node: ast.Call, name: str) -> bool:
     return any(k.arg == name for k in node.keywords)
 
 
+#: Written on the line above a call that is unbounded ON PURPOSE.
+#:
+#: Added 2026-09-06 (REGISTER #283). Four new sites appeared in two enrichers
+#: and all four are correct:
+#:
+#:   corporate_filings_enricher joins CUMULATIVE counters (`cumsum` at line
+#:   193). Carrying a running total forward is not a stale reading -- if no
+#:   filing happened since March then March's total IS today's total.
+#:
+#:   fundamentals_enricher is bounded ALREADY, downstream: `max_staleness_days
+#:   = 200` masks anything older. Its second join exists precisely to learn how
+#:   old the newest filing is, and a `tolerance=` there would collapse "never
+#:   filed" and "filed long ago" into the same NaT -- destroying the
+#:   distinction the mask is built on.
+#:
+#: Without this marker the only way to record those facts was `--baseline`,
+#: which RAISES the ceiling -- and this ratchet's own docstring says the number
+#: must never go up. So an explained site stops counting instead, and the
+#: ceiling can keep falling. Same invariant as everywhere else here: silence
+#: must carry a mark saying it was chosen.
+DELIBERATE = 'unbounded-on-purpose:'
+
+
+def _explained(lines: list[str], lineno: int) -> bool:
+    """Is there a marker in the few lines above this call?
+
+    A window rather than the single line above, because a call is often
+    preceded by its own multi-line comment and the marker belongs at the top
+    of that explanation, not wedged against the code.
+    """
+    start = max(0, lineno - 8)
+    return any(DELIBERATE in line for line in lines[start:lineno])
+
+
 def scan_file(path: Path) -> list[dict]:
-    """Every unbounded join or fill in one file."""
+    """Every unbounded join or fill in one file, minus the explained ones."""
     try:
-        tree = ast.parse(path.read_text(encoding='utf-8'))
+        text = path.read_text(encoding='utf-8')
+        tree = ast.parse(text)
     except (SyntaxError, UnicodeDecodeError):
         return []
+    lines = text.splitlines()
 
     found: list[dict] = []
     for node in ast.walk(tree):
@@ -98,6 +134,8 @@ def scan_file(path: Path) -> list[dict]:
         else:
             continue
         if _has_keyword(node, bound):
+            continue
+        if _explained(lines, node.lineno):
             continue
         found.append({'call': name, 'line': node.lineno, 'bound': bound})
     return found

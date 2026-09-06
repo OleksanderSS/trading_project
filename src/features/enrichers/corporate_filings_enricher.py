@@ -225,6 +225,11 @@ class CorporateFilingsEnricher(BaseEnricher):
         right = right.sort_values("_at")
 
         cum_cols = ["cum_filings", "cum_material", "cum_periodic"]
+        # unbounded-on-purpose: these are CUMULATIVE counters (`cumsum` above),
+        # not levels. Carrying a running total forward is not a stale reading:
+        # if no filing happened since March, March's total IS today's total,
+        # and a `tolerance=` here would blank the count for every quiet company
+        # instead of reporting the truth that nothing was filed.
         now = pd.merge_asof(
             left.sort_values("_bar"), right[["ticker", "_at", *cum_cols]],
             left_on="_bar", right_on="_at", by="ticker", direction="backward",
@@ -232,6 +237,10 @@ class CorporateFilingsEnricher(BaseEnricher):
 
         earlier_left = left.copy()
         earlier_left["_bar"] = earlier_left["_bar"] - pd.Timedelta(days=self.window_days)
+        # unbounded-on-purpose: the same cumulative counters, read at an
+        # earlier bar so the pair gives the count WITHIN the window by
+        # subtraction. Bounding this leg and not the other would make the
+        # difference between them meaningless.
         earlier = pd.merge_asof(
             earlier_left.sort_values("_bar"), right[["ticker", "_at", *cum_cols]],
             left_on="_bar", right_on="_at", by="ticker", direction="backward",
