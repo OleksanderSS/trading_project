@@ -42,7 +42,7 @@ TASK = re.compile(r"^\s*[-*]\s*\[")
 #: 17,392 after §30 was moved to WORKING_METHOD (my first note here said
 #: 16,632 and this very test caught the arithmetic). Lower it when prose moves
 #: out; never raise it. Raising it is precisely the growth the owner named.
-PROSE_CEILING = 17_400
+PROSE_CEILING = 16_900
 
 
 def _task_free_sections() -> list[tuple[int, str]]:
@@ -91,7 +91,9 @@ def test_the_plan_still_holds_more_task_text_than_prose():
 def test_the_ceiling_is_not_slack():
     """A ratchet with room to spare stops the NEXT addition and not this one.
 
-    Introduced at 17,392 against a ceiling of 17,400 -- eight bytes of headroom,
+    17,392 -> 16,878 on the same day: the map in §3 was rewritten truthfully and
+    PAID for by moving §19a, a dated journal entry, into AUDIT_HISTORY. The
+    ceiling followed down to 16,900 -- twenty-two bytes of headroom,
     which is a line of text, not a budget. A rule introduced with a budget
     never binds (#203).
     """

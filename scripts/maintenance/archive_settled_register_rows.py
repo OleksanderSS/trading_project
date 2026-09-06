@@ -61,6 +61,22 @@ ID_ROW = re.compile(r"^\|\s*(\d+)\s*\|")
 INDEX_HEADING = "## Покажчик вирішеного"
 ARCHIVE_HEADING = "## Повні записи реєстру"
 
+#: The paragraph the rebuild writes under the archive's heading.
+#:
+#: Kept as a constant because it is read by TWO things: the rebuild writes it,
+#: and the stray-text guard must not mistake it for somebody's lost prose. The
+#: first version of that guard had the lines only in the writer, so it fired on
+#: the archiver's own output -- a check reporting the thing it had just written.
+ARCHIVE_PREAMBLE = [
+    "Перенесено з `REGISTER.md`, коли той перестав читатися за один прохід",
+    "(559 КіБ, 90% байтів — вирішене), бо саме нечитаність і є причиною, з",
+    "якої стани гнили: до рядка №142 ніхто не доходив.",
+    "",
+    "Нічого не видалено й не переписано — рядки ті самі, включно з",
+    "поправками до моїх власних перших описів. Коротка лінія",
+    "«питання → результат» лишилась у реєстрі.",
+]
+
 #: Long enough to recognise an entry without opening the archive; short enough
 #: that 253 of them stay a list rather than a second register.
 QUESTION_CHARS = 200
@@ -139,6 +155,29 @@ def main() -> int:
     archive_text = io.open(ARCHIVE, encoding="utf-8").read()
 
     archive_head, archived_rows = _split(archive_text, ARCHIVE_HEADING)
+
+    # Prose after the heading is DESTROYED by the rebuild below, because the
+    # archive is regenerated from its table rows. Found 2026-09-06 by moving a
+    # journal section here by hand: the archiver reported "written" and the
+    # section was gone -- the same shape as #278, where an index-section row
+    # was eaten, and the same remedy. Anything after the heading that is not a
+    # row stops the run instead of vanishing.
+    at = archive_text.find("\n" + ARCHIVE_HEADING)
+    if at != -1:
+        stray = [line for line in archive_text[at:].splitlines()
+                 if line.strip()
+                 and not ID_ROW.match(line)
+                 and not line.startswith(ARCHIVE_HEADING)
+                 and not line.startswith("|")
+                 and not line.startswith("#")
+                 and line.strip() not in {p.strip() for p in ARCHIVE_PREAMBLE}]
+        if stray:
+            raise SystemExit(
+                "the archive holds text after its heading that is not a table "
+                "row, and rebuilding would delete it. Move it ABOVE the "
+                "heading (the head is preserved verbatim):\n"
+                + "\n".join(f"  {line[:120]}" for line in stray[:8])
+            )
     settled: dict[int, str] = {int(ID_ROW.match(row).group(1)): row
                                for row in archived_rows}
     already = len(settled)
@@ -271,13 +310,7 @@ def main() -> int:
     new_archive = archive_head.rstrip() + "\n\n" + "\n".join([
         ARCHIVE_HEADING,
         "",
-        "Перенесено з `REGISTER.md`, коли той перестав читатися за один прохід",
-        "(559 КіБ, 90% байтів — вирішене), бо саме нечитаність і є причиною, з",
-        "якої стани гнили: до рядка №142 ніхто не доходив.",
-        "",
-        "Нічого не видалено й не переписано — рядки ті самі, включно з",
-        "поправками до моїх власних перших описів. Коротка лінія",
-        "«питання → результат» лишилась у реєстрі.",
+        *ARCHIVE_PREAMBLE,
         "",
         "| # | стан | тип | звідки | що знайдено | подробиці |",
         "|---|---|---|---|---|---|",
