@@ -97,6 +97,32 @@ KEY_CLASSIFICATION: dict[str, dict[str, tuple[str, str]]] = {
         'ticker': (IDENTITY, 'the company'),
         'insider_name': (IDENTITY, 'who filed'),
     },
+    'sec_fundamentals': {
+        'cik': (IDENTITY, 'the company'),
+        'concept': (IDENTITY, 'which reported fact, e.g. NetIncomeLoss'),
+        'unit': (IDENTITY, 'USD and shares are different facts, not one fact '
+                           'in two dresses'),
+        'period_start': (IDENTITY, 'and it earns its place: ONE filing reports '
+                                   'NetIncomeLoss twice, once for the quarter '
+                                   'and once for the nine months, both ENDING '
+                                   'the same day. Same end, same accession, '
+                                   'different start, different number -- 471 '
+                                   'of AAPL 2,939 facts collided that way '
+                                   'before it was added'),
+        'period_end': (IDENTITY, 'which fiscal period'),
+        'accession': (VINTAGE, 'deliberate, and NOT the shape that duplicated '
+                               'FRED. A quarter appears once per filing that '
+                               'reports it -- the original and every later '
+                               'restatement -- and keeping them all is what '
+                               'makes "what did this look like THEN" '
+                               'answerable. The difference from FRED realtime_'
+                               'start, which was stamped with the REQUEST date '
+                               'and so made new rows on every fetch (#142): an '
+                               'accession is the SEC filing id and does not '
+                               'change when the same filing is read again. '
+                               'Measured 2026-09-06 on the live database: '
+                               '208,544 rows, ZERO duplicate key groups'),
+    },
     'newsapi': {
         'url': (IDENTITY, 'the article'),
         'publishedAt': (IDENTITY, 'when it appeared'),
