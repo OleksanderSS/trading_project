@@ -26,9 +26,29 @@ import pytest
 from src.features.enrichers.peer_context_enricher import PeerContextEnricher
 
 
+#: The membership these tests are written against, passed in rather than
+#: inherited from `assets.yaml`.
+#:
+#: THE REASON, measured 2026-09-06. Four of these tests had been RED since
+#: REGISTER #225 landed a real `assets.sector_partition` -- 14 sectors over all
+#: 110 tickers -- which split NVDA, AMD and INTC apart. Each name then had no
+#: peer at its timestamp, every aggregate came back NaN, and the assertions
+#: failed. Nobody saw it: CI blocks on `tests/contracts/` and the wide run sits
+#: behind `|| true`, so 27 red tests in `tests/unit/` reported nothing.
+#:
+#: The tests were never about the partition. They are about the arithmetic --
+#: leave-one-out, same timestamp, no bleed between sectors -- and a test of
+#: arithmetic that breaks when a config changes was testing two things and
+#: saying so about neither.
+TEST_SECTORS = {
+    "semis": ["NVDA", "AMD", "INTC"],
+    "big_tech": ["AAPL", "MSFT", "GOOGL"],
+}
+
+
 @pytest.fixture
 def enricher():
-    return PeerContextEnricher()
+    return PeerContextEnricher({"sectors": TEST_SECTORS})
 
 
 def _bars(rows: list[tuple[str, str, float]]) -> pd.DataFrame:

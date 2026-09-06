@@ -77,6 +77,35 @@ _DEFAULT_SECTORS: dict[str, list[str]] = {
 #: countable rather than incidental -- see `_unmapped_share` below.
 UNMAPPED_SECTOR = "other"
 
+#: Above this share of rows in the fallback bucket, `peer_*` is market context
+#: wearing a sector name, and the run says so.
+#:
+#: Measured on the 2026-08-29 batch and recorded at the top of this file: 79 of
+#: 110 tickers, 69% of daily rows. A third is already enough for the columns to
+#: describe something other than what they are named, and the point of the
+#: threshold is that it fires on the state we are actually in rather than on
+#: some hypothetical worse one.
+UNMAPPED_SHARE_WARNING = 0.33
+
+
+def _unmapped_share(sector: "pd.Series") -> float:
+    """Fraction of rows whose "sector" is the fallback bucket.
+
+    The function the constant above has pointed at since it was written, and
+    which did not exist until 2026-09-06 -- found through REGISTER #281, which
+    asked why `UNMAPPED_SECTOR` had no callers. The answer was that the value
+    is written as a bare `"other"` ninety lines below, and the counting the
+    comment promised was never built.
+
+    That absence is the whole defect this file's header describes: 79 of 110
+    tickers landed in the bucket, `peer_return` was market return for them,
+    and NO COVERAGE METRIC SHOWED IT because every row had a value. A share is
+    the one number that would have.
+    """
+    if sector is None or len(sector) == 0:
+        return 0.0
+    return float((sector.astype(str) == UNMAPPED_SECTOR).mean())
+
 
 def _partition_from_assets() -> dict[str, list[str]] | None:
     """Sector membership from `assets.sector_partition`, or None if absent.
@@ -165,7 +194,29 @@ class PeerContextEnricher(BaseEnricher):
             return df.copy() if not restore_index else df
 
         ticker = frame["ticker"].astype(str).str.strip().str.upper()
-        sector = ticker.map(self.sector_of).fillna("other")
+        # The constant, not the literal. They agreed by luck: the value was
+        # named in one place and written in another, so moving the name would
+        # have changed what `_unmapped_share` counts without changing what
+        # gets filled in -- the shape that put SVM in two config lists and
+        # `max_features` in three copies (family C).
+        sector = ticker.map(self.sector_of).fillna(UNMAPPED_SECTOR)
+
+        # And say how much of the frame is in that bucket. A silent fallback
+        # is what made this invisible for a month: the columns are named for
+        # sector context, and for these rows they carry market context.
+        unmapped = _unmapped_share(sector)
+        if unmapped > UNMAPPED_SHARE_WARNING:
+            logger.warning(
+                "peer_* columns describe the MARKET, not a sector, for %.0f%% "
+                "of rows: %d of %d tickers have no sector mapping and share "
+                "the '%s' bucket. peer_return is the market's move for them, "
+                "peer_breadth is market breadth, peer_divergence is "
+                "ticker-minus-market. Map them in assets.sector_partition to "
+                "make these columns mean what they are named.",
+                100 * unmapped,
+                int((sector == UNMAPPED_SECTOR).groupby(ticker).any().sum()),
+                int(ticker.nunique()), UNMAPPED_SECTOR,
+            )
         stamp = pd.to_datetime(frame["datetime"], errors="coerce")
         if getattr(stamp.dt, "tz", None) is not None:
             stamp = stamp.dt.tz_localize(None)
