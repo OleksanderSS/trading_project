@@ -49,12 +49,41 @@ TWO OTHER CORRECTIONS MADE AT THE SAME TIME.
     spread across alignments is reported: a result that depends on the phase
     is not a result.
 
+THE SECOND VERDICT, ADDED 2026-09-06, AND IT CHANGES HOW THE FIRST READS.
+
+Until then this script asked one question -- did the book beat a bar -- and that
+question cannot tell an EDGE from a TILT. A column whose ranking barely moves
+from year to year holds nearly the same names whatever the date, and collects
+whatever those names pay. Its net Sharpe is real money and says nothing about
+prediction.
+
+Measured that day on this script's own headline: `VOLATILITY_50_1d` at hold 60,
++0.586, the best result the project had held for seven days. With its positions
+shifted to random dates it scored +0.559. The contribution of knowing WHEN was
++0.027 -- 0.41 of its own standard deviations. It was the low-volatility tilt
+(CLAIMS R51).
+
+So every column is now also scored against its OWN null, built by rotating its
+positions in time: same book, same persistence, same taste in names, same
+friction, only the alignment broken. `z` is how far the real book stands above
+that null. A result needs BOTH -- money above the bar and z above the bar --
+and the summary now counts the three cases separately, including the one that
+was invisible before: net positive but not above its own null.
+
+Two limits of that null, stated rather than left to be discovered. It is built
+at the best-NET horizon only unless `--rotate-all-holds` is passed, so a column
+whose money is at one horizon and whose information is at another goes unseen
+-- which is the reversal family of R52. And twelve rotations is a screen, not a
+quotable z: a shortlist gets re-measured by
+`what_edge_would_the_net_test_have_seen.py --mode shuffle`.
+
 Both legs pay the friction, the Sharpe is the portfolio's, and holding periods
 are sampled without overlap. The sealed period is untouched.
 
     python scripts/diagnostics/net_test_every_survivor.py
     python scripts/diagnostics/net_test_every_survivor.py --universe fdr
     python scripts/diagnostics/net_test_every_survivor.py --holds 1 20 120
+    python scripts/diagnostics/net_test_every_survivor.py --rotate-all-holds
 """
 from __future__ import annotations
 
@@ -153,6 +182,57 @@ def _sharpe_all_phases(by_date: np.ndarray, hold: int) -> tuple[float, float]:
     return float(np.mean(values)), float(np.std(values))
 
 
+#: How many rotations build each column's own null. Twelve is a screen: the
+#: spread of twelve draws carries about 20% relative error, which is fine for
+#: a z compared against a bar near four and NOT fine for quoting a z to two
+#: decimals. A shortlist gets re-measured with more.
+ROTATIONS = 12
+
+
+def _mean_by_date(values: np.ndarray, codes: np.ndarray, groups: int) -> np.ndarray:
+    """Mean per date, NaN-skipping, in date order.
+
+    What `groupby(dates).mean().sort_index()` returns, by bincount. Speed only,
+    and it is not a nicety: the rotated null multiplies the number of these
+    calls by thirteen, and the pandas path turned a half-hour run into a
+    four-hour one.
+    """
+    finite = np.isfinite(values)
+    sums = np.bincount(codes, weights=np.where(finite, values, 0.0),
+                       minlength=groups)
+    counts = np.bincount(codes, weights=finite.astype(float), minlength=groups)
+    return np.where(counts > 0, sums / np.maximum(counts, 1.0), np.nan)
+
+
+def _rotation_index(frame: pd.DataFrame, lag: int) -> np.ndarray:
+    """Row indices that shift each name's position series `lag` bars later.
+
+    THE NULL THIS SCRIPT LACKED UNTIL 2026-09-06. Until then a net Sharpe was
+    compared with a constant bar, which cannot tell an edge from a TILT: a
+    column whose ranking barely changes from year to year holds nearly the same
+    book whatever the date, and earns whatever that book earns. Measured that
+    day, this script's own best result of seven days' standing --
+    VOLATILITY_50_1d at hold 60, +0.586 -- scored +0.559 with its positions
+    moved to random dates. The contribution of knowing WHEN was +0.027, z=0.41.
+    It was the low-volatility tilt, and the bar had no way to say so (CLAIMS
+    R51).
+
+    Rotation keeps the position ENTIRE -- its persistence, its taste in names,
+    its friction -- and breaks only the alignment in time, which is the one
+    thing a real edge needs and a tilt does not.
+
+    `frame` is sorted by ticker then datetime, so each name is a contiguous
+    block in date order and the shift is a roll within that block.
+    """
+    rows = np.arange(len(frame))
+    starts = np.concatenate([[0], frame.groupby("ticker", sort=False)
+                             .size().cumsum().to_numpy()])
+    out = np.empty_like(rows)
+    for begin, end in zip(starts[:-1], starts[1:]):
+        out[begin:end] = np.roll(rows[begin:end], lag % max(end - begin, 1))
+    return out
+
+
 def _panel(names: list[str]):
     """Identifiers, close, and the row order every feature column must follow."""
     ident = pd.read_parquet(
@@ -171,6 +251,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--holds", type=int, nargs="+",
                         default=[1, 5, 20, 40, 60, 120])
+    parser.add_argument("--rotations", type=int, default=ROTATIONS,
+                        help="draws of each column's OWN null, built by "
+                             "shifting its positions in time. 0 restores the "
+                             "pre-2026-09-06 behaviour, where a net Sharpe was "
+                             "compared with a constant bar and a static tilt "
+                             "was indistinguishable from an edge -- do not use "
+                             "it to read a result, only to reproduce an old one.")
+    parser.add_argument("--rotate-all-holds", action="store_true",
+                        help="build the null at EVERY horizon instead of only "
+                             "at the best-net one. Off by default because it "
+                             "costs six times the rotation work, and on when "
+                             "the question is 'does this column know anything "
+                             "anywhere' rather than 'is this headline an edge "
+                             "or a tilt'. It matters: the reversal family found "
+                             "on 2026-09-06 (R52) has its best NET at 120 days "
+                             "and its information at 1 to 5, so the default "
+                             "pass cannot see it.")
     parser.add_argument("--universe", choices=["varying", "fdr"],
                         default="varying",
                         help="varying: every feature with cross-sectional "
@@ -235,8 +332,22 @@ def main() -> int:
         const_sharpe[hold], _ = _sharpe_all_phases(
             work.groupby("datetime")["net"].mean().sort_index().to_numpy(), hold)
 
+    # Each column's own null, built once per rotation and reused for every
+    # feature: the shift is a property of the panel, not of the column.
+    sorted_codes, uniques = pd.factorize(dates, sort=True)
+    n_groups = len(uniques)
+    lags = [int(round((i + 1) / (args.rotations + 1) * n_groups))
+            for i in range(args.rotations)]
+    rotations = {lag: _rotation_index(frame, lag) for lag in lags}
+    if args.rotations:
+        print(f"each column is also scored against its OWN null: "
+              f"{args.rotations} rotations of its\npositions in time, which "
+              f"keeps the book and breaks only the timing. `z` is how\nfar the "
+              f"real book stands above that null, in its standard deviations.\n")
+
     header = (f"{'feature':<34}" + "".join(f"{'h' + str(h):>9}" for h in args.holds)
-              + f"{'best net':>10}{'at hold':>9}{'phase sd':>10}")
+              + f"{'best net':>10}{'at hold':>9}{'phase sd':>10}"
+              + (f"{'null':>9}{'z':>8}" if args.rotations else ""))
     print(f"{'BUY EVERYTHING (the opponent)':<34}"
           + "".join(f"{const_sharpe[h]:>9.3f}" for h in args.holds))
     # SURVIVORSHIP: these are today's names carried back, so this number is
@@ -287,20 +398,58 @@ def main() -> int:
             # having removed (CLAIMS R11, R17), reproduced here.
             position = position - (pd.Series(position).groupby(dates)
                                    .transform("mean").to_numpy())
-            work = pd.DataFrame({"datetime": dates})
             nets, spreads = {}, {}
             for hold in args.holds:
-                work["net"] = position * forwards[hold] - np.abs(position) * friction
-                by_date = work.groupby("datetime")["net"].mean().sort_index()
+                net = position * forwards[hold] - np.abs(position) * friction
                 nets[hold], spreads[hold] = _sharpe_all_phases(
-                    by_date.to_numpy(), hold)
+                    _mean_by_date(net, sorted_codes, n_groups), hold)
             best = max(nets, key=lambda h: (nets[h] if np.isfinite(nets[h]) else -9))
+
+            # The same book, told nothing about when. By default this is
+            # scored at the BEST-NET hold only, because the null is here to say
+            # what KIND of result the headline is, and six times the rotation
+            # work is a different question with a different price. The cost of
+            # that default is named rather than hidden: a column whose money is
+            # at one horizon and whose information is at another goes unseen,
+            # which is exactly the reversal family of R52. `--rotate-all-holds`
+            # asks the other question.
+            null_mean = null_sd = z = float("nan")
+            z_hold = best
+            if args.rotations:
+                where = args.holds if args.rotate_all_holds else [best]
+                moved_cache = {}
+                for lag in lags:
+                    moved = position[rotations[lag]]
+                    # Re-neutralise: after the shift the names on a date are
+                    # not the ones the original weights balanced.
+                    moved_cache[lag] = moved - _mean_by_date(
+                        moved, sorted_codes, n_groups)[sorted_codes]
+                for hold in where:
+                    turns = [
+                        _sharpe_all_phases(
+                            _mean_by_date(
+                                moved_cache[lag] * forwards[hold]
+                                - np.abs(moved_cache[lag]) * friction,
+                                sorted_codes, n_groups), hold)[0]
+                        for lag in lags]
+                    mean_h = float(np.nanmean(turns))
+                    sd_h = float(np.nanstd(turns, ddof=1))
+                    z_h = (nets[hold] - mean_h) / sd_h if sd_h > 0 else float("nan")
+                    # Keep the horizon that knows the most, not the one that
+                    # earned the most -- otherwise the flag changes nothing.
+                    if not np.isfinite(z) or (np.isfinite(z_h) and z_h > z):
+                        null_mean, null_sd, z, z_hold = mean_h, sd_h, z_h, hold
+
             rows.append({"feature": name, "best_net": nets[best],
                          "best_hold": best, "phase_sd": spreads[best],
+                         "rotated_null": null_mean, "rotated_sd": null_sd,
+                         "z_vs_own_null": z, "z_hold": z_hold,
+                         "net_at_z_hold": nets.get(z_hold, float("nan")),
                          **{f"h{h}": nets[h] for h in args.holds}})
             print(f"{name:<34}"
                   + "".join(f"{nets[h]:>9.3f}" for h in args.holds)
-                  + f"{nets[best]:>10.3f}{best:>9}{spreads[best]:>10.3f}",
+                  + f"{nets[best]:>10.3f}{best:>9}{spreads[best]:>10.3f}"
+                  + (f"{null_mean:>9.3f}{z:>8.2f}" if args.rotations else ""),
                   flush=True)
         del loaded
 
@@ -334,9 +483,44 @@ def main() -> int:
         print(f"  best at hold {hold:>4}: {column.max():+.3f}  "
               f"({column.idxmax() in report.index and report.loc[column.idxmax(), 'feature']})")
 
+    if args.rotations:
+        # THE SECOND TEST, AND IT IS NOT THE SAME ONE. A net Sharpe above the
+        # bar says the book made money. A z above the bar says the book knew
+        # WHEN. A result needs both, and until 2026-09-06 this script could
+        # only ask the first (CLAIMS R51, R52).
+        z_bar = float(norm.ppf(1.0 - 0.025 / max(attempts, 1)))
+        # AGAINST THE OPPONENT AT ITS OWN HORIZON, not against zero. A book
+        # that knows something and earns +0.026 while owning the same names
+        # pays +1.018 is a measured number, not a candidate -- and doing this
+        # comparison by hand after the run is how the check gets skipped
+        # (CLAIMS R28, R53).
+        report["vs_opponent"] = (report["net_at_z_hold"]
+                                 - report["z_hold"].map(const_sharpe))
+        known = report[report["z_vs_own_null"] >= z_bar]
+        print(f"\nz against each column's OWN rotated null, bar {z_bar:.2f}:")
+        print(f"  know something about WHEN                  {len(known)}")
+        print(f"  of those, also net positive                "
+              f"{int((known['net_at_z_hold'] > 0).sum())}")
+        print(f"  net positive but NOT above their own null  "
+              f"{int(((report['best_net'] > 0) & (report['z_vs_own_null'] < z_bar)).sum())}"
+              f"   <- tilts, not edges")
+        if len(known):
+            print(known[["feature", "z_hold", "net_at_z_hold", "rotated_null",
+                         "z_vs_own_null", "vs_opponent"]]
+                  .sort_values("z_vs_own_null", ascending=False)
+                  .head(15).to_string(index=False))
+            better = known[known["vs_opponent"] > 0]
+            print(f"\n  of those, BEAT BUYING EVERYTHING at the same hold  "
+                  f"{len(better)}")
+            if not len(better):
+                print("  Every one of them knows something and is still worth "
+                      "less than owning the\n  same names outright. That is a "
+                      "measured number, not a candidate.")
+
     if len(real):
         print("\nthese clear the noise and are the first real candidates:")
-        print(real[["feature", "best_net", "best_hold", "phase_sd"]]
+        print(real[["feature", "best_net", "best_hold", "phase_sd",
+                    "z_vs_own_null"]]
               .sort_values("best_net", ascending=False).to_string(index=False))
     else:
         print("\nNONE clears the multiplicity-corrected bar. Widening the "

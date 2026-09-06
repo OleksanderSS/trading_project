@@ -127,20 +127,13 @@ def _position(column: np.ndarray, dates: np.ndarray) -> np.ndarray:
                        .transform("mean").to_numpy())
 
 
-def _mean_by_date(values: np.ndarray, codes: np.ndarray, groups: int
-                  ) -> np.ndarray:
-    """Mean per date, NaN-skipping, in date order.
-
-    The same thing `groupby(dates).mean()` returns, by bincount. It is here for
-    speed alone -- a full sweep calls it about eighty times per column, and the
-    pandas path made 235 columns a four-hour run instead of a half-hour one.
-    Verified against the pandas result on the column it matters for.
-    """
-    finite = np.isfinite(values)
-    sums = np.bincount(codes, weights=np.where(finite, values, 0.0),
-                       minlength=groups)
-    counts = np.bincount(codes, weights=finite.astype(float), minlength=groups)
-    return np.where(counts > 0, sums / np.maximum(counts, 1.0), np.nan)
+#: Rotation and the fast date-mean live in the INSTRUMENT now, not here. They
+#: were written in this file on 2026-09-06 and moved into
+#: `net_test_every_survivor.py` the same day, because a null that decides how a
+#: verdict reads belongs to the thing that issues the verdict -- a diagnostic
+#: holding its own copy is how two definitions of the seal happened (R45).
+_mean_by_date = NET._mean_by_date
+_rotation_index = NET._rotation_index
 
 
 def _sharpe_given_position(position: np.ndarray, dates: np.ndarray,
@@ -185,35 +178,6 @@ def _shuffle_within_date(forward: np.ndarray, date_codes: np.ndarray,
     receiver = np.lexsort((generator.random(forward.size), date_codes))
     out = np.empty_like(forward)
     out[in_date_order] = forward[receiver]
-    return out
-
-
-def _rotation_index(frame: pd.DataFrame, lag: int) -> np.ndarray:
-    """Row indices that shift each name's position series `lag` bars later.
-
-    WHY ROTATION AND NOT THE RE-DEAL ABOVE. Re-dealing within a date makes the
-    book's daily P&L independent across dates. A real feature holds a similar
-    position for months, so its P&L is autocorrelated, and the standard error
-    of a Sharpe on an autocorrelated series is much larger than on white noise.
-    The re-deal therefore destroys the very thing that widens the null and
-    returns a spread that is too tight -- flattering any candidate measured
-    against it.
-
-    Rotation keeps the position series ENTIRE: the same persistence, the same
-    tilt toward whatever kinds of name the column likes, the same friction. It
-    breaks only the alignment in time with the returns. That is the one thing a
-    genuine edge needs and a spurious one does not.
-
-    `frame` is sorted by ticker then datetime, so each name is a contiguous
-    block in date order and the roll is a roll within that block.
-    """
-    rows = np.arange(len(frame))
-    starts = frame.groupby("ticker", sort=False).size().cumsum().to_numpy()
-    starts = np.concatenate([[0], starts])
-    out = np.empty_like(rows)
-    for begin, end in zip(starts[:-1], starts[1:]):
-        block = rows[begin:end]
-        out[begin:end] = np.roll(block, lag % max(len(block), 1))
     return out
 
 

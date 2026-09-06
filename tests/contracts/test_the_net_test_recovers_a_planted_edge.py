@@ -87,3 +87,72 @@ def test_no_edge_does_not_manufacture_one(seed):
     assert abs(sharpe) < 1.0, (
         f"an unplanted column scored {sharpe:.3f}. The book is manufacturing "
         "an edge from noise.")
+
+
+# ---------------------------------------------------------------------------
+# The rotated null, which lives in the INSTRUMENT and decides whether a net
+# Sharpe is an edge or a tilt. Added 2026-09-06 with #287(a); before it, this
+# script's own headline of seven days' standing was a low-volatility tilt read
+# as the project's best result (CLAIMS R51).
+# ---------------------------------------------------------------------------
+
+_net_spec = importlib.util.spec_from_file_location(
+    "net_test", PROJECT_ROOT / "scripts/diagnostics/net_test_every_survivor.py")
+NET = importlib.util.module_from_spec(_net_spec)
+_net_spec.loader.exec_module(NET)
+
+
+def _rotation_panel():
+    """A frame shaped the way `_rotation_index` requires: ticker, then date."""
+    stamps = pd.date_range("2010-01-01", periods=DATES, freq="D")
+    frame = pd.DataFrame({
+        "ticker": np.repeat([f"T{i}" for i in range(NAMES)], DATES),
+        "datetime": np.tile(stamps.to_numpy(), NAMES),
+    })
+    return frame.sort_values(["ticker", "datetime"]).reset_index(drop=True)
+
+
+def test_rotation_moves_each_name_within_its_own_block():
+    """A shift must never carry one name's position onto another name."""
+    frame = _rotation_panel()
+    moved = NET._rotation_index(frame, 37)
+    assert (frame["ticker"].to_numpy()[moved]
+            == frame["ticker"].to_numpy()).all(), (
+        "rotation crossed a name boundary, so the 'same book, different dates' "
+        "claim is false and every z built on it is meaningless.")
+
+
+def test_a_static_tilt_reads_as_a_tilt():
+    """A column that never changes rank holds the same book at any date.
+
+    This is the case the constant bar could not see. The rotated book IS the
+    real book, so the difference must be nothing.
+    """
+    frame = _rotation_panel()
+    dates = frame["datetime"].to_numpy()
+    codes, uniques = pd.factorize(dates, sort=True)
+    generator = np.random.default_rng(3)
+    per_name = dict(zip(sorted(frame["ticker"].unique()),
+                        generator.standard_normal(NAMES)))
+    tilt = frame["ticker"].map(per_name).to_numpy()
+    position = CONTROL._position(tilt, dates)
+    moved = position[NET._rotation_index(frame, 91)]
+    moved = moved - NET._mean_by_date(moved, codes, len(uniques))[codes]
+    assert np.abs(moved - position).max() < 1e-9, (
+        "a column constant within each name produced a DIFFERENT book after "
+        "rotation, so the null would credit a static tilt with timing.")
+
+
+def test_the_mean_by_date_matches_the_pandas_it_replaced():
+    """The fast path exists for speed and must not change an answer."""
+    frame = _rotation_panel()
+    dates = frame["datetime"].to_numpy()
+    codes, uniques = pd.factorize(dates, sort=True)
+    values = np.random.default_rng(5).standard_normal(len(frame))
+    values[::17] = np.nan
+    fast = NET._mean_by_date(values, codes, len(uniques))
+    slow = (pd.DataFrame({"d": dates, "v": values})
+            .groupby("d")["v"].mean().sort_index().to_numpy())
+    assert np.allclose(fast, slow, equal_nan=True), (
+        "the bincount date-mean disagrees with the groupby it replaced; every "
+        "Sharpe in the net test runs through it.")
