@@ -36,8 +36,19 @@ class VirtualPortfolio:
         self.performance_history: list[dict[str, Any]] = []
         self.metrics_calculator = PortfolioMetricsCalculator()
         risk_config = self.config_manager.get('strategy.risk_management', {})
-        self.max_position_size = risk_config.get('max_position_size', 0.1)
-        self.max_total_risk = risk_config.get('max_total_risk', 0.3)
+        # THE CONFIGURED NAME, NOT A NEIGHBOURING ONE. Until 2026-09-06 this
+        # asked for `max_position_size` while the config declares
+        # `max_position_size_pct`, so the configured value never once reached
+        # here and the limit in force was the default written on this line.
+        # Both happen to be 0.10, which is exactly why nobody noticed
+        # (REGISTER #288). The old name is still accepted so an existing
+        # deployment that set it does not silently lose its setting.
+        self.max_position_size = float(
+            risk_config.get('max_position_size_pct',
+                            risk_config.get('max_position_size', 0.1)))
+        self.max_total_risk = float(
+            risk_config.get('max_total_risk_pct',
+                            risk_config.get('max_total_risk', 0.3)))
         self.stop_loss_pct = risk_config.get('stop_loss_pct', 0.05)
         self.take_profit_pct = risk_config.get('take_profit_pct', 0.1)
         cost_config = self.config_manager.get(
@@ -196,6 +207,65 @@ class VirtualPortfolio:
 
         return (current_value - start_value) / start_value
 
+    def _held_value(self, current_prices: dict[str, float] | None = None
+                    ) -> dict[str, float]:
+        """What each position is worth, marked to market where a price is given.
+
+        Falls back to `avg_price` -- the cost basis, which already includes the
+        costs paid -- for any name without a quoted price. Stated rather than
+        silent because the two answers differ after a move, and a limit checked
+        against the wrong one binds at the wrong place.
+        """
+        prices = current_prices or {}
+        return {ticker: position['quantity'] * float(
+                    prices.get(ticker, position['avg_price']))
+                for ticker, position in self.positions.items()}
+
+    def _refuse_if_over_limit(self, ticker: str, trade_value: float,
+                              current_prices: dict[str, float] | None = None
+                              ) -> dict[str, Any] | None:
+        """The declared risk limits, enforced. Returns a refusal or None.
+
+        WHY THIS EXISTS. `strategy.risk_management` declared
+        `max_position_size_pct: 0.10` and `max_drawdown_pct: 0.15` and the rest,
+        and until 2026-09-06 `buy_stock` rejected an order for exactly one
+        reason: not enough cash. The config described a risk system that did not
+        exist, and read as configured (REGISTER #101, #288).
+
+        The numbers are NOT invented here. They are the ones already written in
+        the config -- 10% of the portfolio in one name, 30% invested in total --
+        so this changes what the code DOES without changing what the owner
+        decided. `max_total_risk_pct` is declared at 0.30 because that was
+        already this class's hardcoded default: the line makes visible what was
+        in force, it does not choose anew.
+
+        Checked at cost basis unless prices are supplied. That is the
+        conservative side for a buy: a position whose price has risen is worth
+        MORE than its basis, so cost basis can only under-state exposure, and
+        the caller who wants the tighter answer passes prices.
+        """
+        held = self._held_value(current_prices)
+        portfolio_value = self.current_balance + sum(held.values())
+        if portfolio_value <= 0:
+            return None
+
+        after_position = held.get(ticker, 0.0) + trade_value
+        if after_position / portfolio_value > self.max_position_size:
+            return {'success': False, 'error':
+                    f'Position limit: {ticker} would be '
+                    f'{after_position / portfolio_value:.1%} of the portfolio, '
+                    f'over the configured {self.max_position_size:.1%} '
+                    f'(strategy.risk_management.max_position_size_pct)'}
+
+        after_total = sum(held.values()) + trade_value
+        if after_total / portfolio_value > self.max_total_risk:
+            return {'success': False, 'error':
+                    f'Total risk limit: {after_total / portfolio_value:.1%} of '
+                    f'the portfolio would be invested, over the configured '
+                    f'{self.max_total_risk:.1%} '
+                    f'(strategy.risk_management.max_total_risk_pct)'}
+        return None
+
     def buy_stock(self, order_params: dict[str, Any]) ->dict[str, Any]:
         """Executes a virtual buy order with transaction costs."""
         try:
@@ -216,6 +286,15 @@ class VirtualPortfolio:
             if total_cost > self.current_balance:
                 return {'success': False, 'error':
                     'Insufficient funds including transaction costs'}
+            # The funds check stays first so no existing refusal changes its
+            # wording; the limits only ADD refusals that never happened before.
+            refusal = self._refuse_if_over_limit(
+                ticker, trade_value, order_params.get('current_prices'))
+            if refusal is not None:
+                logger.info(
+                    f"REFUSED {quantity} {ticker} at ${price:.2f}: "
+                    f"{refusal['error']}")
+                return refusal
             transaction = self._create_buy_transaction(order_params,
                 trade_value, cost_breakdown)
             self._process_buy_order(ticker, quantity, price, trade_value,

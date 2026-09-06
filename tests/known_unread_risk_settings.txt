@@ -12,12 +12,12 @@
 # beside the words "pre trade var check" reads to a person as a guarantee that
 # the check happens.
 
-trading.risk_controls.pre_trade_var_check          # boolean true; no pre-trade VaR check exists anywhere
-trading.risk_controls.position_size_limits         # boolean true; VirtualPortfolio rejects only on insufficient funds (#101)
-trading.risk_controls.portfolio_rebalancing        # boolean true; no rebalancing path in src/
-analytics.risk_integration.enable_var_in_signals   # boolean true; no signal path consults VaR
-analytics.risk_integration.enable_stress_tests     # boolean true; stress_scenarios below are read by nothing either
-analytics.risk_integration.risk_adjusted_returns   # boolean true; no risk-adjusted return is produced under this flag
+trading.not_implemented.pre_trade_var_check          # boolean true; no pre-trade VaR check exists anywhere
+trading.not_implemented.position_size_limits         # boolean true; VirtualPortfolio rejects only on insufficient funds (#101)
+trading.not_implemented.portfolio_rebalancing        # boolean true; no rebalancing path in src/
+analytics.not_implemented.enable_var_in_signals   # boolean true; no signal path consults VaR
+analytics.not_implemented.enable_stress_tests     # boolean true; stress_scenarios below are read by nothing either
+analytics.not_implemented.risk_adjusted_returns   # boolean true; no risk-adjusted return is produced under this flag
 
 strategy.risk_management.liquidity_risk.min_volume_threshold   # needs a liquidity model; none exists
 strategy.risk_management.liquidity_risk.max_market_impact_pct  # market impact is measured in R24, not enforced here

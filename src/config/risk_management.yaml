@@ -11,7 +11,8 @@ strategy:
     # Risk Limits
     max_portfolio_var_pct: 0.05      # 5% max portfolio VaR
     max_single_position_pct: 0.10    # 10% max single position
-    max_position_size_pct: 0.10      # same limit, read by PortfolioManager/AdaptivePositionSizer under this name
+    max_position_size_pct: 0.10      # read by PortfolioManager/AdaptivePositionSizer AND, since 06.09, enforced by VirtualPortfolio.buy_stock
+    max_total_risk_pct: 0.30         # 30% of the portfolio invested in total. NOT a new decision: this was already VirtualPortfolio's hardcoded default, now visible and enforced (#288)
     max_daily_loss_pct: 0.03         # 3% max daily loss
     max_drawdown_pct: 0.15           # 15% max drawdown
     max_leverage: 2.0                # 2x max leverage
@@ -42,6 +43,10 @@ strategy:
         description: "2.5% interest rate increase"
 
     # Liquidity Risk Settings
+    # NOT IMPLEMENTED, all three: no liquidity model reads them (#288). Market
+    # impact IS measured -- R24 puts it at a third of the edge above ~$5M of
+    # capital -- but in a diagnostic, not enforced here. The traded spread the
+    # net test actually charges comes from targets.yaml, not from this line.
     liquidity_risk:
       min_volume_threshold: 1000000    # $1M minimum daily volume
       max_market_impact_pct: 0.10      # 10% max market impact
@@ -50,6 +55,9 @@ strategy:
     # Risk Monitoring
     monitoring:
       alert_thresholds:
+        # var_warning and drawdown_warning are NOT IMPLEMENTED (#288): an alert
+        # that watches a VaR nothing computes can never fire. concentration_warning
+        # does have a reader.
         var_warning: 0.03               # 3% VaR warning
         drawdown_warning: 0.10          # 10% drawdown warning
         concentration_warning: 0.15     # 15% concentration warning
@@ -61,15 +69,26 @@ strategy:
         telegram: false
         log: true
 
-# Integration with other modules
+# Integration with other modules.
+#
+# THESE SIX WERE `risk_integration:` AND `risk_controls:` UNTIL 2026-09-06, and
+# every one of them is `true` while nothing implements it -- measured that day:
+# neither name appears in any Python file in this repository. A `true` beside
+# the words "pre trade var check" reads as a guarantee that the check happens.
+# It does not happen.
+#
+# They are kept rather than deleted because they record an intention, and moved
+# under `not_implemented` so that intention cannot be mistaken for a state.
+# Moving them is provably safe: `tests/contracts/test_a_declared_risk_limit_has_a_reader.py`
+# proves no code names them. See REGISTER #288 and #101.
 analytics:
-  risk_integration:
+  not_implemented:
     enable_var_in_signals: true
     enable_stress_tests: true
     risk_adjusted_returns: true
 
 trading:
-  risk_controls:
+  not_implemented:
     pre_trade_var_check: true
     position_size_limits: true
     portfolio_rebalancing: true
