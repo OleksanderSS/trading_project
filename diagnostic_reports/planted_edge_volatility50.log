@@ -1,0 +1,26 @@
+panel: 623,398 rows, 110 names, 6,800 dates, 1996-08-26 to 2023-08-31
+seal:  nothing at or after 2023-09-01 is touched
+
+null on 1 real columns, 40 draws each: VOLATILITY_50_1d
+
+feature                      hold    REAL  redeal sd  ROTATE mean  ROTATE sd  z(rotate)
+---------------------------------------------------------------------------------------
+VOLATILITY_50_1d               20   0.467      0.044        0.451      0.087       0.18
+VOLATILITY_50_1d               40   0.569      0.033        0.552      0.078       0.21
+VOLATILITY_50_1d               60   0.586      0.026        0.559      0.067       0.41
+VOLATILITY_50_1d              120   0.576      0.017        0.539      0.057       0.65
+
+=======================================================================================
+The spread SHARPE_SE claims to describe, measured two ways:
+
+    hold  20: re-deal 0.044   ROTATION 0.087   (0.45x the asserted 0.193)
+    hold  40: re-deal 0.033   ROTATION 0.078   (0.40x the asserted 0.193)
+    hold  60: re-deal 0.026   ROTATION 0.067   (0.35x the asserted 0.193)
+    hold 120: re-deal 0.017   ROTATION 0.057   (0.30x the asserted 0.193)
+
+    rotation median 0.072, asserted 0.193  -> thresholds are too HIGH by 2.7x
+
+    A threshold set from an ASSERTED spread is a free parameter wearing a formula.
+    The rotation column is what this panel actually does when the column knows nothing.
+
+    strongest of these columns against its own rotated null: VOLATILITY_50_1d at hold 120, z=+0.65

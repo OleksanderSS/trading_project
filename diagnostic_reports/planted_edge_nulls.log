@@ -1,0 +1,48 @@
+panel: 623,398 rows, 110 names, 6,800 dates, 1996-08-26 to 2023-08-31
+seal:  nothing at or after 2023-09-01 is touched
+
+null on 4 real columns, 20 draws each: MAX_DRAWDOWN_1d, ACCELERATION_5_1d, state_EMA_20_1d, fund_price_to_book_1d
+
+feature                      hold    REAL  redeal sd  ROTATE mean  ROTATE sd  z(rotate)
+---------------------------------------------------------------------------------------
+MAX_DRAWDOWN_1d                 1  -6.874      0.228       -6.284      0.395      -1.49
+MAX_DRAWDOWN_1d                 5  -2.474      0.092       -1.881      0.265      -2.24
+MAX_DRAWDOWN_1d                20  -1.662      0.039       -1.035      0.228      -2.75
+MAX_DRAWDOWN_1d                40  -1.456      0.025       -0.850      0.193      -3.14
+MAX_DRAWDOWN_1d                60  -1.301      0.022       -0.766      0.161      -3.32
+MAX_DRAWDOWN_1d               120  -1.140      0.018       -0.692      0.151      -2.96
+ACCELERATION_5_1d               1  -5.943      0.209       -7.906      0.357       5.50
+ACCELERATION_5_1d               5  -1.479      0.088       -1.608      0.140       0.92
+ACCELERATION_5_1d              20  -0.390      0.057       -0.370      0.046      -0.42
+ACCELERATION_5_1d              40  -0.172      0.034       -0.161      0.027      -0.44
+ACCELERATION_5_1d              60  -0.110      0.025       -0.094      0.023      -0.69
+ACCELERATION_5_1d             120  -0.040      0.013       -0.029      0.015      -0.75
+state_EMA_20_1d                 1  -4.942      0.216       -6.987      0.392       5.22
+state_EMA_20_1d                 5  -1.298      0.098       -1.448      0.163       0.92
+state_EMA_20_1d                20  -0.368      0.041       -0.436      0.121       0.55
+state_EMA_20_1d                40  -0.273      0.038       -0.214      0.106      -0.55
+state_EMA_20_1d                60  -0.135      0.029       -0.139      0.094       0.04
+state_EMA_20_1d               120  -0.106      0.018       -0.066      0.080      -0.49
+fund_price_to_book_1d           1  -3.099      0.245       -4.429      0.790       1.68
+fund_price_to_book_1d           5  -0.691      0.084       -0.866      0.283       0.62
+fund_price_to_book_1d          20  -0.203      0.056       -0.148      0.192      -0.28
+fund_price_to_book_1d          40  -0.091      0.027       -0.016      0.172      -0.44
+fund_price_to_book_1d          60  -0.060      0.024        0.024      0.161      -0.52
+fund_price_to_book_1d         120  -0.022      0.017        0.048      0.145      -0.49
+
+=======================================================================================
+The spread SHARPE_SE claims to describe, measured two ways:
+
+    hold   1: re-deal 0.222   ROTATION 0.394   (2.04x the asserted 0.193)
+    hold   5: re-deal 0.090   ROTATION 0.214   (1.11x the asserted 0.193)
+    hold  20: re-deal 0.049   ROTATION 0.157   (0.81x the asserted 0.193)
+    hold  40: re-deal 0.030   ROTATION 0.139   (0.72x the asserted 0.193)
+    hold  60: re-deal 0.025   ROTATION 0.128   (0.66x the asserted 0.193)
+    hold 120: re-deal 0.018   ROTATION 0.113   (0.58x the asserted 0.193)
+
+    rotation median 0.161, asserted 0.193  -> thresholds are too HIGH by 1.2x
+
+    A threshold set from an ASSERTED spread is a free parameter wearing a formula.
+    The rotation column is what this panel actually does when the column knows nothing.
+
+    strongest of these columns against its own rotated null: ACCELERATION_5_1d at hold 1, z=+5.50
