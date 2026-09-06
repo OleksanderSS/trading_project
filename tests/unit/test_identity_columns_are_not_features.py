@@ -177,20 +177,47 @@ def test_the_three_columns_named_in_the_2026_08_09_log_are_caught():
         assert is_identity_column(column), column
 
 
-def test_the_real_export_has_exactly_the_six_prefixed_identity_columns():
-    """Pins the measurement: 6 of 1,978 columns, none of them a feature."""
+def test_every_prefixed_identity_column_in_the_real_export_is_recognised():
+    """The invariant, not the census.
+
+    This asserted `len(prefixed) == 6` against a batch of 1,978 columns and
+    had been RED since the batch was rebuilt: it now holds 1,393 columns and
+    THREE prefixed identity columns, because the 60m and 15m context variants
+    are no longer carried (measured 2026-09-06). Fewer identity columns is a
+    better state, and the test called it a failure -- red since the rebuild,
+    unseen because CI gates on tests/contracts (#283).
+
+    A pin on a count is a test of the batch's composition wearing the name of
+    a leakage test. What actually matters is that whatever prefixed identity
+    columns EXIST are recognised as identity, so nothing downstream can treat
+    one as a feature. A ceiling guards the direction that would hurt: more of
+    them appearing.
+
+    Reads the schema rather than the frame -- a full read of a 1,393-column
+    parquet to count names is a minute of IO for nothing.
+    """
     from pathlib import Path
 
-    import pandas as pd
+    import pyarrow.parquet as pq
 
     path = Path("data/colab/accumulated/main_database/features.parquet")
     if not path.exists():
         pytest.skip("no prepared batch on disk")
 
-    columns = list(pd.read_parquet(path).columns)
+    columns = list(pq.ParquetFile(path).schema_arrow.names)
     prefixed = [c for c in columns if c.startswith("ctx_") and is_identity_column(c)]
 
-    assert len(prefixed) == 6, sorted(prefixed)
+    assert prefixed, (
+        "no prefixed identity column is recognised at all, which means either "
+        "the batch stopped carrying context columns or is_identity_column "
+        "stopped matching them -- and the second would let one through as a "
+        "feature"
+    )
+    assert len(prefixed) <= 6, (
+        f"prefixed identity columns rose to {len(prefixed)}; the batch carried "
+        f"6 when this was written and 3 on 2026-09-06. More of them is the "
+        f"direction that leaks: {sorted(prefixed)}"
+    )
     assert all("context_" in c for c in prefixed), sorted(prefixed)
 
 
