@@ -18,6 +18,28 @@ limits into variables and no line consults them afterwards (REGISTER #101), and
 a name-grep sees those as read. Dead-store analysis is a linter's job and is not
 attempted here; #101 stays open on its own terms.
 
+THE MIRROR DIRECTION, MEASURED BY HAND AND DELIBERATELY NOT AUTOMATED. The
+sharper defect is the other way round: code asking the risk block for a key the
+config never declares, so `.get(key, default)` silently returns the number
+written in the code and the config a person reads is not the config in force.
+Measured 2026-09-06, six such keys -- `max_position_size` and `max_total_risk`
+(`VirtualPortfolio`, defaults 0.1 and 0.3), `risk_per_trade_pct`
+(`PortfolioManager`, 0.03), `correlation_threshold`, `max_asset_weight` and
+`risk_limits` (`MaxExposureMonitor`, 0.7 / 0.25 / {}). The config declares
+`max_position_size_pct`, a DIFFERENT name, so its value has never once reached
+`VirtualPortfolio`; both happen to be 0.1, which is why nobody noticed.
+
+Two attempts to make that a test both failed, in opposite directions. Following
+imports out of every file naming the block MISSED `max_exposure_monitor.py`,
+which receives it as a plain `config=` argument, and PULLED IN
+`pipeline_policy_manager.py`, which reads a different block. Scoping by package
+instead reported thirty-two keys, nearly all of them belonging to other configs
+entirely -- `rsi_weight`, `sentiment_col`, `hrp_linkage`. There is no reliable
+static way to tell which `config.get(key)` reads THIS block, and a blocking
+test whose scope cannot be stated honestly is worse than none. So the finding
+lives in REGISTER #288 as a measurement, and this file guards only the
+direction it can guard truthfully.
+
 WHY A LEDGER AND NOT A ZERO. Nine settings are in this state today, and
 implementing them is not wiring -- the NUMBERS are a risk policy the owner has
 to choose, and trading sits behind the pipeline for now (#101). A test that
@@ -69,10 +91,11 @@ def _unread_settings():
 
 
 def _ledger() -> set[str]:
-    if not LEDGER.exists():
+    path = LEDGER
+    if not path.exists():
         return set()
     return {line.split("#")[0].strip()
-            for line in LEDGER.read_text(encoding="utf-8").splitlines()
+            for line in path.read_text(encoding="utf-8").splitlines()
             if line.strip() and not line.lstrip().startswith("#")} - {""}
 
 
