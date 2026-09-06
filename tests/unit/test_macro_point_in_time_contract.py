@@ -167,24 +167,72 @@ def test_fred_fetch_encodes_vintage_and_observation_cutoff():
     assert query["vintage_dates"] == ["2026-07-14"]
 
 
-def test_fred_hash_changes_when_vintage_or_value_changes():
+def _fred_row(series_id: str, realtime_start: str = "2025-01-03",
+              value: str = "4.1") -> pd.Series:
+    return pd.Series({
+        "series_id": series_id,
+        "date": "2025-01-01",
+        "realtime_start": realtime_start,
+        "value": value,
+    })
+
+
+def _fred() -> FredCollector:
     collector = object.__new__(FredCollector)
     collector.hash_keys = ["series_id", "date", "realtime_start", "value"]
-    base = pd.Series(
-        {
-            "series_id": "DGS10",
-            "date": "2025-01-01",
-            "realtime_start": "2025-01-03",
-            "value": "4.1",
-        }
-    )
-    revised_vintage = base.copy()
-    revised_vintage["realtime_start"] = "2025-02-01"
-    revised_value = base.copy()
-    revised_value["value"] = "4.2"
+    return collector
 
-    assert collector._generate_hash(base) != collector._generate_hash(revised_vintage)
-    assert collector._generate_hash(base) != collector._generate_hash(revised_value)
+
+def test_a_revised_series_gets_a_new_hash_for_a_new_vintage():
+    """For a series FRED really does revise, a new vintage is a new fact.
+
+    `CPIAUCSL` is revised: the same month is restated, and point-in-time reads
+    need both versions. Dropping the vintage from the key here would silently
+    overwrite what was knowable at the time -- the defect #131 was about.
+    """
+    collector = _fred()
+    base = _fred_row("CPIAUCSL")
+    later_vintage = _fred_row("CPIAUCSL", realtime_start="2025-02-01")
+
+    assert collector._generate_hash(base) != collector._generate_hash(later_vintage)
+
+
+def test_an_unrevised_daily_series_does_NOT_get_a_new_hash_for_a_new_vintage():
+    """The other half, and it is the fix rather than a weakening (#142).
+
+    This test used to assert the opposite for `DGS10`, and was red from the
+    day #142 landed until 2026-09-06 -- unseen, because CI gates on
+    tests/contracts and this lives in tests/unit (#283).
+
+    Why the opposite is right: FRED stamps a NON-VINTAGE request with the
+    REQUEST date, so `realtime_start` for a daily series that is never revised
+    is just "the day we asked". Keeping it in the key minted a fresh hash for
+    an observation whose value had not moved, `filter_new_records` filtered
+    nothing, and the table grew by one full copy per run -- measured at 4.99x,
+    85,478 rows added in a single day.
+
+    The VALUE still governs, which is what keeps this from being a hole: a
+    figure that actually changes is still a new record.
+    """
+    collector = _fred()
+    assert "DGS10" in FredCollector.UNREVISED_DAILY_SERIES, (
+        "the fixture no longer names an unrevised series, so this test would "
+        "pass by testing the revised path twice"
+    )
+    base = _fred_row("DGS10")
+    later_vintage = _fred_row("DGS10", realtime_start="2025-02-01")
+
+    assert collector._generate_hash(base) == collector._generate_hash(later_vintage)
+
+
+@pytest.mark.parametrize("series_id", ["DGS10", "CPIAUCSL"])
+def test_a_changed_value_is_always_a_new_hash(series_id):
+    """True on both paths. Whatever the key drops, it never drops the number."""
+    collector = _fred()
+    base = _fred_row(series_id, value="4.1")
+    moved = _fred_row(series_id, value="4.2")
+
+    assert collector._generate_hash(base) != collector._generate_hash(moved)
 
 
 def test_processing_storage_atomically_writes_point_in_time_macro_snapshot(tmp_path):
