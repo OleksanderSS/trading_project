@@ -28,7 +28,20 @@ class TransactionCostModel:
     def __init__(self, config: (dict[str, Any] | None)=None):
         self.config = config or {}
         self.commission_pct = self.config.get('commission_pct', 0.001)
-        self.spread_bps = self.config.get('spread_bps', 5)
+        # THE DECLARED NAME. Until 2026-09-06 this read `spread_bps` while
+        # `backtesting.transaction_costs` declares `spread_pct`, so the
+        # configured value was never read and the default applied. It survived
+        # only by coincidence -- the config says 0.0005 and the default says
+        # 5 bps, which are the same number (REGISTER #290, same shape as #288).
+        # Both names are accepted so nothing that set either one loses it.
+        if 'spread_pct' in self.config:
+            self.spread_bps = float(self.config['spread_pct']) * 10_000
+        else:
+            self.spread_bps = self.config.get('spread_bps', 5)
+        # The dominant term at any real size -- 29% of the cost on a $500 order
+        # and 74% on a $25,000 one -- and it was declared nowhere. Kept at 0.1
+        # so no number changes; declared in the config so the number is one
+        # somebody can see and argue with.
         self.market_impact_coefficient = self.config.get(
             'market_impact_coefficient', 0.1)
         self.slippage_pct = self.config.get('slippage_pct', 0.001)

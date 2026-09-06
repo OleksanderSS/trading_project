@@ -52,9 +52,18 @@ backtesting:
   initial_capital: 100000.0
   minimum_trade_value: 100.0
   transaction_costs:
-    commission_pct: 0.001
+    commission_pct: 0.001          # 10 bps a side. NOTE: research charges a per-share model in targets.yaml that comes to ~0.5 bps -- the two disagree by 10-21x and nothing reconciles them (#290)
     spread_pct: 0.0005
     slippage_pct: 0.0002
+    # THE NUMBER ACTUALLY IN FORCE, made visible on 06.09 rather than changed.
+    # It drives 29% of the cost on a $500 order and 74% on a $25,000 one, and
+    # it was declared nowhere -- the live model took 0.1 from its own default.
+    market_impact_coefficient: 0.1
+  # READ ONLY BY src/archive/backtesting/engine.py, which is dead. The live
+  # TransactionCostModel never looks here, so this 0.0001 has never applied --
+  # and it is a THOUSAND times smaller than the 0.1 that has. Which of the two
+  # is right is a modelling question with an empirical answer (R24 measured
+  # impact directly), and it is left open rather than guessed: see #290.
   market_impact:
     sqrt_coefficient: 0.0001
     volatility_factor: 0.5

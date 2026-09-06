@@ -1,0 +1,35 @@
+1. THE BOOK THE LIMITS WOULD HAVE GOVERNED -- equal weight, real panel
+
+    return 17.18%/yr, volatility 18.52%, Sharpe 0.928
+    WORST DRAWDOWN            -45.2%
+    declared max_drawdown_pct 15.0%   -> BREACHED
+    first breach on day 508 of 6,800; the book spends 8.2% of all days below it
+    declared max_daily_loss_pct 3.0% would have fired 72 times in 27 years
+
+2. HOW DEEP A HEALTHY BOOK GOES, with this panel's real tails
+
+    excess kurtosis of the real series: 9.5 (0 for normal), so normal draws would understate this
+
+    book                             median     95th     99th    breach 15%
+    -----------------------------------------------------------------------
+    the goal: Sharpe 2.0 at 10% vol  -17.0%   -24.5%   -28.6%          76%
+    Sharpe 1.5 at 10% vol           -18.3%   -27.3%   -32.1%          84%
+    the equal-weight book           -37.0%   -53.9%   -61.6%         100%
+
+    A limit is a 'something broke' signal only if a HEALTHY book rarely reaches it.
+    For the goal that means at least 24% (reached by 1 path in 20) and 29% (1 in 100).
+    Where between them is risk appetite and belongs to the owner. 15% is not
+    an appetite: it fires on 76% of healthy histories.
+
+3. DO THE DECLARED NUMBERS AGREE WITH EACH OTHER AND WITH THE GOAL
+
+    max_total_risk_pct 30% caps invested capital, while max_leverage 2.0 permits 200%.
+    The leverage limit allows 6.7x what the total limit allows, so it can never bind: it is decoration.
+
+    A 20% return on TOTAL capital with only 30% invested needs 66.7% on the invested part.
+    The equal-weight book makes 17.18% and SPY makes 10.80% (R48), so that is about 3.9x the market.
+    The goal and the total-risk cap cannot both be right.
+
+    max_position_size_pct 10% against the 30% cap means at least 3 positions. R33 measured 110 names
+    as 3.16 independent bets, so that is roughly all the independence on offer -- the one
+    pair of these numbers that agrees with a measurement.
