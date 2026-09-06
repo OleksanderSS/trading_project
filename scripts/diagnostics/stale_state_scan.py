@@ -329,8 +329,14 @@ STAYS_OPEN = (
 
 
 def _examined(text: str) -> bool:
+    # Case-folded, because a mark shouted in capitals is still a mark. Found
+    # 2026-09-06 by writing "ЗАКРИТИЙ" in a citation and watching the rule
+    # keep firing: the check compared against lowercase stems only, so
+    # emphasis defeated it. A rule that a writer can break by pressing shift
+    # is a rule that will be broken.
     for bracket in re.findall(r"\(([^()]*#\d{1,3}[^()]*)\)", text):
-        if any(word in bracket for word in EXAMINED):
+        folded = bracket.lower()
+        if any(word in folded for word in EXAMINED):
             return True
     return False
 
