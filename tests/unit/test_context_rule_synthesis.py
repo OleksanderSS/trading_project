@@ -162,3 +162,36 @@ def test_the_evidence_travels_with_the_rule():
     assert conditions["total_trades"] == 60
     assert conditions["loss_rate"] == pytest.approx(0.85)
     assert conditions["baseline_loss_rate"] == pytest.approx(0.45)
+
+
+def test_an_assumed_schema_says_it_was_assumed():
+    """The provenance stamp must not claim knowledge the diary cannot supply.
+
+    Measured 2026-09-06: `component_loss_rates` comes from the diary, the
+    diary records no schema per fingerprint -- the only `context_schema_id`
+    anywhere in src/ is the one this module WRITES -- and the registry holds
+    TWELVE schemas whose driver counts run from 5 to 188. So stamping a rule
+    with the latest id, as though it were the fingerprint's own, is a claim
+    the data cannot support.
+
+    Found through #281: `context_schema.drivers_for(identifier)` exists for
+    exactly this lookup and had no caller since it was written.
+    """
+    rates = {0: {"1": {"rate": 0.9, "count": 45.0, "total": 50.0}}}
+
+    assumed = synthesise_context_rules("agent", rates, baseline_loss_rate=0.5)
+    assert assumed, "the fixture no longer clears the evidence bar"
+    for rule in assumed:
+        assert rule["conditions"]["context_schema_known"] is False, (
+            "the rule claims its schema is known while nobody supplied one; "
+            "the latest ordering was assumed"
+        )
+
+    told = synthesise_context_rules(
+        "agent", rates, baseline_loss_rate=0.5,
+        schema=("deadbeef", ["state_RSI_14"]),
+    )
+    assert told
+    for rule in told:
+        assert rule["conditions"]["context_schema_known"] is True
+        assert rule["conditions"]["context_schema_id"] == "deadbeef"

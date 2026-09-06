@@ -79,7 +79,25 @@ def synthesise_context_rules(
     if not component_loss_rates:
         return []
 
-    schema_identifier, drivers = schema if schema is not None else latest_schema()
+    # WHICH ordering, and whether we KNOW it (measured 2026-09-06).
+    #
+    # `component_loss_rates` comes from the diary, and the diary does not
+    # record which context schema each fingerprint was written under -- the
+    # only place `context_schema_id` appears anywhere in src/ is where this
+    # function STAMPS it.
+    # Meanwhile the registry holds TWELVE schemas whose driver counts run from
+    # 5 to 188, so "position 12" means different things under different ones.
+    #
+    # Falling back to the latest ordering is the only thing available, and it
+    # is a reasonable default. Stamping the rule with that id as though it
+    # were the fingerprint's own schema is not: it is a provenance claim the
+    # data cannot support. So the fallback is now marked as assumed, and
+    # `context_schema.drivers_for(identifier)` is what a caller uses once the
+    # diary can say which schema a row belongs to -- that function exists for
+    # exactly this and has had no caller since it was written, which is how
+    # this was found (#281).
+    schema_known = schema is not None
+    schema_identifier, drivers = schema if schema_known else latest_schema()
 
     candidates: list[dict[str, Any]] = []
     for index, per_value in component_loss_rates.items():
@@ -103,6 +121,7 @@ def synthesise_context_rules(
                     baseline=float(baseline_loss_rate),
                     drivers=drivers,
                     schema_identifier=schema_identifier,
+                    schema_known=schema_known,
                 )
             )
 
@@ -129,6 +148,7 @@ def _build_rule(
     baseline: float,
     drivers: list[str],
     schema_identifier: str,
+    schema_known: bool = False,
 ) -> dict[str, Any]:
     name = driver_name(index, drivers)
     readable = _readable_state(value)
@@ -156,6 +176,11 @@ def _build_rule(
             # was computed under; `driver_named` says outright whether the
             # name above is real or a positional placeholder.
             "context_schema_id": schema_identifier,
+            # False when nobody told us the fingerprint's schema and the
+            # latest was assumed. A reader comparing two rules written months
+            # apart needs this to know whether the driver positions are
+            # comparable at all.
+            "context_schema_known": schema_known,
             "driver_named": named,
             "agent_id": agent_id,
         },
