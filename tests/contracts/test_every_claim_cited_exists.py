@@ -62,3 +62,72 @@ def test_each_claim_number_is_used_once_as_a_heading():
     numbers = HEADING.findall(_text())
     duplicates = sorted({n for n in numbers if numbers.count(n) > 1})
     assert not duplicates, f"more than one entry numbered: {duplicates}"
+
+#: Where a `#N` citation can appear. Docs and code both cite register rows;
+#: the scan skips the row's own line, which naturally starts with its number.
+CITING_ROOTS = ("docs", "src", "scripts", "tests")
+SKIP_DIRS = {"__pycache__", ".git", "node_modules", "archive", "dean_os",
+             "data", ".venv", "venv", "logs", "mlruns", "diagnostic_reports"}
+
+REGISTER_ROW = re.compile(r"^\|\s*(\d+)\s*\|")
+REGISTER_REF = re.compile(r"#(\d{1,3})\b")
+
+
+def _register_numbers() -> set[int]:
+    numbers: set[int] = set()
+    for name in ("REGISTER.md", "AUDIT_HISTORY.md"):
+        path = CLAIMS.parent / name
+        for line in path.read_text(encoding="utf-8").splitlines():
+            match = REGISTER_ROW.match(line)
+            if match:
+                numbers.add(int(match.group(1)))
+    return numbers
+
+
+def _files():
+    root = CLAIMS.parent.parent
+    for top in CITING_ROOTS:
+        base = root / top
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*"):
+            if path.suffix not in (".md", ".py"):
+                continue
+            if set(path.parts) & SKIP_DIRS:
+                continue
+            yield path
+
+
+def test_every_register_citation_resolves():
+    """The other direction of #284, pinned at ZERO where it already is.
+
+    Measured 2026-09-06 across 1,135 files: not one `#N` pointed at a missing
+    register row. A rule introduced at its current value binds immediately; a
+    rule introduced with a budget never binds at all, which is why the seal's
+    RISK_FREE rule went in at zero and why this one does too.
+    """
+    known = _register_numbers()
+    assert known, "no register rows found at all"
+
+    phantom: dict[int, str] = {}
+    for path in _files():
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for number, line in enumerate(text.splitlines(), start=1):
+            if REGISTER_ROW.match(line):
+                continue
+            for match in REGISTER_REF.finditer(line):
+                value = int(match.group(1))
+                if value in known or value == 0:
+                    continue
+                phantom.setdefault(value, f"{path.name}:{number}  {line.strip()[:90]}")
+
+    assert not phantom, (
+        "these #N citations point at a register row that does not exist:\n"
+        + "\n".join(f"  #{n}  {where}" for n, where in sorted(phantom.items()))
+        + "\n\nWrite the row, or correct the citation. A reference nobody can "
+        "follow is the shape that let Р22 be cited four times without existing "
+        "(#284)."
+    )
