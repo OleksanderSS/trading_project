@@ -1,0 +1,26 @@
+Bootstrapped from the panel's own returns, 27 years, 2,000 paths, 21-day blocks.
+A budget is the drawdown that 5% of healthy histories reach -- one path in 20.
+
+ANNUAL RETURN A DRAWDOWN BUDGET BUYS, at each Sharpe
+
+book                                   Sharpe      15%      20%      25%      30%      40%      50%
+---------------------------------------------------------------------------------------------------
+SPY, the real market (R48)               0.55    1.8%    2.5%    3.2%    3.9%    5.5%    7.3%
+equal-weight survivors, measured         0.93    3.9%    5.4%    6.8%    8.4%   11.8%   15.7%
+what 20%/yr needs at 10% vol (R48)       2.00   11.6%   15.7%   20.1%   24.8%   34.8%   46.3%  <- not measured, aspiration
+halfway there                            1.50    7.8%   10.6%   13.6%   16.7%   23.5%   31.0%  <- not measured, aspiration
+
+WHAT THE ROWS MEAN. Leverage, investedness and position size all move one knob:
+ volatility. Moving it slides a row left and right and never changes the row it is
+ on. Only a better Sharpe changes rows, and no amount of exposure substitutes for it.
+
+AND THE SAME ARITHMETIC READ BACKWARDS: what Sharpe a wish requires
+
+wish                             budget  Sharpe needed   vs measured 0.93
+-------------------------------------------------------------------------
+10% a year                         20%           1.44               1.5x
+20% a year                         20%           2.39               2.6x
+30% a year                         20%           3.23               3.5x
+10% a year                         30%           1.04               1.1x
+20% a year                         30%           1.70               1.8x
+30% a year                         30%           2.31               2.5x
