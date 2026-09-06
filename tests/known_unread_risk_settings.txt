@@ -1,0 +1,30 @@
+# Risk settings declared in src/config/risk_management.yaml that NO code in
+# src/ reads. Measured 2026-09-06 by
+# tests/contracts/test_a_declared_risk_limit_has_a_reader.py.
+#
+# This is a ledger, not a permission. The test blocks the FOURTEENTH; these
+# thirteen are written down because implementing them is not wiring -- the
+# numbers are a risk policy the owner has to choose, and trading sits behind
+# the pipeline (REGISTER #101). A line leaves this file the moment its setting
+# acquires a reader, and a second test fails if a stale line is left behind.
+#
+# The six booleans are the worst of them: each is set to `true`, and a `true`
+# beside the words "pre trade var check" reads to a person as a guarantee that
+# the check happens.
+
+trading.risk_controls.pre_trade_var_check          # boolean true; no pre-trade VaR check exists anywhere
+trading.risk_controls.position_size_limits         # boolean true; VirtualPortfolio rejects only on insufficient funds (#101)
+trading.risk_controls.portfolio_rebalancing        # boolean true; no rebalancing path in src/
+analytics.risk_integration.enable_var_in_signals   # boolean true; no signal path consults VaR
+analytics.risk_integration.enable_stress_tests     # boolean true; stress_scenarios below are read by nothing either
+analytics.risk_integration.risk_adjusted_returns   # boolean true; no risk-adjusted return is produced under this flag
+
+strategy.risk_management.liquidity_risk.min_volume_threshold   # needs a liquidity model; none exists
+strategy.risk_management.liquidity_risk.max_market_impact_pct  # market impact is measured in R24, not enforced here
+strategy.risk_management.liquidity_risk.spread_multiplier      # the traded spread comes from targets.yaml, not from here
+
+strategy.risk_management.monitoring.alert_thresholds.var_warning       # an alert that can never fire: nothing computes the VaR it watches
+strategy.risk_management.monitoring.alert_thresholds.drawdown_warning  # same shape; drawdown is computed elsewhere and not against this
+
+strategy.risk_management.var_time_horizon_days     # parameter of a VaR path with no consumer
+strategy.risk_management.annual_trading_days       # 252 is written as a literal where it is actually used; this copy is unread

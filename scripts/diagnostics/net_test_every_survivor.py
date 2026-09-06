@@ -129,6 +129,18 @@ SHARPE_SE = 0.193
 #: rows is about 2GB as float64; there is no reason to pay it.
 CHUNK = 40
 
+#: A column enters the sweep if it varies across names on more than this share
+#: of dates. It was written as a bare `> 0.5` in two places until 2026-09-06,
+#: which made it invisible -- and it had been silently deciding an outcome: the
+#: `wiki_*` family, the ONLY non-price attention family with any cross-sectional
+#: variation at all (sentiment, news, keyword and cftc are 0.000 on every
+#: column), sits at 0.295 and so was never measured here. Its verdict came from
+#: the roles catalogue and never from this instrument, and the reason was a
+#: threshold rather than a measurement. Lowering it is a real decision -- a
+#: column that varies on a third of dates is a column that holds NO position on
+#: the other two thirds -- so it is a flag with a default, not a constant.
+MIN_VARIES = 0.5
+
 
 def _thresholds(attempts: int) -> tuple[float, float]:
     """Family-wise 5% by Bonferroni, and the expected maximum of pure noise.
@@ -258,6 +270,13 @@ def main() -> int:
                              "compared with a constant bar and a static tilt "
                              "was indistinguishable from an edge -- do not use "
                              "it to read a result, only to reproduce an old one.")
+    parser.add_argument("--min-varies", type=float, default=MIN_VARIES,
+                        help="share of dates on which a column must vary "
+                             "across names to be measured at all. Lowering it "
+                             "admits columns that hold a position only some of "
+                             "the time -- honest, but it changes the attempt "
+                             "count and therefore every threshold, so the run "
+                             "prints both.")
     parser.add_argument("--rotate-all-holds", action="store_true",
                         help="build the null at EVERY horizon instead of only "
                              "at the best-net one. Off by default because it "
@@ -277,14 +296,19 @@ def main() -> int:
 
     roles = pd.read_csv(ROLES)
     if args.universe == "fdr":
-        chosen = roles[(roles["passes_fdr"]) & (roles["varies"] > 0.5)]
+        chosen = roles[(roles["passes_fdr"]) & (roles["varies"] > args.min_varies)]
         why = "passed FDR against target_return_1d and vary across names"
     else:
-        chosen = roles[roles["varies"] > 0.5]
+        chosen = roles[roles["varies"] > args.min_varies]
         why = ("have real cross-sectional variation -- selected on NOTHING "
                "about a target")
     names = chosen["feature"].tolist()
     print(f"{len(names)} features {why}")
+    if args.min_varies != MIN_VARIES:
+        print(f"  varies threshold LOWERED {MIN_VARIES} -> {args.min_varies}: "
+              f"{len(names)} columns instead of "
+              f"{int((roles['varies'] > MIN_VARIES).sum())}, so every threshold "
+              f"below is computed on a larger family than the standard run's.")
     print(f"holds: {args.holds}\n")
 
     costs = yaml.safe_load(
@@ -528,7 +552,19 @@ def main() -> int:
               "to 120 days, did not find one. The conclusion\nis not about "
               "which feature was picked and not about the holding period: it "
               "is about\nthis universe and these features.")
-    out = PROJECT_ROOT / "diagnostic_reports" / f"net_test_{args.universe}.csv"
+    # THE FILENAME CARRIES WHAT MADE THE RUN DIFFERENT. Twice on 2026-09-06 a
+    # non-standard run silently overwrote the standard record -- once a
+    # two-hold smoke test over `net_test_fdr.csv`, once a lowered threshold
+    # over `net_test_varying.csv` -- and both times the file still looked like
+    # the artefact everything cites. A record that does not say how it was made
+    # is a record that will be quoted as something else.
+    suffix = "" if args.min_varies == MIN_VARIES else f"_varies{args.min_varies:g}"
+    if args.holds != [1, 5, 20, 40, 60, 120]:
+        suffix += "_holds" + "-".join(str(h) for h in args.holds)
+    if args.rotate_all_holds:
+        suffix += "_allholds"
+    out = (PROJECT_ROOT / "diagnostic_reports"
+           / f"net_test_{args.universe}{suffix}.csv")
     report.to_csv(out, index=False)
     print(f"\nwritten to {out}")
     return 0
