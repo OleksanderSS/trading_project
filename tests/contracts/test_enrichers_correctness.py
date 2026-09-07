@@ -1,10 +1,20 @@
 
 from pathlib import Path
 
+from contract_ast import modules_emitting_prefixed_columns
+
 def test_feature_enricher_modules_do_not_emit_target_columns_by_source_scan():
+    """
+    An enricher that writes a ``target_*`` column puts the label into the
+    feature frame, which is leakage by construction.
+
+    Checked by AST: the previous substring scan flagged ``target_column``
+    parameters and the leakage guard itself, so it could never go green and
+    told nobody anything.
+    """
     root=Path('src/features/enrichers')
     if not root.exists(): return
-    offenders=[str(p) for p in root.rglob('*.py') if ('target_' in p.read_text(encoding='utf-8',errors='ignore') or 'target_forward' in p.read_text(encoding='utf-8',errors='ignore'))]
+    offenders=modules_emitting_prefixed_columns(root,'target_')
     assert not offenders, 'Feature enrichers must not create target_* columns. Offenders: '+str(offenders[:10])
 def test_feature_enricher_modules_do_not_use_bfill_by_source_scan():
     root=Path('src/features')

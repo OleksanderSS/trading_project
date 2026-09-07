@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from contract_ast import modules_emitting_prefixed_columns
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC = PROJECT_ROOT / "src"
 
@@ -33,11 +35,15 @@ def test_target_calculators_use_groupby_ticker_for_future_shift() -> None:
 
 
 def test_feature_enrichers_do_not_emit_target_columns() -> None:
-    offenders: list[str] = []
-    for path in (SRC / "features").rglob("*.py"):
-        text = path.read_text(encoding="utf-8", errors="ignore")
-        if "target_" in text and "audit-ignore: TARGET_IN_FEATURE_MODULE" not in text:
-            offenders.append(str(path.relative_to(PROJECT_ROOT)))
+    """
+    No module under src/features may assign a ``target_*`` column.
+
+    Checked by AST rather than by substring: scanning for the text "target_"
+    matched every ``target_column`` argument and ``target_series`` parameter,
+    including inside feature_leakage_guard.py, which exists to strip those
+    columns out.
+    """
+    offenders = modules_emitting_prefixed_columns(SRC / "features", "target_")
     assert not offenders, "Feature modules should not emit target_* columns: " + ", ".join(offenders[:20])
 
 
