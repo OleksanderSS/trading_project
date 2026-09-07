@@ -70,6 +70,21 @@ MIN_ROWS = 500
 #: its correlation says. Attention sat at 0.4% before 2026-08-23.
 THIN_COVERAGE = 0.05
 
+#: The verdicts that are statements about the ABSENCE of data rather than about
+#: a series. A column with one of these was never judged, and everything that
+#: counts what this report measured has to say so.
+#:
+#: It lives here because "measured" was defined as "appears in
+#: feature_roles_1d.csv" in two other places, and that definition was only ever
+#: true by accident: the report used to SKIP a column with no finite row, so
+#: absence and non-appearance coincided. They stopped coinciding on 2026-09-07,
+#: when the 935 skipped columns started leaving a line -- which was the point.
+NOTHING_TO_JUDGE = (
+    "absent before the seal: nothing to judge",
+    "one value everywhere: a filled default",
+    "flat in both directions: nothing to judge",
+)
+
 
 def _daily_targets(target: str) -> pd.DataFrame:
     frame = pd.read_parquet(TARGETS, columns=["datetime", "ticker", "interval", target])
@@ -341,9 +356,23 @@ def _examine(name: str, values: np.ndarray, book: dict) -> dict:
     outcome, is_train = book["outcome"], book["is_train"]
     finite = np.isfinite(values)
     coverage = finite.mean()
+    present = int(finite.sum())
 
     per_date_spread = pd.Series(values).groupby(book["dates"]).std()
     varies = float((per_date_spread.fillna(0) > 1e-12).mean())
+
+    # `varies` alone cannot tell a macro series from an absent one: neither
+    # differs between names on a date. The discriminator is TIME. A real
+    # market-wide series moves date to date -- FRED_ICSA changes every week,
+    # it just changes for everyone at once. A column that the assembler filled
+    # with a default does not move at all, and calling it "market-wide: use as
+    # interaction" tells the reader to build an interaction out of a constant.
+    # 67 columns were being described that way on 2026-09-07, including every
+    # sentiment_*, news_* and hype_* column on the daily frame.
+    span = (float(values[finite].min()), float(values[finite].max())) if present else (np.nan, np.nan)
+    constant = bool(present) and span[0] == span[1]
+    per_date_mean = pd.Series(values).groupby(book["dates"]).mean().dropna()
+    time_sd = float(per_date_mean.std()) if len(per_date_mean) > 1 else 0.0
 
     ic_in = _safe_ic(values, outcome, is_train)
     ic_out, _pooled = _safe_ic_p(values, outcome, ~is_train)
@@ -374,9 +403,11 @@ def _examine(name: str, values: np.ndarray, book: dict) -> dict:
 
     return {
         "feature": name,
-        "history": int(finite.sum()),
+        "history": present,
         "coverage": coverage,
         "varies": varies,
+        "constant": constant,
+        "time_sd": time_sd,
         "ic_in": ic_in,
         "ic_out": ic_out,
         "ic_daily": ic_daily,
@@ -396,8 +427,18 @@ def _examine(name: str, values: np.ndarray, book: dict) -> dict:
 
 
 def _verdict(row: pd.Series) -> str:
+    # These three come first because they are statements about the ABSENCE of
+    # data, and every check below them is a statement about data. Printing a
+    # role for a column that has nothing in the explorable window reads, to
+    # whoever opens FEATURE_ROLES.md next, as a finding about the series.
+    if row["history"] == 0:
+        return "absent before the seal: nothing to judge"
+    if row.get("constant", False):
+        return "one value everywhere: a filled default"
     if row["coverage"] < THIN_COVERAGE:
         return "too thin to judge"
+    if row["varies"] < 0.05 and not (row.get("time_sd", 0.0) > 0):
+        return "flat in both directions: nothing to judge"
     if row["varies"] < 0.05:
         return "market-wide: use as interaction"
     if not np.isfinite(row["ic_out"]):
@@ -471,7 +512,8 @@ def main() -> int:
         and not name.startswith("target_")
     ]
 
-    rows = []
+    rows: list[dict] = []
+    absent: list[str] = []
     for start in range(0, len(wanted), BLOCK):
         columns = wanted[start:start + BLOCK]
         try:
@@ -484,6 +526,22 @@ def main() -> int:
                 continue
             values = pd.to_numeric(block[name], errors="coerce").to_numpy(dtype=float)
             if np.isfinite(values).sum() == 0:
+                # It used to `continue` here, and that was the worst of the
+                # absence defects: 935 of 1,390 columns left no line at all,
+                # so a reader could not distinguish "measured and found
+                # nothing" from "never reached the measurement". They carry a
+                # NaN p-value, so they are still not counted as attempts by
+                # the Benjamini-Hochberg correction below -- no test was run
+                # on them.
+                absent.append(name)
+                rows.append({"feature": name, "history": 0, "coverage": 0.0,
+                             "varies": 0.0, "constant": False, "time_sd": 0.0,
+                             "n_dates": 0, "blocks_agree": 0,
+                             "kept_sign": False, "hac_lag": 0,
+                             **{key: float("nan") for key in
+                                ("ic_in", "ic_out", "ic_daily", "t_daily",
+                                 "t_recent", "t_hac", "hac_ratio", "p_out",
+                                 "p_naive", "ic_within")}})
                 continue
             rows.append(_examine(name, values, book))
         del block
@@ -523,8 +581,29 @@ def main() -> int:
     print()
     print("=== how many features fall into each verdict ===")
     for verdict, count in report["verdict"].value_counts().items():
-        print(f"  {verdict:34s} {count:5d}")
+        print(f"  {verdict:38s} {count:5d}")
     print()
+
+    # === what has nothing to judge, kept separate from what was judged ===
+    #
+    # A verdict about a column with no data in the explorable window is not a
+    # weak finding, it is not a finding. Before 2026-09-07 these columns either
+    # vanished from the report entirely (no finite row) or were labelled
+    # "market-wide: use as interaction" (one value everywhere), and both read
+    # as statements about the series.
+    nothing = report[report["verdict"].isin(NOTHING_TO_JUDGE)]
+    print("=== columns with nothing to judge before the seal ===")
+    print(f"  no finite row at all:          {len(absent):5d}")
+    print(f"  one single value everywhere:   {int(report['constant'].sum()):5d}")
+    print(f"  of {len(report):,} columns, {len(nothing):,} carry no information here "
+          f"and {len(report) - len(nothing):,} were actually measured.")
+    frozen = report[report["constant"]].sort_values("history", ascending=False)
+    for _, row in frozen.head(12).iterrows():
+        print(f"    {row['feature'][:40]:40s} {row['history']:>9,} rows, one value")
+    if len(frozen) > 12:
+        print(f"    ... and {len(frozen) - 12} more")
+    print()
+
     measurable = int(report["p_out"].notna().sum())
     passing = int(report["passes_fdr"].sum())
     print(f"{measurable:,} features carried a measurable correlation, so that is")

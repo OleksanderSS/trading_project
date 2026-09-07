@@ -49,6 +49,7 @@ skipping with a reason that states exactly what went unverified.
 """
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import pandas as pd
@@ -58,6 +59,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 INVENTORY = PROJECT_ROOT / "diagnostic_reports" / "batch_inventory_1d.csv"
 ROLES = PROJECT_ROOT / "diagnostic_reports" / "feature_roles_1d.csv"
 TOOL = PROJECT_ROOT / "scripts" / "diagnostics" / "what_has_never_been_measured.py"
+
+# Loaded from the report that writes the verdicts rather than copied here, so
+# the test cannot come to disagree with the thing it checks.
+_spec = importlib.util.spec_from_file_location(
+    "leading_feature_report",
+    PROJECT_ROOT / "scripts" / "diagnostics" / "leading_feature_report.py")
+_module = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_module)
+NOTHING_TO_JUDGE = _module.NOTHING_TO_JUDGE
 BATCH = (PROJECT_ROOT / "data" / "colab" / "accumulated" / "main_database"
          / "features.parquet")
 
@@ -170,12 +180,33 @@ def test_the_two_reports_describe_the_same_batch(inventory):
 
 def test_measured_matches_the_roles_report(inventory):
     """`measured` is a derived column and derived columns drift. Recomputing it
-    costs nothing and catches a report edited by hand."""
-    roles = set(pd.read_csv(ROLES)["feature"])
+    costs nothing and catches a report edited by hand.
+
+    Appearing in the roles report is NOT the same as having been measured, and
+    this test used to assume it was. That assumption held only by accident:
+    the report skipped a column with no finite row in the explorable window, so
+    absence and non-appearance coincided. Since 2026-09-07 those 935 columns
+    leave a line saying they were never judged (#293), and counting them as
+    measured would say the catalogue judged 1,390 features when it judged 388.
+    """
+    roles = pd.read_csv(ROLES)
+    judged = set(roles.loc[~roles["verdict"].isin(NOTHING_TO_JUDGE), "feature"])
     claimed = set(inventory[inventory["measured"].astype(bool)]["feature"])
-    assert claimed == (roles & set(inventory["feature"])), (
+    assert claimed == (judged & set(inventory["feature"])), (
         "the inventory's `measured` column disagrees with feature_roles_1d.csv"
     )
+
+
+def test_a_column_with_nothing_to_judge_is_not_counted_as_measured():
+    """The distinction the line above depends on, asserted directly."""
+    roles = pd.read_csv(ROLES)
+    nothing = roles[roles["verdict"].isin(NOTHING_TO_JUDGE)]
+    assert len(nothing), (
+        "no column carries a nothing-to-judge verdict, which means either the "
+        "panel changed completely or the report stopped emitting them")
+    assert nothing["ic_out"].isna().all(), (
+        "a column the report says it could not judge carries an out-of-sample "
+        "correlation, so one of the two is wrong")
 
 
 def test_the_tool_that_builds_this_still_declares_its_thresholds():

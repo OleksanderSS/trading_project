@@ -34,8 +34,19 @@ MEANING = {
         "не спростовано жодною перевіркою. Наступний крок — дохідність на "
         "одиницю ризику й беззбитковість проти витрат",
     "market-wide: use as interaction":
-        "одне значення на дату для всіх імен. Ранжувати НЕ МОЖЕ за "
-        "конструкцією; входить лише як взаємодія з чутливістю імені",
+        "одне значення на дату для всіх імен, АЛЕ воно змінюється від дати до "
+        "дати. Ранжувати НЕ МОЖЕ за конструкцією; входить лише як взаємодія з "
+        "чутливістю імені",
+    "absent before the seal: nothing to judge":
+        "жодного значення до дати сілу. Колонка існує, збирач звітує про "
+        "успіх, виміряти на ній нічого не можна — це твердження про ВІДСУТНІСТЬ "
+        "даних, а не про ряд",
+    "one value everywhere: a filled default":
+        "одне-єдине значення на всіх рядках до сілу — заповнювач, а не дані. "
+        "Раніше такі колонки діставали вирок «market-wide», що пропонувало "
+        "будувати взаємодію зі сталою",
+    "flat in both directions: nothing to judge":
+        "не відрізняється ні між іменами, ні між датами. Судити нема про що",
     "inside the noise for this many tests":
         "не проходить поправку Бенджаміні-Хохберга на кількість перевірок",
     "sign flipped out of sample":
@@ -67,6 +78,14 @@ def main() -> int:
     screened = int(frame["tests_screened"].iloc[0])
     counts = frame["verdict"].value_counts()
 
+    # "1390 measured features" was the same lie one level up: 1,002 of them
+    # have nothing in the explorable window and 388 were actually measured.
+    absent = int(counts.get("absent before the seal: nothing to judge", 0))
+    constant = int(counts.get("one value everywhere: a filled default", 0))
+    flat = int(counts.get("flat in both directions: nothing to judge", 0))
+    nothing = absent + constant + flat
+    judged = len(frame) - nothing
+
     lines = [
         "# Каталог ролей: що виміряно про кожну величину",
         "",
@@ -78,7 +97,17 @@ def main() -> int:
         f"- ціль: `{target}`",
         f"- денний кадр, запечатано з **{sealed}**",
         f"- гіпотез перевірено: **{screened}**",
-        f"- величин у каталозі: **{len(frame)}**",
+        f"- величин у каталозі: **{len(frame)}**, з них **{judged}** справді "
+        f"виміряно, а **{nothing}** не мають у дослідній частині нічого, про "
+        "що можна судити",
+        "",
+        "> **Про ці " + str(nothing) + ".** Це твердження про ВІДСУТНІСТЬ "
+        "даних, а не про ряд. До 07.09 їх тут не було видно взагалі: "
+        f"{absent} колонок не лишали жодного рядка у звіті, бо цикл їх "
+        f"мовчки пропускав, а {constant} діставали вирок "
+        "«market-wide: use as interaction» — тобто пораду будувати взаємодію "
+        "зі сталою. Читач не міг відрізнити «виміряли й нічого не знайшли» "
+        "від «до виміру не дійшло».",
         "",
         "## Скільки чого",
         "",
@@ -127,7 +156,8 @@ def main() -> int:
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text("\n".join(lines), encoding="utf-8")
-    print(f"wrote {OUTPUT} from {len(frame)} measured features")
+    print(f"wrote {OUTPUT} from {len(frame)} columns: {judged} measured, "
+          f"{nothing} with nothing to judge")
     return 0
 
 

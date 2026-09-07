@@ -223,69 +223,69 @@ volume_roc_1d,True,float32,623398,1.0,619361,0.00035611278829896794,1.0,can carr
 volume_rs_1d,True,float32,623398,1.0,610557,0.00034969634166295046,1.0,can carry a cross-sectional signal
 volume_sma_10_1d,True,float32,623398,1.0,571387,0.00010266314617627904,1.0,can carry a cross-sectional signal
 volume_sma_5_1d,True,float32,623398,1.0,530373,0.0001684317241954578,1.0,can carry a cross-sectional signal
-entity_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-fear_greed_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-filing_data_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-hour_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-hour_cos_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-hour_sin_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-hype_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-hype_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-keyword_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-keyword_entity_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-market_context_hour_of_day_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-market_session_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-news_coverage_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-news_freshness_hours_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-news_impact_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-news_impact_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-news_intensity_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-news_quality_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-news_quality_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-news_significance_level_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-news_source_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-nlp_sentiment_score_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-sentiment_decay_weighted_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_ema_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_mean_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
-sentiment_neg_threshold_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
-sentiment_pos_threshold_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
-sentiment_sma_20_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_sma_50_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_sma_5_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_std_20_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_std_50_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_std_5_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-sentiment_std_stat_1d,True,float32,623288,0.9998235477175095,1,1.0,0.0,constant
-sentiment_velocity_1d,True,float32,623398,1.0,1,1.0,0.0,constant
-state_FRED_BAMLC0A0CM_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_FRED_BAMLH0A0HYM2_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_entity_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_fear_greed_index_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_filing_count_30d_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_filing_days_since_last_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_filing_material_30d_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_filing_periodic_30d_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_hype_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_keyword_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_keyword_entity_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_news_freshness_hours_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_news_impact_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_news_impact_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_news_quality_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_news_quality_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_news_significance_level_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_news_source_count_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_nlp_cluster_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_nlp_sentiment_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_nlp_subjectivity_score_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_sentiment_available_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_sentiment_ema_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_sentiment_mean_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_sentiment_neg_threshold_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_sentiment_pos_threshold_1d,True,float64,623398,1.0,1,1.0,0.0,constant
-state_sentiment_std_stat_1d,True,float64,623398,1.0,1,1.0,0.0,constant
+entity_count_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+fear_greed_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+filing_data_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+hour_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+hour_cos_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+hour_sin_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+hype_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+hype_score_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+keyword_count_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+keyword_entity_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+market_context_hour_of_day_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+market_session_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+news_coverage_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+news_freshness_hours_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+news_impact_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+news_impact_score_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+news_intensity_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+news_quality_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+news_quality_score_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+news_significance_level_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+news_source_count_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+nlp_sentiment_score_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+sentiment_decay_weighted_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_ema_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_mean_1d,False,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_neg_threshold_1d,False,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_pos_threshold_1d,False,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_sma_20_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_sma_50_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_sma_5_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_20_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_50_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_5_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+sentiment_std_stat_1d,False,float32,623288,0.9998235477175095,1,1.0,0.0,constant
+sentiment_velocity_1d,False,float32,623398,1.0,1,1.0,0.0,constant
+state_FRED_BAMLC0A0CM_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_FRED_BAMLH0A0HYM2_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_entity_count_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_fear_greed_index_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_count_30d_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_days_since_last_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_material_30d_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_filing_periodic_30d_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_hype_score_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_keyword_count_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_keyword_entity_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_news_freshness_hours_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_news_impact_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_news_impact_score_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_news_quality_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_news_quality_score_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_news_significance_level_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_news_source_count_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_nlp_cluster_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_nlp_sentiment_score_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_nlp_subjectivity_score_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_available_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_ema_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_mean_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_neg_threshold_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_pos_threshold_1d,False,float64,623398,1.0,1,1.0,0.0,constant
+state_sentiment_std_stat_1d,False,float64,623398,1.0,1,1.0,0.0,constant
 FRED_CAPUTLB50001SQ_1d,True,float32,225649,0.3619661917426748,111,0.011194377107809031,0.0,market-wide: no cross-sectional variation
 FRED_CCSA_1d,True,float32,355548,0.5703386921356822,627,0.007565785772947675,0.0,market-wide: no cross-sectional variation
 FRED_CPIAUCSL_1d,True,float32,621397,0.9967901725703323,318,0.009163224154606476,0.0,market-wide: no cross-sectional variation
@@ -486,9 +486,9 @@ EMA_200_60m,False,float32,0,0.0,0,1.0,0.0,too little history
 EMA_20_60m,False,float32,0,0.0,0,1.0,0.0,too little history
 EMA_50_60m,False,float32,0,0.0,0,1.0,0.0,too little history
 EMA_5_60m,False,float32,0,0.0,0,1.0,0.0,too little history
-FRED_BAMLC0A0CM_1d,True,float32,110,0.0001764522824904796,1,1.0,0.0,too little history
+FRED_BAMLC0A0CM_1d,False,float32,110,0.0001764522824904796,1,1.0,0.0,too little history
 FRED_BAMLC0A0CM_60m,False,float32,0,0.0,0,1.0,0.0,too little history
-FRED_BAMLH0A0HYM2_1d,True,float32,110,0.0001764522824904796,1,1.0,0.0,too little history
+FRED_BAMLH0A0HYM2_1d,False,float32,110,0.0001764522824904796,1,1.0,0.0,too little history
 FRED_BAMLH0A0HYM2_60m,False,float32,0,0.0,0,1.0,0.0,too little history
 FRED_CAPUTLB50001SQ_60m,False,float32,0,0.0,0,1.0,0.0,too little history
 FRED_CCSA_60m,False,float32,0,0.0,0,1.0,0.0,too little history
@@ -716,7 +716,7 @@ ctx_1d_VOLATILITY_50_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_VOLATILITY_5_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_Williams_R_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_atr_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
-ctx_1d_available_at,True,"datetime64[ns, UTC]",0,0.0,0,1.0,0.0,too little history
+ctx_1d_available_at,False,"datetime64[ns, UTC]",0,0.0,0,1.0,0.0,too little history
 ctx_1d_cftc_available_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_cftc_crude_ls_ratio_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_cftc_crude_net_pct_1d,False,float32,0,0.0,0,1.0,0.0,too little history
@@ -833,7 +833,7 @@ ctx_1d_sentiment_velocity_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_significance_intensity_7d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_significant_events_30d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_significant_events_7d_1d,False,float32,0,0.0,0,1.0,0.0,too little history
-ctx_1d_source_datetime,True,"datetime64[ns, UTC]",0,0.0,0,1.0,0.0,too little history
+ctx_1d_source_datetime,False,"datetime64[ns, UTC]",0,0.0,0,1.0,0.0,too little history
 ctx_1d_state_AATR_14_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_state_ABB_Lower_1d,False,float32,0,0.0,0,1.0,0.0,too little history
 ctx_1d_state_ABB_Mid_1d,False,float32,0,0.0,0,1.0,0.0,too little history

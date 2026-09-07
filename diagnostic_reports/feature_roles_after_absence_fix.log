@@ -1,0 +1,111 @@
+C:\Users\Alexa\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\nanops.py:1016: RuntimeWarning: overflow encountered in square
+  sqr = _ensure_numeric((avg - values) ** 2)
+C:\Users\Alexa\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1872: RuntimeWarning: overflow encountered in multiply
+  sqr = np.multiply(arr, arr, out=arr, where=where)
+C:\Users\Alexa\AppData\Local\Programs\Python\Python312\Lib\site-packages\numpy\lib\_nanfunctions_impl.py:1872: RuntimeWarning: overflow encountered in multiply
+  sqr = np.multiply(arr, arr, out=arr, where=where)
+sealed from 2023-09-01 onward (declared 2026-08-29); exploration sees earlier data only
+  82,094 daily rows withheld; 623,398 remain.
+
+target target_relative_return_5d | daily rows 623,398 | split 2016-08-29 | 110 names
+
+feature                              cov  varies   ic_out   within  ic/date      t  dates  verdict
+----------------------------------------------------------------------------------------------------------------------
+FRED_SAHMREALTIME_1d                17%     0%  -0.0413  -0.0421       .       .       0  market-wide: use as interaction
+FRED_ICSA_1d                        58%     0%  -0.0374  -0.0333       .       .       0  market-wide: use as interaction
+FRED_CCSA_1d                        57%     0%  -0.0318  -0.0341       .       .       0  market-wide: use as interaction
+FRED_DCOILWTICO_1d                 100%     0%  +0.0317  +0.0373       .       .       0  market-wide: use as interaction
+MAX_DRAWDOWN_1d                    100%   100%  -0.0299  -0.0062  -0.0343  -7.39  1,763  labels the name, not the moment
+CURRENT_DRAWDOWN_1d                100%   100%  -0.0296  -0.0060  -0.0340  -7.32  1,763  labels the name, not the moment
+cftc_gold_net_pct_1d                30%     0%  -0.0289  -0.0291       .       .       0  market-wide: use as interaction
+cftc_gold_ls_ratio_1d               30%     0%  -0.0289  -0.0292       .       .       0  market-wide: use as interaction
+FRED_WPU0561_1d                     36%     0%  +0.0285  +0.0300       .       .       0  market-wide: use as interaction
+FRED_T5YIFR_1d                      81%     0%  +0.0275  +0.0187       .       .       0  market-wide: use as interaction
+FRED_T10YIE_1d                      81%     0%  +0.0266  +0.0262       .       .       0  market-wide: use as interaction
+FRED_WPU101_1d                      36%     0%  +0.0247  +0.0269       .       .       0  market-wide: use as interaction
+FRED_DGS10_1d                      100%     0%  +0.0242  +0.0066       .       .       0  market-wide: use as interaction
+FRED_T5YIE_1d                       81%     0%  +0.0241  +0.0267       .       .       0  market-wide: use as interaction
+AUTOCORR_1d                        100%   100%  +0.0232  +0.0288  +0.0058  +1.79  1,763  inside the noise for this many tests
+HURST_EXPONENT_1d                  100%   100%  -0.0231  -0.0225  -0.0101  -2.65  1,763  inside the noise for this many tests
+FRED_UNRATE_1d                     100%     0%  -0.0230  -0.0309       .       .       0  market-wide: use as interaction
+FRED_GS10_1d                       100%     0%  +0.0229  +0.0057       .       .       0  market-wide: use as interaction
+FRED_DGORDER_1d                     92%     0%  +0.0224  +0.0426       .       .       0  market-wide: use as interaction
+FRED_PPIACO_1d                      99%     0%  +0.0216  +0.0354       .       .       0  market-wide: use as interaction
+FRED_INDPRO_1d                     100%     0%  +0.0210  -0.0026       .       .       0  market-wide: use as interaction
+FRED_GS2_1d                        100%     0%  +0.0200  +0.0125       .       .       0  market-wide: use as interaction
+FRED_CAPUTLB50001SQ_1d              36%     0%  +0.0186  +0.0188       .       .       0  market-wide: use as interaction
+SKEWNESS_1d                        100%   100%  -0.0184  -0.0101  -0.0096  -2.87  1,763  inside the noise for this many tests
+FRED_WTREGEN_1d                     81%     0%  -0.0180  -0.0030       .       .       0  market-wide: use as interaction
+cftc_sp500_net_pct_1d               30%     0%  +0.0179  +0.0170       .       .       0  market-wide: use as interaction
+cftc_sp500_ls_ratio_1d              30%     0%  +0.0179  +0.0171       .       .       0  market-wide: use as interaction
+market_context_fed_funds_trend_1d  100%    36%  +0.0175  +0.0213  +0.0057  +0.93    469  sign flipped out of sample
+significant_events_30d_1d          100%   100%  -0.0175  -0.0111  -0.0163  -3.60  1,763  inside the noise for this many tests
+FRED_DSPIC96_1d                    100%     0%  -0.0168  +0.0126       .       .       0  market-wide: use as interaction
+FRED_RRPONTSYD_1d                   81%     0%  +0.0167  +0.0214       .       .       0  market-wide: use as interaction
+VOLATILITY_50_1d                   100%   100%  -0.0158  +0.0022  -0.0037  -0.55  1,763  sign flipped out of sample
+SHARPE_RATIO_1d                    100%   100%  +0.0156  +0.0090  +0.0160  +2.52  1,763  inside the noise for this many tests
+ACCELERATION_10_1d                 100%   100%  -0.0153  -0.0153  -0.0129  -2.82  1,763  inside the noise for this many tests
+FRED_T10Y3M_1d                     100%     0%  +0.0151  +0.0076       .       .       0  market-wide: use as interaction
+market_context_fed_funds_velocity_ 100%    16%  +0.0151  +0.0184  +0.0222  +2.71    224  inside the noise for this many tests
+FRED_WPU01_1d                       36%     0%  +0.0151  +0.0170       .       .       0  market-wide: use as interaction
+state_champion_1d                  100%     0%  -0.0151  +0.0000       .       .       0  market-wide: use as interaction
+fund_return_on_equity_1d            38%    53%  +0.0144  -0.0047  +0.0198  +4.62  1,763  labels the name, not the moment
+market_context_volume_ratio_1d     100%   100%  +0.0142  +0.0168  +0.0055  +1.70  1,763  inside the noise for this many tests
+
+=== how many features fall into each verdict ===
+  absent before the seal: nothing to judge   935
+  inside the noise for this many tests     155
+  market-wide: use as interaction          135
+  sign flipped out of sample                79
+  one value everywhere: a filled default    67
+  labels the name, not the moment           17
+  too thin to judge                          1
+  survives, worth testing                    1
+
+=== columns with nothing to judge before the seal ===
+  no finite row at all:            935
+  one single value everywhere:      67
+  of 1,390 columns, 1,002 carry no information here and 388 were actually measured.
+    hour_1d                                    623,398 rows, one value
+    market_session_1d                          623,398 rows, one value
+    hour_sin_1d                                623,398 rows, one value
+    hour_cos_1d                                623,398 rows, one value
+    fear_greed_available_1d                    623,398 rows, one value
+    nlp_sentiment_score_1d                     623,398 rows, one value
+    filing_data_available_1d                   623,398 rows, one value
+    keyword_count_1d                           623,398 rows, one value
+    entity_count_1d                            623,398 rows, one value
+    news_quality_score_1d                      623,398 rows, one value
+    keyword_entity_available_1d                623,398 rows, one value
+    news_freshness_hours_1d                    623,398 rows, one value
+    ... and 55 more
+
+253 features carried a measurable correlation, so that is
+how many hypotheses were tested.
+  Benjamini-Hochberg at 5% FDR: p <= 2.67e-04, 3 pass.
+  That controls the share of FALSE ones among those 3 at 5%
+  -- roughly 0 of them, not all of them.
+  For contrast only: a naive p<0.05 cutoff applied 253
+  times would hand back about 13 features from pure noise.
+
+=== #143: what the independent-days assumption was worth ===
+  lag used: max(Newey-West rule, 4 days of target overlap)
+  naive t / HAC t over 253 measurable features: median 1.48, 90th pct 1.97, max 2.35
+  features whose t was inflated by 1.5x or more: 125
+  features where HAC RAISED the t (negative autocorrelation): 46
+  passed the old FDR and no longer pass: 5
+    significant_events_30d_1d              t  -3.60 -> HAC  -1.89 (lag 33)
+    fund_return_on_equity_1d               t  +4.62 -> HAC  +2.06 (lag 34)
+    insider_net_value_30d_1d               t  -6.26 -> HAC  -3.19 (lag 30)
+    obv_1d                                 t  +3.61 -> HAC  +1.79 (lag 30)
+    state_peer_divergence_1d               t  +3.31 -> HAC  +3.17 (lag 4)
+  pass now and did not before: 0
+
+=== every feature that survived, regardless of the cut above ===
+  peer_divergence_1d                     ic/date -0.0124 t  -3.98 -> HAC  -3.89 -> block bootstrap  -3.96 over 1,763 dates, coverage 99%, latest quarter t -2.03, 4/4 quarters agree
+
+roles written to diagnostic_reports\feature_roles_1d.csv (1390 features)
+
+1 of 1390 are worth the cost of testing properly.
+None of this says a feature is profitable. It says which ones are
+not already disqualified.

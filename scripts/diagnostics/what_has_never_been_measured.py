@@ -57,6 +57,7 @@ admission conditions and the only one that costs no target.
 """
 from __future__ import annotations
 
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -71,6 +72,15 @@ BATCH = PROJECT_ROOT / "data" / "colab" / "accumulated" / "main_database"
 ROLES = PROJECT_ROOT / "diagnostic_reports" / "feature_roles_1d.csv"
 OUT = PROJECT_ROOT / "diagnostic_reports" / "batch_inventory_1d.csv"
 from src.pipeline.sealed_period import SEAL_START  # noqa: E402
+
+# The one definition of "this column was never judged". Loaded from the report
+# that writes the verdicts rather than copied, so the two cannot disagree.
+_roles_spec = importlib.util.spec_from_file_location(
+    "leading_feature_report",
+    PROJECT_ROOT / "scripts/diagnostics/leading_feature_report.py")
+_roles_module = importlib.util.module_from_spec(_roles_spec)
+_roles_spec.loader.exec_module(_roles_module)
+NOTHING_TO_JUDGE = _roles_module.NOTHING_TO_JUDGE
 
 #: Imported, never restated. Eight diagnostics each kept their own copy of this
 #: date until 2026-09-04. The policy in docs/SEALED_HOLDOUT.md says moving the
@@ -96,7 +106,17 @@ MIN_HISTORY = 10_000
 def main() -> int:
     schema = pq.ParquetFile(BATCH / "features.parquet").schema_arrow
     features = [f.name for f in schema if f.name not in IDENT]
-    measured = set(pd.read_csv(ROLES)["feature"]) if ROLES.exists() else set()
+    # Appearing in the roles report is NOT the same as having been measured.
+    # It used to be, by accident: the report skipped a column with no finite
+    # row in the explorable window, so absence and non-appearance coincided.
+    # Since 2026-09-07 those 935 columns leave a line saying they were never
+    # judged, and reading presence as measurement would count every one of
+    # them as a measured feature.
+    measured = set()
+    if ROLES.exists():
+        roles = pd.read_csv(ROLES)
+        measured = set(roles.loc[~roles["verdict"].isin(NOTHING_TO_JUDGE),
+                                 "feature"])
 
     ident = pd.read_parquet(BATCH / "features.parquet",
                             columns=["ticker", "datetime", "interval"])
