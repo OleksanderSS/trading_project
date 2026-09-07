@@ -156,3 +156,46 @@ def test_the_mean_by_date_matches_the_pandas_it_replaced():
     assert np.allclose(fast, slow, equal_nan=True), (
         "the bincount date-mean disagrees with the groupby it replaced; every "
         "Sharpe in the net test runs through it.")
+
+
+# ---------------------------------------------------------------------------
+# Beta against the constant opponent, wired into the instrument on 2026-09-07.
+# Dollar-neutral is not market-neutral: subtracting the per-date mean removes
+# the level of the cross-section and leaves the beta. A third of the project's
+# 1,404 books move with the opponent at |corr| > 0.2, and the best result it
+# ever produced was 0.746 of it (CLAIMS R61).
+# ---------------------------------------------------------------------------
+
+
+def test_a_book_that_is_the_market_reads_as_beta_one():
+    """A book identical to the opponent must not be reported as neutral."""
+    generator = np.random.default_rng(19)
+    market = generator.standard_normal(2000) * 0.01
+    beta, correlation = NET._beta_on(market.copy(), market)
+    assert abs(beta - 1.0) < 1e-9 and abs(correlation - 1.0) < 1e-9, (
+        f"a book that IS the opponent reported beta {beta:.3f} and correlation "
+        f"{correlation:.3f}. If the measure cannot see a perfect market book it "
+        "cannot see a partial one either.")
+
+
+def test_an_independent_book_reads_as_beta_zero():
+    generator = np.random.default_rng(23)
+    market = generator.standard_normal(4000) * 0.01
+    book = generator.standard_normal(4000) * 0.01
+    beta, correlation = NET._beta_on(book, market)
+    assert abs(beta) < 0.1 and abs(correlation) < 0.1, (
+        f"two independent series reported beta {beta:.3f}, correlation "
+        f"{correlation:.3f}")
+
+
+def test_beta_survives_gaps_in_either_series():
+    """Real books carry NaN where a horizon runs off the end of the panel."""
+    generator = np.random.default_rng(29)
+    market = generator.standard_normal(3000) * 0.01
+    book = 0.5 * market + generator.standard_normal(3000) * 0.005
+    book[::13] = np.nan
+    market[7::29] = np.nan
+    beta, _ = NET._beta_on(book, market)
+    assert abs(beta - 0.5) < 0.1, (
+        f"with gaps in both series the beta came out {beta:.3f} instead of "
+        "about 0.5, so the pairing of the two series is wrong somewhere")

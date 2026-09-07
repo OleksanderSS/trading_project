@@ -248,6 +248,33 @@ def _position(column: np.ndarray, dates: np.ndarray) -> np.ndarray:
                      .transform("mean").to_numpy())
 
 
+def _beta_on(book: np.ndarray, market: np.ndarray) -> tuple[float, float]:
+    """Beta and correlation of a book's P&L against the constant opponent.
+
+    DOLLAR-NEUTRAL IS NOT MARKET-NEUTRAL, and this line is here because the
+    difference went unmeasured for a fortnight. Subtracting the per-date mean
+    removes the LEVEL of the cross-section; it leaves the beta. Measured
+    2026-09-07 over 1,404 books: a third carry |correlation| above 0.2, and the
+    project's headline result -- VOLATILITY_50_1d at +0.586 -- was 0.746
+    correlated with simply owning the names and hedges to -0.260 (CLAIMS R61).
+
+    Printed beside the net Sharpe rather than computed on request, for the same
+    reason the rotated null is: a check that has to be remembered is a check
+    that will one day be skipped.
+    """
+    usable = np.isfinite(book) & np.isfinite(market)
+    if usable.sum() < 60 or market[usable].std() <= 0 or book[usable].std() <= 0:
+        return float("nan"), float("nan")
+    # ddof MATCHED ON BOTH SIDES. `np.cov` defaults to ddof=1 and `np.var` to
+    # ddof=0, so the naive ratio is biased by N/(N-1) -- 1.0005 on the 2,000
+    # points the contract uses and 1.00015 on the panel's 6,800, immaterial to
+    # every number already published and wrong all the same. Caught by the
+    # contract asserting that a book which IS the opponent has beta exactly 1.
+    beta = float(np.cov(book[usable], market[usable])[0, 1]
+                 / np.var(market[usable], ddof=1))
+    return beta, float(np.corrcoef(book[usable], market[usable])[0, 1])
+
+
 def _rotation_index(frame: pd.DataFrame, lag: int) -> np.ndarray:
     """Row indices that shift each name's position series `lag` bars later.
 
@@ -380,18 +407,23 @@ def main() -> int:
     # The constant opponent, printed BEFORE the features so no result can be
     # read without it. It is the naive book this whole exercise has to beat:
     # own everything, rebalance on the same clock, pay the same friction.
+    sorted_codes, uniques = pd.factorize(dates, sort=True)
+    n_groups = len(uniques)
     constant = np.ones(len(frame))
-    const_sharpe = {}
+    const_sharpe, const_series = {}, {}
     for hold in args.holds:
-        work = pd.DataFrame({"datetime": dates})
-        work["net"] = constant * forwards[hold] - np.abs(constant) * friction
-        const_sharpe[hold], _ = _sharpe_all_phases(
-            work.groupby("datetime")["net"].mean().sort_index().to_numpy(), hold)
+        # KEPT, not just scored. Until 2026-09-07 this series was computed and
+        # thrown away, and with it went the only thing that can say whether a
+        # "dollar-neutral" book is actually market-neutral. It is not: a third
+        # of these books carry |correlation| above 0.2 with this very series,
+        # and the project's best result was 0.746 of it (CLAIMS R61).
+        const_series[hold] = _mean_by_date(
+            constant * forwards[hold] - np.abs(constant) * friction,
+            sorted_codes, n_groups)
+        const_sharpe[hold], _ = _sharpe_all_phases(const_series[hold], hold)
 
     # Each column's own null, built once per rotation and reused for every
     # feature: the shift is a property of the panel, not of the column.
-    sorted_codes, uniques = pd.factorize(dates, sort=True)
-    n_groups = len(uniques)
     lags = [int(round((i + 1) / (args.rotations + 1) * n_groups))
             for i in range(args.rotations)]
     rotations = {lag: _rotation_index(frame, lag) for lag in lags}
@@ -402,7 +434,7 @@ def main() -> int:
               f"real book stands above that null, in its standard deviations.\n")
 
     header = (f"{'feature':<34}" + "".join(f"{'h' + str(h):>9}" for h in args.holds)
-              + f"{'best net':>10}{'at hold':>9}{'phase sd':>10}"
+              + f"{'best net':>10}{'at hold':>9}{'phase sd':>10}{'beta':>8}"
               + (f"{'null':>9}{'z':>8}" if args.rotations else ""))
     print(f"{'BUY EVERYTHING (the opponent)':<34}"
           + "".join(f"{const_sharpe[h]:>9.3f}" for h in args.holds))
@@ -433,11 +465,13 @@ def main() -> int:
             if values.notna().sum() < 10_000:
                 continue
             position = _position(values.to_numpy(), dates)
-            nets, spreads = {}, {}
+            nets, spreads, betas, correlations = {}, {}, {}, {}
             for hold in args.holds:
                 net = position * forwards[hold] - np.abs(position) * friction
-                nets[hold], spreads[hold] = _sharpe_all_phases(
-                    _mean_by_date(net, sorted_codes, n_groups), hold)
+                series = _mean_by_date(net, sorted_codes, n_groups)
+                nets[hold], spreads[hold] = _sharpe_all_phases(series, hold)
+                betas[hold], correlations[hold] = _beta_on(
+                    series, const_series[hold])
             best = max(nets, key=lambda h: (nets[h] if np.isfinite(nets[h]) else -9))
 
             # The same book, told nothing about when. By default this is
@@ -480,10 +514,13 @@ def main() -> int:
                          "rotated_null": null_mean, "rotated_sd": null_sd,
                          "z_vs_own_null": z, "z_hold": z_hold,
                          "net_at_z_hold": nets.get(z_hold, float("nan")),
+                         "beta": betas[best], "correlation": correlations[best],
+                         "beta_at_z_hold": betas.get(z_hold, float("nan")),
                          **{f"h{h}": nets[h] for h in args.holds}})
             print(f"{name:<34}"
                   + "".join(f"{nets[h]:>9.3f}" for h in args.holds)
                   + f"{nets[best]:>10.3f}{best:>9}{spreads[best]:>10.3f}"
+                  + f"{betas[best]:>8.3f}"
                   + (f"{null_mean:>9.3f}{z:>8.2f}" if args.rotations else ""),
                   flush=True)
         del loaded
@@ -512,6 +549,17 @@ def main() -> int:
           f"{int(((report['best_net'] > 0) & (report['best_net'] < noise_max)).sum())}")
     print(f"negative at every horizon                    "
           f"{int((report['best_net'] <= 0).sum())}")
+    # HOW NEUTRAL THE "NEUTRAL" BOOKS ARE. Printed unconditionally because the
+    # answer was assumed for a fortnight and is not zero: a third of these
+    # books move with the opponent, and the one that scored best moved with it
+    # most (CLAIMS R61).
+    exposed = int((report["correlation"].abs() > 0.2).sum())
+    print(f"\n|beta| median / 90th / max                   "
+          f"{report['beta'].abs().median():.3f} / "
+          f"{report['beta'].abs().quantile(0.9):.3f} / "
+          f"{report['beta'].abs().max():.3f}")
+    print(f"books moving with the opponent (|corr|>0.2)  {exposed} of "
+          f"{len(report)}   <- dollar-neutral is not market-neutral")
 
     for hold in args.holds:
         column = report[f"h{hold}"]
@@ -541,7 +589,7 @@ def main() -> int:
               f"   <- tilts, not edges")
         if len(known):
             print(known[["feature", "z_hold", "net_at_z_hold", "rotated_null",
-                         "z_vs_own_null", "vs_opponent"]]
+                         "z_vs_own_null", "vs_opponent", "beta_at_z_hold"]]
                   .sort_values("z_vs_own_null", ascending=False)
                   .head(15).to_string(index=False))
             better = known[known["vs_opponent"] > 0]
