@@ -155,7 +155,27 @@ RULE_NAMES = {
     "F": "REGISTER: unsettled while a contract test names it",
     "G": "REGISTER: closed, but the closing text describes a fix in the future",
     "H": "REGISTER: closed, but the row declares a part of itself unfixed",
+    "I": "CLAIMS: a measurement no working document cites, so the plan does "
+         "not know it happened",
 }
+
+#: Documents that do the work, as opposed to the one that records evidence.
+#: A claim cited only inside CLAIMS.md is knowledge the plan has never been
+#: told about -- and the next audit will re-derive it, or worse, re-open the
+#: question it settled. Measured 2026-09-07: 20 of 61 claims were in that
+#: state, seven of them written that same day.
+#:
+#: This is NOT a demand that every claim have a task. Some are pure evidence
+#: and correctly stand alone. It is a demand that somebody LOOK at each one
+#: and decide, which is the same difference rule B keeps: an unexamined
+#: discrepancy is reported, an examined one is not.
+WORKING_DOCUMENTS = ("ROADMAP.md", "REGISTER.md", "CRITIQUE.md",
+                     "RESEARCH_IDEAS.md", "WORKING_METHOD.md")
+
+#: Written in the claim itself when its author has decided it needs no task.
+#: Demanding on purpose, exactly like STAYS_OPEN: silence is what the rule
+#: reports, an explicit sentence is a person having decided.
+STANDS_ALONE = ("САМОСТІЙНИЙ ДОКАЗ", "НЕ ПОТРЕБУЄ ЗАДАЧІ")
 
 #: Written where a row admits, mid-text, that something in it was not done.
 #: Distinct from FIX_PROPOSED: those phrases describe what a fix WOULD be,
@@ -303,6 +323,33 @@ def _cited(text: str) -> set[int]:
     return {int(n) for n in re.findall(r"#(\d{1,3})\b", text)}
 
 
+def uncited_claims() -> list[str]:
+    """Claims that no working document mentions.
+
+    The measurement is the whole point: a claim exists to change what somebody
+    DOES, and one that only ever appears in the file of claims has changed
+    nothing. It is not wrong -- it is invisible, which is how a settled
+    question comes back.
+    """
+    claims_path = ROOT / "docs" / "CLAIMS.md"
+    if not claims_path.exists():
+        return []
+    text = _read(claims_path)
+    numbered = re.findall(r"^#+\s*Р(\d+)\.\s*(.{0,90})", text, re.M)
+    elsewhere = "\n".join(
+        _read(ROOT / "docs" / name) for name in WORKING_DOCUMENTS
+        if (ROOT / "docs" / name).exists())
+    seen = {int(n) for n in re.findall(r"Р(\d+)", elsewhere)}
+    # A claim may excuse itself, in its own words, from needing a task.
+    excused = {int(n) for n in re.findall(
+        r"^#+\s*Р(\d+)\.", text, re.M)
+        if any(phrase in text.split(f"### Р{n}.")[-1][:4000]
+               for phrase in STANDS_ALONE)} if STANDS_ALONE else set()
+    return [f"CLAIMS Р{number}  {title.strip()}"
+            for number, title in numbered
+            if int(number) not in seen and int(number) not in excused]
+
+
 #: Written inside the citation's own parentheses when the writer has checked
 #: WHY a settled entry sits beside an open task. Deliberately demanding: it
 #: must appear in the same bracket as the `#N`, so a stray "закрито" elsewhere
@@ -424,6 +471,8 @@ def main() -> int:
             findings["G"].append(
                 f"REGISTER #{number} [закрито]  ...{tail[-150:]}"
             )
+
+    findings["I"].extend(uncited_claims())
 
     total = 0
     for key in sorted(RULE_NAMES):

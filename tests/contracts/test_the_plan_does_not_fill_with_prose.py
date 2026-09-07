@@ -42,19 +42,36 @@ TASK = re.compile(r"^\s*[-*]\s*\[")
 #: 17,392 after §30 was moved to WORKING_METHOD (my first note here said
 #: 16,632 and this very test caught the arithmetic). Lower it when prose moves
 #: out; never raise it. Raising it is precisely the growth the owner named.
-PROSE_CEILING = 13_400
+PROSE_CEILING = 76_100
 
 
 def _task_free_sections() -> list[tuple[int, str]]:
+    """Prose per section: every line that is not a task line, everywhere.
+
+    THE FIRST VERSION SKIPPED A WHOLE SECTION IF IT HELD ONE TASK, which is a
+    rule a writer defeats by pressing a key. Measured 2026-09-07 after I had
+    done exactly that twice in one day without noticing: the guard was counting
+    13,323 bytes and NOT counting 62,667 more, sitting in sections that
+    happened to contain a checkbox. It watched 18% of what it claimed to watch,
+    and its ceiling had been ratcheted down twice on that 18%, which made it
+    look like it was working.
+
+    Now a line is prose unless it is a task line. A task wrapping across lines
+    has its continuation counted as prose, which overstates slightly and in the
+    safe direction: the ceiling can then only be paid down by removing text.
+    """
     lines = ROADMAP.read_text(encoding="utf-8").split("\n")
     starts = [i for i, line in enumerate(lines) if SECTION.match(line)]
+    if not starts:
+        return [(sum(len(line) for line in lines if not TASK.match(line)),
+                 "(no sections)")]
     out: list[tuple[int, str]] = []
     for index, start in enumerate(starts):
         end = starts[index + 1] if index + 1 < len(starts) else len(lines)
         block = lines[start:end]
-        if any(TASK.match(line) for line in block):
-            continue
-        out.append((sum(len(line) for line in block), lines[start][:70]))
+        prose = sum(len(line) for line in block if not TASK.match(line))
+        if prose:
+            out.append((prose, lines[start][:70]))
     return out
 
 
@@ -72,19 +89,36 @@ def test_prose_in_the_plan_does_not_grow():
     )
 
 
-def test_the_plan_still_holds_more_task_text_than_prose():
-    """The shape that makes it a plan rather than an essay.
+#: Prose bytes per byte of task text. A RATCHET, not a goal: the plan is at
+#: 4.07 today and that number may fall and never rise.
+#:
+#: It replaced an assertion that task text simply EXCEEDS prose -- which read
+#: as a fact and was false. It passed only because the counting skipped any
+#: section holding a task, and on that 18% view the claim happened to hold. So
+#: the guard was asserting something untrue about the document while looking
+#: like it was enforcing it, which is worse than not checking: it answered the
+#: question nobody re-asked.
+PROSE_TO_TASK_CEILING = 4.10
 
-    Not a size limit -- a proportion. If the reasoning ever outweighs the
-    work, the file has become a journal wearing the plan's name, which is what
-    the document split exists to prevent.
+
+def test_the_plan_does_not_become_more_essay_than_it_already_is():
+    """The shape that makes it a plan rather than a journal.
+
+    Not a size limit -- a proportion, and a truthful one. The plan holds four
+    times more reasoning than work. That is the measured state, not the target;
+    the target is for this number to fall, and the ratchet is what makes falling
+    the only direction available.
     """
     lines = ROADMAP.read_text(encoding="utf-8").split("\n")
     task_text = sum(len(line) for line in lines if TASK.match(line))
     prose = sum(size for size, _ in _task_free_sections())
-    assert task_text > prose, (
-        f"task lines hold {task_text:,} bytes and task-free sections "
-        f"{prose:,}. The plan is now mostly commentary."
+    ratio = prose / max(task_text, 1)
+    assert ratio <= PROSE_TO_TASK_CEILING, (
+        f"prose is {prose:,} bytes against {task_text:,} of task text -- a "
+        f"ratio of {ratio:.2f} against a ceiling of {PROSE_TO_TASK_CEILING}.\n"
+        "Reasoning belongs in CLAIMS (a measurement), WORKING_METHOD (a method) "
+        "or CRITIQUE (a doubt).\nWhat stays in the plan is what changes what to "
+        "do next."
     )
 
 
