@@ -14,6 +14,11 @@ TIME_COLUMNS = ['published_at', 'publishedAt', 'published_date', 'date',
     'timestamp', 'datetime']
 
 
+def _empty_list_column(index: pd.Index) -> pd.Series:
+    """An object-dtype Series of distinct empty lists, one per row."""
+    return pd.Series([[] for _ in range(len(index))], index=index, dtype=object)
+
+
 class KeywordEntityEnricher(BaseEnricher):
     """
     Enriches DataFrame with keyword and entity features from news.
@@ -148,13 +153,16 @@ class KeywordEntityEnricher(BaseEnricher):
         mask = news_copy[text_col].notna() & (news_copy[text_col] != '')
 
         # Keywords: використовують lru_cache, apply все ще прийнятний, але зробимо чистішим
-        news_copy['keywords'] = ''
+        # Колонки тримають списки, тому ініціалізуємо їх порожніми списками в
+        # object-dtype. Ініціалізація рядком '' давала str-колонку, у яку pandas
+        # відмовляється писати списки (TypeError: Invalid value for dtype 'str').
+        news_copy['keywords'] = _empty_list_column(news_copy.index)
         news_copy.loc[mask, 'keywords'] = news_copy.loc[mask, text_col].apply(
             lambda x: self.keyword_extractor.extract(x))
         news_copy['keyword_count'] = news_copy['keywords'].apply(len)
 
         # Entities: використовуємо batch-обробку
-        news_copy['entities'] = ''
+        news_copy['entities'] = _empty_list_column(news_copy.index)
         news_copy['entity_count'] = 0
 
         if self.entity_extractor and mask.any():

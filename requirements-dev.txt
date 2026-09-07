@@ -5,6 +5,11 @@ bandit>=1.7.0
 mlflow>=2.0.0
 pytest>=7.0.0
 pytest-cov>=4.0.0
+# Async tests carry @pytest.mark.asyncio; without this plugin they do not run
+# at all, they error out — which is how the target-leakage contract test sat
+# unverified. CI installed it ad hoc, local runs did not.
+pytest-asyncio>=0.23.0
+pytest-timeout>=2.1.0
 deepchecks>=0.17.0
 great-expectations>=0.17.0
 

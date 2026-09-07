@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
@@ -310,7 +311,6 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         """Add risk-reward features on a rolling basis to avoid look-ahead bias."""
         if 'close' in df_enriched.columns:
             try:
-                import numpy as np
                 if returns is None:
                     returns = df_enriched['close'].pct_change(fill_method=None)
 
@@ -325,7 +325,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 sharpe_denominator = rolling_std.copy()
                 sharpe_denominator[sharpe_denominator < 1e-10] = np.nan
                 sharpe = (rolling_mean / sharpe_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
-                df_enriched['SHARPE_RATIO'] = sharpe.fillna(np.nan)
+                df_enriched['SHARPE_RATIO'] = sharpe
 
                 # Sortino Ratio
                 downside_returns = returns.copy()
@@ -337,7 +337,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 sortino_denominator = rolling_downside_std.copy()
                 sortino_denominator[sortino_denominator < 1e-10] = np.nan
                 sortino = (rolling_mean / sortino_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
-                df_enriched['SORTINO_RATIO'] = sortino.fillna(np.nan)
+                df_enriched['SORTINO_RATIO'] = sortino
 
                 logger.info('Added rolling risk-reward features')
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
@@ -356,7 +356,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 min_periods = 30
 
                 # Rolling autocorrelation (correlation of returns with returns.shift(1))
-                df_enriched['AUTOCORR'] = returns.rolling(window=window, min_periods=min_periods).corr(returns.shift(1)).fillna(np.nan)
+                df_enriched['AUTOCORR'] = returns.rolling(window=window, min_periods=min_periods).corr(returns.shift(1))
 
                 # Rolling Hurst Exponent
                 df_enriched['HURST_EXPONENT'] = returns.rolling(window=window, min_periods=100).apply(
@@ -364,10 +364,10 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 ).fillna(0.5)
 
                 # Rolling Skewness
-                df_enriched['SKEWNESS'] = returns.rolling(window=window, min_periods=min_periods).skew().fillna(np.nan)
+                df_enriched['SKEWNESS'] = returns.rolling(window=window, min_periods=min_periods).skew()
 
                 # Rolling Kurtosis
-                df_enriched['KURTOSIS'] = returns.rolling(window=window, min_periods=min_periods).kurt().fillna(np.nan)
+                df_enriched['KURTOSIS'] = returns.rolling(window=window, min_periods=min_periods).kurt()
 
                 logger.info('Added rolling econometrics features')
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
@@ -394,7 +394,6 @@ class TechnicalAnalysisEnricher(BaseEnricher):
     def _calculate_hurst_exponent(self, ts):
         """Calculate the Hurst exponent of a time series safely and efficiently."""
         try:
-            import numpy as np
             ts_clean = ts[~np.isnan(ts)]
             if len(ts_clean) < 30:
                 return 0.5

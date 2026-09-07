@@ -40,6 +40,14 @@ class EntityExtractor:
             nlp = spacy.load(self.model_name, disable=self.disable_components)
             logger.info(f"Successfully loaded spaCy model: '{self.model_name}'")
             return nlp
+        except ImportError:
+            logger.error(
+                "spaCy is not installed, so no named entities will be extracted. "
+                "To fix, run: pip install spacy && "
+                f"python -m spacy download {self.model_name}"
+            )
+            # Return None to indicate failure, allowing graceful degradation
+            return None
         except OSError:
             logger.error(
                 f"Could not find spaCy model '{self.model_name}'. "
