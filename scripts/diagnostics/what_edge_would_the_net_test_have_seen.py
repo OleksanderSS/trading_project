@@ -118,20 +118,14 @@ def _standardise(values: np.ndarray, dates: np.ndarray) -> np.ndarray:
     return np.nan_to_num(out.to_numpy())
 
 
-def _position(column: np.ndarray, dates: np.ndarray) -> np.ndarray:
-    """The identical book the real run builds, on a supplied column."""
-    position = np.sign(
-        pd.Series(column).groupby(dates).rank(pct=True).to_numpy() - 0.5)
-    position = np.nan_to_num(position)
-    return position - (pd.Series(position).groupby(dates)
-                       .transform("mean").to_numpy())
-
-
-#: Rotation and the fast date-mean live in the INSTRUMENT now, not here. They
-#: were written in this file on 2026-09-06 and moved into
+#: The book, rotation and the fast date-mean live in the INSTRUMENT now, not
+#: here. `_position` moved on 2026-09-07 when a third script needed it and made
+#: the second copy visible; rotation and the date-mean were written in this file
+#: on 2026-09-06 and moved into
 #: `net_test_every_survivor.py` the same day, because a null that decides how a
 #: verdict reads belongs to the thing that issues the verdict -- a diagnostic
 #: holding its own copy is how two definitions of the seal happened (R45).
+_position = NET._position
 _mean_by_date = NET._mean_by_date
 _rotation_index = NET._rotation_index
 

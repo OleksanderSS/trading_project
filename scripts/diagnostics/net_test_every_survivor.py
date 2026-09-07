@@ -216,6 +216,38 @@ def _mean_by_date(values: np.ndarray, codes: np.ndarray, groups: int) -> np.ndar
     return np.where(counts > 0, sums / np.maximum(counts, 1.0), np.nan)
 
 
+def _position(column: np.ndarray, dates: np.ndarray) -> np.ndarray:
+    """The book: cross-sectional rank, signed, then made dollar-neutral.
+
+    THIS IS THE DEFINITION OF THE BOOK and it lives here, in the instrument,
+    because until 2026-09-07 it lived in TWO places -- inline in the loop below
+    and again in `what_edge_would_the_net_test_have_seen.py`. Two copies of the
+    thing every verdict is computed on is the duplication family that gave the
+    seal two definitions (R45); a third script needing it is what made the
+    second copy visible.
+
+    DOLLAR-NEUTRAL, OR THE ANSWER IS THE MARKET. `sign(rank - 0.5)` on a column
+    with heavy ties gives +1 to EVERYONE: pandas ranks ties by their average, so
+    a binary flag that is 98.9% one value ranks near 0.5+ for every name and the
+    "long/short book" is long everything. Measured 2026-09-04, seven features
+    cleared Bonferroni at ~1.00 net while the constant opponent -- buy every
+    name, rebalance on the same clock, pay the same friction -- scored 1.018 at
+    a 60-day hold, and every one of the seven WAS that opponent to three
+    decimals.
+
+    Subtracting the per-date mean removes exactly that exposure and leaves a
+    degenerate column holding no position at all, which is the honest answer for
+    a column that says nothing about which name. Without it this script has no
+    opponent ladder and compares against zero -- the defect the promotion gate
+    spent a week having removed (CLAIMS R11, R17).
+    """
+    signed = np.sign(
+        pd.Series(column).groupby(dates).rank(pct=True).to_numpy() - 0.5)
+    signed = np.nan_to_num(signed)
+    return signed - (pd.Series(signed).groupby(dates)
+                     .transform("mean").to_numpy())
+
+
 def _rotation_index(frame: pd.DataFrame, lag: int) -> np.ndarray:
     """Row indices that shift each name's position series `lag` bars later.
 
@@ -400,28 +432,7 @@ def main() -> int:
             values = pd.Series(values)
             if values.notna().sum() < 10_000:
                 continue
-            position = np.sign(
-                values.groupby(dates).rank(pct=True).to_numpy() - 0.5)
-            position = np.nan_to_num(position)
-            # DOLLAR-NEUTRAL, OR THE ANSWER IS THE MARKET.
-            #
-            # `sign(rank - 0.5)` on a column with heavy ties gives +1 to
-            # EVERYONE: pandas ranks ties by their average, so a binary flag
-            # that is 98.9% one value ranks near 0.5+ for every name and the
-            # "long/short book" is long everything. Measured 04.09, seven
-            # features cleared Bonferroni at ~1.00 net and the constant
-            # opponent -- buy every name, rebalance on the same clock, pay the
-            # same friction -- scores 1.018 at a 60-day hold. Every one of the
-            # seven was the constant opponent to three decimals.
-            #
-            # Subtracting the per-date mean removes exactly that exposure and
-            # leaves a degenerate column with no position at all, which is the
-            # honest answer for a column that says nothing about which name.
-            # Without it this script has no opponent ladder and compares
-            # against zero -- the defect the promotion gate spent a week
-            # having removed (CLAIMS R11, R17), reproduced here.
-            position = position - (pd.Series(position).groupby(dates)
-                                   .transform("mean").to_numpy())
+            position = _position(values.to_numpy(), dates)
             nets, spreads = {}, {}
             for hold in args.holds:
                 net = position * forwards[hold] - np.abs(position) * friction

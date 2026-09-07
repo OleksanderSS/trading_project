@@ -54,6 +54,10 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from src.pipeline.sealed_period import (  # noqa: E402
+    SEAL_SHARE, apply_seal, seal_start_for,
+)
+
 SOURCE = Path.home() / (
     ".cache/kagglehub/datasets/borismarjanovic/"
     "price-volume-data-for-all-us-stocks-etfs/versions/3")
@@ -62,11 +66,6 @@ OUT = PROJECT_ROOT / "data" / "wide_universe" / "kaggle_us_daily.parquet"
 WINDOW = ("1996-08-26", "2017-11-10")
 MIN_DAYS = 1000
 MIN_DOLLAR_VOLUME = 1_000_000.0
-
-#: Share of the span held back. The same 20% the per-frame seal rule uses, so
-#: this universe is sealed by the project's own convention rather than by a
-#: number invented for it.
-SEAL_SHARE = 0.20
 
 #: Names sampled for the correlation estimate. The average pairwise correlation
 #: converges long before the full cross-section, and the full 5,000x5,000 matrix
@@ -164,12 +163,19 @@ def main() -> int:
     print(f"panel: {len(panel):,} rows, {panel['ticker'].nunique():,} names, "
           f"{dates.min().date()} to {dates.max().date()}")
 
-    unique = np.sort(dates.unique())
-    seal = pd.Timestamp(unique[int(len(unique) * (1 - SEAL_SHARE))])
-    print(f"SEAL for this universe: {seal.date()} -- the last {SEAL_SHARE:.0%} "
-          f"of its own span.\n    The project's 2023-09-01 seal would hold back "
-          f"NOTHING here, since the frame\n    ends in 2017. Explorable: "
-          f"{(dates < seal).sum():,} rows; held back: {(dates >= seal).sum():,}.\n")
+    # THE PROJECT'S RULE, ASKED RATHER THAN REIMPLEMENTED. The first version
+    # computed the percentile here with its own SEAL_SHARE -- a second copy of
+    # a rule that already exists, which is exactly how the seal came to have
+    # nine definitions on 2026-09-04. `seal_start_for` already handles this
+    # case: when a frame ENDS before the declared date it falls back to the
+    # frame's own tail instead of withholding nothing. It returns the same
+    # 2013-08-16 the hand-rolled version did.
+    seal = seal_start_for(dates)
+    kept, withheld = apply_seal(panel)
+    print(f"SEAL for this universe: {seal.date()}, from `seal_start_for` -- the "
+          f"last {SEAL_SHARE:.0%} of its own span.\n    The project's 2023-09-01 "
+          f"seal would hold back NOTHING here, since the frame\n    ends in 2017. "
+          f"Explorable: {len(kept):,} rows; held back: {withheld:,}.\n")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     panel.to_parquet(OUT, index=False)

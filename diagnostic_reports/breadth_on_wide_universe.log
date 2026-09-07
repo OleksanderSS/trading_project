@@ -1,0 +1,49 @@
+panel: 5,263,778 rows, 2,621 names, 1996-08-26 to 2013-08-15
+seal:  2013-08-16 by the project's own per-frame rule; 2,865,663 rows held back
+
+friction: 9.55 bp round trip on average (our 110 names: 10.94 bp -- the per-share model charges more here because
+          the names are cheaper, which is honest and not an artefact)
+
+MARKET IMPACT, which the cost model above omits. Median name trades $7.2M a day.
+         capital    per name   share of a day
+          10,000           4          0.000%
+         100,000          38          0.001%
+       1,000,000         382          0.005%
+      10,000,000       3,815          0.053%
+    Impact grows with the square root of participation, so a share measured in basis
+    points is not the binding constraint and a share in percent is (R24).
+
+attempts declared before the run: 12. Bonferroni bar z >= 2.87
+
+BUY EVERYTHING (the opponent), net of the same friction
+    hold   1: -0.154
+    hold   5: +0.649
+    hold  20: +0.810
+    hold  40: +0.826
+    hold  60: +0.825
+    hold 120: +0.802
+    SURVIVOR SNAPSHOT AT 2017: these names were all alive then, so this opponent is
+    inflated exactly as ours is (R47). It is a relative benchmark, not the market.
+
+signal                  hold      NET     null     sd       z   vs opponent
+---------------------------------------------------------------------------
+reversal 1d                1   -3.202   -7.573  0.514    8.50        -3.048
+reversal 1d                5   -0.037   -1.804  0.211    8.39        -0.687
+reversal 1d               20    0.105   -0.470  0.097    5.92        -0.705
+reversal 1d               40    0.099   -0.226  0.077    4.21        -0.727
+reversal 1d               60    0.086   -0.140  0.062    3.64        -0.739
+reversal 1d              120    0.026   -0.067  0.088    1.04        -0.776
+reversal 5d                1   -3.043   -7.220  0.569    7.34        -2.889
+reversal 5d                5    0.164   -1.697  0.265    7.02        -0.485
+reversal 5d               20    0.159   -0.473  0.160    3.95        -0.651
+reversal 5d               40    0.180   -0.245  0.134    3.17        -0.646
+reversal 5d               60    0.132   -0.163  0.096    3.06        -0.693
+reversal 5d              120    0.014   -0.100  0.155    0.74        -0.787
+
+===========================================================================
+know something about WHEN (z >= 2.87)      10 of 12
+of those, net positive                     7
+of those, BEAT buying everything           0
+
+Earns but does not beat owning the same names. A measured number, not a candidate
+(R28, R53).
