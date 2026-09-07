@@ -87,16 +87,29 @@ def test_one_failing_context_does_not_end_the_stage():
 
     from src.pipeline.stages.prediction import orchestrator as module
 
-    source = inspect.getsource(module._generate_predictions_for_contexts) \
-        if hasattr(module, "_generate_predictions_for_contexts") \
-        else inspect.getsource(module.PredictionStage._generate_predictions_for_contexts)
-
+    # The handler moved. `_generate_predictions_for_contexts` used to hold the
+    # try/except itself; the loop body is `_predict_one` now, and the guard
+    # went with it. Reading only the outer method found zero handlers and
+    # failed with "no longer handles failures at all" -- which was false, and
+    # is the failure mode of a test that names a FUNCTION instead of the
+    # behaviour. Both are read, so the assertion holds wherever the guard sits.
     import textwrap
-    tree = ast.parse(textwrap.dedent(source))
-    handlers = [
-        node for node in ast.walk(tree) if isinstance(node, ast.ExceptHandler)
-    ]
-    assert handlers, "the per-context loop no longer handles failures at all"
+
+    sources = []
+    for name in ("_generate_predictions_for_contexts", "_predict_one"):
+        owner = module if hasattr(module, name) else module.PredictionStage
+        if hasattr(owner, name):
+            sources.append(inspect.getsource(getattr(owner, name)))
+    assert sources, "neither the per-context loop nor _predict_one exists"
+
+    handlers = []
+    for source in sources:
+        tree = ast.parse(textwrap.dedent(source))
+        handlers += [node for node in ast.walk(tree)
+                     if isinstance(node, ast.ExceptHandler)]
+    assert handlers, (
+        "nothing on the per-context path handles a failure, so one bad "
+        "context ends stages 5, 6 and 7 for every remaining one")
     for handler in handlers:
         if handler.type is None:
             continue

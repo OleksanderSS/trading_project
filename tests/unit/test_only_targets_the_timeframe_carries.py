@@ -26,6 +26,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from src.pipeline.sealed_period import SEAL_START
+
 
 def _controller():
     path = Path("scripts/colab/colab_clean_cell.py")
@@ -96,6 +98,12 @@ def test_an_hourly_horizon_target_is_kept_on_the_intraday_timeframe():
     "wrong timeframe" would delete a legitimate model -- and these three
     _1h targets are precisely the ones that used to be trained as one fit
     over two bar sizes.
+
+    The 15m half of this went red when the batch stopped carrying 15m rows,
+    and the reason is structural rather than a loss -- see
+    `test_fifteen_minute_bars_can_never_reach_a_measurement` below. The
+    assertion is kept for the day 15m rows are explorable again, and skips
+    with the measured reason meanwhile rather than pretending to watch.
     """
     targets = Path("data/colab/accumulated/main_database/targets.parquet")
     if not targets.exists():
@@ -111,5 +119,47 @@ def test_an_hourly_horizon_target_is_kept_on_the_intraday_timeframe():
         .to_dict()
     )
 
-    assert counts.get("15m", 0) > 0
-    assert counts.get("60m", 0) > 0
+    assert counts.get("60m", 0) > 0, (
+        "the hourly-cadence half is gone too, which is a real loss rather "
+        "than the structural 15m one")
+    if not counts.get("15m", 0):
+        pytest.skip(
+            "this batch carries no 15m rows, and batch_metadata records "
+            "timeframes_missing: ['15m']. Yahoo serves 15m for 60 days, so "
+            "every 15m bar obtainable sits inside the seal -- measured 0 of "
+            "159,149 explorable")
+
+
+def test_fifteen_minute_bars_can_never_reach_a_measurement():
+    """The 15m timeframe is configured, collected, and structurally dead here.
+
+    Measured 2026-09-07 on `features_15m.parquet`: 159,149 rows spanning
+    2026-06-09 to 2026-08-28 -- eighty days, and the seal starts 2023-09-01.
+    ZERO rows are explorable, and no future run can change that: Yahoo serves
+    15m for sixty days, so the whole window this project can ever obtain lies
+    inside the held-back period by construction.
+
+    This is why `timeframes_missing: ['15m']` in the batch metadata is correct
+    rather than a loss, and it is the same family as R62 -- a source whose
+    collector works perfectly and reaches no measurement.
+
+    It is NOT a reason to stop collecting 15m: paper trading happens in the
+    present, where those bars are the live ones. It is a reason to stop
+    reading their absence from a research batch as a defect.
+    """
+    intraday = Path("data/colab/accumulated/main_database/features_15m.parquet")
+    if not intraday.exists():
+        pytest.skip("no 15m export on disk")
+
+    stamps = pd.to_datetime(
+        pd.read_parquet(intraday, columns=["datetime"])["datetime"], utc=True
+    ).dt.tz_localize(None)
+    seal = pd.Timestamp(SEAL_START).tz_localize(None)
+    explorable = int((stamps < seal).sum())
+
+    assert explorable == 0, (
+        f"{explorable:,} of {len(stamps):,} 15m rows are now BEFORE the seal. "
+        "That would be new -- a longer intraday history has appeared from "
+        "somewhere -- and the 15m timeframe would stop being structurally "
+        "unmeasurable. Re-enable the assertion above and re-measure.")
+    assert stamps.max() > seal, "the 15m export is stale rather than sealed"

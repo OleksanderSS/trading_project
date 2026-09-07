@@ -67,13 +67,25 @@ def test_a_delivered_timeframe_survives(stage):
     assert "1d" in market
 
 
+def _rows(combined):
+    """Rows across every timeframe.
+
+    `_combine_timeframes` used to hand back ONE concatenated frame, so these
+    tests said `len(combined)`. It hands back a dict of frames per timeframe
+    since 2026-08-26, and `len` of that counts TIMEFRAMES -- one, always. The
+    assertions passed the wrong number to compare and would have gone green on
+    an empty frame.
+    """
+    return sum(len(frame) for frame in combined.values())
+
+
 def test_the_interval_filter_compares_normalised_names(stage):
     """'1h' and '60m' are the same timeframe. A raw == selects nothing."""
     stage.timeframe_context_assembler = _PassthroughAssembler()
 
     combined = stage._combine_timeframes({"60m": _frame("1h", rows=4)})
 
-    assert len(combined) == 4, "1h rows were not recognised as 60m"
+    assert _rows(combined) == 4, "1h rows were not recognised as 60m"
 
 
 def test_a_timeframe_whose_rows_all_mismatch_is_announced(stage, caplog):
@@ -90,14 +102,25 @@ def test_matching_rows_are_kept(stage):
 
     combined = stage._combine_timeframes({"1d": _frame("1d", rows=6)})
 
-    assert len(combined) == 6
+    assert _rows(combined) == 6
 
 
 class _PassthroughAssembler:
-    """Returns the frames unchanged; these tests are about the filter."""
+    """Returns the frames unchanged; these tests are about the filter.
 
-    def assemble(self, filtered_data):
-        frames = [f for f in filtered_data.values() if not f.empty]
-        combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
-        return combined, {"summary": {"base_context_count": len(frames),
-                                      "output_rows": len(combined)}}
+    It carried only `assemble`, which returned ONE concatenated frame. Stage 3
+    stopped calling that on 2026-08-26: the union of timeframes is ~80% NaN by
+    construction and came to about 11 GiB at 110 tickers, so the orchestrator
+    now calls `assemble_by_timeframe` and keeps the frames separate. The stub
+    was never updated, so all three tests here died on an AttributeError
+    inside the orchestrator and stopped watching the interval filter -- which
+    is the only thing they were ever about.
+    """
+
+    def assemble_by_timeframe(self, filtered_data):
+        frames = {name: frame for name, frame in filtered_data.items()
+                  if not frame.empty}
+        return frames, {"summary": {
+            "base_context_count": len(frames),
+            "output_rows": sum(len(frame) for frame in frames.values()),
+        }}

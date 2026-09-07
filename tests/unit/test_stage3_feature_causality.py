@@ -69,7 +69,22 @@ def test_significance_features_are_prefix_invariant():
     )
 
 
-def test_market_regime_features_are_prefix_invariant():
+def test_market_regime_features_are_prefix_invariant(monkeypatch):
+    """The invariant survives the feature being switched off by default.
+
+    `_add_market_regime_features` returns immediately unless
+    MARKET_REGIME_FEATURES is set. That default is right and measured -- the
+    feature cost 5.4 hours of a twelve-hour rebuild and came out "sign flipped
+    out of sample" in the leading-feature report -- but it left this test
+    asserting on a column the function no longer writes, so it died on a
+    KeyError instead of checking anything.
+
+    Prefix-invariance still matters for whoever turns it on: a feature whose
+    value at bar 10 depends on how many bars come AFTER it has read the
+    future. So the switch is set here rather than the test deleted.
+    """
+    monkeypatch.setenv("MARKET_REGIME_FEATURES", "1")
+
     class DeterministicRegimeDetector:
         min_samples_for_clustering = 252
 

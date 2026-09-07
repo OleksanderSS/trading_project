@@ -34,15 +34,56 @@ def test_volatility_returns_do_not_forward_fill_missing_prices():
 
 
 def test_context_map_numeric_state_does_not_treat_missing_gap_as_move():
+    """A price that is missing must not be read as a price that did not move.
+
+    This test used to assert `df["state_close"].tolist()[:3] == [0, 0, 0]` on a
+    four-row frame, and it went red when `_process_numeric_column` learned to
+    SUPPRESS a state column that comes out constant -- 17 of 615 such columns
+    carried a single value on the 18.08 batch and could separate nothing. On a
+    four-row toy there is not enough movement for the column to be emitted at
+    all, so the assertion was testing the mechanism (the column exists) rather
+    than the invariant (a gap is not a move).
+
+    The frame below has real movement in both directions, so the column IS
+    emitted, and a single missing bar sits inside it. The gap is what is
+    measured: with `fill_method=None`, pct_change is NaN AT the gap and AT the
+    bar after it, so both encode as 0. Were the price forward-filled, the bar
+    after the gap would compare 150 against 102 -- a +47% jump -- and read as a
+    confident +1. That is the defect, and it is what the numbers are chosen to
+    expose.
+    """
     enricher = ContextMapEnricher()
     enricher.noise_sensitivity = 0.5
-    df = pd.DataFrame({"close": [100.0, None, 110.0, 121.0]})
+    prices = [100.0, 104.0, 99.0, 106.0, 97.0, 102.0, None, 150.0, 151.0, 149.0]
+    df = pd.DataFrame({"close": prices})
     state_cols = []
 
     enricher._process_numeric_column(df, "close", "state_close", state_cols)
 
-    assert df["state_close"].tolist()[:3] == [0, 0, 0]
-    assert state_cols == ["state_close"]
+    assert state_cols == ["state_close"], (
+        "the column was suppressed as constant, so this frame no longer "
+        "exercises the gap at all and the test proves nothing")
+    states = df["state_close"].tolist()
+    assert states[6] == 0, (
+        f"the missing bar itself encoded as {states[6]}, not flat")
+    assert states[7] == 0, (
+        f"the bar AFTER the gap encoded as {states[7]}. 150 was compared "
+        "against the last known price instead of against nothing -- that is a "
+        "forward fill, and it manufactures a +47% move out of a hole.")
+    assert set(states) - {0}, (
+        "no bar moved at all, so the frame cannot distinguish 'gap is flat' "
+        "from 'everything is flat'")
+
+    # The control, because a green assertion proves nothing on its own. Feed
+    # the SAME enricher a forward-filled copy: if the assertions above cannot
+    # tell the two apart, they are not watching the fill policy.
+    filled = pd.DataFrame({"close": pd.Series(prices).ffill()})
+    filled_cols = []
+    enricher._process_numeric_column(filled, "close", "state_close", filled_cols)
+    assert filled["state_close"].tolist()[7] == 1, (
+        "a forward-filled frame did NOT produce a false move at the bar after "
+        "the gap, so this test would stay green with the defect present and "
+        "is watching nothing.")
 
 
 # test_derived_forward_direction_preserves_unavailable_tail_targets removed as _add_forward_targets does not exist
