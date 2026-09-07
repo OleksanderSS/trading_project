@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def plot_equity_curve(portfolio_history, financial_metrics=None,
-                      simulated: bool = False) -> Path:
+                      simulated: bool = False, out_dir: Path | None = None) -> Path:
     """Draw the equity curve, and say on the image when it is not real.
 
     When Stage 5 produces too few signals, `backtest_analyzer` substitutes
@@ -25,7 +25,11 @@ def plot_equity_curve(portfolio_history, financial_metrics=None,
     hands back something that looks like a result, which is why the marking
     goes on the image itself rather than only in the log.
     """
-    out = Path("reports/charts")
+    # `out_dir` exists so ReportGenerator can delegate here without moving the
+    # file it has always written. There were TWO plot_equity_curve
+    # implementations until 2026-09-07 and only this one carried the marking
+    # below; the orchestrator called the other. See ReportGenerator's docstring.
+    out = Path(out_dir) if out_dir is not None else Path("reports/charts")
     out.mkdir(parents=True, exist_ok=True)
     p = out / "equity_curve.png"
 

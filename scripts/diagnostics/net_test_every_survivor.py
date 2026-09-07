@@ -116,14 +116,94 @@ from src.pipeline.sealed_period import SEAL_START  # noqa: E402
 #: family this codebase's defects come from.
 SEALED = SEAL_START
 
-#: The standard error of an annualised Sharpe over T years is about
-#: sqrt(1/T); over the 27 explorable years that is 0.193.
+#: The spread of a NULL book's annualised Sharpe, in Sharpe units. Every
+#: threshold below is this number times a z.
 #:
 #: TWO of those is NOT enough here, and the first version of this script said
 #: it was. A threshold chosen without counting the attempts is exactly the
 #: defect the promotion gate spent a week having removed (CLAIMS R11, R17),
 #: reproduced in the script that was meant to judge its output.
-SHARPE_SE = 0.193
+#:
+#: It was 0.193 until 2026-09-07, and that was sqrt(1/27): the textbook
+#: standard error of a Sharpe over the 27 explorable years, which assumes the
+#: daily returns are independent draws. It is not a measurement, and this
+#: script produces the measurement as a by-product -- the rotated nulls are
+#: books with the timing broken, so their Sharpes ARE draws from the null.
+#:
+#: MEASURED on the 235-column run of 2026-09-07
+#: (`diagnostic_reports/net_test_varying.csv`), decomposed because the two
+#: parts say different things:
+#:
+#:   within a column, over its 12 rotations      0.076
+#:   ACROSS columns, spread of the null means    0.222
+#:   pooled, sqrt(w^2 + a^2)                     0.234
+#:
+#: The across-column part dominates and is the one that matters here: a
+#: threshold asks how large the best of N ATTEMPTS can get by luck, and the N
+#: attempts are N different features, each producing a null book with its own
+#: risk. Using the within-column spread instead would give 0.076, cut every
+#: threshold to a third, and manufacture significance -- it answers a
+#: different question ("does THIS book's timing matter"), which is what
+#: `z_vs_own_null` is for.
+#:
+#: Not circular: the rotated books carry no timing edge by construction, so
+#: calibrating a threshold on them is an empirical null, not the result
+#: judging itself.
+#:
+#: WHAT IT CHANGED, taken from `_thresholds` itself rather than reimplemented
+#: -- my first pass at this multiplied by SHARPE_SE twice and reported a
+#: noise-max of 0.317 with "15 columns clear it". Both were wrong:
+#:
+#:   Bonferroni family-wise 5%        0.798 -> 0.968
+#:   expected maximum of noise        0.621 -> 0.753
+#:   columns clearing either          0 -> 0   (best net anywhere is 0.586)
+#:
+#: So the bar was 21% too permissive and nothing had slipped through it. Every
+#: published conclusion of the form "X fails the bar" stays failed, because the
+#: bar only rose. Thresholds printed before 2026-09-07 were computed with
+#: 0.193 and are the smaller pair above.
+#:
+#: Per hold, for whoever revisits this: h120 0.193 (n=202), h60 0.308 (n=26),
+#: h40 0.253 (n=6), h5 within-only 0.149 (n=1). A per-hold table is NOT used,
+#: because three of the four holds have too few columns at their best hold to
+#: estimate a spread, and picking per-hold numbers off six observations is the
+#: free parameter this constant exists to avoid.
+#:
+#: HOW THIS SQUARES WITH CLAIMS R50, which measured the same thing and got
+#: SMALLER numbers (0.394 at h1 falling to 0.113 at h120, i.e. "the constant is
+#: too HIGH at long holds"). Both are right; they are different objects, and
+#: the difference is the whole point:
+#:
+#:   R50 measured the spread WITHIN one column, over its rotations. That is
+#:   the null for "does THIS book's timing matter", and 0.113 at h120 is the
+#:   right scale for it.
+#:
+#:   This constant scales a threshold applied to the RAW net Sharpe, compared
+#:   against zero -- `report["best_net"] >= bonferroni`, a few hundred lines
+#:   below. Under the null, a column's raw Sharpe sits at ITS OWN rotated null,
+#:   not at zero, and those centres spread by 0.222 across columns. So the raw
+#:   comparison must carry both terms, and 0.234 is what it needs.
+#:
+#: R50's second finding -- "the null is not at zero" -- is therefore still
+#: open, and this constant is the cost of leaving it open rather than a
+#: disagreement with it. Closing it means comparing each column to its own
+#: null instead, which the instrument already computes as `z_vs_own_null`.
+#:
+#: THAT MOVE IS NOT MADE HERE, and the reason is a number rather than caution.
+#: On the run of 2026-09-07 the own-null z clears Bonferroni for THREE columns
+#: -- state_SHARPE_RATIO_1d at z 5.63, LEVEL_BREAKOUT_DOWN_20_1d at 5.29,
+#: state_SORTINO_RATIO_1d at 4.78. Their net Sharpes are +0.026, +0.114 and
+#: +0.015. The z is large because the denominator is small (rotation spreads of
+#: 0.023, 0.149, 0.025), and that denominator is an SD estimated from TWELVE
+#: rotations of one book, which are not independent draws. A promotion built on
+#: it would be the project's own recurring defect -- a threshold that moved
+#: after the answer was seen -- wearing a bigger z.
+#:
+#: What the move needs first: enough rotations for the denominator to mean
+#: something (12 is not enough for an SD; ~50 would be), and a decision about
+#: what a z of 5 on a net Sharpe of 0.026 is a claim ABOUT. R50 already
+#: answered the second: information, not money.
+SHARPE_SE = 0.234
 
 #: How many feature columns to hold in memory at once. 235 columns over 1.09M
 #: rows is about 2GB as float64; there is no reason to pay it.

@@ -123,12 +123,22 @@ VOL_FAMILY = ("vol", "atr", "std", "gk_", "range", "drawdown", "beta")
 def _thresholds(attempts: int, years: float) -> tuple[float, float]:
     """Bonferroni and the expected maximum of noise, IN THIS SAMPLE'S UNITS.
 
-    `net_test_every_survivor._thresholds` hardcodes SHARPE_SE = 0.193, which is
-    1/sqrt(27) -- correct there, because it measures over the whole explorable
-    period. Importing it here would have applied a 27-year standard error to an
-    8-year test window and made the bar three times too lenient. Caught by
-    asking what 0.193 was 1/sqrt of, after the first run returned numbers that
-    cleared it easily.
+    `net_test_every_survivor` carries its own SHARPE_SE, and importing it here
+    would apply that sample's spread to an 8-year test window. Caught by asking
+    what 0.193 was 1/sqrt of, after the first run returned numbers that cleared
+    it easily.
+
+    That reasoning still holds, but its arithmetic is out of date: 0.193 was
+    1/sqrt(27), a THEORETICAL standard error assuming independent days. On
+    2026-09-07 it was replaced there by the MEASURED spread of the rotated
+    nulls, 0.234, which is 21% wider -- so the number that must not be borrowed
+    is no longer even the one named above. The rule is unchanged and now has a
+    second reason: a null spread is a property of the sample it was measured
+    on, not a constant.
+
+    The same measurement has not been made for THIS window. `years` below is
+    still the theoretical route, and it is the conservative direction here only
+    by accident, so it is stated rather than assumed.
     """
     se = 1.0 / math.sqrt(max(years, 1e-9))
     bonferroni = float(norm.ppf(1.0 - 0.025 / max(attempts, 1))) * se

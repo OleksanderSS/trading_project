@@ -23,6 +23,9 @@ class _Metrics:
 
 
 class _ReportGenerator:
+    def __init__(self):
+        self.simulated_flags = []
+
     def create_evaluation_summary(
         self, financial_metrics, backtest_results, analysis_results, signals_df
     ):
@@ -31,7 +34,18 @@ class _ReportGenerator:
     def save_summary(self, summary, results_dir):
         return None
 
-    def plot_equity_curve(self, portfolio_history, financial_metrics):
+    def plot_equity_curve(self, portfolio_history, financial_metrics,
+                          simulated=False):
+        # `simulated` is not decoration. Stage 7 has passed it since
+        # 2026-08-30 so the picture can say when it was drawn from randomly
+        # generated data, and the real ReportGenerator did not accept it until
+        # 2026-09-07 -- the call raised TypeError, the broad except around the
+        # comprehensive evaluation swallowed it, and every run came out as
+        # `basic_evaluation_not_sent`. This stub mirrored the stale signature,
+        # which is exactly why a test double reproduced the failure instead of
+        # exposing it. It is recorded here so the next person to widen the
+        # real signature widens this one too.
+        self.simulated_flags.append(simulated)
         return None
 
     def generate_notification_message(self, financial_metrics):

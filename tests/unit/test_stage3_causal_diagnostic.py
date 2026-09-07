@@ -58,7 +58,21 @@ def test_technical_indicators_are_excluded_from_the_diagnostic():
         assert not any(marker in technical_name for marker in external_markers), technical_name
 
 
-def test_external_predictor_causality_is_detected_and_does_not_affect_selection():
+def test_external_predictor_causality_is_detected_and_does_not_affect_selection(
+        monkeypatch):
+    """The switch is set here, not the test deleted.
+
+    `_diagnose_external_predictor_causality` returns {} unless
+    CAUSAL_DIAGNOSTIC is set, and that default is right: at this sample size
+    the headline "N/M external predictors show significant Granger causality"
+    comes out at nearly M/M whatever the data says, so the number means
+    nothing. Making it valid is per-ticker work, not a flag.
+
+    But the invariant this test guards is about the WIRING -- evidence is
+    attached, selection is untouched -- and that is exactly what would break
+    unnoticed for whoever does that work. So it runs with the switch on.
+    """
+    monkeypatch.setenv("CAUSAL_DIAGNOSTIC", "1")
     """A genuinely lagged, noisy leading indicator should be flagged
     significant more readily than pure noise — and either way, this method
     only returns diagnostic evidence, never a filtered feature list."""
@@ -94,10 +108,17 @@ def test_external_predictor_causality_is_detected_and_does_not_affect_selection(
 
 
 @pytest.mark.asyncio
-async def test_causal_evidence_is_attached_to_run_output_without_changing_selection():
+async def test_causal_evidence_is_attached_to_run_output_without_changing_selection(
+        monkeypatch):
     """End-to-end through _select_features: causal_evidence is computed as
     a side effect (self._last_causal_evidence) but the returned
-    (selected, importance) pair is driven only by the stubbed selector."""
+    (selected, importance) pair is driven only by the stubbed selector.
+
+    Same switch as above: the diagnostic is off by default because its number
+    is meaningless at this sample size, and this test is about the wiring
+    around it rather than the number.
+    """
+    monkeypatch.setenv("CAUSAL_DIAGNOSTIC", "1")
 
     class _SelectorStub:
         async def select_with_full_analysis(self, x, y, **kwargs):

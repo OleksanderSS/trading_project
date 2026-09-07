@@ -40,32 +40,40 @@ class ReportGenerator:
         self.logger.info("✅ ReportGenerator initialized")
 
     def plot_equity_curve(self, portfolio_history: pd.DataFrame,
-                         financial_metrics: dict[str, Any]) -> str:
-        """
-        Generate and save the equity curve plot.
+                          financial_metrics: dict[str, Any],
+                          simulated: bool = False) -> str:
+        """Draw the equity curve, and say on the image when it is not real.
 
-        Args:
-            portfolio_history: DataFrame with portfolio history
-            financial_metrics: Dictionary with financial metrics
+        THIS METHOD DID NOT ACCEPT `simulated` UNTIL 2026-09-07, AND STAGE 7
+        HAS BEEN CALLING IT WITH `simulated=` SINCE 2026-08-30.
 
-        Returns:
-            Path to saved plot
+        There were two implementations of this drawing. `reporting.
+        plot_equity_curve` is the one that was fixed when a run wrote
+        `equity_curve.png` from randomly generated data, finished with
+        "Pipeline completed successfully", and left a person looking at a
+        picture with no way to know. The orchestrator was pointed at THIS one,
+        which had no such marking and no such parameter -- so the call raised
+        TypeError, the broad `except (ValueError, TypeError, ...)` around the
+        comprehensive evaluation caught it, and every run degraded to the basic
+        path with `notification_status: basic_evaluation_not_sent`. The fix of
+        2026-08-30 never once took effect.
+
+        Two implementations of one thing, the fix applied to one and the caller
+        pointed at the other: it is the half-landed shape this project keeps
+        naming. So there is one implementation now and this delegates to it,
+        passing `out_dir` so the file stays exactly where this method has
+        always written it.
         """
+        from src.pipeline.stages.evaluation.reporting import (
+            plot_equity_curve as draw,
+        )
+
         try:
-            plt.figure(figsize=(12, 6))
-            plt.plot(portfolio_history.index, portfolio_history['total_value'],
-                    label='Portfolio Value', color='green', linewidth=2)
-
-            title = f"Equity Curve | Return: {financial_metrics.get('total_return_pct', 0):.2%} | Sharpe: {financial_metrics.get('sharpe_ratio', 0):.2f}"
-            plt.title(title)
-            plt.grid(True, alpha=0.3)
-            plt.ylabel('Value ($)')
-
-            plot_path = self.reports_dir / 'equity_curve.png'
-            plt.savefig(plot_path)
-            plt.close()
-
-            self.logger.info(f"Equity curve saved to {plot_path}")
+            plot_path = draw(portfolio_history, financial_metrics,
+                             simulated=simulated, out_dir=self.reports_dir)
+            self.logger.info(
+                "Equity curve saved to %s%s", plot_path,
+                " (MARKED as simulated)" if simulated else "")
             return str(plot_path)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:

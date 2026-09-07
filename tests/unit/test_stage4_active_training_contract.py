@@ -249,11 +249,38 @@ def test_active_stage4_emits_honest_partial_evidence_and_prediction_metadata(
     stage._ledger = None
     stage._resume_contexts = False
     stage._replayed_contexts = 0
+    # Added 2026-09-07. `run()` and `__init__` both zero this, and the
+    # promotion path increments it -- it is the count of attempts the
+    # Bonferroni threshold is computed from, so it must be a real counter and
+    # not a Mock. Its absence surfaced as "Error modeling NVDA: 'ModelingStage'
+    # object has no attribute '_promotion_attempts'", swallowed into a
+    # per-ticker error, and the assertion below then failed on a None.
+    stage._promotion_attempts = 0
+    # 20 rows until 2026-09-07, and 20 stopped being enough when promotion
+    # started requiring walk-forward stability. One fold needs
+    # min_train_rows (360) + purge_rows (5) + validation_rows (120) = 485, so
+    # a 20-row frame produced no folds, the stage REFUSED to promote -- "a
+    # check that failed is not a check that passed", which is the right
+    # behaviour -- and this test read the refusal as a missing champion.
+    #
+    # The frame is widened rather than the gate stubbed out: the assertions
+    # below are about what reaches the trainer and what the champion record
+    # says, and a stubbed gate would stop exercising the path that produces it.
+    # The feature must actually predict the target, and that is the second
+    # thing 20 rows was hiding. `feature = arange` against an alternating
+    # `[0, 1] * n` carries no relationship, so once the folds existed the gate
+    # reported "balanced accuracy beat chance on 0 of 2 folds; 2 required" and
+    # refused -- correctly. A test that wants to see a champion RECORDED has to
+    # hand the trainer something learnable; otherwise it is testing the refusal
+    # path twice and the champion assertions below can never run.
+    bars = 520
+    generator = np.random.default_rng(4)
+    label = generator.integers(0, 2, bars)
     frame = pd.DataFrame(
         {
             "datetime": pd.date_range(
                 "2026-01-01",
-                periods=20,
+                periods=bars,
                 freq="15min",
                 tz="UTC",
             ),
@@ -263,8 +290,8 @@ def test_active_stage4_emits_honest_partial_evidence_and_prediction_metadata(
             "context_fingerprint": "ctx-nvda-15m",
             "market_regime": "neutral",
             "volatility_regime": "normal",
-            "feature": np.arange(20),
-            "target_intraday_up_15m": [0, 1] * 10,
+            "feature": label + generator.normal(0.0, 0.25, bars),
+            "target_intraday_up_15m": label,
         }
     )
     champions = {}
