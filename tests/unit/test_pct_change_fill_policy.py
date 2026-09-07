@@ -48,7 +48,46 @@ def test_context_map_numeric_state_does_not_treat_missing_gap_as_move():
 # test_derived_forward_direction_preserves_unavailable_tail_targets removed as _add_forward_targets does not exist
 
 
-# test_technical_analysis_risk_reward_returns_do_not_forward_fill_missing_prices removed due to mock issues
+def test_technical_analysis_risk_reward_returns_do_not_forward_fill_missing_prices():
+    """
+    SHARPE_RATIO / SORTINO_RATIO must be computed on returns that leave a price
+    gap missing. Forward-filling turns the gap row into a 0.0 return and hands
+    the next row a doubled move, so the ratios come out of a series the market
+    never produced.
+
+    Restored: this case used to be deleted with the note "removed due to mock
+    issues". _add_risk_reward_features has no injectable collaborator, so
+    instead of mocking, the output is compared against the ratio recomputed
+    from an explicitly non-filled series — and asserted different from the
+    forward-filled one, so the test cannot pass under either policy.
+    """
+    periods = 60
+    close = pd.Series(np.linspace(100.0, 160.0, periods))
+    close.iloc[20] = np.nan
+    df = pd.DataFrame({"close": close})
+
+    enricher = object.__new__(TechnicalAnalysisEnricher)
+    enricher.logger = QuietLogger()
+    enricher._add_risk_reward_features(df)
+
+    def _sharpe(returns):
+        window, min_periods = 252, 30
+        rolling_mean = returns.rolling(window=window, min_periods=min_periods).mean()
+        rolling_std = returns.rolling(window=window, min_periods=min_periods).std()
+        denominator = rolling_std.copy()
+        denominator[denominator < 1e-10] = np.nan
+        ratio = rolling_mean / denominator
+        return ratio.replace([np.inf, -np.inf], np.nan) * np.sqrt(252)
+
+    unfilled = _sharpe(close.pct_change(fill_method=None))
+    forward_filled = _sharpe(close.ffill().pct_change(fill_method=None))
+
+    pd.testing.assert_series_equal(df["SHARPE_RATIO"], unfilled, check_names=False)
+    # Guard against a test that would pass under either policy: forward-filling
+    # invents two extra usable returns around the gap, so the series differ in
+    # both length and value.
+    assert not unfilled.equals(forward_filled)
+    assert unfilled.notna().sum() != forward_filled.notna().sum()
 
 
 class CapturingVolatilityCalculator:

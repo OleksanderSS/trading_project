@@ -97,7 +97,10 @@ class CacheManager:
     def _get_cache_key(self, key: str, params: Any = None, namespace: str = "default", use_salt: bool = True) -> str:
         """Генерація стабільного ключа кешу за допомогою SHA-256 з додаванням DB salt."""
         actual_salt = self.db_salt if (use_salt and namespace != "collectors") else ""
-        if params:
+        # `if params:` treated every falsy value — {}, 0, "" — as "no params",
+        # so get(key, params={}) returned whatever get(key) had stored. Only a
+        # genuinely absent params argument may drop out of the key.
+        if params is not None:
             param_str = json.dumps(params, sort_keys=True, default=str)
             full_key = f"{key}_{param_str}_{actual_salt}"
         else:
