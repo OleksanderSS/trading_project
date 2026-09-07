@@ -42,7 +42,7 @@ TASK = re.compile(r"^\s*[-*]\s*\[")
 #: 17,392 after §30 was moved to WORKING_METHOD (my first note here said
 #: 16,632 and this very test caught the arithmetic). Lower it when prose moves
 #: out; never raise it. Raising it is precisely the growth the owner named.
-PROSE_CEILING = 16_900
+PROSE_CEILING = 13_400
 
 
 def _task_free_sections() -> list[tuple[int, str]]:
