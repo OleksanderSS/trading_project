@@ -1,0 +1,144 @@
+2026-09-05 10:23:04,327 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+2026-09-05 10:23:04,350 - PathSafety - INFO - PathSafety initialized with 6 allowed roots
+2026-09-05 10:23:04,350 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-05 10:23:04,351 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 7 variables into the active environment.
+2026-09-05 10:23:04,358 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-05 10:23:04,361 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-05 10:23:04,363 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-05 10:23:04,378 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-05 10:23:04,379 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-05 10:23:04,399 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-05 10:23:04,404 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-05 10:23:04,405 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-05 10:23:04,411 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-05 10:23:04,417 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-05 10:23:04,420 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-05 10:23:04,429 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-05 10:23:04,437 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-05 10:23:04,439 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-05 10:23:04,446 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-05 10:23:04,448 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-05 10:23:04,451 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-05 10:23:04,452 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-05 10:23:04,455 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-05 10:23:04,471 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-05 10:23:04,471 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-05 10:23:04,471 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-05 10:23:04,513 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-05 10:23:04,519 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-05 10:23:04,519 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-05 10:23:04,546 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-05 10:23:04,551 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-05 10:23:04,551 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-05 10:23:04,551 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-05 10:23:04,551 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-05 10:23:04,567 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-05 10:23:04,567 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-05 10:23:04,567 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-05 10:23:04,567 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-05 10:23:04,567 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-05 10:23:04,567 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 7 variables into the active environment.
+2026-09-05 10:23:04,567 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+2026-09-05 10:23:04,567 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+235 features with real cross-sectional variation
+holds: [20, 60]   models: ['top5', 'top20', 'ridge']
+panel: 623,398 rows, 110 names, 6,800 dates, 1996-08-26 to 2023-08-31
+--no-late-entrants: dropping 9 names that first appear inside the test window: BILI, COIN, DOW, FOXA, LI, NIO, PDD, RIOT, XPEV
+split at 2015-07-27: 408,558 train rows, 204,738 test, 8.1 test years
+attempts (models x holds): 6   Sharpe SE on 8.1 years 0.351   noise maximum 0.578   Bonferroni 0.927
+
+BUY EVERYTHING (opponent 1)       0.987    1.164
+                              survivorship-inflated: an upper bound, not the market
+
+  loaded 40/235
+  loaded 80/235
+  loaded 120/235
+  loaded 160/235
+  loaded 200/235
+  loaded 235/235
+235 columns usable
+
+  hold 20 done
+  hold 60 done
+
+book                                h20      h60
+------------------------------------------------
+BUY EVERYTHING (opponent 1)       0.987    1.164
+BEST SINGLE (opponent 2)          0.660    0.684
+RANDOM WEIGHTS, best of 200       0.946    1.033
+RANDOM WEIGHTS, median           -0.184   -0.006
+RIDGE ON A PERMUTED TARGET, best    0.432    0.434
+   the same, median              -0.236   -0.063
+
+combination: top5                 1.259    1.187
+combination: top20                0.963    0.982
+combination: ridge                1.417    1.258
+  phase sd (ridge)                0.136    0.167
+
+=== against the EMPIRICAL null, which is the bar that binds ===
+random-weight books: mean        -0.182   -0.037
+random-weight books: sd           0.566    0.522
+  z of top5                        2.55     2.34
+  z of top20                       2.02     1.95
+  z of ridge                       2.83     2.48
+  Bonferroni z for 6 attempts: 2.64
+
+  empirical p: share of random-weight books that BEAT the fit
+  p of top5                       0.000    0.000
+  p of top20                      0.000    0.005
+  p of ridge                      0.000    0.000
+  a p below 0.0083 would clear Bonferroni at 6 attempts
+
+=== the permutation null: the SAME ridge, target permuted within each date ===
+Random weights ask whether this weighting is special. This asks
+whether the FITTING finds anything, which is the actual question.
+  permuted ridge: mean           -0.226   -0.081
+  permuted ridge: sd              0.251    0.224
+  permuted ridge: max             0.432    0.434
+  REAL ridge                      1.417    1.258
+  empirical p                     0.000    0.000
+
+  h20: best single was market_context_volatility_20d_1d
+  h60: best single was VOLATILITY_50_1d
+
+=== is it a signal, or a bet on which NAMES survived? ===
+The permutation null cannot answer this. Permuting returns within a
+date destroys the name-return link, so a book that is simply long
+the same survivors every day earns ~0 under permutation and looks
+significant. This project has the exact precedent: a cross-sectional
+book built without the within-name check held NVDA on 100% of days
+against SPY on 100% of days and 'returned' 34.9% a year.
+
+  h20: mean position per name, most extreme six
+        NVDA +1.04  GBTC +1.04  MARA +1.03  AMD +1.01  AAPL +0.99  NFLX +0.97
+        names held one way on >80% of dates: 31%
+        Sharpe of the TIME-VARYING part only: 0.980   (whole book 1.417)
+  h60: mean position per name, most extreme six
+        NVDA +1.06  MARA +1.06  GBTC +1.06  AAPL +1.04  AMD +1.03  NFLX +1.02
+        names held one way on >80% of dates: 41%
+        Sharpe of the TIME-VARYING part only: 1.143   (whole book 1.258)
+
+=== the book that CANNOT earn the survivors' premium ===
+Each name's persistent position, measured on TRAIN and removed from
+the test book -- known at the split, so this is a book, not a
+decomposition. The universe holds ZERO names that died in 27 years,
+so a permanent long in the survivors pays by construction.
+  h20: name-neutral book +0.675   (whole book +1.417, buy everything +0.987)
+        its own permutation null: mean -0.259, sd 0.213, max +0.205, p 0.000 over 60 draws
+  h60: name-neutral book +0.593   (whole book +1.258, buy everything +1.164)
+        its own permutation null: mean -0.092, sd 0.187, max +0.315, p 0.000 over 60 draws
+
+=== does the ridge book hold up across the test period? ===
+Four equal blocks of the test dates. An effect that lives in one
+block is an episode, not a signal -- the check that killed
+insider_net_value_30d, which had a pooled t of -6.26 and nothing
+left in its final twenty months.
+  h20: [n=26 mean +0.00348 pos 69%]  [n=26 mean +0.00514 pos 73%]  [n=25 mean +0.00646 pos 56%]  [n=25 mean +0.00441 pos 72%]
+  h60: [n=9 mean +0.01434 pos 78%]  [n=9 mean +0.01469 pos 78%]  [n=8 mean +0.03592 pos 75%]  [n=8 mean +0.01078 pos 62%]
+
+best combination anywhere                  1.417
+expected maximum of 6 noise draws       0.578
+Bonferroni family-wise 5%                  0.927
+
+combinations beating the best single column: 6 of 6 -- ['top5 h20', 'top20 h20', 'ridge h20', 'top5 h60', 'top20 h60', 'ridge h60']
+best control (random weights or shuffled target)    1.033

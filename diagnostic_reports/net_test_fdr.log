@@ -1,0 +1,122 @@
+2026-09-04 05:48:28,391 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+2026-09-04 05:48:28,584 - PathSafety - INFO - PathSafety initialized with 6 allowed roots
+2026-09-04 05:48:28,593 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-04 05:48:28,595 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 7 variables into the active environment.
+2026-09-04 05:48:28,664 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-04 05:48:28,696 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-04 05:48:28,711 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-04 05:48:28,737 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-04 05:48:28,747 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-04 05:48:28,938 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-04 05:48:28,978 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-04 05:48:28,990 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-04 05:48:29,047 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-04 05:48:29,105 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-04 05:48:29,136 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-04 05:48:29,207 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-04 05:48:29,282 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-04 05:48:29,295 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-04 05:48:29,321 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-04 05:48:29,340 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-04 05:48:29,371 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-04 05:48:29,388 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-04 05:48:29,540 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-04 05:48:29,603 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-04 05:48:29,634 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-04 05:48:29,682 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-04 05:48:29,917 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-04 05:48:30,038 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-04 05:48:30,055 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-04 05:48:30,245 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-04 05:48:30,386 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-04 05:48:30,387 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-04 05:48:30,388 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-04 05:48:30,426 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-04 05:48:30,432 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-04 05:48:30,433 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-04 05:48:30,433 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-04 05:48:30,476 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-04 05:48:30,484 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-04 05:48:30,488 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 7 variables into the active environment.
+2026-09-04 05:48:30,510 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+2026-09-04 05:48:30,514 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+46 features passed FDR against target_return_1d and vary across names
+holds: [1, 5, 20, 40, 60, 120]
+
+panel: 623,398 rows, 110 names, 6,800 dates, 1996-08-26 to 2023-08-31
+
+BUY EVERYTHING (the opponent)        -0.598    0.659    0.939    1.005    1.018    0.981
+
+feature                                  h1       h5      h20      h40      h60     h120  best net  at hold  phase sd
+---------------------------------------------------------------------------------------------------------------------
+CDL_UPPER_WICK_RATIO_1d              -4.402   -0.788   -0.169   -0.067   -0.027   -0.014    -0.014      120     0.181
+CDL_LOWER_WICK_RATIO_1d              -8.807   -1.900   -0.612   -0.281   -0.192   -0.097    -0.097      120     0.204
+ROLLING_SKEW_20_1d                   -6.890   -1.524   -0.200   -0.019    0.034    0.115     0.115      120     0.178
+fund_return_on_equity_1d             -3.156   -0.835   -0.402   -0.344   -0.293   -0.244    -0.244      120     0.041
+peer_divergence_1d                   -8.243   -2.339   -0.664   -0.338   -0.213   -0.113    -0.113      120     0.196
+state_SMA_200_1d                     -3.995   -0.823   -0.226   -0.113   -0.001   -0.001    -0.001      120     0.113
+ABB_Lower_1d                         -7.939   -2.627   -1.690   -1.431   -1.238   -1.024    -1.024      120     0.167
+BB_Lower_1d                          -7.964   -2.663   -1.691   -1.426   -1.240   -1.019    -1.019      120     0.161
+SMA_50_1d                            -8.061   -2.575   -1.546   -1.297   -1.153   -0.975    -0.975      120     0.191
+SMA_100_1d                           -8.018   -2.515   -1.513   -1.314   -1.186   -0.983    -0.983      120     0.192
+LAG_5_1d                             -8.097   -2.667   -1.670   -1.416   -1.218   -1.020    -1.020      120     0.166
+LAG_10_1d                            -8.129   -2.694   -1.669   -1.389   -1.208   -1.008    -1.008      120     0.169
+EMA_50_1d                            -8.074   -2.547   -1.519   -1.283   -1.142   -0.966    -0.966      120     0.186
+AEMA_20_1d                           -8.114   -2.654   -1.647   -1.365   -1.192   -0.989    -0.989      120     0.181
+ABB_Mid_1d                           -8.142   -2.714   -1.671   -1.414   -1.222   -1.016    -1.016      120     0.159
+EMA_100_1d                           -8.021   -2.532   -1.511   -1.304   -1.190   -0.972    -0.972      120     0.186
+SHARPE_RATIO_1d                      -4.813   -0.929   -0.212   -0.103   -0.085   -0.094    -0.085       60     0.074
+LAG_20_1d                            -8.104   -2.668   -1.625   -1.345   -1.191   -0.993    -0.993      120     0.198
+BB_Middle_1d                         -8.055   -2.639   -1.641   -1.373   -1.200   -0.995    -0.995      120     0.187
+SMA_20_1d                            -8.055   -2.639   -1.641   -1.373   -1.200   -0.995    -0.995      120     0.187
+EMA_20_1d                            -8.109   -2.641   -1.635   -1.363   -1.189   -0.979    -0.979      120     0.180
+SMA_10_1d                            -8.139   -2.688   -1.664   -1.405   -1.207   -1.010    -1.010      120     0.163
+EMA_10_1d                            -8.100   -2.670   -1.669   -1.401   -1.199   -1.003    -1.003      120     0.172
+LAG_1_1d                             -8.090   -2.671   -1.682   -1.438   -1.230   -1.030    -1.030      120     0.164
+SMA_5_1d                             -8.101   -2.686   -1.681   -1.430   -1.221   -1.022    -1.022      120     0.163
+BB_Upper_1d                          -8.207   -2.689   -1.634   -1.359   -1.188   -0.995    -0.995      120     0.194
+peer_count_1d                        -5.897   -1.690   -0.849   -0.688   -0.614   -0.519    -0.519      120     0.052
+EMA_200_1d                           -8.017   -2.464   -1.384   -1.157   -1.020   -0.815    -0.815      120     0.156
+EMA_5_1d                             -8.094   -2.686   -1.673   -1.426   -1.216   -1.019    -1.019      120     0.164
+ABB_Upper_1d                         -8.249   -2.755   -1.668   -1.391   -1.203   -1.016    -1.016      120     0.166
+SMA_200_1d                           -8.211   -2.634   -1.581   -1.316   -1.142   -0.899    -0.899      120     0.175
+low                                  -8.027   -2.658   -1.694   -1.450   -1.238   -1.037    -1.037      120     0.166
+open                                 -8.076   -2.674   -1.685   -1.439   -1.233   -1.031    -1.031      120     0.162
+high                                 -8.067   -2.667   -1.681   -1.438   -1.233   -1.031    -1.031      120     0.162
+state_LEVEL_POSITION_20_1d           -5.798   -1.524   -0.369   -0.185   -0.126   -0.026    -0.026      120     0.188
+SORTINO_RATIO_1d                     -4.790   -0.918   -0.211   -0.104   -0.088   -0.099    -0.088       60     0.072
+SKEWNESS_1d                          -6.228   -1.161   -0.185   -0.019    0.055    0.141     0.141      120     0.055
+insider_net_value_30d_1d             -1.912   -0.563   -0.277   -0.214   -0.156   -0.034    -0.034      120     0.089
+ATR_14_1d                            -7.030   -2.142   -1.192   -1.002   -0.939   -0.832    -0.832      120     0.195
+atr_14_1d                            -7.104   -2.195   -1.287   -1.060   -0.973   -0.872    -0.872      120     0.188
+AATR_14_1d                           -7.125   -2.240   -1.287   -1.088   -0.987   -0.893    -0.893      120     0.196
+state_EMA_200_1d                     -4.242   -1.141   -0.539   -0.401   -0.343   -0.346    -0.343       60     0.073
+significant_events_30d_1d            -4.847   -0.763    0.024    0.203    0.219    0.236     0.236      120     0.110
+days_since_last_significant_1d       -6.311   -1.490   -0.551   -0.393   -0.318   -0.225    -0.225      120     0.183
+is_significant_decayed_1d            -5.735   -0.929   -0.065    0.092    0.135    0.145     0.145      120     0.179
+close                                -8.072   -2.666   -1.683   -1.442   -1.233   -1.034    -1.034      120     0.165
+
+=====================================================================================================================
+constant opponent, by hold:  h1=-0.598  h5=+0.659  h20=+0.939  h40=+1.005  h60=+1.018  h120=+0.981
+features measured                            46
+attempts (features x holds)                  276
+best net Sharpe anywhere                     +0.236
+expected maximum of that many noise draws    0.525
+Bonferroni family-wise 5%                    0.723
+clear Bonferroni                             0
+clear the noise maximum                      0
+positive but inside the noise                4
+negative at every horizon                    42
+  best at hold    1: -1.912  (insider_net_value_30d_1d)
+  best at hold    5: -0.563  (insider_net_value_30d_1d)
+  best at hold   20: +0.024  (significant_events_30d_1d)
+  best at hold   40: +0.203  (significant_events_30d_1d)
+  best at hold   60: +0.219  (significant_events_30d_1d)
+  best at hold  120: +0.236  (significant_events_30d_1d)
+
+NONE clears the multiplicity-corrected bar. Widening the universe from 46 to every
+varying feature, and the horizon out to 120 days, did not find one. The conclusion
+is not about which feature was picked and not about the holding period: it is about
+this universe and these features.
+
+written to D:\trading_project\diagnostic_reports\net_test_fdr.csv
