@@ -101,6 +101,13 @@ def validate_and_align_features_targets(
         return features_df, targets_df
 
 
+# Status values for a quality report. NO_EVIDENCE means "nothing was measured
+# here"; it is deliberately not a low score, because a low score is a claim
+# about data that exists.
+NO_EVIDENCE = 'no_evidence'
+MEASURED = 'measured'
+
+
 def calculate_data_quality_metrics(
     enriched_prices: dict[str, pd.DataFrame],
     all_targets: dict[str, pd.DataFrame],
@@ -129,22 +136,43 @@ def calculate_data_quality_metrics(
         total_rows = 0
         total_nat_count = 0
 
+        timeframes_with_evidence = 0
+
         for tf in enriched_prices.keys():
             features_df = enriched_prices.get(tf, pd.DataFrame())
             targets_df = all_targets.get(tf, pd.DataFrame())
 
             if features_df.empty:
+                # No rows is not a quality of zero — it is the absence of a
+                # measurement. Reporting 0 features / 0% nulls here would read
+                # as "measured, and bad", hiding the absence behind a number.
+                metrics['timeframes'][tf] = {
+                    'status': NO_EVIDENCE,
+                    'reason': 'no enriched rows for this timeframe',
+                    'features_shape': features_df.shape,
+                    'targets_shape': targets_df.shape,
+                    'features_count': None,
+                    'targets_count': None,
+                    'nat_count': None,
+                    'null_percentage': None,
+                    'alignment_valid': None,
+                }
                 continue
+
+            timeframes_with_evidence += 1
 
             # Calculate timeframe-specific metrics
             tf_metrics = {
+                'status': MEASURED,
                 'features_shape': features_df.shape,
                 'targets_shape': targets_df.shape,
                 'features_count': len([col for col in features_df.columns if not col.startswith('target_')]),
                 'targets_count': len([col for col in targets_df.columns if col.startswith('target_')]),
                 'nat_count': features_df['datetime'].isna().sum() if 'datetime' in features_df.columns else 0,
-                'null_percentage': (features_df.isnull().sum().sum() / (features_df.shape[0] * features_df.shape[1]) * 100) if features_df.shape[0] > 0 else 0,
-                'alignment_valid': len(features_df) == len(targets_df) if not targets_df.empty else False
+                'null_percentage': (features_df.isnull().sum().sum() / (features_df.shape[0] * features_df.shape[1]) * 100) if features_df.shape[0] > 0 else None,
+                # Tri-state on purpose. No targets means there is nothing to
+                # align, which is not the same claim as "aligned incorrectly".
+                'alignment_valid': (len(features_df) == len(targets_df)) if not targets_df.empty else None,
             }
 
             metrics['timeframes'][tf] = tf_metrics
@@ -155,20 +183,28 @@ def calculate_data_quality_metrics(
             total_rows += features_df.shape[0]
             total_nat_count += tf_metrics['nat_count']
 
-        # Calculate overall metrics
+        # Calculate overall metrics. Averages are taken over the timeframes
+        # that actually had rows: dividing by every requested timeframe let an
+        # empty one drag the average down as though it had been measured and
+        # found to contain nothing.
+        has_evidence = timeframes_with_evidence > 0
         metrics['overall'] = {
+            'status': MEASURED if has_evidence else NO_EVIDENCE,
             'total_timeframes': len(enriched_prices),
-            'total_features': total_features,
-            'total_targets': total_targets,
+            'timeframes_with_evidence': timeframes_with_evidence,
+            'total_features': total_features if has_evidence else None,
+            'total_targets': total_targets if has_evidence else None,
             'total_rows': total_rows,
-            'total_nat_count': total_nat_count,
+            'total_nat_count': total_nat_count if has_evidence else None,
             'enrichers_count': enrichers_count,
-            'avg_features_per_timeframe': total_features / len(enriched_prices) if enriched_prices else 0,
-            'avg_targets_per_timeframe': total_targets / len(enriched_prices) if enriched_prices else 0
+            'avg_features_per_timeframe': (total_features / timeframes_with_evidence) if has_evidence else None,
+            'avg_targets_per_timeframe': (total_targets / timeframes_with_evidence) if has_evidence else None,
         }
 
         # Add context fingerprint metrics if available
         for tf, features_df in enriched_prices.items():
+            if features_df.empty:
+                continue
             if 'context_fingerprint' in features_df.columns:
                 unique_contexts = features_df['context_fingerprint'].nunique()
                 metrics['timeframes'][tf]['unique_contexts'] = unique_contexts
@@ -179,6 +215,23 @@ def calculate_data_quality_metrics(
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"❌ Error calculating data quality metrics: {e}")
         return {'error': str(e)}
+
+
+def _render(value: Any) -> str:
+    """Render a metric, saying so when there was nothing to measure."""
+    return "no evidence" if value is None else str(value)
+
+
+def _render_alignment(value: bool | None) -> str:
+    """
+    Alignment is tri-state.
+
+    ``None`` means there were no targets to align against, which used to be
+    printed as ❌ — a verdict of "misaligned" against data that does not exist.
+    """
+    if value is None:
+        return "no evidence (no targets to align against)"
+    return "✅" if value else "❌"
 
 
 def log_data_quality_report(metrics: dict[str, Any]) -> None:
@@ -197,10 +250,17 @@ def log_data_quality_report(metrics: dict[str, Any]) -> None:
         overall = metrics.get('overall', {})
         logger.info("📈 Overall Metrics:")
         logger.info(f"   Timeframes: {overall.get('total_timeframes', 0)}")
-        logger.info(f"   Total Features: {overall.get('total_features', 0)}")
-        logger.info(f"   Total Targets: {overall.get('total_targets', 0)}")
+        logger.info(f"   Timeframes with data: {overall.get('timeframes_with_evidence', 0)}")
+        if overall.get('status') == NO_EVIDENCE:
+            logger.warning(
+                "   ⚠️  NO EVIDENCE: no timeframe produced any enriched rows. "
+                "Nothing below was measured — this is missing data, not poor "
+                "quality data."
+            )
+        logger.info(f"   Total Features: {_render(overall.get('total_features'))}")
+        logger.info(f"   Total Targets: {_render(overall.get('total_targets'))}")
         logger.info(f"   Total Rows: {overall.get('total_rows', 0)}")
-        logger.info(f"   NaT Count: {overall.get('total_nat_count', 0)}")
+        logger.info(f"   NaT Count: {_render(overall.get('total_nat_count'))}")
         logger.info(f"   Enrichers Used: {overall.get('enrichers_count', 0)}")
 
         if 'total_unique_contexts' in overall:
@@ -212,11 +272,18 @@ def log_data_quality_report(metrics: dict[str, Any]) -> None:
             logger.info("\n📋 Timeframe-Specific Metrics:")
             for tf, tf_metrics in timeframes.items():
                 logger.info(f"\n   {tf}:")
+                if tf_metrics.get('status') == NO_EVIDENCE:
+                    logger.info(
+                        f"      ⚠️  no evidence — {tf_metrics.get('reason', 'no rows')}"
+                    )
+                    continue
                 logger.info(f"      Features: {tf_metrics.get('features_shape', (0, 0))}")
                 logger.info(f"      Targets: {tf_metrics.get('targets_shape', (0, 0))}")
-                logger.info(f"      NaT Count: {tf_metrics.get('nat_count', 0)}")
-                logger.info(f"      Null %: {tf_metrics.get('null_percentage', 0):.2f}%")
-                logger.info(f"      Alignment Valid: {'✅' if tf_metrics.get('alignment_valid', False) else '❌'}")
+                logger.info(f"      NaT Count: {_render(tf_metrics.get('nat_count'))}")
+                null_pct = tf_metrics.get('null_percentage')
+                logger.info(
+                    f"      Null %: {f'{null_pct:.2f}%' if null_pct is not None else 'no evidence'}")
+                logger.info(f"      Alignment Valid: {_render_alignment(tf_metrics.get('alignment_valid'))}")
 
                 if 'unique_contexts' in tf_metrics:
                     logger.info(f"      Unique Contexts: {tf_metrics.get('unique_contexts', 0)}")

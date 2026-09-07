@@ -11,6 +11,7 @@ import pandas as pd
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
 from src.core.exceptions import DataLoadError
+from src.data.management.eligibility import filter_eligible_rows
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class IDatabaseManager:
     def fetch_one(self, query: str, params: list[Any] | None = None) -> dict[str, Any] | None:
         raise NotImplementedError
 
-    def fetch_data_from_table(self, table_name: str) -> pd.DataFrame:
+    def fetch_data_from_table(self, table_name: str, eligible_only: bool = True) -> pd.DataFrame:
         raise NotImplementedError
 
     def fetch_df(self, query: str, params: list[Any] | None = None) -> pd.DataFrame:
@@ -186,7 +187,19 @@ class DataManager(IDatabaseManager):
             self.error_handler.handle_error(e, context={'query': query})
             raise DataLoadError(f"Failed to fetch one record: {e}") from e
 
-    def fetch_data_from_table(self, table_name: str) -> pd.DataFrame:
+    def fetch_data_from_table(self, table_name: str, eligible_only: bool = True) -> pd.DataFrame:
+        """
+        Read a whole table.
+
+        Args:
+            table_name: Table to read.
+            eligible_only: Drop rows a collector marked
+                ``eligible_for_training=False`` — fabricated stand-in rows, or
+                rows with no usable time axis. Defaults to True: those rows are
+                marked precisely because the source could not vouch for them,
+                and until this filter existed nothing ever read the mark. Pass
+                False for diagnostics that need the raw table.
+        """
         if not self.table_exists(table_name):
             raise DataLoadError(f"Table '{table_name}' does not exist.")
         try:
@@ -194,6 +207,8 @@ class DataManager(IDatabaseManager):
             query = f'SELECT * FROM {self._quote_identifier(table_name)}'
             df = self.fetch_df(query)
             logger.info(f"Successfully fetched {len(df)} records from '{table_name}'.")
+            if eligible_only:
+                df = filter_eligible_rows(df, source=table_name)
             return df
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка при читанні таблиці {table_name}: {e}', exc_info=True)
