@@ -103,9 +103,12 @@ class VIXCollector(BaseCollector):
 
             self.logger.info("Fetching VIX data from Yahoo Finance")
 
-            # Download VIX data for last 60 days
+            # Depth comes from config. This used to be hardcoded to "60d" and
+            # "1d", silently ignoring self.period / self.interval that the
+            # constructor had just read and logged — so the configured history
+            # depth was a number nobody acted on.
             vix_ticker = yf.Ticker("^VIX")
-            hist = vix_ticker.history(period="60d", interval="1d")
+            hist = vix_ticker.history(period=self.period, interval=self.interval)
 
             if hist.empty:
                 self.logger.warning("No VIX data from Yahoo Finance")

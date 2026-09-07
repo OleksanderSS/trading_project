@@ -29,6 +29,9 @@ class AlternativeMeCollector(BaseCollector):
         self.timeout = self.configs.get('timeout', 30)
         self.table_name = self.configs.get('table_name', "fear_greed_data")
         self.hash_keys = self.configs.get('hash_keys', ["date", "value"])
+        # How many daily readings to request. 0 means "all available" in the
+        # Alternative.me API.
+        self.limit = self.configs.get('params', {}).get('limit', 100)
         self.base_url = "https://api.alternative.me"
         self.logger.info(f"AlternativeMeCollector initialized. Enabled: {self.enabled}")
 
@@ -77,8 +80,9 @@ class AlternativeMeCollector(BaseCollector):
                 timeout=self.timeout
             )
 
-            # Alternative.me Fear & Greed API endpoint (V1 works) - increased limit to 100
-            url = f"{self.base_url}/fng/?limit=100"
+            # Depth comes from config. The limit used to be hardcoded into the
+            # URL, so params.limit in collectors.yaml had no effect at all.
+            url = f"{self.base_url}/fng/?limit={self.limit}"
 
             response = await client.get(url)
             if response.status_code == 404:

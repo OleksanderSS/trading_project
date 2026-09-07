@@ -7,12 +7,18 @@ collectors:
     cache_ttl: 900
     cache_duration_minutes: 15
     timeframes:
+      # Intraday history is capped at 60 days by Yahoo itself — not a choice.
       15m:
         period: 60d
       60m:
         period: 60d
+      # Daily bars have no such cap. 60d was self-imposed and left the feature
+      # layer computing 252-day rolling windows (SHARPE, SORTINO, AUTOCORR,
+      # SKEWNESS, KURTOSIS) over 60 rows: every one of them either came out NaN
+      # or fell back to min_periods=30, i.e. a one-month estimate wearing an
+      # annual label. 5y gives ~1250 bars, comfortably past the 252 window.
       1d:
-        period: 60d
+        period: 5y
   fred:
     enabled: true
     type: fred
@@ -24,7 +30,10 @@ collectors:
     - series_id
     - date
     params:
-      period: 60d
+      # Macro series are monthly or quarterly. 60d of GDP is zero to one
+      # observation — not a short history, an empty one. 10y gives ~40
+      # quarterly and ~120 monthly points per series.
+      period: 10y
       series_ids:
       - FEDFUNDS
       - DGS10
@@ -236,7 +245,9 @@ collectors:
     base_url: https://api.alternative.me
     timeout: 30
     params:
-      limit: 100
+      # Now actually honoured: the limit used to be hardcoded into the URL.
+      # ~5.5 years of daily Fear & Greed readings, enough for 252-day windows.
+      limit: 2000
   vix:
     enabled: true
     type: vix
@@ -252,7 +263,9 @@ collectors:
     ticker: ^VIX
     timeout: 30
     params:
-      period: 60d
+      # Now actually honoured: the collector used to hardcode "60d" and ignore
+      # this value. VIX is a daily series feeding 252-day volatility windows.
+      period: 5y
       interval: 1d
   put_call_ratio:
     enabled: false  # Вимкнено: зараз генерує синтетичні дані через помилку підключення до CBOE
