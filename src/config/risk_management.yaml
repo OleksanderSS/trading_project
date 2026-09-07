@@ -12,10 +12,73 @@ strategy:
     max_portfolio_var_pct: 0.05      # 5% max portfolio VaR
     max_single_position_pct: 0.10    # 10% max single position
     max_position_size_pct: 0.10      # read by PortfolioManager/AdaptivePositionSizer AND, since 06.09, enforced by VirtualPortfolio.buy_stock
-    max_total_risk_pct: 0.30         # 30% of the portfolio invested in total. NOT a new decision: this was already VirtualPortfolio's hardcoded default, now visible and enforced (#288)
-    max_daily_loss_pct: 0.03         # 3% max daily loss
-    max_drawdown_pct: 0.15           # 15% max drawdown
-    max_leverage: 2.0                # 2x max leverage
+    max_total_risk_pct: 0.51         # DERIVED 07.09, was 0.30. See the exposure note below; it is a proxy for a 9.5% volatility target.
+    max_daily_loss_pct: 0.03         # 3% max daily loss. Not derived: on a 10%-vol book this is 4.8 sigma and never fires; on the equal-weight book it fired 72 times in 27 years (R56).
+    max_drawdown_pct: 0.30           # DERIVED 07.09, was 0.15. See the block below before changing it.
+    # LEVERAGE AND INVESTEDNESS ARE ONE KNOB, so they are now one number.
+    # It was 2.0 against a 0.30 total-risk cap -- permitting 6.7x what the
+    # other permitted, hence unable to ever bind, hence decoration (R56).
+    # Leverage, investedness and position size all move volatility and nothing
+    # else; two numbers on one knob guarantee a contradiction.
+    #
+    # NOT deleted, and that is deliberate: `EliteRiskMetrics` reads
+    # `max_leverage` with a default of 2.0, so removing the key would have made
+    # the code fall back to the very number this change is removing -- creating
+    # the undeclared-key defect of #288 while fixing #290. Kept, tied to the
+    # cap, and pinned equal by
+    # tests/contracts/test_the_portfolio_obeys_its_declared_limits.py.
+    max_leverage: 0.51               # == max_total_risk_pct, by construction
+
+    # ---------------------------------------------------------------------
+    # WHERE 0.30 COMES FROM, AND WHY IT IS NOT A ROUND NUMBER (R56, R57)
+    #
+    # A limit exists to say "something has broken". One a WORKING book reaches
+    # routinely cannot say that. Measured, not assumed:
+    #
+    #   the old 15% was breached on day 508 of 6,800 by the equal-weight book,
+    #   which returns 17.18%/yr and is the only thing in this project that
+    #   makes money. It sat below the limit 8.2% of all days. The limit would
+    #   have liquidated it.
+    #
+    #   bootstrapped with this panel's real tails (excess kurtosis 9.5), a
+    #   HEALTHY Sharpe-2.0 book at 10% vol has a median worst drawdown of
+    #   -17.0%, a 95th percentile of -24.5% and a 99th of -28.6%. The old 15%
+    #   fired on 76% of healthy histories.
+    #
+    # So the floor for a meaningful limit is 24% (one history in twenty) and
+    # 29% (one in a hundred). 30% is the owner's choice inside that measured
+    # range, not a number picked for being round.
+    #
+    # AND WHAT FOLLOWS FROM IT, which is the part that is NOT a choice:
+    # return = Sharpe x volatility, and the budget caps volatility. At the
+    # Sharpe measured on this universe (0.928) a 30% budget buys about 8.4% a
+    # year; on the real market (SPY, 0.553) it buys 3.9%. Twenty percent a year
+    # at this budget requires Sharpe 1.70, which is 1.8x what exists. The
+    # target of this project is therefore a SHARPE, not a percentage: exposure
+    # is capped here and cannot supply the difference.
+    #
+    # WHERE 0.51 COMES FROM (R58). The 30% budget permits about 9.5% annual
+    # volatility at the Sharpe we have. The equal-weight book runs at 18.52%
+    # fully invested, so 9.5 / 18.52 = 51%. The real control is a VOLATILITY
+    # TARGET and this percentage is a proxy for it -- the mapping from
+    # investedness to volatility is a property of the BOOK, so a
+    # dollar-neutral cross-sectional book will need its own measurement rather
+    # than this number. No `target_volatility` key is added here, because a key
+    # nothing reads is the defect of #288 and adding one to be tidy would be
+    # committing it deliberately.
+    #
+    # AND WHAT DOES NOT BIND, which is worth knowing so it stops being
+    # reasoned about: growth-optimal sizing. For a book with Sharpe S, growth
+    # peaks at volatility S and is NEGATIVE past 2S -- that is Kelly, and it is
+    # the objective part of "as much as possible". Measured against it, this
+    # budget permits 0.27x to 0.52x of even QUARTER Kelly at every Sharpe this
+    # project can reach. Kelly is not the constraint here and never will be;
+    # the drawdown budget is, by a wide margin.
+    #
+    # EXPECT THE MEDIAN. Capping the 95th percentile at 30% still leaves a
+    # MEDIAN worst drawdown near 20% over 27 years. Twenty percent down is the
+    # normal case, not the alarm.
+    # ---------------------------------------------------------------------
     stop_loss_pct: 0.10              # read by VirtualPortfolio
     take_profit_pct: 0.20            # read by VirtualPortfolio
 

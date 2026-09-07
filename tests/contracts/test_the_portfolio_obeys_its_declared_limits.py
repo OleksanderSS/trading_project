@@ -103,18 +103,81 @@ def test_positions_accumulate_toward_the_same_limit(portfolio):
 
 
 def test_total_invested_is_capped_across_different_names(portfolio):
-    """Eight different names at 5% each: the total limit must stop them.
+    """Slices of 5% in different names: the total limit must stop them.
 
     Each order passes the per-position limit on its own. Only a check on the
-    whole book can see the seventh.
+    whole book can see the one that crosses the total.
+
+    HOW MANY SHOULD FIT IS READ FROM THE CONFIG, not written here. The first
+    version of this test hardcoded "eight 5% orders, expect six" against a 30%
+    cap -- and broke the moment the cap was derived properly and became 51%. A
+    test that pins the configured number is the same defect as code that
+    hardcodes it, which is the thing the test above exists to catch. Caught by
+    it doing exactly that to me on 2026-09-07.
     """
+    cap = portfolio.max_total_risk
+    slice_pct = 0.05
+    should_fit = int(cap / slice_pct)
+    attempts = should_fit + 3
+
     successes = 0
-    for index in range(8):
+    for index in range(attempts):
         if portfolio.buy_stock(_order(f"N{index}", 50, 100.0))["success"]:
             successes += 1
-    assert successes < 8, (
-        "eight 5% positions were accepted, so nothing caps total exposure and "
-        "the declared 30% total risk limit is decoration")
-    assert successes >= 5, (
-        f"only {successes} of eight 5% positions were accepted; a 30% total "
-        "limit should allow six")
+    assert successes < attempts, (
+        f"all {attempts} slices of {slice_pct:.0%} were accepted -- that is "
+        f"{attempts * slice_pct:.0%} of the book against a declared cap of "
+        f"{cap:.0%}, so nothing limits total exposure")
+    assert successes >= should_fit - 1, (
+        f"only {successes} of {attempts} slices were accepted; a {cap:.0%} cap "
+        f"should admit about {should_fit}")
+
+
+# ---------------------------------------------------------------------------
+# The declared numbers have to agree with each other, not only exist. Added
+# 2026-09-07 after R56 found max_leverage 2.0 sitting beside a 0.30 total-risk
+# cap -- permitting 6.7x what the cap permitted, so it could never bind. They
+# are one knob (exposure) under two names, and nothing had ever checked that
+# the two names carried the same number.
+# ---------------------------------------------------------------------------
+
+import yaml  # noqa: E402
+
+CONFIG = PROJECT_ROOT / "src" / "config" / "risk_management.yaml"
+
+
+def _risk_block() -> dict:
+    loaded = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    return loaded["strategy"]["risk_management"]
+
+
+def test_leverage_and_total_exposure_are_the_same_number():
+    """Two names for one knob must not carry two numbers."""
+    risk = _risk_block()
+    leverage = float(risk["max_leverage"])
+    total = float(risk["max_total_risk_pct"])
+    assert abs(leverage - total) < 1e-9, (
+        f"max_leverage is {leverage} and max_total_risk_pct is {total}. "
+        "Leverage, investedness and\nposition size all move one thing -- the "
+        "book's volatility -- so two different numbers\nmean one of them can "
+        "never bind. On 2026-09-06 that was 2.0 against 0.30, and the "
+        "leverage\nlimit was decoration (CLAIMS R56).")
+
+
+def test_the_drawdown_limit_is_above_what_a_healthy_book_reaches():
+    """Below 24% the limit fires on healthy histories, so it says nothing.
+
+    Bootstrapped in R56 with this panel's real tails: a Sharpe-2.0 book at 10%
+    volatility reaches -24.5% in one history out of twenty and -28.6% in one out
+    of a hundred. A limit under the first of those is not a risk appetite, it is
+    a stop button that fires on a working book -- the old 15% fired on 76% of
+    healthy histories and would have liquidated the equal-weight book on day 508
+    of 6,800.
+    """
+    drawdown = float(_risk_block()["max_drawdown_pct"])
+    assert drawdown >= 0.24, (
+        f"max_drawdown_pct is {drawdown:.0%}. Measured floor is 24% -- below it "
+        "the limit fires on\nhealthy books of the quality this project is aiming "
+        "for, so reaching it would stop\nsaying 'something broke' (CLAIMS R56). "
+        "Raise it, or re-run\nscripts/diagnostics/do_the_risk_limits_survive_their_own_book.py "
+        "and move the floor\nwith a measurement rather than around one.")

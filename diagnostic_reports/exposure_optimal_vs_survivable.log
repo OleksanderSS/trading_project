@@ -1,0 +1,43 @@
+GROWTH IS A CURVE WITH A PEAK, NOT A SLOPE
+
+    book                                       Sharpe  best vol  best growth   zero at
+    ----------------------------------------------------------------------------------
+    SPY, the real market (R48)                   0.55      55%       15.3%      111%
+    equal-weight survivors, measured             0.93      93%       43.1%      186%
+    what 20%/yr at a 30% budget needs (R57)      1.70     170%      144.5%      340%
+    Sharpe 2.0 (R48's 20% at 10% vol)            2.00     200%      200.0%      400%
+
+    Past twice the Sharpe in volatility the growth rate is NEGATIVE, whatever the
+    strategy. That is the part of 'as much as possible' that is simply wrong.
+
+========================================================================================
+
+AND WHAT A SURVIVABLE DRAWDOWN BUDGET ALLOWS INSTEAD
+
+    Budget: the drawdown 5% of healthy 27-year histories reach, set at 30%.
+
+    book                                       full Kelly  1/4 Kelly   budget  budget vs 1/4
+    ----------------------------------------------------------------------------------------
+    SPY, the real market (R48)                       55%        14%       7%          0.52x
+    equal-weight survivors, measured                 93%        23%      10%          0.41x
+    what 20%/yr at a 30% budget needs (R57)         170%        42%      13%          0.30x
+    Sharpe 2.0 (R48's 20% at 10% vol)               200%        50%      13%          0.27x
+
+    Every row: the budget allows a FRACTION of even quarter Kelly. The growth-optimal
+    sizing literature does not bind here at any Sharpe this project can reach -- the
+    drawdown budget does, and by a wide margin. Optimal sizing is not the question.
+
+========================================================================================
+
+SO THE ADEQUATE NUMBERS, COMPUTED BACKWARDS FROM THE SHARPE
+
+    book                                          vol   return  worst DD, 5%  median DD
+    ----------------------------------------------------------------------------------
+    SPY, the real market (R48)                   7.3%     3.7%       -30.0%     -19.0%
+    equal-weight survivors, measured             9.5%     8.4%       -30.0%     -20.2%
+    what 20%/yr at a 30% budget needs (R57)     12.6%    20.6%       -30.0%     -21.4%
+    Sharpe 2.0 (R48's 20% at 10% vol)           13.3%    25.8%       -30.0%     -21.7%
+
+    The return column is not a target. It is what the Sharpe and the budget leave.
+    Wanting a bigger number in it means wanting a bigger number in the Sharpe column,
+    and there is no other way in -- exposure is already capped by the budget.
