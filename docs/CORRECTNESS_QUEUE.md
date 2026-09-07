@@ -191,3 +191,50 @@ multiclass за наявності `thresholds` і на binary інакше.
 Пункт із плану попередньої сесії, який так і не став тестом. Формулювання
 проблеми (застарілий кеш тече в кадр) збережено, але код-підтвердження ще
 не знайдено — потрібен окремий розбір `src/core/cache/cache_manager.py`.
+
+---
+
+## 9. Синтетика важила 30% у первинній оцінці калібрування
+
+**Статус:** ЗАКРИТО (2026-09-07)
+
+Тести: `test_synthetic_data_gates.py::test_calibration_does_not_mix_synthetic_into_primary_score_by_source_scan`,
+`test_static_trading_ml_contracts.py::test_calibration_synthetic_not_primary_score_by_default`.
+
+`src/calibration/calibration_engine.py:228` повертав в Optuna
+`0.7 * real_metric + 0.3 * synthetic_metric`. Тобто **30% цільової функції
+пошуку гіперпараметрів вимірювалося на даних, яких ніхто не спостерігав** —
+згенерованих із припущень сценаріях. Модель могла виграти калібрування,
+бувши доброю на синтетиці й посередньою на реальності.
+
+**Окремо варте уваги:** рядок був позначений
+`# audit-ignore: SYNTHETIC_SECONDARY — 30% weight only`. Тобто проблему бачили
+й заглушили маркером, а не виправили. Маркер не є аргументом: 30% ваги в
+цільовій функції — це не «secondary», це співавторство в рішенні.
+
+**Зроблено:** первинна оцінка = `real_metric`. Синтетика рахується й
+логується окремо (`self.last_synthetic_metric`). Змішування залишилося
+можливим, але лише через явний `synthetic_weight` у конструкторі, який
+за замовчуванням `0.0` і валідується діапазоном `[0.0, 1.0]`.
+
+---
+
+## 10. `ModelFactory` тягнув torch/tensorflow на кожному імпорті
+
+**Статус:** ЗАКРИТО (2026-09-07)
+
+Тест: `test_static_trading_ml_contracts.py::test_model_factory_import_does_not_top_level_import_neural_models`.
+
+`src/factories/model_factory.py` імпортував на верхньому рівні шість нейромереж
+(LSTM, GRU, CNN, Transformer, TabNet, Autoencoder) плюс MLP. Кожна тягне
+torch або tensorflow. Оскільки `ModelFactory` імпортується з
+`src/training/base_trainer.py`, `light_model_trainer.py`, `constants.py`,
+навіть суто деревний тренувальний шлях платив за імпорт глибокого навчання,
+яким не користувався.
+
+**Зроблено:** нейромоделі перенесено в `_lazy_class_paths` і резолвляться
+через `importlib` у `_get_model_class` при першому використанні. Відсутність
+torch тепер дає зрозумілу `ValueError` з назвою модуля, а не падіння на імпорті
+фабрики. Легкі моделі (Linear, SVM, KNN, Ensemble) лишилися нетерплячими.
+
+**Стан черги:** 26 червоних → 19 (426 зелених).

@@ -1,3 +1,4 @@
+import importlib
 import logging
 from typing import Any
 
@@ -13,13 +14,11 @@ from src.models.linear.knn_model import KNNModel
 # Моделі, що залишилися (поки що)
 from src.models.linear.linear_model import LinearModel
 from src.models.linear.svm_model import SVMModel
-from src.models.neural.autoencoder_model import AutoencoderModel
-from src.models.neural.cnn_model import CNNModel
-from src.models.neural.gru_model import GRUModel
-from src.models.neural.lstm_model import LSTMModel
-from src.models.neural.mlp_model import MLPModel
-from src.models.neural.tabnet_model import TabNetModel
-from src.models.neural.transformer_model import TransformerModel
+
+# Neural models are NOT imported here on purpose: each one pulls in torch /
+# tensorflow, so a top-level import made every consumer of ModelFactory —
+# including tree-only training paths — pay a multi-second deep-learning import
+# it never uses. They are resolved lazily in _get_model_class instead.
 from src.models.registry.model_registry import ModelRegistry
 
 logger = ProjectLogger.get_logger('ModelFactory')
@@ -31,14 +30,23 @@ class ModelFactory:
     It maps model names from the config to their respective classes using ModelRegistry.
     """
 
-    # Mapping to actual classes
+    # Mapping to actual classes (light models imported eagerly)
     _class_map = {
         'Linear': LinearModel, 'SVM': SVMModel, 'KNN': KNNModel,
-        'LSTM': LSTMModel, 'GRU': GRUModel, 'CNN': CNNModel,
-        'Transformer': TransformerModel, 'TabNet': TabNetModel, 'MLP':
-        MLPModel, 'Autoencoder': AutoencoderModel, 'Ensemble': EnsembleModel,
+        'Ensemble': EnsembleModel,
         'XGBoost': 'XGBoost', 'LightGBM': 'LightGBM', 'CatBoost': 'CatBoost',
         'RandomForest': 'RandomForest'
+    }
+
+    # Heavy neural models, resolved on first use via importlib.
+    _lazy_class_paths = {
+        'LSTM': ('src.models.neural.lstm_model', 'LSTMModel'),
+        'GRU': ('src.models.neural.gru_model', 'GRUModel'),
+        'CNN': ('src.models.neural.cnn_model', 'CNNModel'),
+        'Transformer': ('src.models.neural.transformer_model', 'TransformerModel'),
+        'TabNet': ('src.models.neural.tabnet_model', 'TabNetModel'),
+        'MLP': ('src.models.neural.mlp_model', 'MLPModel'),
+        'Autoencoder': ('src.models.neural.autoencoder_model', 'AutoencoderModel'),
     }
 
     @staticmethod
@@ -87,12 +95,27 @@ class ModelFactory:
 
     @staticmethod
     def _get_model_class(canonical_name: str, original_name: str):
-        """Get model class from canonical name"""
+        """Get model class from canonical name, importing neural models lazily."""
         model_class = ModelFactory._class_map.get(canonical_name)
-        if not model_class:
-            logger.error(f"Model '{original_name}' not found in factory.")
-            raise ValueError(f'Unsupported model name: {original_name}')
-        return model_class
+        if model_class:
+            return model_class
+
+        lazy_path = ModelFactory._lazy_class_paths.get(canonical_name)
+        if lazy_path:
+            module_name, class_name = lazy_path
+            try:
+                module = importlib.import_module(module_name)
+            except ImportError as exc:
+                logger.error(
+                    f"Model '{original_name}' requires {module_name}, which is "
+                    f'unavailable: {exc}')
+                raise ValueError(
+                    f"Unsupported model name: {original_name} ({module_name} "
+                    f'unavailable)') from exc
+            return getattr(module, class_name)
+
+        logger.error(f"Model '{original_name}' not found in factory.")
+        raise ValueError(f'Unsupported model name: {original_name}')
 
     @staticmethod
     def _create_ensemble_model(config: dict[str, Any] | None, kwargs:

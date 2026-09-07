@@ -32,7 +32,8 @@ class CalibrationEngine:
     """Engine for calibrating DEAN hyperparameters."""
 
     def __init__(self, config_manager: UnifiedConfigManager, n_trials: int=
-        50, metric: str='sharpe_ratio', batch_name: str='calibration'):
+        50, metric: str='sharpe_ratio', batch_name: str='calibration',
+        synthetic_weight: float=0.0):
         """
         Initialize CalibrationEngine.
 
@@ -41,6 +42,11 @@ class CalibrationEngine:
             n_trials: Number of Optuna trials
             metric: Primary metric for optimization
             batch_name: Batch name for outputs
+            synthetic_weight: Opt-in weight of the synthetic-scenario metric in
+                the optimised score. Defaults to 0.0 — the score Optuna
+                maximises is measured on real data only, and the synthetic
+                metric is reported alongside it. Set above 0.0 deliberately if
+                you want stress scenarios to steer the search.
         """
         if not OPTUNA_AVAILABLE:
             raise ImportError(
@@ -55,6 +61,13 @@ class CalibrationEngine:
         self.n_trials = n_trials
         self.metric = metric
         self.batch_name = batch_name
+        if not 0.0 <= synthetic_weight <= 1.0:
+            raise ValueError(
+                f'synthetic_weight must be in [0.0, 1.0], got {synthetic_weight}')
+        self.synthetic_weight = float(synthetic_weight)
+        # Latest synthetic-scenario score, reported separately from the
+        # optimised score so it can never quietly become the objective.
+        self.last_synthetic_metric: float | None = None
         results_dir = Path(paths.get('results', 'results'))
         self.output_dir = results_dir / 'calibration' / batch_name
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -63,6 +76,7 @@ class CalibrationEngine:
         logger.info(f'   Synthetic data: {self.synthetic_data_path}')
         logger.info(f'   Trials: {self.n_trials}')
         logger.info(f'   Metric: {self.metric}')
+        logger.info(f'   Synthetic weight: {self.synthetic_weight}')
         logger.info(f'   Output: {self.output_dir}')
 
     def load_real_data(self, test_ticker: (str | None)=None) ->dict[str, pd
@@ -173,13 +187,16 @@ class CalibrationEngine:
         real_data: dict[str, pd.DataFrame], synthetic_scenarios: dict[str,
         list[dict[str, Any]]], test_target: (str | None)=None) ->float:
         """
-        Evaluate hyperparameters on real + synthetic data with weighted metrics.
+        Evaluate hyperparameters on real data, reporting synthetic separately.
 
         Strategy:
-        1. Train on real data (primary)
-        2. Evaluate on real validation set (70% weight)
-        3. Evaluate on synthetic scenarios (30% weight)
-        4. Combine metrics
+        1. Train on real data
+        2. Score on the real chronological validation set — this is the score
+           returned to the optimiser
+        3. Score on synthetic scenarios and report it alongside, without
+           letting it move the returned score
+        4. Blend the two only when ``synthetic_weight`` was explicitly set
+           above its 0.0 default
 
         Args:
             hyperparams: Hyperparameters to evaluate
@@ -188,7 +205,8 @@ class CalibrationEngine:
             test_target: Optional target for filtering
 
         Returns:
-            Combined metric value (higher is better)
+            Metric value on real data (higher is better), or the explicitly
+            opted-in blend of real and synthetic metrics.
         """
         logger.info(f'🔍 Evaluating hyperparameters: {hyperparams}')
         try:
@@ -223,15 +241,24 @@ class CalibrationEngine:
             y_pred_val = model.predict(X_val)
             real_metric = self._calculate_sharpe_ratio(y_val.values, y_pred_val
                 )
-            synthetic_metric = self._evaluate_on_synthetic(model,  # audit-ignore: SYNTHETIC_SECONDARY
+            synthetic_metric = self._evaluate_on_synthetic(model,
                 synthetic_scenarios)
-            combined_metric = 0.7 * real_metric + 0.3 * synthetic_metric  # audit-ignore: SYNTHETIC_SECONDARY — 30% weight only
+            self.last_synthetic_metric = float(synthetic_metric)
+            # The optimised score is measured on real data. Synthetic scenarios
+            # are generated from assumptions, so folding them into the primary
+            # score lets a model score well on data nobody observed.
+            primary_metric = real_metric
+            if self.synthetic_weight > 0.0:
+                primary_metric = ((1.0 - self.synthetic_weight) * real_metric
+                    + self.synthetic_weight * synthetic_metric)
             logger.info('📊 Evaluation results:')
-            logger.info(f'   Real Sharpe: {real_metric:.4f} (70% weight)')
+            logger.info(f'   Real Sharpe (primary): {real_metric:.4f}')
             logger.info(
-                f'   Synthetic Sharpe: {synthetic_metric:.4f} (30% weight)')  # audit-ignore: SYNTHETIC_SECONDARY
-            logger.info(f'   Combined: {combined_metric:.4f}')
-            return float(combined_metric)
+                f'   Synthetic Sharpe (reported only): {synthetic_metric:.4f}')
+            if self.synthetic_weight > 0.0:
+                logger.info(
+                    f'   Opted-in blend @ w={self.synthetic_weight}: {primary_metric:.4f}')
+            return float(primary_metric)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f'❌ Evaluation failed: {e}')
             return self._fallback_evaluation(hyperparams)
