@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
 

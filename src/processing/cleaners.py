@@ -309,5 +309,3 @@ def filter_by_terms(df: pd.DataFrame, terms: list[str], search_col: str=
         f"Filtered records: {len(df)} -> {len(filtered_df)} based on terms in '{search_col}'."
         )
     return filtered_df
-n filtered_df
-n filtered_df
