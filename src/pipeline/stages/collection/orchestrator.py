@@ -31,6 +31,7 @@ from src.data.collectors.sec_filings_collector import SECFilingsCollector
 from src.data.collectors.vix_collector import VIXCollector
 from src.data.collectors.yf_collector import YFCollector
 from src.data.management.data_manager import DataManager
+from src.features.utils.datetime_utils import first_time_column
 from src.pipeline.stages.base_stage import BaseStage
 
 
@@ -96,6 +97,14 @@ _FAMILY_BY_NAME_FRAGMENT = (
 #: Column names a news source may use for its publication time. The gate that
 #: admits a table into the news frame and the rename that normalises it read
 #: the same list, so a source can never pass one and fail the other.
+#:
+#: This is a deliberate STRICT SUBSET of datetime_utils.TIME_COLUMNS, not a
+#: rival copy of it. Admission demands a PUBLICATION time, so `created_at`,
+#: `updated_at` and the bare `time` are excluded on purpose: a row that can
+#: only say when we wrote it cannot be placed against a bar. `filing_date` is
+#: the one member that is not a general time column -- it is the SEC family's
+#: publication time. The subset relation is pinned by
+#: tests/unit/test_news_source_must_be_datable.py so the two cannot drift.
 NEWS_DATE_ALIASES = (
     'published_at', 'publishedAt', 'published_date', 'filing_date',
     'date', 'timestamp',
@@ -1070,10 +1079,26 @@ class CollectionStage(BaseStage):
             return raw_data
 
     def _find_date_column_in_df(self, df: pd.DataFrame) -> str | None:
-        for col in ['created_at', 'published_at', 'timestamp', 'date', 'updated_at']:
-            if col in df.columns:
-                return col
-        return None
+        """The column `_normalize_data` will convert to UTC, or None.
+
+        Held its own list until 2026-09-07, and that list was wrong twice.
+
+        It knew neither `publishedAt` nor `published_date`, which are the ONLY
+        time columns the three real news tables have: newsapi_articles (6,934
+        rows, `publishedAt` -- NewsAPI's own field name), google_news (5,714)
+        and rss_news (11,825), both `published_date`. So for every one of them
+        this returned None and the UTC conversion in `_normalize_data` did
+        nothing at all. The rows were still admitted -- NEWS_DATE_ALIASES below
+        does know those names -- so nothing failed; the dates simply stayed
+        strings past the point that claims to normalise them.
+
+        And `created_at` came FIRST, ahead of `published_at`. On any frame
+        carrying both, this preferred when the row was WRITTEN over when the
+        event happened, which is the shape of #286.
+
+        Both are fixed by asking the shared list, whose order is trust order.
+        """
+        return first_time_column(df.columns)
 
     def _news_table_can_be_dated(self, table_name: str) -> bool:
         """Can rows from this table be placed in time at all?

@@ -160,3 +160,95 @@ def test_the_filings_enricher_is_registered_and_loadable():
     module = importlib.import_module(entry['module'])
     enricher = getattr(module, entry['class'])(entry.get('params', {}))
     assert enricher.name == 'corporate_filings'
+
+
+# ---------------------------------------------------------------------------
+# One list, five copies. Added 2026-09-07 (#294).
+#
+# "Which column means when this happened" was answered by five separate lists
+# and no two agreed. The one that decides ADMISSION (NEWS_DATE_ALIASES) was
+# fine. The one that decides the UTC CONVERSION was not: it knew neither
+# `publishedAt` nor `published_date`, which are the only time columns the three
+# real news tables have, so `_normalize_data` converted nothing for any of
+# them and their dates stayed strings. It also preferred `created_at` -- when
+# the row was written -- over `published_at`.
+# ---------------------------------------------------------------------------
+
+from src.features.utils.datetime_utils import (  # noqa: E402
+    TIME_COLUMNS, first_time_column,
+)
+
+#: The columns each real news table actually has, read off the database on
+#: 2026-09-07. Hardcoded on purpose: the test must fail if the pipeline stops
+#: understanding these names, not quietly follow the schema wherever it goes.
+REAL_NEWS_SCHEMAS = {
+    'newsapi_articles': ['source', 'author', 'title', 'description', 'url',
+                         'urlToImage', 'publishedAt', 'content',
+                         'search_term', 'hash'],
+    'google_news': ['title', 'link', 'published_date', 'source', 'content',
+                    'hash'],
+    'rss_news': ['title', 'link', 'published_date', 'source', 'content',
+                 'hash'],
+}
+
+
+@pytest.mark.parametrize('table,columns', sorted(REAL_NEWS_SCHEMAS.items()))
+def test_the_utc_conversion_finds_a_date_on_every_real_news_table(table, columns):
+    """`_normalize_data` skipped the conversion entirely on all three."""
+    found = first_time_column(columns)
+    assert found is not None, (
+        f"{table} carries {columns} and no time column was recognised, so "
+        "_normalize_data converts nothing and the dates stay strings.")
+    assert found in ('publishedAt', 'published_date'), found
+
+
+def test_a_publication_time_beats_the_row_write_time():
+    """`created_at` came first in the old list. That is the shape of #286."""
+    assert first_time_column(
+        ['created_at', 'published_at', 'title']) == 'published_at'
+    assert first_time_column(
+        ['created_at', 'publishedAt']) == 'publishedAt'
+
+
+def test_we_never_treat_our_own_fetch_time_as_the_event_time():
+    """`collected_at` is when WE fetched the row. It must never be in here."""
+    assert 'collected_at' not in TIME_COLUMNS
+
+
+def test_a_precise_timestamp_is_preferred_over_a_bare_date():
+    """A date has no time of day and can place an event on the wrong bar."""
+    assert first_time_column(['date', 'timestamp']) == 'timestamp'
+
+
+def test_the_admission_list_stays_a_subset_of_the_shared_one():
+    """NEWS_DATE_ALIASES is a strict subset by design, not a rival copy.
+
+    It is stricter because admission demands a PUBLICATION time. If a name is
+    added to one and not the other, a source can be admitted and then never
+    normalised -- which is the defect this whole block exists for.
+    """
+    # `filing_date` is the SEC family's publication time and belongs only to
+    # the admission list; everything else must be a name the shared list knows.
+    stray = set(NEWS_DATE_ALIASES) - set(TIME_COLUMNS) - {'filing_date'}
+    assert not stray, (
+        f"{sorted(stray)} admit a news table but are unknown to "
+        "datetime_utils.TIME_COLUMNS, so those rows would be admitted and "
+        "then left unconverted.")
+
+
+def test_the_enricher_and_the_converter_read_the_same_list():
+    """Four modules declared this list. Three of them now import one."""
+    from src.features.enrichers import keyword_entity_enricher
+
+    assert keyword_entity_enricher.TIME_COLUMNS is TIME_COLUMNS, (
+        "the keyword enricher has its own copy again. It was the only list "
+        "that knew `publishedAt`, and being alone in knowing it is how the "
+        "conversion came to be skipped everywhere else.")
+
+
+def test_huggingface_is_still_refused_after_all_of_this():
+    """The widening must not readmit the wikitext dump."""
+    assert first_time_column(['text', 'hash']) is None
+    stage, _, _ = _stage({'huggingface_data': {'text': 'VARCHAR',
+                                               'hash': 'VARCHAR'}})
+    assert stage._news_table_can_be_dated('huggingface_data') is False

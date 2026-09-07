@@ -13,6 +13,50 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+#: The one list of column names that may stand for "when this happened".
+#:
+#: There were FOUR of these on 2026-09-07 and no two agreed, so whether a row
+#: could be placed in time depended on which stage was asking:
+#:
+#:   keyword_entity_enricher   had `publishedAt` and `datetime`, not created_at
+#:   this module, inline       had created_at, not `publishedAt` or `datetime`
+#:   orchestrator (admission)  had neither `publishedAt` nor `published_date`
+#:
+#: The third one decides whether a news table is admitted at all, and its gaps
+#: were refusing three real sources with real timestamps: google_news (5,714
+#: rows, `published_date`), rss_news (11,825, `published_date`) and
+#: newsapi_articles (6,934, `publishedAt` -- NewsAPI's own field name). 24,473
+#: rows were being dropped by a guard written to exclude a wikitext dump.
+#:
+#: Order is TRUST order, and the first match wins. Publication time first,
+#: then this project's canonical `datetime`, then the vaguer names.
+#:
+#: `collected_at` is deliberately absent and must stay absent. It is when WE
+#: fetched the row, not when the fact happened, and treating it as the latter
+#: is the defect that made every FRED observation knowable in 2026 (#286).
+#: `updated_at` sits last because it is an edit time -- later than publication,
+#: so conservative rather than lookahead, but never the first choice.
+TIME_COLUMNS = (
+    'published_at',
+    'publishedAt',
+    'published_date',
+    'datetime',
+    # `timestamp` before `date`: a timestamp carries a time of day and a date
+    # does not, and the less precise name is the one that can place an event
+    # on the wrong side of a bar.
+    'timestamp',
+    'date',
+    'created_at',
+    'time',
+    'updated_at',
+)
+
+
+def first_time_column(columns) -> str | None:
+    """The most trustworthy name in `columns` that can stand for event time."""
+    available = set(columns)
+    return next((name for name in TIME_COLUMNS if name in available), None)
+
 
 def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> pd.DataFrame:
     """
@@ -83,8 +127,8 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
         _record_datetime_timezone(df)
         return df
 
-    # Try alternative datetime column names
-    for alt_name in ['published_date', 'published_at', 'timestamp', 'date', 'created_at', 'updated_at', 'time']:
+    # Try alternative datetime column names, from the one shared list.
+    for alt_name in TIME_COLUMNS:
         if alt_name in df.columns:
             logger.info(f"✅ Using '{alt_name}' column as datetime")
             df['datetime'] = _normalize_datetime_values(

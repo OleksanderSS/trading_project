@@ -11,6 +11,7 @@ import pandas as pd
 from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
+from src.features.utils.datetime_utils import TIME_COLUMNS, first_time_column
 
 from .base_collector import BaseCollector
 
@@ -74,6 +75,31 @@ class HuggingfaceCollector(BaseCollector):
             f'[HuggingFace] Succeeded to fetch {len(raw_data)} records. Proceeding to process...'
             )
         df = pd.DataFrame(raw_data)
+
+        # A row with no publication time cannot be attached to a bar without
+        # looking ahead, so storing it buys nothing and costs a gigabyte.
+        #
+        # `huggingface_data` holds 999,396 rows and two columns, `text` and
+        # `hash`. The text is wikitext -- a PlayStation magazine review, a 1933
+        # poetry listing, an NHL draft lottery -- not the financial news the
+        # config names. Every pipeline run read all of it, filtered it for
+        # fourteen and a half minutes, and dropped every survivor at
+        # deduplication. The collection orchestrator now refuses the table on
+        # its schema, but nothing stopped this collector from filling it again.
+        #
+        # Refusing here means the next run of an undatable dataset costs one
+        # log line instead of another million rows.
+        time_column = first_time_column(df.columns)
+        if time_column is None:
+            self.logger.warning(
+                "[HuggingFace] '%s' has no publication time (columns: %s). "
+                "Its rows cannot be placed against a bar without looking "
+                "ahead, so nothing is stored. Point dataset_name at a dataset "
+                "carrying one of %s, or leave this collector disabled.",
+                self.dataset_name, sorted(df.columns), list(TIME_COLUMNS),
+            )
+            return None
+
         self.logger.info('[HuggingFace] Computing cryptographic hashes...')
         available_keys = [k for k in self.hash_keys if k in df.columns]
         if not available_keys:

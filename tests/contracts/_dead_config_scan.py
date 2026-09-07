@@ -182,8 +182,105 @@ def scan() -> list[Finding]:
     return sorted(findings, key=lambda finding: (finding.path, finding.line))
 
 
+# ---------------------------------------------------------------------------
+# The third pass, added 2026-09-07.
+#
+# Everything above finds a key that IS read into an attribute and then goes
+# unused. It is blind to the other half of the family: a key no Python line
+# ever mentions. `huggingface.max_rows: 10000` is declared beside a collector
+# that loads the entire split, and the name `max_rows` does not occur anywhere
+# in src/ -- so nothing above can see it, and the table holds 999,396 rows.
+#
+# Worse cases found by the same query on the day it was written:
+#
+#   `cache_duration_minutes`  declared in SEVENTEEN collector blocks. Its twin
+#                             `cache_ttl` sits beside it in seconds and IS read
+#                             by BaseCollector.get_cache_ttl. Editing the
+#                             readable one in minutes changes nothing.
+#   `intraday_max_days: 60`   in the yahoo_finance block. That single 60 is the
+#                             exact defect the code removed when
+#                             _INTRADAY_HISTORY_LIMIT_DAYS was introduced,
+#                             which recovered 92% of the hourly history. The
+#                             config still declares the broken number.
+#
+# A leaf is only reported when NEITHER its own name NOR any ancestor key below
+# the top level occurs as a quoted string in src/. The ancestor rule is what
+# keeps `headers.Content-Type`, `column_mapping.trade_date` and
+# `indicators.IMF` out: those dicts are passed and iterated whole, so the sub
+# keys are reached without ever being named.
+# ---------------------------------------------------------------------------
+
+#: Config files this pass reads. Adding one raises the count, so add it in the
+#: same commit that lowers the ceiling to whatever it then measures.
+CONFIGS_SCANNED = ("src/config/collectors.yaml",)
+
+
+@dataclass(frozen=True)
+class UnreadKey:
+    config: str
+    path: str
+
+    def __str__(self) -> str:
+        return f"{self.config}: {self.path}"
+
+
+def _quoted_anywhere(name: str) -> bool:
+    """Does `name` appear as a quoted string in any non-archive source file?"""
+    pattern = re.compile(r"['\"]" + re.escape(name) + r"['\"]")
+    return any(pattern.search(text) for _, text in _sources())
+
+
+def _mentioned_anywhere(name: str) -> bool:
+    """Does `name` appear as a bare identifier anywhere in src/?
+
+    Deliberately looser than `_quoted_anywhere`, and used only for ancestors.
+    """
+    pattern = re.compile(r"\b" + re.escape(name) + r"\b")
+    return any(pattern.search(text) for _, text in _sources())
+
+
+def _leaves(node, trail=()):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield from _leaves(value, trail + (str(key),))
+    else:
+        yield trail
+
+
+def scan_never_read() -> list[UnreadKey]:
+    """YAML keys whose name no source file mentions, directly or by ancestor."""
+    import yaml
+
+    findings: list[UnreadKey] = []
+    for relative in CONFIGS_SCANNED:
+        path = PROJECT_ROOT / relative
+        if not path.exists():
+            continue
+        document = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        for trail in _leaves(document):
+            # trail[0] is the file's own top section, trail[1] the collector
+            # name; neither is a setting. A one-key trail is not a leaf worth
+            # judging.
+            if len(trail) < 3:
+                continue
+            # The leaf must be named in quotes to count as read. An ANCESTOR
+            # need only appear as a bare word: `headers=self.configs[...]`
+            # passes the whole dict, and its sub keys are then reached without
+            # any of them ever being written down.
+            if _quoted_anywhere(trail[-1]):
+                continue
+            if any(_mentioned_anywhere(name) for name in trail[2:-1]):
+                continue
+            findings.append(UnreadKey(relative, ".".join(trail)))
+    return sorted(findings, key=str)
+
+
 if __name__ == "__main__":
     results = scan()
     for finding in results:
         print(finding)
     print(f"\n{len(results)} config keys that decide nothing")
+    unread = scan_never_read()
+    for key in unread:
+        print(key)
+    print(f"\n{len(unread)} config keys no source file mentions at all")

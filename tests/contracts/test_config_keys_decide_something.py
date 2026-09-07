@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.contracts._dead_config_scan import scan
+from tests.contracts._dead_config_scan import scan, scan_never_read
 
 #: Measured 2026-08-22, after `attention_window` was removed and the VIX period
 #: was wired. Lower this when findings are fixed; never raise it.
@@ -56,6 +56,69 @@ def test_nothing_on_the_data_path_is_decorative(findings):
         "how the VIX window came to be 60 days while the config said 30:\n"
         + "\n".join(f"  {finding}" for finding in offenders)
     )
+
+
+# ---------------------------------------------------------------------------
+# The other half of the family, added 2026-09-07 (#295).
+#
+# Everything above needs the key to be READ into an attribute first. A key that
+# no Python line ever mentions is invisible to it, and there were 39 of those
+# in collectors.yaml alone. Two were doing real damage:
+#
+#   `cache_duration_minutes`  in seventeen collector blocks, beside a
+#                             `cache_ttl` in seconds that IS read. Sixteen
+#                             pairs agreed. NewsAPI's did not: the readable key
+#                             said refresh hourly, the live one said once a
+#                             day, and once a day is what happened.
+#   `intraday_max_days: 60`   the exact number the yahoo collector had already
+#                             replaced with a per-interval table, because a
+#                             flat 60 threw away 92% of the hourly history.
+#
+# Both are gone. 21 remain, and they are all in collectors.yaml, so the
+# data-path rule above cannot be applied to them yet.
+# ---------------------------------------------------------------------------
+
+#: Measured 2026-09-07, after the seventeen cache duplicates, the stale yahoo
+#: limit and the six huggingface keys were removed (39 -> 21 -> 15). Lower this
+#: when keys are wired or deleted; never raise it.
+UNREAD_CEILING = 15
+
+
+@pytest.fixture(scope="module")
+def unread():
+    return scan_never_read()
+
+
+def test_config_keys_no_code_mentions_do_not_multiply(unread):
+    assert len(unread) <= UNREAD_CEILING, (
+        f"{len(unread)} config keys are named by no source file, ceiling is "
+        f"{UNREAD_CEILING}. A setting nothing reads is a promise to whoever "
+        "edits it that something will change.\n"
+        + "\n".join(f"  {key}" for key in unread)
+    )
+
+
+def test_no_collector_declares_its_cache_window_twice(unread):
+    """The seventeen-fold case, pinned so it cannot come back.
+
+    `cache_ttl` is what BaseCollector.get_cache_ttl reads. Anything else that
+    looks like a cache window beside it is decoration that contradicts it.
+    """
+    import yaml
+
+    from tests.contracts._dead_config_scan import PROJECT_ROOT
+
+    blocks = yaml.safe_load(
+        (PROJECT_ROOT / "src/config/collectors.yaml").read_text(encoding="utf-8")
+    )["collectors"]
+    offenders = [
+        name for name, block in blocks.items()
+        if isinstance(block, dict) and "cache_duration_minutes" in block
+    ]
+    assert not offenders, (
+        f"{offenders} declare a cache window in minutes beside the cache_ttl "
+        "in seconds that actually runs. NewsAPI's two disagreed by a factor "
+        "of 24.")
 
 
 def test_the_scan_does_not_count_logging_as_use():

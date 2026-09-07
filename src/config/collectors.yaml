@@ -7,7 +7,6 @@ collectors:
     # collection summary counted it as successfully processed. Its HTML parser
     # is broken independently (the date pattern reads "August 6, 2026" as
     # "ust 6, 2026"), so re-enabling needs a licensed source, not a retry.
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: false
@@ -43,7 +42,6 @@ collectors:
     type: bigquery
   cftc:
     allow_sample_fallback: false
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: true
@@ -65,7 +63,6 @@ collectors:
   economic_calendar:
     api_url: https://sb-inv-prod.investing.com/api/economic-calendar/v1/events
     backoff_factor: 2.0
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     countries:
     - us
@@ -130,7 +127,6 @@ collectors:
     timeout: 60
     type: economic_calendar
   fear_greed:
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: true
@@ -148,7 +144,6 @@ collectors:
     table_name: fear_greed_data
     type: fear_greed
   fred:
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: true
@@ -231,7 +226,6 @@ collectors:
     batch_delay_max: 75
     batch_delay_min: 45
     batch_size: 4
-    cache_duration_minutes: 120
     cache_ttl: 7200
     critical: false
     enabled: false
@@ -245,7 +239,6 @@ collectors:
     timeframe: today 1-m
     type: free_google_trends
   google_news:
-    cache_duration_minutes: 60
     cache_ttl: 3600
     critical: false
     deduplication:
@@ -280,31 +273,43 @@ collectors:
     timeout: 500
     type: google_news
   huggingface:
-    cache_duration_minutes: 10080
     cache_ttl: 604800
     critical: false
     dataset_name: zeroshot/twitter-financial-news-topic
-    enabled: true
-    essential_columns:
-    - date
-    - text
-    - label
-    - sentiment
-    - timestamp
-    filter_by_keywords: true
-    hf_token: ${HF_TOKEN}
-    keywords_categories:
-    - market_terms
-    - finance_economy
-    - sectors_tech
-    max_days: 90
-    max_rows: 10000
+    # Disabled 2026-09-07. The table this collector fills, `huggingface_data`,
+    # holds 999,396 rows of two columns -- `text` and `hash`. The text is not
+    # the dataset named above: it is wikitext (a PlayStation magazine review, a
+    # 1933 poetry listing, an NHL draft lottery), left over from a dataset this
+    # block used to name. The declared dataset would not help either: it
+    # carries `text` and `label` and no publication time, and a row that cannot
+    # be placed in time cannot be attached to a bar without looking ahead.
+    #
+    # The collection orchestrator already refuses the table on its schema
+    # (_news_table_can_be_dated) and the collector now refuses to store an
+    # undatable dataset at all. Turning this off as well means the fourteen and
+    # a half minutes of filtering are not spent to reach either refusal.
+    #
+    # Re-enable only with a dataset carrying a publication timestamp.
+    enabled: false
+    # Six keys stood here until 2026-09-07 and NOTHING read any of them:
+    #
+    #   essential_columns: [date, text, label, sentiment, timestamp]
+    #                        none of those five columns exists in the table
+    #   filter_by_keywords: true    the collector does no keyword filtering
+    #   keywords_categories: [...]  read by nothing
+    #   max_days: 90                read by nothing
+    #   max_rows: 10000             read by nothing; the collector loads the
+    #                               whole split, which is how 999,396 rows
+    #                               arrived under a declared cap of 10,000
+    #   hf_token: ${HF_TOKEN}       the collector calls os.getenv itself
+    #
+    # Removed rather than wired, because two places declaring one behaviour is
+    # how every fix in this project has half-landed.
     split: train
     subset_name: null
     table_name: huggingface_data
     type: huggingface
   insider:
-    cache_duration_minutes: 240
     cache_ttl: 14400
     # Індекси колонок openinsider.com/screener, звірені з реальною сторінкою
     # 2026-07-30. Заголовки: X | Filing Date | Trade Date | Ticker |
@@ -353,7 +358,16 @@ collectors:
     # "NEWS_API_KEY". Read it as a variable name and os.getenv() returns None.
     api_key_env: NEWS_API_KEY
     base_url: https://newsapi.org/v2/everything
-    cache_duration_minutes: 60
+    # `cache_duration_minutes: 60` stood here until 2026-09-07 and was the only
+    # one of the seventeen whose value DISAGREED with the cache_ttl beside it.
+    # It read as "refresh the news every hour". Nothing reads that key --
+    # BaseCollector.get_cache_ttl reads `cache_ttl`, in seconds -- so NewsAPI
+    # was in fact fetched once every 24 hours. Removed rather than wired,
+    # because two places declaring one number is how every fix in this project
+    # has half-landed (see `daily_max_years` in _dead_config_scan).
+    #
+    # If hourly refresh was the intent, the setting to change is cache_ttl.
+    # Note the tier limit first: 100 requests per 24 hours.
     cache_ttl: 86400
     critical: false
     # Enabled 2026-08-16. NEWS_API_KEY has been present in .env all along
@@ -398,7 +412,6 @@ collectors:
     # payload carries a put_call_options component if a substitute is wanted
     # — a different series, not a drop-in replacement.
     allow_sample_fallback: false
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: false
@@ -409,7 +422,6 @@ collectors:
     table_name: put_call_ratio_data
     type: put_call_ratio
   reddit_sentiment:
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: true
@@ -426,7 +438,6 @@ collectors:
     type: reddit_sentiment
     use_synthetic_data: false
   rss:
-    cache_duration_minutes: 60
     cache_ttl: 3600
     critical: false
     deduplication:
@@ -454,7 +465,6 @@ collectors:
     timeout: 500
     type: rss
   sec_fundamentals:
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: true
@@ -485,7 +495,6 @@ collectors:
     table_name: sec_fundamentals
     type: sec_fundamentals
   sec_filings:
-    cache_duration_minutes: 240
     cache_ttl: 14400
     critical: false
     enabled: true
@@ -512,7 +521,6 @@ collectors:
     table_name: sec_filings
     type: sec_filings
   vix:
-    cache_duration_minutes: 1440
     cache_ttl: 86400
     critical: false
     enabled: true
@@ -547,7 +555,6 @@ collectors:
     ticker: ^VIX
     type: vix
   yahoo_finance:
-    cache_duration_minutes: 15
     cache_ttl: 900
     critical: true
     # `daily_max_years: 2` lived here until 2026-08-17 with ZERO readers in the
@@ -556,7 +563,14 @@ collectors:
     # because two places declaring one number is how every fix in this project
     # has half-landed.
     enabled: true
-    intraday_max_days: 60
+    # `intraday_max_days: 60` stood here until 2026-09-07, unread by anything.
+    # It is the exact defect the code had already removed: one hardcoded limit
+    # applied to every intraday interval. Yahoo serves 1h for 730 days, so a
+    # flat 60 threw away 92% of the hourly history, AAPL reached the batch with
+    # 363 hourly bars, and target_hourly_breakout_1h had 11 positive events in
+    # one volatile July. The live limits are per interval in
+    # YFCollector._INTRADAY_HISTORY_LIMIT_DAYS. Leaving the broken number in the
+    # config was an invitation to re-introduce it.
     max_retries: 3
     retry_delay: 5
     table_name: market_data_raw

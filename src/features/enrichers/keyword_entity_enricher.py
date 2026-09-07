@@ -6,13 +6,18 @@ from src.core.logging.logger import ProjectLogger
 from src.features.enrichers.base import BaseEnricher
 from src.features.nlp.extractors.entity_extractor import EntityExtractor
 from src.features.nlp.extractors.keyword_extractor import KeywordExtractor
-from src.features.utils.datetime_utils import parse_mixed_datetimes
+from src.features.utils.datetime_utils import TIME_COLUMNS, parse_mixed_datetimes
 
 logger = ProjectLogger.get_logger('KeywordEntityEnricher')
 DATETIME64_NS = 'datetime64[ns]'
 TEXT_COLUMNS = ['title', 'text', 'description', 'content']
-TIME_COLUMNS = ['published_at', 'publishedAt', 'published_date', 'date',
-    'timestamp', 'datetime']
+
+# TIME_COLUMNS was declared here as its own list until 2026-09-07. It is now
+# imported so that this enricher, ensure_datetime_column and the collection
+# orchestrator's admission check agree on what "when this happened" means.
+# They did not: this list was the only one of the three that knew NewsAPI's
+# `publishedAt`, and the admission check knew neither that nor
+# `published_date`, so it refused three real sources (#294).
 
 
 class KeywordEntityEnricher(BaseEnricher):
