@@ -1,0 +1,41 @@
+seal starts 2023-09-01; a row is EXPLORABLE if it is earlier
+
+table                                     rows       time column  explorable   share   years
+--------------------------------------------------------------------------------------------
+cftc_data                                2,620              date       1,840     70%     7.0
+economic_calendar                          361         timestamp           0      0%     0.0
+experience_diary                        94,941decision_timestamp      94,941    100%     0.0
+fear_greed_data                            312              date           0      0%     0.0
+fred_data                              485,010              date     297,001     61%    27.2
+google_news                              5,714    published_date           0      0%     0.0
+huggingface_data                       999,396      (none found)           ?       ?       ?
+insider_trades                           9,744        trade_date       4,507     46%    18.2
+keyword_index                              363      (none found)           ?       ?       ?
+macro_sdmx_data                            758              date         735     97%    63.0
+market_data_raw                      1,287,114          datetime     634,951     49%    27.0
+news_sentiment_cache                     9,209      (none found)           ?       ?       ?
+newsapi_articles                         6,934       publishedAt           0      0%     0.0
+rss_news                                11,825    published_date           0      0%     0.0
+sec_filings                             80,133        filingDate           0      0%     0.0
+sec_fundamentals                       208,544        period_end     179,348     86%    17.2
+sociological_sentiment_data              1,554              date           0      0%     0.0
+vix_data                                   511              date           0      0%     0.0
+wikipedia_attention_data             1,105,442              date     798,709     72%     8.0
+
+SOURCES THAT REACH NO MEASUREMENT, and why:
+
+    economic_calendar                        361 rows   every row is inside the seal
+    fear_greed_data                          312 rows   every row is inside the seal
+    google_news                            5,714 rows   every row is inside the seal
+    huggingface_data                     999,396 rows   no time column
+    keyword_index                            363 rows   no time column
+    news_sentiment_cache                   9,209 rows   no time column
+    newsapi_articles                       6,934 rows   every row is inside the seal
+    rss_news                              11,825 rows   every row is inside the seal
+    sec_filings                           80,133 rows   every row is inside the seal
+    sociological_sentiment_data            1,554 rows   every row is inside the seal
+    vix_data                                 511 rows   every row is inside the seal
+
+    A healthy collector filling a table nobody can measure looks identical,
+    from the outside, to one that works. The catalogue prints a verdict for
+    these columns rather than saying it has nothing to judge.
