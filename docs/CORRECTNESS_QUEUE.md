@@ -136,6 +136,54 @@ annotations`), тому відсутній `Any` — це справжня по�
 
 ---
 
+---
+
+## 8. Ціль перетинає межу тікера — вигадана мітка
+
+**Статус:** ЗАКРИТО (2026-09-07)
+
+Тести: `tests/contracts/test_target_calculators_correctness.py` (2 шт.),
+`tests/contracts/test_static_trading_ml_contracts.py::test_target_calculators_use_groupby_ticker_for_future_shift`.
+
+Три калькулятори робили майбутній зсув простим `Series.shift(shift)` на всьому
+кадрі:
+
+- `src/targets/calculators/regression_calculator.py`
+- `src/targets/calculators/classification_calculator.py` (двічі)
+- `src/targets/calculators/indicator_prediction_calculator.py`
+
+На кадрі з кількома тікерами зсув «сповзає» з кінця одного тікера на початок
+наступного. У тесті останній рядок тікера A отримував ціну тікера B як своє
+майбутнє: `(1000 − 110) / 110 = 8.09`, тобто **+809% дохідності з нічого**.
+Це не шумна мітка, це вигадана.
+
+**Чому це не було видно в проді:** `TargetOrchestrator._process_by_ticker_groups`
+уже ділить кадр по тікерах перед викликом калькулятора. Але
+`src/pipeline/guards/temporal_target_guard.py:96` викликає
+`calc.calculate(df_enriched, **params)` на **всьому** кадрі — там витік реальний.
+
+**Зроблено:** новий `src/targets/calculators/future_shift.py` — зсув із
+групуванням за `ticker` і хронологічним упорядкуванням усередині групи, з
+поверненням до вихідного індексу. Для кадру без колонки `ticker` поведінка
+не змінюється; для вже поділеного кадру оркестратора групування — no-op.
+
+### 8b. Класифікаційні цілі тихо зникали в guard
+
+`ClassificationCalculator` не мав методу `calculate` — лише `calculate_binary`
+і `calculate_multiclass`. `TemporalTargetGuard._process_target_config` викликає
+саме `calculate`, отримував `AttributeError`, який ловився блоком
+`except (ValueError, TypeError, AttributeError, ...)` і перетворювався на
+`return name, None` — тобто **ціль мовчки не створювалася**, без жодної помилки.
+
+**Зроблено:** додано `ClassificationCalculator.calculate`, що диспетчеризує на
+multiclass за наявності `thresholds` і на binary інакше.
+
+**Підводний камінь загального характеру:** широкий `except`, що ловить
+`AttributeError`, перетворює помилки інтерфейсу на тиху відсутність даних.
+Це той самий клас проблем, що й п.4 — відсутність маскується під результат.
+
+---
+
 ## 7. `stale_legacy_cache_columns`
 
 **Статус:** ВІДКРИТО — тесту з такою назвою в репозиторії **немає**

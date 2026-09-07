@@ -3,6 +3,7 @@ import logging
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.targets.calculators.future_shift import future_shift
 
 # src/targets/calculators/regression_calculator.py
 """
@@ -40,7 +41,9 @@ class RegressionCalculator:
             raise ValueError(f"shift must be negative for future targets, got {shift}")
 
         # Standard lookahead return: (Price[T+n] - Price[T]) / Price[T]
-        future_price = df[base_col].shift(shift)
+        # Grouped by ticker so the last rows of one asset never take the
+        # first rows of the next asset as their future price.
+        future_price = future_shift(df, base_col, shift)
         target_series = (future_price - df[base_col]) / df[base_col]
 
         # TRANSACTION COST ADJUSTMENT

@@ -2,6 +2,7 @@
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.targets.calculators.future_shift import future_shift
 
 logger = ProjectLogger.get_logger("IndicatorPredictionCalculator")
 
@@ -29,5 +30,5 @@ class IndicatorPredictionCalculator:
             logger.error(f"Shift must be negative for future targets. Got shift={shift}.")
             raise ValueError(f"Shift must be negative for future targets. Got shift={shift}.")
 
-        target_series = df[indicator_col].shift(shift)
+        target_series = future_shift(df, indicator_col, shift)
         return target_series
