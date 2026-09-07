@@ -202,6 +202,15 @@ collectors:
     cache_duration_minutes: 10080
     dataset_name: m-ric/financial-news-2024
     split: train
+    # Name the dataset's time column here when it is known. Left unset, the
+    # collector looks for the usual names; if it finds none, rows are stored
+    # with eligible_for_training=false rather than being passed off as usable —
+    # without a time axis they cannot be aligned to prices or split
+    # chronologically.
+    # time_column: published_at
+    #
+    # Time is appended to hash_keys automatically: hashing content alone folds
+    # the same text observed at two different times into a single record.
     hash_keys:
     - content
   bigquery:

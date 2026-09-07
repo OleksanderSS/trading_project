@@ -14,6 +14,13 @@ from src.data.management.data_manager import DataManager
 
 from .base_collector import BaseCollector
 
+# Column names a HuggingFace dataset might use for its time axis. Datasets are
+# third-party, so the name cannot be assumed — it has to be looked for.
+TIME_COLUMN_CANDIDATES = (
+    'timestamp', 'published_at', 'date', 'datetime', 'created_at',
+    'publish_date', 'time', 'pubDate',
+)
+
 
 class HuggingfaceCollector(BaseCollector):
     """Collector for fetching financial datasets from HuggingFace."""
@@ -63,8 +70,18 @@ class HuggingfaceCollector(BaseCollector):
             f'[HuggingFace] Succeeded to fetch {len(raw_data)} records. Proceeding to process...'
             )
         df = pd.DataFrame(raw_data)
-        self.logger.info('[HuggingFace] Computing cryptographic hashes...')
-        df['hash'] = df[self.hash_keys].astype(str).agg('|'.join, axis=1
+
+        # A row with no usable time cannot be aligned to a price series, split
+        # chronologically, or checked for lookahead. Such rows are kept (they
+        # are real, not fabricated) but marked ineligible, so the absence is
+        # recorded as absence rather than passed off as usable data.
+        time_column = self._resolve_time_column(df)
+        df = self._apply_time_axis(df, time_column)
+
+        hash_keys = self._effective_hash_keys(df, time_column)
+        self.logger.info(
+            f'[HuggingFace] Computing cryptographic hashes over {hash_keys}...')
+        df['hash'] = df[hash_keys].astype(str).agg('|'.join, axis=1
             ).apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
         self.logger.info('[HuggingFace] Filtering for novel records...')
         new_df = self.db_manager.filter_new_records(table_name, df)
@@ -86,6 +103,70 @@ class HuggingfaceCollector(BaseCollector):
             f'[HuggingFace] ✅ Successfully persisted {len(new_df)} new records.'
             )
         return new_df
+
+    def _resolve_time_column(self, df: pd.DataFrame) -> str | None:
+        """Find the dataset's time column, or None if it has no time axis."""
+        configured = self.configs.get('time_column')
+        if configured:
+            if configured in df.columns:
+                return configured
+            self.logger.error(
+                f"[HuggingFace] Configured time_column '{configured}' is absent "
+                f'from dataset {self.dataset_name}. Columns: {list(df.columns)}')
+            return None
+        for candidate in TIME_COLUMN_CANDIDATES:
+            if candidate in df.columns:
+                return candidate
+        return None
+
+    def _apply_time_axis(self, df: pd.DataFrame, time_column: str | None
+        ) ->pd.DataFrame:
+        """
+        Normalise the time axis, or mark the rows unusable when there is none.
+
+        Without a time axis the rows cannot be aligned to prices, split
+        chronologically, or checked for lookahead — so they are flagged
+        ``eligible_for_training = False`` instead of being stored as if fine.
+        """
+        if time_column is None:
+            self.logger.error(
+                f"[HuggingFace] Dataset '{self.dataset_name}' has no time column "
+                f'(looked for {list(TIME_COLUMN_CANDIDATES)}, found '
+                f'{list(df.columns)}). Rows are stored but marked ineligible '
+                'for training: without a time axis they cannot be aligned to '
+                'prices or split chronologically.')
+            df['timestamp'] = pd.NaT
+            df['eligible_for_training'] = False
+            return df
+
+        parsed = pd.to_datetime(df[time_column], errors='coerce', utc=True)
+        unparsed = int(parsed.isna().sum())
+        if unparsed:
+            self.logger.warning(
+                f"[HuggingFace] {unparsed}/{len(df)} rows have an unparseable "
+                f"'{time_column}'; those rows are marked ineligible.")
+        df['timestamp'] = parsed
+        df['eligible_for_training'] = parsed.notna()
+        return df
+
+    def _effective_hash_keys(self, df: pd.DataFrame, time_column: str | None
+        ) ->list[str]:
+        """
+        Hash keys for deduplication, always including time when there is one.
+
+        Configured hash_keys alone (``[content]`` for the default dataset)
+        collapse two genuinely different observations of the same text at
+        different times into one row.
+        """
+        keys = [k for k in self.hash_keys if k in df.columns]
+        if not keys:
+            self.logger.warning(
+                f'[HuggingFace] None of hash_keys={self.hash_keys} exist in '
+                f'{list(df.columns)}; falling back to all columns.')
+            keys = [c for c in df.columns if c != 'eligible_for_training']
+        if time_column and time_column not in keys:
+            keys.append(time_column)
+        return keys
 
     async def _fetch_from_huggingface(self) ->list[dict[str, Any]]:
         """Downloads datasets from HuggingFace Datasets."""
