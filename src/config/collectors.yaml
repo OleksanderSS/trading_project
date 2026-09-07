@@ -516,7 +516,26 @@ collectors:
       # This is a ceiling, not a promise: `recent` holds up to 1000 filings, so
       # a heavy filer may not reach back a full two years. Going deeper needs
       # `filings.files`, the older batches, which this collector does not read.
-      period: 2y
+      #
+      # 30y since 2026-09-07, for the same reason the VIX period moved: "2y
+      # matches the 1d window" stopped being true when the 1d window became
+      # 30y, and the consequence was that all 80,133 stored filings sat inside
+      # the seal and reached no measurement (R62).
+      #
+      # WHAT THE CEILING ACTUALLY IS, measured rather than guessed. The 1000
+      # cap on `recent` binds for every large filer, and how far back it
+      # reaches depends on how often the company files:
+      #
+      #   AAPL  1000 filings  2015-07-22 onward   (1 older batch exists)
+      #   KO    1000 filings  2018-05-01 onward   (2 older batches)
+      #   XOM   1000 filings  2019-12-18 onward   (2 older batches)
+      #
+      # All three reach BEFORE the seal, so widening the filter costs zero
+      # extra requests and turns a table with no explorable rows into one with
+      # several years of them. It does not reach 1996: that needs
+      # `filings.files`, which is free and unread, and is a piece of work
+      # rather than a config value.
+      period: 30y
     submissions_url_template: https://data.sec.gov/submissions/CIK{cik}.json
     table_name: sec_filings
     type: sec_filings

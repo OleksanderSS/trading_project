@@ -50,6 +50,21 @@ TIME_COLUMNS = ("date", "datetime", "observation_date", "period_end",
 #: twenty-one "sources reaching no measurement".
 IGNORED = ("_backup", "_prepurge", "_orphan", "test_", "cache_metadata")
 
+#: Tables that are DERIVED from other tables rather than collected from a
+#: source. They have no time column of their own by design, and their time is
+#: whatever the rows they point at carry:
+#:
+#:   keyword_index        (source_table, source_column, keyword, row_count) --
+#:                        an index over other tables' text
+#:   news_sentiment_cache (news_hash, sentiment, confidence) -- a score cached
+#:                        against the hash of a news row
+#:
+#: Reporting them as "sources that reach no measurement" is the same dilution
+#: the IGNORED list above exists to prevent: the first version of this scan
+#: listed six backups among twenty-one findings and buried the four that
+#: mattered. A derived table is not a silent collector.
+DERIVED = ("keyword_index", "news_sentiment_cache")
+
 
 def main() -> int:
     if not DATABASE.exists():
@@ -83,9 +98,13 @@ def main() -> int:
                    connection.execute(f'describe "{table}"').fetchall()]
         stamp = next((name for name in TIME_COLUMNS if name in columns), None)
         if stamp is None:
-            print(f"{table:<34}{count:>12,}{'(none found)':>18}"
-                  f"{'?':>12}{'?':>8}{'?':>8}")
-            silent.append((table, count, "no time column"))
+            derived = table in DERIVED
+            print(f"{table:<34}{count:>12,}"
+                  f"{'(derived)' if derived else '(none found)':>18}"
+                  f"{'--' if derived else '?':>12}{'--' if derived else '?':>8}"
+                  f"{'--' if derived else '?':>8}")
+            if not derived:
+                silent.append((table, count, "no time column"))
             continue
         frame = connection.execute(
             f'select "{stamp}" as t from "{table}"').fetch_df()

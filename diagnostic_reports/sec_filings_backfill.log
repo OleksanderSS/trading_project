@@ -1,0 +1,298 @@
+2026-09-08 00:52:01,553 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+2026-09-08 00:52:01,578 - PathSafety - INFO - PathSafety initialized with 6 allowed roots
+2026-09-08 00:52:01,579 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-08 00:52:01,579 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-08 00:52:13,187 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-08 00:52:13,192 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-08 00:52:13,194 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-08 00:52:13,195 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-08 00:52:13,197 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-08 00:52:13,225 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-08 00:52:13,231 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-08 00:52:13,232 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-08 00:52:13,241 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-08 00:52:13,249 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-08 00:52:13,253 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-08 00:52:13,264 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-08 00:52:13,275 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-08 00:52:13,277 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-08 00:52:13,286 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-08 00:52:13,290 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-08 00:52:13,296 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-08 00:52:13,298 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-08 00:52:13,315 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-08 00:52:13,321 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-08 00:52:13,324 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-08 00:52:13,331 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-08 00:52:13,347 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-08 00:52:13,361 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-08 00:52:13,363 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-08 00:52:13,387 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-08 00:52:13,405 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-08 00:52:13,405 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-08 00:52:13,405 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-08 00:52:13,409 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-08 00:52:13,411 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-08 00:52:13,411 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-08 00:52:13,411 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-08 00:52:13,416 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-08 00:52:13,428 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-08 00:52:13,428 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-08 00:52:13,434 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+config period: '30y'
+2026-09-08 00:52:13,437 - src.cli.pipeline_executor - INFO - Loaded 110 unique tickers from 19 sectors: ['AAPL', 'ABBV', 'ABT', 'ADBE', 'AEP', 'AMD', 'AMGN', 'AMT', 'AMZN', 'APD', 'AVB', 'BA', 'BABA', 'BAC', 'BHP', 'BIDU', 'BILI', 'BMY', 'CAT', 'CBRE', 'CHTR', 'CMCSA', 'COIN', 'COP', 'COST', 'CRM', 'CSCO', 'CVX', 'DD', 'DE', 'DIA', 'DIS', 'DOW', 'DUK', 'EBAY', 'ECL', 'ED', 'EQIX', 'EXC', 'FCX', 'FOXA', 'GBTC', 'GE', 'GILD', 'GLD', 'GOOGL', 'GS', 'HD', 'HON', 'IBM', 'INTC', 'IWM', 'JD', 'JNJ', 'JPM', 'KO', 'LI', 'LIN', 'LLY', 'MARA', 'MCD', 'META', 'MMM', 'MRK', 'MSFT', 'NEE', 'NEM', 'NFLX', 'NIO', 'NKE', 'NVDA', 'ORCL', 'PDD', 'PEG', 'PEP', 'PFE', 'PG', 'PLD', 'PSA', 'PYPL', 'QQQ', 'RIOT', 'RTX', 'SBUX', 'SLV', 'SO', 'SPY', 'SRE', 'T', 'TLT', 'TMUS', 'TSLA', 'TSM', 'UNH', 'UPS', 'VTI', 'VTR', 'VZ', 'WELL', 'WFC', 'WMT', 'XLE', 'XLF', 'XLI', 'XLK', 'XLU', 'XLV', 'XME', 'XOM', 'XPEV']
+tickers: 110
+2026-09-08 00:52:13,445 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-08 00:52:13,450 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-08 00:52:13,452 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-08 00:52:13,453 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-08 00:52:13,454 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-08 00:52:13,503 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-08 00:52:13,514 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-08 00:52:13,517 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-08 00:52:13,535 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-08 00:52:13,551 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-08 00:52:13,560 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-08 00:52:13,581 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-08 00:52:13,603 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-08 00:52:13,608 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-08 00:52:13,624 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-08 00:52:13,632 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-08 00:52:13,644 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-08 00:52:13,648 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-08 00:52:13,680 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-08 00:52:13,692 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-08 00:52:13,699 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-08 00:52:13,711 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-08 00:52:13,742 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-08 00:52:13,766 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-08 00:52:13,771 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-08 00:52:13,814 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-08 00:52:13,850 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-08 00:52:13,851 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-08 00:52:13,851 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-08 00:52:13,860 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-08 00:52:13,862 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-08 00:52:13,862 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-08 00:52:13,862 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-08 00:52:13,873 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-08 00:52:13,874 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-08 00:52:13,875 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-08 00:52:13,879 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+2026-09-08 00:52:13,879 - src.data.management.data_manager - INFO - Attempting to create a new shared connection to 'D:\trading_project\data\trading_data.duckdb'.
+2026-09-08 00:52:13,933 - src.data.management.data_manager - INFO - Successfully created DB connection to 'D:\trading_project\data\trading_data.duckdb' (attempt 1/3)
+2026-09-08 00:52:13,933 - src.data.collectors.sec_filings_collector - INFO - Loaded CIK map for 100 tickers.
+2026-09-08 00:52:13,933 - src.data.collectors.sec_filings_collector - INFO - [SEC] Fetching filings for 100 tickers from 1996-09-15.
+2026-09-08 00:52:14,763 - RateLimiter - INFO - RateLimiter initialized: 10 requests per 1.0 seconds.
+2026-09-08 00:52:15,044 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000796343.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,047 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000004904.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,049 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000001800.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,051 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000320193.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,058 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001551152.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,062 - src.data.collectors.sec_filings_collector - INFO - [SEC] AEP -> CIK0000004904 'AMERICAN ELECTRIC POWER CO INC'
+2026-09-08 00:52:15,086 - src.data.collectors.sec_filings_collector - INFO - [SEC] ABT -> CIK0000001800 'ABBOTT LABORATORIES'
+2026-09-08 00:52:15,108 - src.data.collectors.sec_filings_collector - INFO - [SEC] ADBE -> CIK0000796343 'ADOBE INC.'
+2026-09-08 00:52:15,128 - src.data.collectors.sec_filings_collector - INFO - [SEC] ABBV -> CIK0001551152 'AbbVie Inc.'
+2026-09-08 00:52:15,148 - src.data.collectors.sec_filings_collector - INFO - [SEC] AAPL -> CIK0000320193 'Apple Inc.'
+2026-09-08 00:52:15,454 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000002488.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,456 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000318154.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,462 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMGN -> CIK0000318154 'AMGEN INC'
+2026-09-08 00:52:15,485 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMD -> CIK0000002488 'ADVANCED MICRO DEVICES INC'
+2026-09-08 00:52:15,505 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001053507.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,515 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMT -> CIK0001053507 'AMERICAN TOWER CORP /MA/'
+2026-09-08 00:52:15,539 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001018724.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,546 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMZN -> CIK0001018724 'AMAZON COM INC'
+2026-09-08 00:52:15,554 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000002969.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,557 - src.data.collectors.sec_filings_collector - INFO - [SEC] APD -> CIK0000002969 'Air Products & Chemicals, Inc.'
+2026-09-08 00:52:15,838 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000915912.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,844 - src.data.collectors.sec_filings_collector - INFO - [SEC] AVB -> CIK0000915912 'AVALONBAY COMMUNITIES INC'
+2026-09-08 00:52:15,864 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000012927.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,870 - src.data.collectors.sec_filings_collector - INFO - [SEC] BA -> CIK0000012927 'BOEING CO'
+2026-09-08 00:52:15,906 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001577552.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,913 - src.data.collectors.sec_filings_collector - INFO - [SEC] BABA -> CIK0001577552 'Alibaba Group Holding Ltd'
+2026-09-08 00:52:15,921 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000070858.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:15,970 - src.data.collectors.sec_filings_collector - INFO - [SEC] BAC -> CIK0000070858 'BANK OF AMERICA CORP /DE/'
+2026-09-08 00:52:16,057 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000811809.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,060 - src.data.collectors.sec_filings_collector - INFO - [SEC] BHP -> CIK0000811809 'BHP Group Ltd'
+2026-09-08 00:52:16,254 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001723690.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,258 - src.data.collectors.sec_filings_collector - INFO - [SEC] BILI -> CIK0001723690 'Bilibili Inc.'
+2026-09-08 00:52:16,285 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000014272.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,292 - src.data.collectors.sec_filings_collector - INFO - [SEC] BMY -> CIK0000014272 'BRISTOL MYERS SQUIBB CO'
+2026-09-08 00:52:16,317 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001329099.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,324 - src.data.collectors.sec_filings_collector - INFO - [SEC] BIDU -> CIK0001329099 'Baidu, Inc.'
+2026-09-08 00:52:16,402 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000018230.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,406 - src.data.collectors.sec_filings_collector - INFO - [SEC] CAT -> CIK0000018230 'CATERPILLAR INC'
+2026-09-08 00:52:16,486 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001138118.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,493 - src.data.collectors.sec_filings_collector - INFO - [SEC] CBRE -> CIK0001138118 'CBRE GROUP, INC.'
+2026-09-08 00:52:16,628 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001166691.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,634 - src.data.collectors.sec_filings_collector - INFO - [SEC] CMCSA -> CIK0001166691 'COMCAST CORP'
+2026-09-08 00:52:16,657 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001679788.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,662 - src.data.collectors.sec_filings_collector - INFO - [SEC] COIN -> CIK0001679788 'Coinbase Global, Inc.'
+2026-09-08 00:52:16,687 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001091667.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,695 - src.data.collectors.sec_filings_collector - INFO - [SEC] CHTR -> CIK0001091667 'CHARTER COMMUNICATIONS, INC. /MO/'
+2026-09-08 00:52:16,884 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000909832.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,887 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001163165.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:16,892 - src.data.collectors.sec_filings_collector - INFO - [SEC] COP -> CIK0001163165 'CONOCOPHILLIPS'
+2026-09-08 00:52:16,900 - src.data.collectors.sec_filings_collector - INFO - [SEC] COST -> CIK0000909832 'COSTCO WHOLESALE CORP /NEW'
+2026-09-08 00:52:16,998 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000858877.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,004 - src.data.collectors.sec_filings_collector - INFO - [SEC] CSCO -> CIK0000858877 'CISCO SYSTEMS, INC.'
+2026-09-08 00:52:17,025 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000093410.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,033 - src.data.collectors.sec_filings_collector - INFO - [SEC] CVX -> CIK0000093410 'CHEVRON CORP'
+2026-09-08 00:52:17,093 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001108524.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,098 - src.data.collectors.sec_filings_collector - INFO - [SEC] CRM -> CIK0001108524 'Salesforce, Inc.'
+2026-09-08 00:52:17,233 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001666700.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,236 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000315189.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,239 - src.data.collectors.sec_filings_collector - INFO - [SEC] DD -> CIK0001666700 'DuPont de Nemours, Inc.'
+2026-09-08 00:52:17,252 - src.data.collectors.sec_filings_collector - INFO - [SEC] DE -> CIK0000315189 'DEERE & CO'
+2026-09-08 00:52:17,374 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001041130.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,376 - src.data.collectors.sec_filings_collector - INFO - [SEC] DIA -> CIK0001041130 'SPDR DOW JONES INDUSTRIAL AVERAGE ETF TRUST'
+2026-09-08 00:52:17,387 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001744489.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,394 - src.data.collectors.sec_filings_collector - INFO - [SEC] DIS -> CIK0001744489 'Walt Disney Co'
+2026-09-08 00:52:17,468 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001751788.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,472 - src.data.collectors.sec_filings_collector - INFO - [SEC] DOW -> CIK0001751788 'DOW INC.'
+2026-09-08 00:52:17,606 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001326160.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,614 - src.data.collectors.sec_filings_collector - INFO - [SEC] DUK -> CIK0001326160 'Duke Energy CORP'
+2026-09-08 00:52:17,628 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001065088.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,631 - src.data.collectors.sec_filings_collector - INFO - [SEC] EBAY -> CIK0001065088 'EBAY INC'
+2026-09-08 00:52:17,742 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001047862.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,746 - src.data.collectors.sec_filings_collector - INFO - [SEC] ED -> CIK0001047862 'CONSOLIDATED EDISON INC'
+2026-09-08 00:52:17,880 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000031462.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,886 - src.data.collectors.sec_filings_collector - INFO - [SEC] ECL -> CIK0000031462 'ECOLAB INC.'
+2026-09-08 00:52:17,974 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000831259.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:17,980 - src.data.collectors.sec_filings_collector - INFO - [SEC] FCX -> CIK0000831259 'FREEPORT-MCMORAN INC'
+2026-09-08 00:52:18,001 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001101239.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,002 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001109357.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,007 - src.data.collectors.sec_filings_collector - INFO - [SEC] EQIX -> CIK0001101239 'EQUINIX INC'
+2026-09-08 00:52:18,027 - src.data.collectors.sec_filings_collector - INFO - [SEC] EXC -> CIK0001109357 'EXELON CORP'
+2026-09-08 00:52:18,117 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001754301.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,122 - src.data.collectors.sec_filings_collector - INFO - [SEC] FOXA -> CIK0001754301 'Fox Corp'
+2026-09-08 00:52:18,253 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001588489.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,259 - src.data.collectors.sec_filings_collector - INFO - [SEC] GBTC -> CIK0001588489 'Grayscale Bitcoin Trust ETF'
+2026-09-08 00:52:18,366 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000040545.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,374 - src.data.collectors.sec_filings_collector - INFO - [SEC] GE -> CIK0000040545 'GENERAL ELECTRIC CO'
+2026-09-08 00:52:18,414 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000882095.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,420 - src.data.collectors.sec_filings_collector - INFO - [SEC] GILD -> CIK0000882095 'GILEAD SCIENCES, INC.'
+2026-09-08 00:52:18,557 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001652044.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,565 - src.data.collectors.sec_filings_collector - INFO - [SEC] GOOGL -> CIK0001652044 'Alphabet Inc.'
+2026-09-08 00:52:18,657 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000886982.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:18,737 - src.data.collectors.sec_filings_collector - INFO - [SEC] GS -> CIK0000886982 'GOLDMAN SACHS GROUP INC'
+2026-09-08 00:52:19,021 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001222333.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,022 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000354950.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,023 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000773840.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,030 - src.data.collectors.sec_filings_collector - INFO - [SEC] GLD -> CIK0001222333 'SPDR GOLD TRUST'
+2026-09-08 00:52:19,051 - src.data.collectors.sec_filings_collector - INFO - [SEC] HD -> CIK0000354950 'HOME DEPOT, INC.'
+2026-09-08 00:52:19,070 - src.data.collectors.sec_filings_collector - INFO - [SEC] HON -> CIK0000773840 'HONEYWELL INTERNATIONAL INC'
+2026-09-08 00:52:19,253 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000051143.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,257 - src.data.collectors.sec_filings_collector - INFO - [SEC] IBM -> CIK0000051143 'INTERNATIONAL BUSINESS MACHINES CORP'
+2026-09-08 00:52:19,357 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000050863.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,363 - src.data.collectors.sec_filings_collector - INFO - [SEC] INTC -> CIK0000050863 'INTEL CORP'
+2026-09-08 00:52:19,422 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000200406.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,427 - src.data.collectors.sec_filings_collector - INFO - [SEC] JNJ -> CIK0000200406 'JOHNSON & JOHNSON'
+2026-09-08 00:52:19,443 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000019617.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,473 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001549802.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:19,556 - src.data.collectors.sec_filings_collector - INFO - [SEC] JPM -> CIK0000019617 'JPMORGAN CHASE & CO'
+2026-09-08 00:52:20,007 - src.data.collectors.sec_filings_collector - INFO - [SEC] JD -> CIK0001549802 'JD.com, Inc.'
+2026-09-08 00:52:20,014 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000021344.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,019 - src.data.collectors.sec_filings_collector - INFO - [SEC] KO -> CIK0000021344 'COCA COLA CO'
+2026-09-08 00:52:20,181 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001707925.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,189 - src.data.collectors.sec_filings_collector - INFO - [SEC] LIN -> CIK0001707925 'LINDE PLC'
+2026-09-08 00:52:20,306 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001791706.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,310 - src.data.collectors.sec_filings_collector - INFO - [SEC] LI -> CIK0001791706 'Li Auto Inc.'
+2026-09-08 00:52:20,347 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001507605.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,357 - src.data.collectors.sec_filings_collector - INFO - [SEC] MARA -> CIK0001507605 'MARA Holdings, Inc.'
+2026-09-08 00:52:20,385 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000063908.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,391 - src.data.collectors.sec_filings_collector - INFO - [SEC] MCD -> CIK0000063908 'MCDONALDS CORP'
+2026-09-08 00:52:20,412 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000059478.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,416 - src.data.collectors.sec_filings_collector - INFO - [SEC] LLY -> CIK0000059478 'ELI LILLY & Co'
+2026-09-08 00:52:20,531 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001326801.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,542 - src.data.collectors.sec_filings_collector - INFO - [SEC] META -> CIK0001326801 'Meta Platforms, Inc.'
+2026-09-08 00:52:20,720 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000310158.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,727 - src.data.collectors.sec_filings_collector - INFO - [SEC] MRK -> CIK0000310158 'Merck & Co., Inc.'
+2026-09-08 00:52:20,776 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000789019.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,781 - src.data.collectors.sec_filings_collector - INFO - [SEC] MSFT -> CIK0000789019 'MICROSOFT CORP'
+2026-09-08 00:52:20,794 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000753308.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,798 - src.data.collectors.sec_filings_collector - INFO - [SEC] NEE -> CIK0000753308 'NEXTERA ENERGY INC'
+2026-09-08 00:52:20,888 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001164727.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:20,894 - src.data.collectors.sec_filings_collector - INFO - [SEC] NEM -> CIK0001164727 'NEWMONT Corp /DE/'
+2026-09-08 00:52:21,071 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000066740.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,078 - src.data.collectors.sec_filings_collector - INFO - [SEC] MMM -> CIK0000066740 '3M CO'
+2026-09-08 00:52:21,142 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000320187.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,149 - src.data.collectors.sec_filings_collector - INFO - [SEC] NKE -> CIK0000320187 'NIKE, Inc.'
+2026-09-08 00:52:21,172 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001736541.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,174 - src.data.collectors.sec_filings_collector - INFO - [SEC] NIO -> CIK0001736541 'NIO Inc.'
+2026-09-08 00:52:21,199 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001065280.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,205 - src.data.collectors.sec_filings_collector - INFO - [SEC] NFLX -> CIK0001065280 'NETFLIX INC'
+2026-09-08 00:52:21,243 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001045810.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,251 - src.data.collectors.sec_filings_collector - INFO - [SEC] NVDA -> CIK0001045810 'NVIDIA CORP'
+2026-09-08 00:52:21,511 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001737806.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,514 - src.data.collectors.sec_filings_collector - INFO - [SEC] PDD -> CIK0001737806 'PDD Holdings Inc.'
+2026-09-08 00:52:21,520 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000788784.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,524 - src.data.collectors.sec_filings_collector - INFO - [SEC] PEG -> CIK0000788784 'PUBLIC SERVICE ENTERPRISE GROUP INC'
+2026-09-08 00:52:21,577 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000077476.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,582 - src.data.collectors.sec_filings_collector - INFO - [SEC] PEP -> CIK0000077476 'PEPSICO INC'
+2026-09-08 00:52:21,607 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000078003.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,624 - src.data.collectors.sec_filings_collector - INFO - [SEC] PFE -> CIK0000078003 'PFIZER INC'
+2026-09-08 00:52:21,645 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001341439.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,649 - src.data.collectors.sec_filings_collector - INFO - [SEC] ORCL -> CIK0001341439 'ORACLE CORP'
+2026-09-08 00:52:21,871 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000080424.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,878 - src.data.collectors.sec_filings_collector - INFO - [SEC] PG -> CIK0000080424 'PROCTER & GAMBLE Co'
+2026-09-08 00:52:21,920 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001045609.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:21,924 - src.data.collectors.sec_filings_collector - INFO - [SEC] PLD -> CIK0001045609 'Prologis, Inc.'
+2026-09-08 00:52:22,038 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001633917.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,044 - src.data.collectors.sec_filings_collector - INFO - [SEC] PYPL -> CIK0001633917 'PayPal Holdings, Inc.'
+2026-09-08 00:52:22,062 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001067839.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,064 - src.data.collectors.sec_filings_collector - INFO - [SEC] QQQ -> CIK0001067839 'INVESCO QQQ TRUST, SERIES 1'
+2026-09-08 00:52:22,086 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001393311.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,092 - src.data.collectors.sec_filings_collector - INFO - [SEC] PSA -> CIK0001393311 'Public Storage'
+2026-09-08 00:52:22,261 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001167419.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,269 - src.data.collectors.sec_filings_collector - INFO - [SEC] RIOT -> CIK0001167419 'Riot Platforms, Inc.'
+2026-09-08 00:52:22,296 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000101829.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,302 - src.data.collectors.sec_filings_collector - INFO - [SEC] RTX -> CIK0000101829 'RTX Corp'
+2026-09-08 00:52:22,403 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001330568.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,405 - src.data.collectors.sec_filings_collector - INFO - [SEC] SLV -> CIK0001330568 'iShares Silver Trust'
+2026-09-08 00:52:22,411 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000829224.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,415 - src.data.collectors.sec_filings_collector - INFO - [SEC] SBUX -> CIK0000829224 'STARBUCKS CORP'
+2026-09-08 00:52:22,468 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000092122.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,468 - src.data.collectors.sec_filings_collector - INFO - [SEC] SO -> CIK0000092122 'SOUTHERN CO'
+2026-09-08 00:52:22,635 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000884394.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,639 - src.data.collectors.sec_filings_collector - INFO - [SEC] SPY -> CIK0000884394 'SPDR S&P 500 ETF TRUST'
+2026-09-08 00:52:22,673 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001032208.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,679 - src.data.collectors.sec_filings_collector - INFO - [SEC] SRE -> CIK0001032208 'SEMPRA'
+2026-09-08 00:52:22,777 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000732717.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,782 - src.data.collectors.sec_filings_collector - INFO - [SEC] T -> CIK0000732717 'AT&T INC.'
+2026-09-08 00:52:22,838 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001283699.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:22,846 - src.data.collectors.sec_filings_collector - INFO - [SEC] TMUS -> CIK0001283699 'T-Mobile US, Inc.'
+2026-09-08 00:52:23,029 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001318605.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,037 - src.data.collectors.sec_filings_collector - INFO - [SEC] TSLA -> CIK0001318605 'Tesla, Inc.'
+2026-09-08 00:52:23,059 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001046179.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,064 - src.data.collectors.sec_filings_collector - INFO - [SEC] TSM -> CIK0001046179 'TAIWAN SEMICONDUCTOR MANUFACTURING CO LTD'
+2026-09-08 00:52:23,164 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000731766.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,168 - src.data.collectors.sec_filings_collector - INFO - [SEC] UNH -> CIK0000731766 'UNITEDHEALTH GROUP INC'
+2026-09-08 00:52:23,275 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001090727.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,283 - src.data.collectors.sec_filings_collector - INFO - [SEC] UPS -> CIK0001090727 'UNITED PARCEL SERVICE INC'
+2026-09-08 00:52:23,517 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000740260.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,522 - src.data.collectors.sec_filings_collector - INFO - [SEC] VTR -> CIK0000740260 'Ventas, Inc.'
+2026-09-08 00:52:23,537 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000732712.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,540 - src.data.collectors.sec_filings_collector - INFO - [SEC] VZ -> CIK0000732712 'VERIZON COMMUNICATIONS INC'
+2026-09-08 00:52:23,658 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000766704.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,664 - src.data.collectors.sec_filings_collector - INFO - [SEC] WELL -> CIK0000766704 'WELLTOWER INC.'
+2026-09-08 00:52:23,683 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000072971.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,687 - src.data.collectors.sec_filings_collector - INFO - [SEC] WFC -> CIK0000072971 'WELLS FARGO & COMPANY/MN'
+2026-09-08 00:52:23,769 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000104169.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,776 - src.data.collectors.sec_filings_collector - INFO - [SEC] WMT -> CIK0000104169 'Walmart Inc.'
+2026-09-08 00:52:23,880 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000034088.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,888 - src.data.collectors.sec_filings_collector - INFO - [SEC] XOM -> CIK0000034088 'EXXON MOBIL CORP'
+2026-09-08 00:52:23,980 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001810997.json "HTTP/1.1 200 OK"
+2026-09-08 00:52:23,983 - src.data.collectors.sec_filings_collector - INFO - [SEC] XPEV -> CIK0001810997 'XPENG INC.'
+2026-09-08 00:52:27,662 - src.data.management.data_manager - INFO - Filtered out 78039 duplicate records for table 'sec_filings'.
+2026-09-08 00:52:27,732 - src.data.management.data_manager - ERROR - Critical: >10% NaN values in 'sec_filings' (24.67%)
+2026-09-08 00:52:27,850 - src.data.management.data_manager - WARNING - Table 'sec_filings': 34019 leading NaN values left unfilled to avoid lookahead
+2026-09-08 00:52:27,850 - src.data.management.data_manager - INFO - Applied entity-safe causal forward-fill to 28836 NaN values in 'sec_filings' using groups=['ticker'].
+2026-09-08 00:52:28,960 - src.data.management.data_manager - INFO - Inserted 63683 records into 'sec_filings'.
+2026-09-08 00:52:29,011 - src.data.collectors.sec_filings_collector - INFO - [SEC] Successfully persisted 63683 new filings.
+collector fetched 63683 rows
+2026-09-08 00:52:29,078 - sec_filings_collector - INFO - Received 63683 records from 'sec_filings'.
+2026-09-08 00:52:29,324 - src.data.management.data_manager - INFO - Filtered out 63683 duplicate records for table 'sec_filings'.
+2026-09-08 00:52:29,336 - sec_filings_collector - INFO - No new records for 'sec_filings' after filtering.
+2026-09-08 00:52:29,337 - sec_filings_collector - INFO - Collection: 1/1 collectors delivered rows.
+2026-09-08 00:52:30,167 - src.core.system.connection_registry - INFO - Closed connection: duckdb_D:\trading_project\data\trading_data.duckdb
