@@ -1,0 +1,49 @@
+panel: 623,398 rows, 110 names, 1996-08-26 to 2023-08-31
+seal:  nothing at or after 2023-09-01 is touched
+
+the opponent this beta is measured against -- buy everything, same friction, same clock:
+    hold   1: -0.598
+    hold   5: +0.659
+    hold  20: +0.939
+    hold  40: +1.005
+    hold  60: +1.018
+    hold 120: +0.981
+
+234 columns, 6 horizons
+
+HOW NEUTRAL IS A DOLLAR-NEUTRAL BOOK, across every column and horizon
+
+    quantity                      median   90th pct       max
+    ---------------------------------------------------------
+    |beta|                         0.022      0.150     0.481
+    |correlation|                  0.085      0.444     0.803
+
+    books whose |correlation| with the market exceeds 0.2: 33%
+
+
+WHAT HEDGING DOES TO THE COLUMNS THE STANDING CLAIMS REST ON
+
+    feature                      hold     net    beta   corr   HEDGED   change
+    --------------------------------------------------------------------------
+    VOLATILITY_50_1d               60   0.586   0.402  0.746   -0.260   -0.846
+    gk_volatility_1d               40   0.577   0.296  0.689   -0.158   -0.735
+    market_return_1d              120  -0.021   0.023  0.055   -0.077   -0.056
+    peer_breadth_1d               120  -0.042  -0.025 -0.061    0.019    0.061
+    state_SHARPE_RATIO_1d          60   0.026   0.020  0.080   -0.057   -0.083
+    LEVEL_BREAKOUT_DOWN_20_1d       5   0.114   0.022  0.169    0.002   -0.112
+    state_SORTINO_RATIO_1d         60   0.015   0.019  0.077   -0.065   -0.080
+
+
+AND THE QUESTION THIS RUN EXISTS FOR
+
+    best NET anywhere      +0.586  (VOLATILITY_50_1d, hold 60) -> hedged -0.260
+    best HEDGED anywhere   +0.374  (fund_earnings_yield_1d, hold 120) -> raw net -0.234
+
+    columns that improve when the market is removed: 821 of 1404
+    columns that get worse:                          583
+
+    A column that gets WORSE was being paid by its market position. One that gets
+    BETTER was being taxed by one -- and its edge was partly hidden by exposure
+    nobody intended.
+
+written to D:\trading_project\diagnostic_reports\book_beta.csv
