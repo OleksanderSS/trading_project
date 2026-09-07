@@ -63,15 +63,53 @@ def test_collectors_namespace_is_deliberately_salt_free():
     assert same == other
 
 
+def test_version_separates_entries_written_by_different_code():
+    """
+    The point of the version component: a collector that changed its parsing
+    must not read back the payload its previous version wrote.
+    """
+    stub = _SaltStub()
+    before = _key(stub, "run", {"x": 1}, namespace="collectors", version="aaaaaaaaaaaa")
+    after = _key(stub, "run", {"x": 1}, namespace="collectors", version="bbbbbbbbbbbb")
+
+    assert before != after
+
+
+def test_no_version_is_not_the_same_entry_as_some_version():
+    stub = _SaltStub()
+    assert _key(stub, "run", {"x": 1}) != _key(stub, "run", {"x": 1}, version="aaaaaaaaaaaa")
+
+
+def test_same_version_is_stable():
+    stub = _SaltStub()
+    assert _key(stub, "run", {"x": 1}, version="v1") == _key(stub, "run", {"x": 1}, version="v1")
+
+
+def test_collector_cache_version_is_per_class_and_stable():
+    """
+    cache_version fingerprints the collector's own source, so a collector
+    invalidates its own entries when it changes — and only its own.
+    """
+    from src.data.collectors.fred_collector import FredCollector
+    from src.data.collectors.huggingface_collector import HuggingfaceCollector
+
+    hf = object.__new__(HuggingfaceCollector)
+    fred = object.__new__(FredCollector)
+
+    assert hf.cache_version != fred.cache_version
+    assert hf.cache_version == object.__new__(HuggingfaceCollector).cache_version
+    assert len(hf.cache_version) == 12
+
+
 def test_cached_frame_columns_are_not_checked_against_the_caller():
     """
     Documents the open gap behind "stale legacy cache columns".
 
-    The key carries no code or schema version, so a frame written by an older
-    enricher — with an older column set — is served verbatim to newer code.
-    Nothing in the key or in get() distinguishes the two. This test asserts the
-    current, unversioned behaviour so that adding a version component to the
-    key is a visible, deliberate change rather than a silent one.
+    Collector payloads are now versioned by the collector's source
+    fingerprint. What is still unguarded is the *value* side: get() does not
+    compare a returned frame's columns against what the caller expects, so a
+    caller that passes no version still gets whatever was stored. This pins
+    that remaining gap.
     """
     stub = _SaltStub()
     key_v1 = _key(stub, "enriched_features", {"ticker": "AAPL"})

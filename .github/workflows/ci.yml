@@ -30,7 +30,8 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
-          pip install pytest-cov pytest-asyncio aiofiles google-api-python-client
+          # pytest-asyncio and pytest-timeout now come from requirements-dev.txt
+          pip install aiofiles google-api-python-client
 
       - name: Run Snyk dependency scan
         continue-on-error: true
@@ -59,7 +60,9 @@ jobs:
       - name: Run pytest with coverage
         env:
           PYTHONPATH: .
-        run: pytest --cov=src --cov-report=xml --cov-report=lcov || true
+        # No "|| true": the exit code is the whole point of running the suite.
+        # It used to be discarded, so CI stayed green through 26 red tests.
+        run: pytest --cov=src --cov-report=xml --cov-report=lcov
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4.4.3  # Фікс під Node.js 24

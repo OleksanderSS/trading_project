@@ -44,7 +44,7 @@ class YFCollector(BaseCollector):
     def _check_cache(self, cache_key: str, cache_params: dict[str, Any], table_name: str, tickers: list[str]) -> list[dict[str, Any]] | None:
         """Check cache for existing data."""
         if self.cache_manager and self.db_manager:
-            cached_data = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+            cached_data = self.cache_manager.get(cache_key, cache_params, namespace="collectors", version=self.cache_version)
             if cached_data is not None:
                 self.logger.info(f"Checking cached data for {len(tickers)} tickers against database.")
                 df_cached = pd.DataFrame(cached_data) if isinstance(cached_data, list) else cached_data
@@ -147,7 +147,7 @@ class YFCollector(BaseCollector):
 
         result = new_records_df.to_dict('records')
         if self.cache_manager:
-            self.cache_manager.set(cache_key, result, cache_params, ttl=self.configs.get('cache_ttl', 3600), namespace="collectors")
+            self.cache_manager.set(cache_key, result, cache_params, ttl=self.configs.get('cache_ttl', 3600), namespace="collectors", version=self.cache_version)
 
         return result
 

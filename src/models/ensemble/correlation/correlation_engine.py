@@ -69,7 +69,11 @@ class CorrelationEngine:
         Args:
             models: Dictionary of model_name -> model_object
             X: Test features
-            y: True targets
+            y: True targets. Accepted for interface compatibility but not used:
+                this analysis correlates the models' predictions with each
+                other, which needs no labels. A ``y.iloc[indices]`` subsample
+                used to be computed here and thrown away, reading as though the
+                labels were being kept in step with X.
             sample_size: Number of samples to use (None for all)
 
         Returns:
@@ -93,7 +97,6 @@ class CorrelationEngine:
             if sample_size and sample_size < len(X):
                 indices = np.random.choice(len(X), sample_size, replace=False)
                 X_sample = X.iloc[indices]
-                y.iloc[indices]
             else:
                 X_sample = X
 

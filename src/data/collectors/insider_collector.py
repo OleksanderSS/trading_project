@@ -155,7 +155,7 @@ class InsiderCollector(BaseCollector):
         """Check cache for existing data and filter new records."""
         if not self.cache_manager:
             return None
-        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors", version=self.cache_version)
         if cached is not None:
             df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
             if "hash" in df_cached.columns:

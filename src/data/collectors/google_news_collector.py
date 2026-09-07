@@ -80,7 +80,7 @@ class GoogleNewsCollector(BaseCollector):
         """Check cache for existing Google News data and filter new records."""
         if not self.cache_manager:
             return None
-        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors", version=self.cache_version)
         if cached is not None:
             df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
             if "hash" in df_cached.columns:
@@ -132,7 +132,7 @@ class GoogleNewsCollector(BaseCollector):
         hashes = new_df["hash"] if new_df is not None else df["hash"]
         for h in hashes:
             self.cache_manager.set(h, True, ttl=86400)
-        self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
+        self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors", version=self.cache_version)
 
     async def _run_internal(
         self,

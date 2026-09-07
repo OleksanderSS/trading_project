@@ -94,22 +94,38 @@ class CacheManager:
         """
         self.db.execute_query(query)
 
-    def _get_cache_key(self, key: str, params: Any = None, namespace: str = "default", use_salt: bool = True) -> str:
-        """Генерація стабільного ключа кешу за допомогою SHA-256 з додаванням DB salt."""
+    def _get_cache_key(self, key: str, params: Any = None, namespace: str = "default", use_salt: bool = True, version: str | None = None) -> str:
+        """
+        Генерація стабільного ключа кешу за допомогою SHA-256 з додаванням DB salt.
+
+        ``version`` identifies the code that produced the entry. A cached value
+        is only valid while the code that would produce it is unchanged, and
+        neither the key nor the DB salt captured that: db_salt tracks row counts
+        and schema of the tracked tables, not the producer. So a payload written
+        by an older collector — with an older column set — was served verbatim
+        to newer code, for as long as its TTL (a week, for some collectors).
+
+        Pass a version for entries whose *shape* depends on the producing code.
+        Leave it None for entries whose meaning does not — a per-record "already
+        seen this content hash" marker means the same thing regardless of which
+        version of the collector wrote it, and versioning those would re-ingest
+        the whole history on every code change.
+        """
         actual_salt = self.db_salt if (use_salt and namespace != "collectors") else ""
+        version_part = f"_v={version}" if version else ""
         # `if params:` treated every falsy value — {}, 0, "" — as "no params",
         # so get(key, params={}) returned whatever get(key) had stored. Only a
         # genuinely absent params argument may drop out of the key.
         if params is not None:
             param_str = json.dumps(params, sort_keys=True, default=str)
-            full_key = f"{key}_{param_str}_{actual_salt}"
+            full_key = f"{key}_{param_str}_{actual_salt}{version_part}"
         else:
-            full_key = f"{key}_{actual_salt}"
+            full_key = f"{key}_{actual_salt}{version_part}"
         return hashlib.sha256(full_key.encode()).hexdigest()
 
-    def get(self, key: str, params: Any = None, namespace: str = "default", use_salt: bool = True) -> Any:
+    def get(self, key: str, params: Any = None, namespace: str = "default", use_salt: bool = True, version: str | None = None) -> Any:
         """Отримання даних з кешу (Пам'ять -> Parquet/Pickle з валідацією через DuckDB)."""
-        cache_key = self._get_cache_key(key, params, namespace=namespace, use_salt=use_salt)
+        cache_key = self._get_cache_key(key, params, namespace=namespace, use_salt=use_salt, version=version)
 
         with self.lock:
             # 1. Перевірка в пам'яті
@@ -166,9 +182,9 @@ class CacheManager:
 
         return None
 
-    def set(self, key: str, value: Any, params: Any = None, ttl: int = 3600, namespace: str = "default", use_salt: bool = True) -> None:
+    def set(self, key: str, value: Any, params: Any = None, ttl: int = 3600, namespace: str = "default", use_salt: bool = True, version: str | None = None) -> None:
         """Збереження даних (DataFrames -> Parquet з zstd, Others -> Pickle)."""
-        cache_key = self._get_cache_key(key, params, namespace=namespace, use_salt=use_salt)
+        cache_key = self._get_cache_key(key, params, namespace=namespace, use_salt=use_salt, version=version)
         timestamp = time.time()
 
         # Оцінка розміру

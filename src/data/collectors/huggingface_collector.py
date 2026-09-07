@@ -50,7 +50,7 @@ class HuggingfaceCollector(BaseCollector):
         cache_params = {'dataset': self.dataset_name, 'split': self.split}
         if self.cache_manager:
             cached = self.cache_manager.get(cache_key, cache_params,
-                namespace='collectors')
+                namespace='collectors', version=self.cache_version)
             if cached is not None:
                 self.logger.info(
                     '[HuggingFace] Cache hit — no new records detected.')
@@ -91,14 +91,16 @@ class HuggingfaceCollector(BaseCollector):
                 )
             if self.cache_manager:
                 self.cache_manager.set(cache_key, True, cache_params,
-                    namespace='collectors', ttl=604800)
+                    namespace='collectors', ttl=604800,
+                    version=self.cache_version)
             return None
         self.logger.info(
             f'[HuggingFace] Committing {len(new_df)} new records...')
         self.db_manager.upsert(table_name, new_df, unique_on=['hash'])
         if self.cache_manager:
-            self.cache_manager.set(cache_key, True, cache_params, namespace
-                ='collectors', ttl=604800)
+            self.cache_manager.set(cache_key, True, cache_params,
+                namespace='collectors', ttl=604800,
+                version=self.cache_version)
         self.logger.info(
             f'[HuggingFace] ✅ Successfully persisted {len(new_df)} new records.'
             )

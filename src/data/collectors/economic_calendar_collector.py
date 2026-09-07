@@ -31,7 +31,7 @@ class EconomicCalendarCollector(BaseCollector):
             end_date.date())}
         if self.cache_manager:
             cached = self.cache_manager.get(cache_key, cache_params,
-                namespace='collectors')
+                namespace='collectors', version=self.cache_version)
             if cached is not None:
                 df_cached = pd.DataFrame(cached) if isinstance(cached, list
                     ) else cached
@@ -58,12 +58,14 @@ class EconomicCalendarCollector(BaseCollector):
                 )
             if self.cache_manager:
                 self.cache_manager.set(cache_key, df.to_dict('records'),
-                    cache_params, namespace='collectors')
+                    cache_params, namespace='collectors',
+                    version=self.cache_version)
             return None
         self.db_manager.upsert(table_name, new_df, unique_on=['hash'])
         if self.cache_manager:
             self.cache_manager.set(cache_key, df.to_dict('records'),
-                cache_params, namespace='collectors')
+                cache_params, namespace='collectors',
+                version=self.cache_version)
         self.logger.info(
             f'[EconCalendar] Safely validated structures mapped boundaries structures string variables limits structure scopes check representation array structure {len(new_df)} array constraints indexes execution bounds limits parameter arrays execution layers bounds bounds records strings bounds logics execution variables mapping variables arrays logic layers boundary parameter constraints strings mapping.'
             )
