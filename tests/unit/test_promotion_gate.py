@@ -602,7 +602,16 @@ def test_a_margin_smaller_than_its_own_noise_is_refused():
     thin = host._evaluate_promotion_gate(
         {'winner_holdout_metrics': dict(base, baseline_margin_sigma=0.0120)})
     assert thin['passed'] is False
-    assert any('one standard error' in r for r in thin['reasons'])
+    # THE SUBSTANCE, NOT THE WORDING. This asserted the literal phrase "one
+    # standard error" and went red when the gate started saying something
+    # better: it now names the ACTUAL multiple and the attempt count the bar
+    # was computed from -- "1.64 standard errors of the difference, the bar for
+    # 1 attempt(s)". The refusal was correct the whole time; REGISTER #283
+    # recorded this failure as "a margin smaller than its own noise is NOT
+    # refused", which was wrong, and that entry was mine. A test pinned to a
+    # message's phrasing reports an improvement as a regression.
+    assert any('standard error' in reason and 'baseline' in reason
+               for reason in thin['reasons']), thin['reasons']
 
     # The same margin against a quieter measurement is evidence.
     solid = host._evaluate_promotion_gate(
