@@ -19,7 +19,6 @@ from src.meta_learning.memory.diary_engine import (
 )
 from src.pipeline.stages.base_stage import BaseStage
 from src.risk.elite_risk_metrics import EliteRiskMetrics
-from src.risk.max_exposure_monitor import MaxExposureMonitor
 from src.trading.adaptive_parameter_manager import AdaptiveParameterManager
 from src.trading.consensus_engine import EnhancedConsensusEngine
 from src.trading.elite_risk_sizer import EliteRiskSizer
@@ -53,10 +52,23 @@ class TradingExecutionStage(BaseStage):
         self.risk_sizer = EliteRiskSizer(logger=self.logger)
         self.risk_metrics = EliteRiskMetrics(logger=self.logger)
         self.param_manager = AdaptiveParameterManager(logger=self.logger)
-        # ✅ Integrated: multi-layer exposure monitoring
-        self.exposure_monitor = MaxExposureMonitor(
-            config=self.config_manager.get('strategy.risk_management', {})
-        )
+        # `self.exposure_monitor = MaxExposureMonitor(...)` stood here until
+        # 2026-09-08 under the comment "✅ Integrated: multi-layer exposure
+        # monitoring". It was constructed, handed the risk config, and asked
+        # NOTHING -- `monitor_exposure` was never called anywhere. The tick was
+        # a claim in the code, and it was false.
+        #
+        # It is removed rather than wired, and the reason is stronger than the
+        # usual one: `run()` below never executes a trade on any path. Every
+        # branch returns an execution-boundary result -- no_predictions,
+        # review_only_no_execution, blocked_live_execution_disabled, or
+        # blocked_paper_execution_requires_isolated_executor. This stage is a
+        # review boundary by design, so there is no position it holds and no
+        # exposure of its own to monitor. Wiring a monitor here would have
+        # produced a report about a portfolio this stage does not run.
+        #
+        # Where exposure WOULD be checked is the isolated executor named in
+        # that last status, which does not exist yet. That is the place for it.
 
         self.portfolio_manager = PortfolioManager(
             virtual_portfolio=self.portfolio,
