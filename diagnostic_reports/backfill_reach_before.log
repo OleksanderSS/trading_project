@@ -1,0 +1,14 @@
+batch: data\colab\accumulated\pre_backfill_20260908
+daily rows 705,492, of them explorable 623,398 (seal 2023-09-01)
+
+family              columns  alive here  constant   absent
+----------------------------------------------------------
+vix (ours)                3           0         0        3
+vix (FRED)                6           2         0        4
+filings                  30           1         5       24
+news/sentiment          168           9        47      112
+fear/greed               12           1         2        9
+
+'alive here' means the column carries more than one value BEFORE the seal --
+the only place any measurement happens. 'constant' is a filled default and
+'absent' never reached the explorable period at all (CLAIMS R63).
