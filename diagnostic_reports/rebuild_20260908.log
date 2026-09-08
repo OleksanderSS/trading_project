@@ -1,0 +1,724 @@
+2026-09-08 05:59:23,140 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+2026-09-08 05:59:24,009 - PathSafety - INFO - PathSafety initialized with 6 allowed roots
+2026-09-08 05:59:24,013 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-08 05:59:24,017 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-08 05:59:24,217 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-08 05:59:24,246 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-08 05:59:24,259 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-08 05:59:24,262 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-08 05:59:24,270 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-08 05:59:24,453 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-08 05:59:24,472 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-08 05:59:24,480 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-08 05:59:24,552 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-08 05:59:24,594 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-08 05:59:24,608 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-08 05:59:24,842 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-08 05:59:25,298 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-08 05:59:25,834 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-08 05:59:26,006 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-08 05:59:26,042 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-08 05:59:26,153 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-08 05:59:26,174 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-08 05:59:26,372 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-08 05:59:26,990 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-08 05:59:27,477 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-08 05:59:28,022 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-08 05:59:29,119 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-08 05:59:29,548 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-08 05:59:29,559 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-08 05:59:29,960 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-08 05:59:30,147 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-08 05:59:30,156 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-08 05:59:30,156 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-08 05:59:30,222 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-08 05:59:30,229 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-08 05:59:30,235 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-08 05:59:30,269 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-08 05:59:30,370 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-08 05:59:30,372 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-08 05:59:30,373 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-08 05:59:30,380 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+2026-09-08 05:59:30,424 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+2026-09-08 05:59:30,504 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-08 05:59:30,546 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-08 05:59:30,581 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-08 05:59:30,596 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-08 05:59:30,621 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-08 05:59:30,799 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-08 05:59:30,858 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-08 05:59:30,872 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-08 05:59:30,952 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-08 05:59:31,012 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-08 05:59:31,059 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-08 05:59:31,129 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-08 05:59:31,271 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-08 05:59:31,327 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-08 05:59:31,471 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-08 05:59:31,482 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-08 05:59:31,568 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-08 05:59:31,606 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-08 05:59:31,722 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-08 05:59:31,790 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-08 05:59:31,802 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-08 05:59:31,823 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-08 05:59:31,951 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-08 05:59:32,080 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-08 05:59:32,158 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-08 05:59:32,328 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-08 05:59:32,450 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-08 05:59:32,452 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-08 05:59:32,452 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-08 05:59:32,586 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-08 05:59:32,596 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-08 05:59:32,596 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-08 05:59:32,596 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-08 05:59:32,646 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-08 05:59:32,654 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-08 05:59:32,657 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-08 05:59:32,676 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+2026-09-08 05:59:32,676 - __main__ - WARNING - ⚠️ Could not verify versions: No module named 'src.core.version_checker'
+2026-09-08 05:59:32,736 - __main__ - WARNING - 3 value(s) in use are NOT decisions yet; 3 of them must be settled before real money moves. Anything computed from them is provisional.
+2026-09-08 05:59:32,736 - __main__ - WARNING -     broker_cost_profile: ibkr_pro_tiered — $0.0035/share, $0.35 minimum, 1% of trade value cap  [blocks real money]
+2026-09-08 05:59:32,743 - __main__ - WARNING -     position_size_rule: Nominally eight risk multipliers over a 2% base; in practice a constant 0.5% of the portfolio, because the product always falls under the minimum-size clamp. Measured on a 100,000 portfolio: 122, 65 and 40 dollars computed for calm, typical and 12%-drawdown states, all clipped up to 500.  [blocks real money]
+2026-09-08 05:59:32,743 - __main__ - WARNING -     starting_capital: 100,000 in examples and defaults  [blocks real money]
+2026-09-08 05:59:32,746 - src.cli.argument_validator - INFO - ✅ Arguments validated successfully
+2026-09-08 05:59:32,747 - __main__ - INFO - 📦 FULL MODE: batch_name = main_database (all metrics)
+2026-09-08 05:59:32,747 - __main__ - INFO - 📊 Full mode: NOT creating runtime_params.json
+2026-09-08 06:00:18,706 - __main__ - INFO - 🚀 Launching hybrid pipeline (batch: main_database)...
+2026-09-08 06:00:18,709 - src.pipeline.hybrid.orchestrator_config - INFO - 🔍 Models config found: light_models=8, heavy_models=9
+2026-09-08 06:00:18,709 - src.pipeline.hybrid.orchestrator_config - INFO - 💡 Light models: ['lightgbm', 'random_forest', 'linear', 'mlp', 'ensemble', 'catboost', 'xgboost', 'knn']
+2026-09-08 06:00:18,709 - src.pipeline.hybrid.orchestrator_config - INFO - 🔥 Heavy models: ['gru', 'tabnet', 'transformer', 'cnn', 'lstm', 'autoencoder', 'mlp', 'neural_network', 'base_neural']
+2026-09-08 06:00:18,709 - src.data.management.data_manager - INFO - Attempting to create a new shared connection to 'D:\trading_project\data\trading_data.duckdb'.
+2026-09-08 06:00:19,151 - src.data.management.data_manager - INFO - Successfully created DB connection to 'D:\trading_project\data\trading_data.duckdb' (attempt 1/3)
+2026-09-08 06:00:19,151 - src.pipeline.hybrid.storage_manager - WARNING - ⚠️ No fallback storage available, using manual transfer
+2026-09-08 06:00:19,151 - OrchestratorFactory - INFO - ✅ All orchestrator components initialized via factory
+2026-09-08 06:00:19,151 - src.pipeline.hybrid_orchestrator - INFO - ✅ HybridOrchestrator initialized for batch: main_database
+2026-09-08 06:00:19,263 - src.cli.pipeline_executor - INFO - Loaded 110 unique tickers from 19 sectors: ['AAPL', 'ABBV', 'ABT', 'ADBE', 'AEP', 'AMD', 'AMGN', 'AMT', 'AMZN', 'APD', 'AVB', 'BA', 'BABA', 'BAC', 'BHP', 'BIDU', 'BILI', 'BMY', 'CAT', 'CBRE', 'CHTR', 'CMCSA', 'COIN', 'COP', 'COST', 'CRM', 'CSCO', 'CVX', 'DD', 'DE', 'DIA', 'DIS', 'DOW', 'DUK', 'EBAY', 'ECL', 'ED', 'EQIX', 'EXC', 'FCX', 'FOXA', 'GBTC', 'GE', 'GILD', 'GLD', 'GOOGL', 'GS', 'HD', 'HON', 'IBM', 'INTC', 'IWM', 'JD', 'JNJ', 'JPM', 'KO', 'LI', 'LIN', 'LLY', 'MARA', 'MCD', 'META', 'MMM', 'MRK', 'MSFT', 'NEE', 'NEM', 'NFLX', 'NIO', 'NKE', 'NVDA', 'ORCL', 'PDD', 'PEG', 'PEP', 'PFE', 'PG', 'PLD', 'PSA', 'PYPL', 'QQQ', 'RIOT', 'RTX', 'SBUX', 'SLV', 'SO', 'SPY', 'SRE', 'T', 'TLT', 'TMUS', 'TSLA', 'TSM', 'UNH', 'UPS', 'VTI', 'VTR', 'VZ', 'WELL', 'WFC', 'WMT', 'XLE', 'XLF', 'XLI', 'XLK', 'XLU', 'XLV', 'XME', 'XOM', 'XPEV']
+2026-09-08 06:00:19,265 - src.cli.pipeline_executor - INFO - Final tickers: ['AAPL', 'ABBV', 'ABT', 'ADBE', 'AEP', 'AMD', 'AMGN', 'AMT', 'AMZN', 'APD', 'AVB', 'BA', 'BABA', 'BAC', 'BHP', 'BIDU', 'BILI', 'BMY', 'CAT', 'CBRE', 'CHTR', 'CMCSA', 'COIN', 'COP', 'COST', 'CRM', 'CSCO', 'CVX', 'DD', 'DE', 'DIA', 'DIS', 'DOW', 'DUK', 'EBAY', 'ECL', 'ED', 'EQIX', 'EXC', 'FCX', 'FOXA', 'GBTC', 'GE', 'GILD', 'GLD', 'GOOGL', 'GS', 'HD', 'HON', 'IBM', 'INTC', 'IWM', 'JD', 'JNJ', 'JPM', 'KO', 'LI', 'LIN', 'LLY', 'MARA', 'MCD', 'META', 'MMM', 'MRK', 'MSFT', 'NEE', 'NEM', 'NFLX', 'NIO', 'NKE', 'NVDA', 'ORCL', 'PDD', 'PEG', 'PEP', 'PFE', 'PG', 'PLD', 'PSA', 'PYPL', 'QQQ', 'RIOT', 'RTX', 'SBUX', 'SLV', 'SO', 'SPY', 'SRE', 'T', 'TLT', 'TMUS', 'TSLA', 'TSM', 'UNH', 'UPS', 'VTI', 'VTR', 'VZ', 'WELL', 'WFC', 'WMT', 'XLE', 'XLF', 'XLI', 'XLK', 'XLU', 'XLV', 'XME', 'XOM', 'XPEV']
+2026-09-08 06:00:19,265 - src.cli.pipeline_executor - INFO - Using timeframes: ['15m', '1d', '1h']
+2026-09-08 06:00:19,266 - src.cli.pipeline_executor - INFO - Preparing data for Colab training...
+2026-09-08 06:00:22,279 - FeatureOrchestrator - INFO - ✅ FeatureLineageTracker enabled → diagnostic_reports/feature_lineage_report.json
+2026-09-08 06:00:22,924 - src.cli.pipeline_executor - INFO - Cache: stages 0-3 source code changed since this cache was generated (cached 2026-09-02T16:11:32.163471) — re-running stages 0-3.
+2026-09-08 06:00:22,926 - src.cli.pipeline_executor - INFO - 🔄 No valid cache found - running pipeline stages 0-3
+2026-09-08 06:00:22,926 - src.pipeline.hybrid.pipeline_runner - INFO - Launch local pipeline...
+2026-09-08 06:00:22,928 - src.analytics.data_managers.model_results_manager - INFO - ModelResultsManager synchronized with base path: data\trained_models
+2026-09-08 06:00:25,956 - CacheManager - INFO - Generated DB salt based on table states: news_articles:missing_google_news:5714:no_date_col_rss_news:11825:no_date_col_newsapi_articles:6934:no_date_col_sec_filings:612929:no_date_col_hugging_face_news:missing_market_data_raw:1287114:no_date_col_market_data:missing_fred_data:485010:2026-09-01_economic_calendar:361:2026-09-04 15:30:00+03:00
+2026-09-08 06:00:25,956 - ResourceMonitor - INFO - ResourceMonitor initialized with thresholds: {'cpu_warning': 70.0, 'cpu_critical': 90.0, 'memory_warning': 80.0, 'memory_critical': 95.0, 'disk_warning': 85.0, 'disk_critical': 95.0}
+2026-09-08 06:00:25,961 - HealthHub - INFO - HealthHub initialized successfully
+2026-09-08 06:00:25,961 - src.pipeline.pipeline_orchestrator - INFO - ✅ Memory profiler enabled (warning threshold: 10.0GB)
+2026-09-08 06:00:25,961 - src.pipeline.pipeline_orchestrator - INFO - Loading pipeline stages from configuration...
+2026-09-08 06:00:25,990 - DynamicModuleLoader - INFO - Creating instance of 'src.pipeline.stages.stage_0_setup.Stage0Setup' with parameters: ['config_manager', 'db_manager', 'http_client_factory', 'normalizer', 'error_handler', 'brain']
+2026-09-08 06:00:25,990 - src.pipeline.pipeline_orchestrator - INFO - Stage 0 'Stage_0_Setup' loaded successfully.
+2026-09-08 06:01:57,874 - DynamicModuleLoader - INFO - Creating instance of 'src.pipeline.stages.stage_1_collection.CollectionStage' with parameters: ['config_manager', 'db_manager', 'http_client_factory', 'normalizer', 'error_handler', 'brain']
+2026-09-08 06:01:58,741 - CacheManager - INFO - Generated DB salt based on table states: news_articles:missing_google_news:5714:no_date_col_rss_news:11825:no_date_col_newsapi_articles:6934:no_date_col_sec_filings:612929:no_date_col_hugging_face_news:missing_market_data_raw:1287114:no_date_col_market_data:missing_fred_data:485010:2026-09-01_economic_calendar:361:2026-09-04 15:30:00+03:00
+2026-09-08 06:01:58,743 - CollectorFactory - INFO - CacheManager initialized successfully.
+2026-09-08 06:02:04,803 - CollectorFactory - INFO - Discovered 23 collector classes: ['aaii_sentiment', 'bigquery', 'cftc', 'custom_csv', 'economic_calendar', 'fear_greed', 'fred', 'free_google_trends', 'google_news', 'huggingface', 'insider', 'local_file', 'newsapi', 'put_call_ratio', 'reddit_sentiment', 'rss', 'sdmx_macro', 'sec_filings', 'sec_fundamentals', 'synthetic', 'vix', 'wikimedia_attention', 'yahoo_finance']
+2026-09-08 06:02:04,809 - cftc_collector - INFO - CFTCCollector initialized. Enabled: True, Allow Sample Fallback: False
+2026-09-08 06:02:04,813 - fear_greed_collector - INFO - FearGreedCollector initialized. Enabled: True
+2026-09-08 06:02:04,813 - fred_collector - INFO - FredCollector configured to fetch data from 1996-09-15 onwards.
+2026-09-08 06:02:04,813 - src.data.collectors.google_news_collector - INFO - GoogleNewsCollector: period=7d, max_results=5, max_concurrent=5, min_source_quality=0.4
+2026-09-08 06:02:04,817 - reddit_sentiment_collector - INFO - RedditSentimentCollector (RSS Mode) initialized. Enabled: True; Subreddits: ['wallstreetbets', 'stocks', 'investing', 'economics']; delay=6.0s, retries=3
+2026-09-08 06:02:04,817 - src.data.collectors.rss_collector - INFO - RSSCollector initialised | period=7d min_quality=0.4 concurrency=5
+2026-09-08 06:02:04,817 - vix_collector - INFO - VIXCollector initialized. Enabled: True, Period: 30y, Interval: 1d
+2026-09-08 06:02:04,817 - wikimedia_attention_collector - INFO - WikimediaAttentionCollector initialized. Target: wikipedia_attention_data
+2026-09-08 06:02:04,823 - sdmx_macro_collector - INFO - SDMXMacroCollector initialized for agencies: ['WB_WDI']
+2026-09-08 06:02:04,826 - CollectorFactory - INFO - Instantiated 15 enabled collectors.
+2026-09-08 06:02:04,829 - src.pipeline.stages.collection.orchestrator - INFO - Loaded 15 collectors.
+2026-09-08 06:02:04,829 - src.pipeline.pipeline_orchestrator - INFO - Stage 1 'Stage_1_Collection' loaded successfully.
+2026-09-08 06:02:05,847 - DynamicModuleLoader - INFO - Creating instance of 'src.pipeline.stages.stage_2_processing.ProcessingStage' with parameters: ['config_manager', 'db_manager', 'http_client_factory', 'normalizer', 'error_handler', 'brain']
+2026-09-08 06:02:05,849 - ResourceMonitor - INFO - ResourceMonitor initialized with thresholds: {'cpu_warning': 70.0, 'cpu_critical': 90.0, 'memory_warning': 80.0, 'memory_critical': 95.0, 'disk_warning': 85.0, 'disk_critical': 95.0}
+2026-09-08 06:02:13,117 - TradingCalendar - INFO - Generated 2000 trading days.
+2026-09-08 06:02:13,117 - TradingCalendar - INFO - TradingCalendar initialized for US from 2020 to 2027. Found 101 holidays.
+2026-09-08 06:02:25,183 - GCSManager - WARNING - GCS disabled: Your default credentials were not found. To set up Application Default Credentials, see https://cloud.google.com/docs/authentication/external/set-up-adc for more information.. Continuing without cloud storage.
+2026-09-08 06:02:25,183 - src.pipeline.pipeline_orchestrator - INFO - Stage 2 'Stage_2_Processing' loaded successfully.
+2026-09-08 06:02:30,350 - DynamicModuleLoader - INFO - Creating instance of 'src.pipeline.stages.stage_3_feature_engineering.FeatureEngineeringStage' with parameters: ['config_manager', 'db_manager', 'http_client_factory', 'normalizer', 'error_handler', 'brain']
+2026-09-08 06:02:33,500 - RedundancyDetector - INFO - ✅ RedundancyDetector initialized
+2026-09-08 06:02:33,500 - src.features.selection.smart_selector - INFO - ✅ EnhancedSmartFeatureSelector initialized with Regime-Aware selection
+2026-09-08 06:02:33,504 - FeatureGuards - INFO - ✅ Temporal safety guards initialized (mode: full, strict: True)
+2026-09-08 06:02:33,504 - FeatureOrchestrator - INFO - 🔍 Discovering enrichers in 'src.features.enrichers'...
+2026-09-08 06:02:33,564 - src.analytics.calculators.macro_score_calculator - INFO - MacroScoreCalculator initialized with indicators: ['FRED_GDP', 'FRED_UNRATE', 'FRED_VIXCLS', 'FRED_DGS10', 'FRED_CPIAUCSL']
+2026-09-08 06:02:33,564 - src.analytics.context.market_phase_analyzer - INFO - MarketPhaseAnalyzer initialized with 5 rules.
+2026-09-08 06:02:33,564 - AdvancedAnalyticsEnricher - INFO - AdvancedAnalyticsEnricher initialized
+2026-09-08 06:02:33,564 - FeatureOrchestrator - INFO - ✅ Enricher 'advanced_analytics' (class: AdvancedAnalyticsEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,673 - ContextMapEnricher - INFO - ContextMapEnricher initialized. Pattern Length: 5
+2026-09-08 06:02:33,678 - FeatureOrchestrator - INFO - ✅ Enricher 'context_map' (class: ContextMapEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,685 - FeatureOrchestrator - INFO - ✅ Enricher 'corporate_filings' (class: CorporateFilingsEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,699 - src.features.enrichers.decay_features_enricher - INFO - DecayFeaturesEnricher initialized with half_life=20 periods
+2026-09-08 06:02:33,699 - FeatureOrchestrator - INFO - ✅ Enricher 'decay_features' (class: DecayFeaturesEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,719 - src.features.enrichers.derived_features_enricher - INFO - Using default configuration for derived features.
+2026-09-08 06:02:33,727 - FeatureOrchestrator - INFO - ✅ Enricher 'derived_features' (class: DerivedFeaturesEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,737 - FeatureOrchestrator - INFO - ✅ Enricher 'economic_calendar' (class: EconomicCalendarEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,749 - FeatureOrchestrator - INFO - ✅ Enricher 'fundamentals' (class: FundamentalsEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,758 - FeatureOrchestrator - INFO - ✅ Enricher 'hype_features' (class: HypeEnricher) is ENABLED and instantiated.
+2026-09-08 06:02:33,819 - KeywordEntityEnricher - INFO - Keyword extraction using 167 terms from 14 knowledge_base categories.
+2026-09-08 06:02:33,819 - KeywordEntityEnricher - INFO - Keyword extraction over 190 terms in 17 categories (knowledge base + enricher config).
+2026-09-08 06:02:33,838 - src.features.nlp.extractors.keyword_extractor - INFO - Extractor updated with 9 tickers and 142 keywords.
+C:\Users\Alexa\AppData\Local\Programs\Python\Python312\Lib\site-packages\spacy\util.py:969: UserWarning: [W095] Model 'en_core_web_sm' (3.7.1) was trained with spaCy v3.7.2 and may not be 100% compatible with the current version (3.8.11). If you see errors or degraded performance, download a newer compatible model or retrain your custom model with the current spaCy version. For more details and available updates, run: python -m spacy validate
+  warnings.warn(warn_msg)
+2026-09-08 06:03:34,403 - src.features.nlp.extractors.entity_extractor - INFO - Successfully loaded spaCy model: 'en_core_web_sm'
+2026-09-08 06:03:34,403 - KeywordEntityEnricher - INFO - KeywordEntityEnricher initialized
+2026-09-08 06:03:34,403 - FeatureOrchestrator - INFO - ✅ Enricher 'keyword_entity' (class: KeywordEntityEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:34,416 - MacroFeaturesEnricher - INFO - ✅ MacroFeaturesEnricher initialized with 12 series
+2026-09-08 06:03:34,416 - FeatureOrchestrator - INFO - ✅ Enricher 'macro_features' (class: MacroFeaturesEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:34,425 - MarketContextEnricher - INFO - MarketContextEnricher initialized with 16 features
+2026-09-08 06:03:34,425 - FeatureOrchestrator - INFO - ✅ Enricher 'market_context' (class: MarketContextEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:34,441 - FeatureOrchestrator - INFO - ✅ Enricher 'market_wide' (class: MarketWideEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:34,473 - src.analytics.analyzers.news_impact_analyzer - INFO - NewsImpactAnalyzer initialized with half-life=48h and weights={'positive': 1.0, 'negative': -1.5, 'neutral': 0.0}
+2026-09-08 06:03:34,474 - NewsImpactEnricher - INFO - NewsImpactEnricher initialized
+2026-09-08 06:03:34,474 - FeatureOrchestrator - INFO - ✅ Enricher 'news_impact' (class: NewsImpactEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:34,483 - NewsQualityEnricher - INFO - NewsQualityEnricher initialized
+2026-09-08 06:03:34,483 - FeatureOrchestrator - INFO - ✅ Enricher 'news_quality' (class: NewsQualityEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:38,930 - TradingProjectLogger - INFO - [QuickNewsAnalyzer] Initialized with n_clusters=5, max_features=1000
+2026-09-08 06:03:38,930 - NLPFeaturesEnricher - INFO - NLPFeaturesEnricher initialized with 5 clusters.
+2026-09-08 06:03:38,933 - FeatureOrchestrator - INFO - ✅ Enricher 'nlp_features' (class: NLPFeaturesEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,017 - PeerContextEnricher - INFO - Peer context membership: 14 sectors over 110 tickers.
+2026-09-08 06:03:39,017 - FeatureOrchestrator - INFO - ✅ Enricher 'peer_context' (class: PeerContextEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,017 - SentimentFeaturesEnricher - INFO - SentimentFeaturesEnricher initialized with windows: [5, 20, 50]
+2026-09-08 06:03:39,017 - FeatureOrchestrator - INFO - ✅ Enricher 'sentiment_features' (class: SentimentFeaturesEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,025 - src.features.enrichers.significance_features_enricher - INFO - SignificanceAnalyzer initialized in 'feature_engineering' mode.
+2026-09-08 06:03:39,025 - FeatureOrchestrator - INFO - ✅ Enricher 'significance_features' (class: SignificanceFeaturesEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,040 - TechnicalAnalysisEnricher - INFO - TechnicalAnalysisEnricher initialized with dynamic configuration.
+2026-09-08 06:03:39,040 - FeatureOrchestrator - INFO - ✅ Enricher 'technical_analysis' (class: TechnicalAnalysisEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,043 - FeatureOrchestrator - INFO - ✅ Enricher 'ticker_external' (class: TickerExternalEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,049 - src.features.enrichers.time_features_enricher.TimeFeaturesEnricher - INFO - TimeFeaturesEnricher initialized with 12 features.
+2026-09-08 06:03:39,049 - FeatureOrchestrator - INFO - ✅ Enricher 'time_features' (class: TimeFeaturesEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,051 - FeatureOrchestrator - INFO - ✅ Enricher 'volatility' (class: VolatilityEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,055 - FeatureOrchestrator - INFO - ✅ Enricher 'volume' (class: VolumeEnricher) is ENABLED and instantiated.
+2026-09-08 06:03:39,055 - FeatureOrchestrator - INFO - ✅ Discovered 23 enabled enrichers
+2026-09-08 06:03:39,055 - FeatureOrchestrator - INFO - FeatureOrchestrator initialized. Execution order: ['time_features', 'technical_analysis', 'derived_features', 'volume', 'peer_context', 'macro_features', 'market_wide', 'economic_calendar', 'corporate_filings', 'nlp_features', 'volatility', 'fundamentals', 'ticker_external', 'keyword_entity', 'news_quality', 'sentiment_features', 'news_impact', 'hype_features', 'significance_features', 'decay_features', 'advanced_analytics', 'context_map', 'market_context']
+2026-09-08 06:03:39,056 - TargetOrchestrator - INFO - TargetOrchestrator initialized with 22 target configurations.
+2026-09-08 06:03:39,056 - FeatureEngineeringStage - INFO - ✅ FeatureEngineeringStage (Modular) initialized
+2026-09-08 06:03:39,056 - src.pipeline.pipeline_orchestrator - INFO - Stage 3 'Stage_3_Feature_Engineering' loaded successfully.
+2026-09-08 06:03:39,056 - src.pipeline.pipeline_orchestrator - INFO - Starting pipeline with 4 stages...
+2026-09-08 06:03:39,056 - src.pipeline.pipeline_orchestrator - INFO - Stages to run: [0, 1, 2, 3]
+2026-09-08 06:03:39,056 - src.pipeline.pipeline_orchestrator - INFO - Context keys: ['tickers', 'timeframes', 'run_mode', 'stages_to_run', 'enriched_data', 'targets_df']
+2026-09-08 06:03:39,056 - src.pipeline.pipeline_orchestrator - INFO - 📊 Initial stage_outputs keys: ['tickers', 'timeframes', 'run_mode', 'stages_to_run', 'enriched_data', 'targets_df']
+2026-09-08 06:03:39,056 - src.pipeline.pipeline_orchestrator - INFO - ===== Executing Stage0Setup =====
+2026-09-08 06:03:39,056 - ResourceMonitor - WARNING - No historical metrics found. Collecting current metrics on demand.
+2026-09-08 06:03:47,243 - Stage0Setup - INFO - Initializing environment setup...
+2026-09-08 06:03:47,244 - Stage0Setup - INFO - Environment setup successfully completed. New directories: none (all existed)
+2026-09-08 06:03:47,244 - ResourceMonitor - WARNING - No historical metrics found. Collecting current metrics on demand.
+2026-09-08 06:03:50,054 - src.pipeline.pipeline_orchestrator - INFO - ===== Stage Stage0Setup finished in 8.19s. Memory: 11.5MB (Delta 0.1MB) =====
+2026-09-08 06:03:50,055 - src.pipeline.pipeline_orchestrator - INFO - ===== Executing Stage 1: CollectionStage =====
+2026-09-08 06:03:50,056 - ResourceMonitor - WARNING - No historical metrics found. Collecting current metrics on demand.
+2026-09-08 06:03:52,652 - src.pipeline.stages.collection.orchestrator - INFO - Starting data collection stage...
+2026-09-08 06:03:52,652 - src.pipeline.stages.collection.orchestrator - INFO - Using 110 tickers from pipeline inputs override.
+2026-09-08 06:03:52,652 - src.pipeline.stages.collection.orchestrator - INFO - Loaded 110 tickers from preset 'None'.
+2026-09-08 06:03:52,653 - src.pipeline.stages.collection.orchestrator - INFO - Loaded 250 unique keywords.
+2026-09-08 06:03:52,670 - cftc_collector - INFO - Fetching CFTC Commitment of Traders data
+2026-09-08 06:03:52,670 - cftc_collector - INFO - Fetching CFTC COT data for S&P (S&P 500 Consolidated - CHICAGO MERCANTILE EXCHANGE)
+2026-09-08 06:03:58,209 - RateLimiter - INFO - RateLimiter initialized: 2 requests per 1.0 seconds.
+2026-09-08 06:03:59,984 - RateLimiter - INFO - RateLimiter initialized: 10 requests per 1.0 seconds.
+2026-09-08 06:03:59,986 - fear_greed_collector - INFO - Fetching Fear & Greed data from CNN Business API
+2026-09-08 06:04:05,480 - src.data.collectors.google_news_collector - INFO - [GoogleNews] Initiating scope parameters constraints across 110 block limits (parallel stream blocks constraint index 5)...
+2026-09-08 06:04:05,487 - insider_collector - INFO - [Insider] Fetching insider trades...
+2026-09-08 06:04:05,503 - insider_collector - INFO - Initiating asynchronous HTTP polling across 110 URIs.
+2026-09-08 06:04:07,443 - newsapi_collector - INFO - [NewsAPI] 250 terms, 90 requests left today. Querying the first 90 (tickers before generic keywords); the rest wait for tomorrow's allowance.
+2026-09-08 06:04:07,469 - newsapi_collector - INFO - [NewsAPI] Issuing up to 90 requests (0 of today's 90 allowance already spent)...
+2026-09-08 06:04:09,643 - RateLimiter - INFO - RateLimiter initialized: 2 requests per 1.0 seconds.
+2026-09-08 06:04:09,645 - reddit_sentiment_collector - INFO - Fetching Reddit RSS data for 4 subreddits
+2026-09-08 06:04:12,273 - RateLimiter - INFO - RateLimiter initialized: 1 requests per 2.0 seconds.
+2026-09-08 06:04:12,287 - src.data.collectors.rss_collector - INFO - [RSS] Fetching 26 feeds (semaphore=5, feed_timeout=30.0s)…
+2026-09-08 06:04:12,287 - src.pipeline.stages.collection.orchestrator - WARNING - No specific run args for SECFundamentalsCollector, trying generic run().
+2026-09-08 06:04:12,289 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] Loaded CIK map for 100 tickers.
+2026-09-08 06:04:12,289 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] Fetching reported facts for 100 tickers.
+2026-09-08 06:04:14,279 - src.data.collectors.sec_filings_collector - INFO - Loaded CIK map for 100 tickers.
+2026-09-08 06:04:14,279 - src.data.collectors.sec_filings_collector - INFO - [SEC] Fetching filings for 100 tickers from 1996-09-15.
+2026-09-08 06:04:16,206 - vix_collector - INFO - Fetching FREE VIX data from Yahoo Finance
+2026-09-08 06:04:16,235 - vix_collector - INFO - Fetching VIX data from Yahoo Finance
+2026-09-08 06:06:07,659 - vix_collector - INFO - Successfully fetched 7548 VIX records
+2026-09-08 06:06:07,688 - yahoo_finance_collector - INFO - Starting collection for 112 tickers. End date: 2026-09-08T06:06:07.664760
+2026-09-08 06:06:07,688 - yahoo_finance_collector - WARNING - Interval '15m' is intraday and start_date 2026-07-10 06:06:07.664760 is older than Yahoo serves (58d). Adjusting to 2026-07-12 06:06:07.688956
+2026-09-08 06:06:07,688 - yahoo_finance_collector - WARNING - Interval '1h' is intraday and start_date 2024-09-10 06:06:07.664760 is older than Yahoo serves (728d). Adjusting to 2024-09-10 06:06:07.688956
+2026-09-08 06:06:07,692 - src.pipeline.stages.collection.orchestrator - WARNING - No specific run args for WikimediaAttentionCollector, trying generic run().
+2026-09-08 06:06:07,704 - wikimedia_attention_collector - INFO - Fetching Wikipedia pageviews for 359 terms from 20150926 to 20260908
+2026-09-08 06:06:11,347 - RateLimiter - INFO - RateLimiter initialized: 10 requests per 1.0 seconds.
+2026-09-08 06:06:11,347 - src.pipeline.stages.collection.orchestrator - WARNING - No specific run args for SDMXMacroCollector, trying generic run().
+2026-09-08 06:06:11,347 - sdmx_macro_collector - INFO - Fetching macroeconomic data via SDMX...
+2026-09-08 06:06:11,364 - sdmx.client - INFO - Request https://api.worldbank.org/v2/sdmx/rest/data/WDI/A.FP_CPI_TOTL_ZG.USA+CHN+EMU+JPN+DEU+GBR/?startPeriod=2000
+2026-09-08 06:06:11,364 - sdmx.client - INFO - with headers {'User-Agent': 'python-requests/2.34.2', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive'}
+2026-09-08 06:06:11,392 - RateLimiter - INFO - RateLimiter initialized: 2 requests per 1.0 seconds.
+2026-09-08 06:06:11,923 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'bloomberg_markets'
+2026-09-08 06:06:16,559 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'bloomberg_tech'
+2026-09-08 06:06:23,322 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'bloomberg_economics'
+2026-09-08 06:06:31,764 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'bloomberg_business'
+2026-09-08 06:06:39,362 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'yahoo_finance_general'
+2026-09-08 06:06:48,530 - sdmx.client - INFO - Request https://api.worldbank.org/v2/sdmx/rest/data/WDI/A.NY_GDP_MKTP_KD_ZG.USA+CHN+EMU+JPN+DEU+GBR/?startPeriod=2000
+2026-09-08 06:06:48,530 - sdmx.client - INFO - with headers {'User-Agent': 'python-requests/2.34.2', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'keep-alive'}
+2026-09-08 06:06:48,547 - src.data.collectors.google_news_collector - WARNING - [GoogleNews] Collector exceeded 120s total timeout. Returning None and continuing pipeline.
+2026-09-08 06:06:48,549 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'bbc_business'
+2026-09-08 06:06:49,504 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for RTX/15m
+2026-09-08 06:06:49,824 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for RTX/15m (after NaT and non-finite removal)
+2026-09-08 06:06:51,164 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for RTX/1d
+2026-09-08 06:06:52,962 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for RTX/1h
+2026-09-08 06:06:54,232 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'financial_times'
+2026-09-08 06:06:54,562 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for RTX/1d (after NaT and non-finite removal)
+2026-09-08 06:06:54,736 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for RTX/1h (after NaT and non-finite removal)
+2026-09-08 06:06:55,122 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for SO/15m
+2026-09-08 06:06:55,522 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for SO/15m (after NaT and non-finite removal)
+2026-09-08 06:06:56,461 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for SO/1d
+2026-09-08 06:06:57,988 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for SO/1d (after NaT and non-finite removal)
+2026-09-08 06:06:58,222 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for SO/1h
+2026-09-08 06:07:00,772 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for HD/15m
+2026-09-08 06:07:01,364 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for HD/15m (after NaT and non-finite removal)
+2026-09-08 06:07:01,664 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for SO/1h (after NaT and non-finite removal)
+2026-09-08 06:07:02,394 - src.data.management.data_manager - INFO - Filtered out 758 duplicate records for table 'macro_sdmx_data'.
+2026-09-08 06:07:02,398 - sdmx_macro_collector - INFO - No new SDMX macro data found.
+2026-09-08 06:07:02,416 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'wsj'
+2026-09-08 06:07:02,492 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for HD/1d
+2026-09-08 06:07:04,734 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for NEM/15m
+2026-09-08 06:07:05,649 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for NEM/15m (after NaT and non-finite removal)
+2026-09-08 06:07:06,437 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for HD/1d (after NaT and non-finite removal)
+2026-09-08 06:07:06,806 - src.data.collectors.rss_collector - WARNING - [RSS] 'yahoo_finance_general' HTTP timeout (ConnectTimeout). Skipping.
+2026-09-08 06:07:06,835 - src.data.collectors.rss_collector - WARNING - [RSS] 'bloomberg_business' HTTP timeout (ConnectTimeout). Skipping.
+2026-09-08 06:07:06,892 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'wsj_markets'
+2026-09-08 06:07:06,919 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for HD/1h
+2026-09-08 06:07:07,599 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for HD/1h (after NaT and non-finite removal)
+2026-09-08 06:07:07,750 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for NVDA/15m
+2026-09-08 06:07:07,917 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for NVDA/15m (after NaT and non-finite removal)
+2026-09-08 06:07:08,842 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'marketwatch'
+2026-09-08 06:07:09,872 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for NEM/1d
+2026-09-08 06:07:11,346 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for NEM/1h
+2026-09-08 06:07:12,619 - src.data.collectors.rss_collector - WARNING - [RSS] 'bbc_business' HTTP timeout (ConnectTimeout). Skipping.
+2026-09-08 06:07:12,693 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for NEM/1d (after NaT and non-finite removal)
+2026-09-08 06:07:13,242 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'seeking_alpha'
+2026-09-08 06:07:13,376 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for COP/15m
+2026-09-08 06:07:13,545 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for NEM/1h (after NaT and non-finite removal)
+2026-09-08 06:07:13,734 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for COP/15m (after NaT and non-finite removal)
+2026-09-08 06:07:14,855 - yahoo_finance_collector - INFO - Successfully downloaded 6948 rows for NVDA/1d
+2026-09-08 06:07:17,084 - yahoo_finance_collector - INFO - ✅ Processed 6948 rows for NVDA/1d (after NaT and non-finite removal)
+2026-09-08 06:07:17,084 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for NVDA/1h
+2026-09-08 06:07:17,367 - src.data.collectors.rss_collector - WARNING - [RSS] 'financial_times' HTTP timeout (ConnectTimeout). Skipping.
+2026-09-08 06:07:17,666 - src.data.collectors.rss_collector - INFO - [RSS] → fetching 'investing_com'
+2026-09-08 06:07:18,093 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for CHTR/15m
+2026-09-08 06:07:19,237 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for CHTR/15m (after NaT and non-finite removal)
+2026-09-08 06:07:19,431 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for NVDA/1h (after NaT and non-finite removal)
+2026-09-08 06:07:20,680 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for COP/1d
+2026-09-08 06:07:22,632 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for FOXA/15m
+2026-09-08 06:07:24,162 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for FOXA/15m (after NaT and non-finite removal)
+2026-09-08 06:07:24,233 - src.data.collectors.rss_collector - WARNING - [RSS] 'wsj' HTTP timeout (ConnectTimeout). Skipping.
+2026-09-08 06:07:24,742 - httpx - INFO - HTTP Request: GET https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/Wfc/daily/20150926/20260908 "HTTP/1.1 200 OK"
+2026-09-08 06:07:24,768 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for COP/1d (after NaT and non-finite removal)
+2026-09-08 06:07:25,287 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for COP/1h
+2026-09-08 06:07:25,543 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=FEDFUNDS&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:25,568 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=DGS10&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:07:26,549 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for DIS/15m
+2026-09-08 06:07:26,584 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for COP/1h (after NaT and non-finite removal)
+2026-09-08 06:07:26,586 - src.data.collectors.rss_collector - WARNING - [RSS] 'wsj_markets' HTTP timeout (ConnectTimeout). Skipping.
+2026-09-08 06:07:26,902 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=T10Y2Y&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:07:26,912 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for DIS/15m (after NaT and non-finite removal)
+2026-09-08 06:07:26,932 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=GS2&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:07:26,992 - src.data.collectors.rss_collector - WARNING - [RSS] 'marketwatch' HTTP timeout (ConnectTimeout). Skipping.
+2026-09-08 06:07:26,992 - economic_calendar_collector - ERROR - Failed to fetch economic calendar: 
+2026-09-08 06:07:27,572 - yahoo_finance_collector - INFO - Successfully downloaded 4193 rows for CHTR/1d
+2026-09-08 06:07:29,642 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for CHTR/1h
+2026-09-08 06:07:29,882 - yahoo_finance_collector - INFO - ✅ Processed 4193 rows for CHTR/1d (after NaT and non-finite removal)
+2026-09-08 06:07:31,739 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=ADBE&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:07:31,750 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=ABT&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:07:31,992 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000320193.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,054 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for UNH/15m
+2026-09-08 06:07:32,082 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000796343.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,192 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000001800.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,258 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000004904.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,415 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000796343.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,532 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,629 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for UNH/15m (after NaT and non-finite removal)
+2026-09-08 06:07:32,662 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for CHTR/1h (after NaT and non-finite removal)
+2026-09-08 06:07:32,758 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0001551152.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,914 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001551152.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:32,959 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000001800.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:33,231 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=CPIAUCSL&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:33,790 - yahoo_finance_collector - INFO - Successfully downloaded 1883 rows for FOXA/1d
+2026-09-08 06:07:33,826 - src.data.collectors.sec_filings_collector - INFO - [SEC] AAPL -> CIK0000320193 'Apple Inc.'
+2026-09-08 06:07:34,377 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=PCEPILFE&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:34,549 - yahoo_finance_collector - INFO - ✅ Processed 1883 rows for FOXA/1d (after NaT and non-finite removal)
+2026-09-08 06:07:34,831 - httpx - INFO - HTTP Request: GET https://www.reddit.com/r/wallstreetbets/.rss "HTTP/1.1 200 OK"
+2026-09-08 06:07:34,839 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for PLD/15m
+2026-09-08 06:07:35,412 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for PLD/15m (after NaT and non-finite removal)
+2026-09-08 06:07:36,101 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=PCEPI&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:36,226 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'bloomberg_markets' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,226 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'bloomberg_tech' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,226 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'bloomberg_economics' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,226 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'seeking_alpha' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,226 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'investing_com' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,228 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'benzinga' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,231 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'ft_markets' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,232 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'zerohedge' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,232 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'cointelegraph_crypto' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,232 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'npr_business' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,232 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'nber_working_papers' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,232 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'ecb_working_papers' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'bis_research' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'usda_agriculture' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'fierce_biotech' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'techcrunch' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'oilprice_energy' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'mining_com_metals' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - WARNING - [RSS] Feed 'inman_real_estate' timed out after 30.0s – skipped.
+2026-09-08 06:07:36,234 - src.data.collectors.rss_collector - INFO - [RSS] No new articles from any feed.
+2026-09-08 06:07:36,906 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for FOXA/1h
+2026-09-08 06:07:38,964 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=ADBE&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$264.33', '$194.51', '$246.25']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:07:38,993 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=ADBE&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:07:40,052 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for FOXA/1h (after NaT and non-finite removal)
+2026-09-08 06:07:40,412 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=ABT&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$109.54', '$115.85', '$109.83']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:07:40,412 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=ABT&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:07:40,462 - src.data.collectors.sec_filings_collector - INFO - [SEC] ADBE -> CIK0000796343 'ADOBE INC.'
+2026-09-08 06:07:40,557 - src.data.collectors.sec_filings_collector - INFO - [SEC] ABT -> CIK0000001800 'ABBOTT LABORATORIES'
+2026-09-08 06:07:40,667 - src.data.collectors.sec_filings_collector - INFO - [SEC] AEP -> CIK0000004904 'AMERICAN ELECTRIC POWER CO INC'
+2026-09-08 06:07:41,848 - src.data.collectors.sec_filings_collector - INFO - [SEC] ABBV -> CIK0001551152 'AbbVie Inc.'
+2026-09-08 06:07:43,280 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for DIS/1d
+2026-09-08 06:07:45,431 - httpx - INFO - HTTP Request: GET https://production.dataviz.cnn.io/index/fearandgreed/graphdata "HTTP/1.1 200 OK"
+2026-09-08 06:07:46,216 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for LI/15m
+2026-09-08 06:07:46,702 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for LI/15m (after NaT and non-finite removal)
+2026-09-08 06:07:47,985 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for DIS/1d (after NaT and non-finite removal)
+2026-09-08 06:07:48,402 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for DIS/1h
+2026-09-08 06:07:48,762 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] ABBV: 1803 facts across 12 concepts, filed 2013-05-08..2026-08-03
+2026-09-08 06:07:48,975 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=UNRATE&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:49,024 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=PPIACO&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:50,781 - fear_greed_collector - INFO - Successfully fetched 250 Fear & Greed records
+2026-09-08 06:07:50,844 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=GS10&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:07:50,855 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for TLT/15m
+2026-09-08 06:07:50,940 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000320193-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:50,941 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for DIS/1h (after NaT and non-finite removal)
+2026-09-08 06:07:51,533 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for TLT/15m (after NaT and non-finite removal)
+2026-09-08 06:07:51,533 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] AAPL: 2939 facts across 16 concepts, filed 2009-07-22..2026-07-31
+2026-09-08 06:07:51,894 - httpx - INFO - HTTP Request: GET https://publicreporting.cftc.gov/resource/6dca-aqww.json?%24select=report_date_as_yyyy_mm_dd%2Cmarket_and_exchange_names%2Cnoncomm_positions_long_all%2Cnoncomm_positions_short_all%2Copen_interest_all&%24where=market_and_exchange_names+in+%28%27S%26P+500+Consolidated+-+CHICAGO+MERCANTILE+EXCHANGE%27%29+AND+report_date_as_yyyy_mm_dd+%3E+%272016-09-20%27&%24order=report_date_as_yyyy_mm_dd+DESC&%24limit=520 "HTTP/1.1 200 OK"
+2026-09-08 06:07:51,929 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000796343-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:51,953 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000001800-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:07:52,425 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] ADBE: 2897 facts across 14 concepts, filed 2009-06-26..2026-06-15
+2026-09-08 06:07:52,783 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] ABT: 2407 facts across 13 concepts, filed 2009-08-07..2026-04-29
+2026-09-08 06:07:52,803 - cftc_collector - INFO - Fetched 519 CFTC records for S&P
+2026-09-08 06:07:52,826 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for UNH/1d
+2026-09-08 06:07:52,941 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=PERMIT&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:54,250 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=PAYEMS&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:07:54,283 - cftc_collector - INFO - Fetching CFTC COT data for NASDAQ (NASDAQ-100 Consolidated - CHICAGO MERCANTILE EXCHANGE)
+2026-09-08 06:07:56,034 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for UNH/1h
+2026-09-08 06:08:00,407 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for UNH/1d (after NaT and non-finite removal)
+2026-09-08 06:08:01,395 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for UNH/1h (after NaT and non-finite removal)
+2026-09-08 06:08:01,712 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for COST/15m
+2026-09-08 06:08:02,012 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for COST/15m (after NaT and non-finite removal)
+2026-09-08 06:08:02,266 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=CCSA&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:02,302 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=MANEMP&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:02,402 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=GDP&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:02,652 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=DEXCHUS&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:03,491 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000002488.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:03,495 - yahoo_finance_collector - INFO - Successfully downloaded 7240 rows for PLD/1d
+2026-09-08 06:08:03,572 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000001800-submissions-002.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:04,081 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=CAPUTLB50001SQ&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:04,098 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=INDPRO&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:04,784 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=DGORDER&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:05,476 - yahoo_finance_collector - INFO - ✅ Processed 7240 rows for PLD/1d (after NaT and non-finite removal)
+2026-09-08 06:08:05,871 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for PLD/1h
+2026-09-08 06:08:07,687 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for SPY/15m
+2026-09-08 06:08:07,847 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for PLD/1h (after NaT and non-finite removal)
+2026-09-08 06:08:08,294 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for SPY/15m (after NaT and non-finite removal)
+2026-09-08 06:08:08,531 - yahoo_finance_collector - INFO - Successfully downloaded 1533 rows for LI/1d
+2026-09-08 06:08:09,136 - yahoo_finance_collector - INFO - ✅ Processed 1533 rows for LI/1d (after NaT and non-finite removal)
+2026-09-08 06:08:09,448 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for LI/1h
+2026-09-08 06:08:10,154 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for LI/1h (after NaT and non-finite removal)
+2026-09-08 06:08:10,316 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for GBTC/15m
+2026-09-08 06:08:10,342 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=UMCSENT&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:10,570 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=RSAFS&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:10,623 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for GBTC/15m (after NaT and non-finite removal)
+2026-09-08 06:08:11,925 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=DSPIC96&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:12,012 - httpx - INFO - HTTP Request: GET https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/Crude/daily/20150926/20260908 "HTTP/1.1 200 OK"
+2026-09-08 06:08:12,364 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=DCOILWTICO&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:13,196 - yahoo_finance_collector - INFO - Successfully downloaded 6065 rows for TLT/1d
+2026-09-08 06:08:13,976 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] AMD: 2550 facts across 14 concepts, filed 2010-08-04..2026-08-05
+2026-09-08 06:08:15,662 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=TOTALSA&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:15,712 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=DEXUSEU&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:16,228 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=RRPONTSYD&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:16,661 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001551152-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:16,954 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for TLT/1h
+2026-09-08 06:08:17,103 - yahoo_finance_collector - INFO - ✅ Processed 6065 rows for TLT/1d (after NaT and non-finite removal)
+2026-09-08 06:08:17,174 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=AMD&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:17,230 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=AEP&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:17,618 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000004904-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:18,163 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=WTREGEN&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:18,237 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=WALCL&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:19,571 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for TLT/1h (after NaT and non-finite removal)
+2026-09-08 06:08:19,595 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for TSLA/15m
+2026-09-08 06:08:20,191 - httpx - INFO - HTTP Request: GET https://www.reddit.com/r/stocks/.rss "HTTP/1.1 200 OK"
+2026-09-08 06:08:20,435 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for TSLA/15m (after NaT and non-finite removal)
+2026-09-08 06:08:21,358 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=AMD&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$474.08', '$459.95', '$471.87']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:08:21,380 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=AMD&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:08:22,153 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=AEP&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$132.08', '$131.46', '$115.07']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:08:22,163 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=AEP&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:08:22,180 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=ICSA&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:22,186 - httpx - INFO - HTTP Request: GET https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/Clinical_Trial/daily/20150926/20260908 "HTTP/1.1 200 OK"
+2026-09-08 06:08:22,195 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=HOUST&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:22,202 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for COST/1d
+2026-09-08 06:08:23,116 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0001053507.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:23,929 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000004904.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:24,129 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for COST/1d (after NaT and non-finite removal)
+2026-09-08 06:08:24,533 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000318154.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:24,661 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=T10YIE&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:24,722 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=AMGN&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:24,722 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for COST/1h
+2026-09-08 06:08:24,731 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=AMT&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:24,791 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0001018724.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:24,865 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMGN -> CIK0000318154 'AMGEN INC'
+2026-09-08 06:08:25,792 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000004904-submissions-002.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:26,576 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for AAPL/15m
+2026-09-08 06:08:28,360 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for COST/1h (after NaT and non-finite removal)
+2026-09-08 06:08:28,368 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for AAPL/15m (after NaT and non-finite removal)
+2026-09-08 06:08:28,867 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=AMGN&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$414.05', '$402.54', '$402.16']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:08:28,867 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=AMGN&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:08:28,885 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000002488.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:28,890 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=NFCI&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:29,167 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000318154.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:29,644 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=T5YIFR&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:29,648 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for SPY/1d
+2026-09-08 06:08:31,346 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=AMT&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$177.00', '$178.89', '$172.89']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:08:31,377 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=AMT&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:08:31,638 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMD -> CIK0000002488 'ADVANCED MICRO DEVICES INC'
+2026-09-08 06:08:31,966 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=T5YIE&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:32,181 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for SPY/1h
+2026-09-08 06:08:32,191 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for SPY/1d (after NaT and non-finite removal)
+2026-09-08 06:08:33,028 - httpx - INFO - HTTP Request: GET https://publicreporting.cftc.gov/resource/6dca-aqww.json?%24select=report_date_as_yyyy_mm_dd%2Cmarket_and_exchange_names%2Cnoncomm_positions_long_all%2Cnoncomm_positions_short_all%2Copen_interest_all&%24where=market_and_exchange_names+in+%28%27NASDAQ-100+Consolidated+-+CHICAGO+MERCANTILE+EXCHANGE%27%29+AND+report_date_as_yyyy_mm_dd+%3E+%272016-09-20%27&%24order=report_date_as_yyyy_mm_dd+DESC&%24limit=520 "HTTP/1.1 200 OK"
+2026-09-08 06:08:33,556 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for BAC/15m
+2026-09-08 06:08:34,013 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for SPY/1h (after NaT and non-finite removal)
+2026-09-08 06:08:34,088 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for BAC/15m (after NaT and non-finite removal)
+2026-09-08 06:08:34,533 - yahoo_finance_collector - INFO - Successfully downloaded 2848 rows for GBTC/1d
+2026-09-08 06:08:35,573 - yahoo_finance_collector - INFO - ✅ Processed 2848 rows for GBTC/1d (after NaT and non-finite removal)
+2026-09-08 06:08:35,706 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for ECL/15m
+2026-09-08 06:08:35,874 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for ECL/15m (after NaT and non-finite removal)
+2026-09-08 06:08:36,837 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for GBTC/1h
+2026-09-08 06:08:36,965 - cftc_collector - INFO - Fetched 519 CFTC records for NASDAQ
+2026-09-08 06:08:37,146 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000318154-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:37,181 - httpx - INFO - HTTP Request: GET https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/Xlk/daily/20150926/20260908 "HTTP/1.1 200 OK"
+2026-09-08 06:08:38,417 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for GBTC/1h (after NaT and non-finite removal)
+2026-09-08 06:08:38,972 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] AMGN: 2991 facts across 15 concepts, filed 2009-08-10..2026-08-05
+2026-09-08 06:08:39,487 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] AMZN: 2985 facts across 13 concepts, filed 2009-07-24..2026-07-31
+2026-09-08 06:08:39,487 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001053507.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:39,721 - yahoo_finance_collector - INFO - Successfully downloaded 4072 rows for TSLA/1d
+2026-09-08 06:08:39,747 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=PCU334413334413&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:39,764 - cftc_collector - INFO - Fetching CFTC COT data for DOW (DJIA Consolidated - CHICAGO BOARD OF TRADE)
+2026-09-08 06:08:40,954 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for MMM/15m
+2026-09-08 06:08:41,012 - yahoo_finance_collector - INFO - ✅ Processed 4072 rows for TSLA/1d (after NaT and non-finite removal)
+2026-09-08 06:08:41,570 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for MMM/15m (after NaT and non-finite removal)
+2026-09-08 06:08:43,873 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] AMT: 2898 facts across 16 concepts, filed 2009-08-06..2026-04-28
+2026-09-08 06:08:43,887 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMT -> CIK0001053507 'AMERICAN TOWER CORP /MA/'
+2026-09-08 06:08:44,336 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] AEP: 2683 facts across 15 concepts, filed 2009-08-04..2026-05-05
+2026-09-08 06:08:44,349 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for TSLA/1h
+2026-09-08 06:08:44,360 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000002488-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:45,094 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for TSLA/1h (after NaT and non-finite removal)
+2026-09-08 06:08:45,243 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000318154-submissions-002.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:46,211 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001053507-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:46,216 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=BAMLH0A0HYM2&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:08:46,249 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001018724.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:46,403 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000002488-submissions-002.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:46,485 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for AAPL/1d
+2026-09-08 06:08:46,907 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=BA&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:47,203 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000915912.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:48,123 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for WFC/15m
+2026-09-08 06:08:50,997 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for WFC/15m (after NaT and non-finite removal)
+2026-09-08 06:08:51,251 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=BA&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$218.50', '$224.20', '$233.79']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:08:51,265 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=BA&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:08:51,363 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0001577552.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:51,822 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for AAPL/1d (after NaT and non-finite removal)
+2026-09-08 06:08:51,905 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=AMZN&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:52,022 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=APD&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:52,362 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for AAPL/1h
+2026-09-08 06:08:53,098 - httpx - INFO - HTTP Request: GET https://www.reddit.com/r/investing/.rss "HTTP/1.1 429 Too Many Requests"
+2026-09-08 06:08:53,204 - src.data.collectors.sec_filings_collector - INFO - [SEC] AMZN -> CIK0001018724 'AMAZON COM INC'
+2026-09-08 06:08:53,321 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for AAPL/1h (after NaT and non-finite removal)
+2026-09-08 06:08:53,398 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for ADBE/15m
+2026-09-08 06:08:53,769 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] BABA: 697 facts across 13 concepts, filed 2015-06-25..2026-05-20
+2026-09-08 06:08:54,526 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for ADBE/15m (after NaT and non-finite removal)
+2026-09-08 06:08:54,790 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=AMZN&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$259.01', '$259.06', '$259.01']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:08:54,790 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=AMZN&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:08:55,674 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=APD&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$303.76', '$284.21', '$294.96']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:08:55,680 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=APD&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:08:55,731 - HttpClientFactory - WARNING - HTTP 429 from https://www.reddit.com/r/investing/.rss; retrying in 0.53s (attempt 1/3)
+2026-09-08 06:08:56,174 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=AVB&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:08:56,197 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for BAC/1d
+2026-09-08 06:08:56,238 - httpx - INFO - HTTP Request: GET https://newsapi.org/v2/everything?q=%22AEP%22&language=en&pageSize=20&apiKey=93f709f413c843758c89327e8b99d182 "HTTP/1.1 200 OK"
+2026-09-08 06:08:56,264 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000915912.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:56,281 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000002969.json "HTTP/1.1 200 OK"
+2026-09-08 06:08:57,278 - src.data.collectors.sec_fundamentals_collector - INFO - [SEC-XBRL] AVB: 2212 facts across 12 concepts, filed 2009-08-10..2026-07-30
+2026-09-08 06:08:57,282 - src.data.collectors.sec_filings_collector - INFO - [SEC] APD -> CIK0000002969 'Air Products & Chemicals, Inc.'
+2026-09-08 06:08:57,544 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=CSUSHPINSA&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:57,770 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=WPU01&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:08:58,794 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for BAC/1d (after NaT and non-finite removal)
+2026-09-08 06:08:59,359 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for BAC/1h
+2026-09-08 06:09:00,092 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for BAC/1h (after NaT and non-finite removal)
+2026-09-08 06:09:00,217 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for SRE/15m
+2026-09-08 06:09:00,494 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for SRE/15m (after NaT and non-finite removal)
+2026-09-08 06:09:00,854 - src.data.collectors.sec_filings_collector - INFO - [SEC] AVB -> CIK0000915912 'AVALONBAY COMMUNITIES INC'
+2026-09-08 06:09:01,648 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=AVB&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$180.27', '$188.32', '$205.67']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:09:01,704 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=AVB&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:09:01,747 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000012927.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:01,825 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=WPU0561&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:09:01,927 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=BAMLC0A0CM&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:09:01,977 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=WPU101&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:09:02,639 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=SAHMREALTIME&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:09:03,238 - src.data.collectors.sec_filings_collector - INFO - [SEC] BA -> CIK0000012927 'BOEING CO'
+2026-09-08 06:09:03,366 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for ECL/1d
+2026-09-08 06:09:03,464 - httpx - INFO - HTTP Request: GET https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/Aapl/daily/20150926/20260908 "HTTP/1.1 404 Not Found"
+2026-09-08 06:09:03,469 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=VIXCLS&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:09:03,523 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=WPU055&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15&realtime_start=1776-07-04&realtime_end=9999-12-31 "HTTP/1.1 200 OK"
+2026-09-08 06:09:03,658 - httpx - INFO - HTTP Request: GET https://publicreporting.cftc.gov/resource/6dca-aqww.json?%24select=report_date_as_yyyy_mm_dd%2Cmarket_and_exchange_names%2Cnoncomm_positions_long_all%2Cnoncomm_positions_short_all%2Copen_interest_all&%24where=market_and_exchange_names+in+%28%27DJIA+Consolidated+-+CHICAGO+BOARD+OF+TRADE%27%29+AND+report_date_as_yyyy_mm_dd+%3E+%272016-09-20%27&%24order=report_date_as_yyyy_mm_dd+DESC&%24limit=520 "HTTP/1.1 200 OK"
+2026-09-08 06:09:04,374 - cftc_collector - INFO - Fetched 519 CFTC records for DOW
+2026-09-08 06:09:04,379 - httpx - INFO - HTTP Request: GET https://api.stlouisfed.org/fred/series/observations?series_id=T10Y3M&api_key=d0130f366562bbe3f7094cff7ff00be8&file_type=json&observation_start=1996-09-15 "HTTP/1.1 200 OK"
+2026-09-08 06:09:04,404 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000002969-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:04,474 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000915912-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:04,997 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000070858.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:07,150 - cftc_collector - INFO - Fetching CFTC COT data for GOLD (GOLD - COMMODITY EXCHANGE INC.)
+2026-09-08 06:09:07,377 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for ECL/1h
+2026-09-08 06:09:07,476 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for ECL/1d (after NaT and non-finite removal)
+2026-09-08 06:09:09,144 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for JD/15m
+2026-09-08 06:09:09,372 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for ECL/1h (after NaT and non-finite removal)
+2026-09-08 06:09:09,797 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for JD/15m (after NaT and non-finite removal)
+2026-09-08 06:09:11,398 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000012927-submissions-001.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:11,424 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000012927.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:11,846 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=BABA&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:09:11,871 - httpx - INFO - HTTP Request: GET https://data.sec.gov/api/xbrl/companyfacts/CIK0000002969.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:11,987 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for MMM/1d
+2026-09-08 06:09:12,338 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=BHP&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:09:12,364 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=BAC&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:09:14,520 - insider_collector - ERROR - insider: 11 of 11 rows at http://openinsider.com/screener?s=BABA&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$14.47', '$14.29', '$14.24']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:09:14,552 - insider_collector - WARNING - Found 11 table rows at http://openinsider.com/screener?s=BABA&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:09:14,684 - httpx - INFO - HTTP Request: GET https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/NVDA/daily/20150926/20260908 "HTTP/1.1 200 OK"
+2026-09-08 06:09:15,418 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for MMM/1h
+2026-09-08 06:09:16,699 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for MMM/1d (after NaT and non-finite removal)
+2026-09-08 06:09:17,544 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for MMM/1h (after NaT and non-finite removal)
+2026-09-08 06:09:17,604 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for JNJ/15m
+2026-09-08 06:09:17,598 - insider_collector - ERROR - insider: 1 of 1 rows at http://openinsider.com/screener?s=BHP&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$46.57']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:09:17,638 - insider_collector - WARNING - Found 1 table rows at http://openinsider.com/screener?s=BHP&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:09:19,787 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for JNJ/15m (after NaT and non-finite removal)
+2026-09-08 06:09:19,979 - insider_collector - ERROR - insider: 100 of 100 rows at http://openinsider.com/screener?s=BAC&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$53.01', '$46.94', '$49.82']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:09:19,979 - insider_collector - WARNING - Found 100 table rows at http://openinsider.com/screener?s=BAC&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:09:20,784 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for WFC/1d
+2026-09-08 06:09:20,834 - httpx - INFO - HTTP Request: GET http://openinsider.com/screener?s=BIDU&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 "HTTP/1.1 200 OK"
+2026-09-08 06:09:21,026 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0000070858.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:21,250 - httpx - INFO - HTTP Request: GET https://data.sec.gov/submissions/CIK0001577552.json "HTTP/1.1 200 OK"
+2026-09-08 06:09:21,617 - insider_collector - ERROR - insider: 1 of 1 rows at http://openinsider.com/screener?s=BIDU&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 carry an unrecognised trade_type (100%) and were dropped rather than stored shifted. Samples: ['$16.32']. Columns are addressed by fixed index, so this means the page layout moved and column_mapping is out of sync.
+2026-09-08 06:09:21,624 - insider_collector - WARNING - Found 1 table rows at http://openinsider.com/screener?s=BIDU&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1 but mapped zero trades (need >= 13 cells per row). column_mapping is probably out of sync with the page layout.
+2026-09-08 06:09:22,967 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for WFC/1d (after NaT and non-finite removal)
+2026-09-08 06:09:23,494 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for WFC/1h
+2026-09-08 06:09:25,948 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for WFC/1h (after NaT and non-finite removal)
+2026-09-08 06:09:26,021 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for GILD/15m
+2026-09-08 06:09:26,482 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for GILD/15m (after NaT and non-finite removal)
+2026-09-08 06:09:28,671 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for ADBE/1d
+2026-09-08 06:09:30,834 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for ADBE/1h
+2026-09-08 06:09:30,916 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for ADBE/1d (after NaT and non-finite removal)
+2026-09-08 06:09:31,564 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for ADBE/1h (after NaT and non-finite removal)
+2026-09-08 06:09:31,954 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for DIA/15m
+2026-09-08 06:09:32,178 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for DIA/15m (after NaT and non-finite removal)
+2026-09-08 06:09:36,316 - yahoo_finance_collector - INFO - Successfully downloaded 7091 rows for SRE/1d
+2026-09-08 06:09:37,896 - yahoo_finance_collector - INFO - ✅ Processed 7091 rows for SRE/1d (after NaT and non-finite removal)
+2026-09-08 06:09:38,364 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for SRE/1h
+2026-09-08 06:09:39,176 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for SRE/1h (after NaT and non-finite removal)
+2026-09-08 06:09:39,321 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for ORCL/15m
+2026-09-08 06:09:39,521 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for ORCL/15m (after NaT and non-finite removal)
+2026-09-08 06:09:40,333 - yahoo_finance_collector - INFO - Successfully downloaded 3091 rows for JD/1d
+2026-09-08 06:09:40,940 - yahoo_finance_collector - INFO - ✅ Processed 3091 rows for JD/1d (after NaT and non-finite removal)
+2026-09-08 06:09:41,578 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for JD/1h
+2026-09-08 06:09:42,482 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for JD/1h (after NaT and non-finite removal)
+2026-09-08 06:09:43,664 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for MCD/15m
+2026-09-08 06:09:44,243 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for MCD/15m (after NaT and non-finite removal)
+2026-09-08 06:09:46,620 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for JNJ/1d
+2026-09-08 06:09:48,658 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for JNJ/1d (after NaT and non-finite removal)
+2026-09-08 06:09:49,680 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for JNJ/1h
+2026-09-08 06:09:50,447 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for JNJ/1h (after NaT and non-finite removal)
+2026-09-08 06:09:50,747 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for VZ/15m
+2026-09-08 06:09:51,010 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for VZ/15m (after NaT and non-finite removal)
+2026-09-08 06:09:53,038 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for GILD/1d
+2026-09-08 06:09:54,921 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for GILD/1h
+2026-09-08 06:09:55,111 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for GILD/1d (after NaT and non-finite removal)
+2026-09-08 06:09:56,310 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for GILD/1h (after NaT and non-finite removal)
+2026-09-08 06:09:56,661 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for XLK/15m
+2026-09-08 06:09:56,828 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for XLK/15m (after NaT and non-finite removal)
+2026-09-08 06:10:04,911 - yahoo_finance_collector - INFO - Successfully downloaded 7202 rows for DIA/1d
+2026-09-08 06:10:08,298 - yahoo_finance_collector - INFO - ✅ Processed 7202 rows for DIA/1d (after NaT and non-finite removal)
+2026-09-08 06:10:08,595 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for DIA/1h
+2026-09-08 06:10:09,600 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for DIA/1h (after NaT and non-finite removal)
+2026-09-08 06:10:09,725 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for BIDU/15m
+2026-09-08 06:10:10,004 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for BIDU/15m (after NaT and non-finite removal)
+2026-09-08 06:10:11,671 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for ORCL/1d
+2026-09-08 06:10:13,618 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for ORCL/1h
+2026-09-08 06:10:13,738 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for ORCL/1d (after NaT and non-finite removal)
+2026-09-08 06:10:15,392 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for ORCL/1h (after NaT and non-finite removal)
+2026-09-08 06:10:15,819 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for NKE/15m
+2026-09-08 06:10:16,326 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for NKE/15m (after NaT and non-finite removal)
+2026-09-08 06:10:18,709 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for MCD/1d
+2026-09-08 06:10:20,836 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for MCD/1d (after NaT and non-finite removal)
+2026-09-08 06:10:21,332 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for MCD/1h
+2026-09-08 06:10:21,920 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for MCD/1h (after NaT and non-finite removal)
+2026-09-08 06:10:22,126 - yahoo_finance_collector - INFO - Successfully downloaded 546 rows for AVB/15m
+2026-09-08 06:10:22,258 - yahoo_finance_collector - INFO - ✅ Processed 546 rows for AVB/15m (after NaT and non-finite removal)
+2026-09-08 06:10:24,376 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for VZ/1d
+2026-09-08 06:10:25,610 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for VZ/1d (after NaT and non-finite removal)
+2026-09-08 06:10:26,556 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for VZ/1h
+2026-09-08 06:10:27,339 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for VZ/1h (after NaT and non-finite removal)
+2026-09-08 06:10:27,608 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for GLD/15m
+2026-09-08 06:10:27,836 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for GLD/15m (after NaT and non-finite removal)
+2026-09-08 06:10:29,974 - yahoo_finance_collector - INFO - Successfully downloaded 6968 rows for XLK/1d
+2026-09-08 06:10:30,885 - yahoo_finance_collector - INFO - ✅ Processed 6968 rows for XLK/1d (after NaT and non-finite removal)
+2026-09-08 06:10:32,794 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for XLK/1h
+2026-09-08 06:10:35,367 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for PSA/15m
+2026-09-08 06:10:35,559 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for XLK/1h (after NaT and non-finite removal)
+2026-09-08 06:10:36,089 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for PSA/15m (after NaT and non-finite removal)
+2026-09-08 06:10:38,571 - yahoo_finance_collector - INFO - Successfully downloaded 5304 rows for BIDU/1d
+2026-09-08 06:10:40,917 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for BIDU/1h
+2026-09-08 06:10:40,917 - yahoo_finance_collector - INFO - ✅ Processed 5304 rows for BIDU/1d (after NaT and non-finite removal)
+2026-09-08 06:10:45,672 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for BIDU/1h (after NaT and non-finite removal)
+2026-09-08 06:10:45,674 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for BA/15m
+2026-09-08 06:10:46,654 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for BA/15m (after NaT and non-finite removal)
+2026-09-08 06:10:48,208 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for NKE/1d
+2026-09-08 06:10:50,575 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for NKE/1d (after NaT and non-finite removal)
+2026-09-08 06:10:50,857 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for NKE/1h
+2026-09-08 06:10:52,074 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for NKE/1h (after NaT and non-finite removal)
+2026-09-08 06:10:52,317 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for GE/15m
+2026-09-08 06:10:52,724 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for GE/15m (after NaT and non-finite removal)
+2026-09-08 06:10:53,066 - yahoo_finance_collector - INFO - Successfully downloaded 27 rows for AVB/1d
+2026-09-08 06:10:53,293 - yahoo_finance_collector - INFO - ✅ Processed 27 rows for AVB/1d (after NaT and non-finite removal)
+2026-09-08 06:10:54,028 - yahoo_finance_collector - INFO - Successfully downloaded 147 rows for AVB/1h
+2026-09-08 06:10:54,306 - yahoo_finance_collector - INFO - ✅ Processed 147 rows for AVB/1h (after NaT and non-finite removal)
+2026-09-08 06:10:54,987 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for RIOT/15m
+2026-09-08 06:10:55,392 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for RIOT/15m (after NaT and non-finite removal)
+2026-09-08 06:10:56,510 - yahoo_finance_collector - INFO - Successfully downloaded 5483 rows for GLD/1d
+2026-09-08 06:10:58,626 - yahoo_finance_collector - INFO - ✅ Processed 5483 rows for GLD/1d (after NaT and non-finite removal)
+2026-09-08 06:10:59,116 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for GLD/1h
+2026-09-08 06:11:00,645 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for GLD/1h (after NaT and non-finite removal)
+2026-09-08 06:11:00,651 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for XLV/15m
+2026-09-08 06:11:01,330 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for XLV/15m (after NaT and non-finite removal)
+2026-09-08 06:11:02,712 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for PSA/1d
+2026-09-08 06:11:05,171 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for PSA/1d (after NaT and non-finite removal)
+2026-09-08 06:11:05,781 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for PSA/1h
+2026-09-08 06:11:07,489 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for PSA/1h (after NaT and non-finite removal)
+2026-09-08 06:11:07,784 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for EXC/15m
+2026-09-08 06:11:08,356 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for EXC/15m (after NaT and non-finite removal)
+2026-09-08 06:11:09,818 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for BA/1d
+2026-09-08 06:11:12,818 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for BA/1d (after NaT and non-finite removal)
+2026-09-08 06:11:13,489 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for BA/1h
+2026-09-08 06:11:14,888 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for BA/1h (after NaT and non-finite removal)
+2026-09-08 06:11:15,197 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for CSCO/15m
+2026-09-08 06:11:15,893 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for CSCO/15m (after NaT and non-finite removal)
+2026-09-08 06:11:17,752 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for GE/1d
+2026-09-08 06:11:19,891 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for GE/1d (after NaT and non-finite removal)
+2026-09-08 06:11:20,175 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for GE/1h
+2026-09-08 06:11:20,877 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for GE/1h (after NaT and non-finite removal)
+2026-09-08 06:11:21,353 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for MRK/15m
+2026-09-08 06:11:22,034 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for MRK/15m (after NaT and non-finite removal)
+2026-09-08 06:11:23,123 - yahoo_finance_collector - INFO - Successfully downloaded 2624 rows for RIOT/1d
+2026-09-08 06:11:24,802 - yahoo_finance_collector - INFO - ✅ Processed 2624 rows for RIOT/1d (after NaT and non-finite removal)
+2026-09-08 06:11:25,470 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for RIOT/1h
+2026-09-08 06:11:26,273 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for RIOT/1h (after NaT and non-finite removal)
+2026-09-08 06:11:26,524 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for META/15m
+2026-09-08 06:11:27,141 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for META/15m (after NaT and non-finite removal)
+2026-09-08 06:11:29,042 - yahoo_finance_collector - INFO - Successfully downloaded 6968 rows for XLV/1d
+2026-09-08 06:11:31,844 - yahoo_finance_collector - INFO - ✅ Processed 6968 rows for XLV/1d (after NaT and non-finite removal)
+2026-09-08 06:11:32,324 - yahoo_finance_collector - INFO - Successfully downloaded 3473 rows for XLV/1h
+2026-09-08 06:11:32,888 - yahoo_finance_collector - INFO - ✅ Processed 3473 rows for XLV/1h (after NaT and non-finite removal)
+2026-09-08 06:11:33,165 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for BABA/15m
+2026-09-08 06:11:33,433 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for BABA/15m (after NaT and non-finite removal)
+2026-09-08 06:11:35,988 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for EXC/1d
+2026-09-08 06:11:38,941 - yahoo_finance_collector - INFO - ✅ Processed 7541 rows for EXC/1d (after NaT and non-finite removal)
+2026-09-08 06:11:39,287 - yahoo_finance_collector - INFO - Successfully downloaded 3477 rows for EXC/1h
+2026-09-08 06:11:39,871 - yahoo_finance_collector - INFO - ✅ Processed 3477 rows for EXC/1h (after NaT and non-finite removal)
+2026-09-08 06:11:40,254 - yahoo_finance_collector - INFO - Successfully downloaded 1040 rows for EBAY/15m
+2026-09-08 06:11:40,556 - yahoo_finance_collector - INFO - ✅ Processed 1040 rows for EBAY/15m (after NaT and non-finite removal)
+2026-09-08 06:11:42,668 - yahoo_finance_collector - INFO - Successfully downloaded 7541 rows for CSCO/1d

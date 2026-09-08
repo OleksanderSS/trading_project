@@ -42,8 +42,37 @@ class TransactionCostModel:
         # and 74% on a $25,000 one -- and it was declared nowhere. Kept at 0.1
         # so no number changes; declared in the config so the number is one
         # somebody can see and argue with.
-        self.market_impact_coefficient = self.config.get(
-            'market_impact_coefficient', 0.1)
+        # `market_impact_coefficient` stood here at 0.1 and was the dominant
+        # cost term at any real size. #290 left "0.1 or the 0.0001 in the
+        # config" open on purpose, because the answer is empirical and
+        # inventing one is the defect this register is about. Measured
+        # 2026-09-08 (`what_market_impact_coefficient_do_our_names_imply.py`):
+        # NEITHER.
+        #
+        # The formula below is the square-root law, whose standard form is
+        #
+        #     impact_fraction ~= Y * sigma_daily * sqrt(participation)
+        #
+        # and this engine's version had no sigma in it, so C was standing in
+        # for one. Our panel's median daily return sd is 0.0202, which makes
+        # C = 0.1 an implied Y of 4.95 and C = 0.0001 an implied Y of 0.005 --
+        # five times too expensive and two hundred times too cheap.
+        #
+        # So sigma goes where the law puts it. The function already RECEIVES a
+        # per-name volatility and already scales its slippage by it; using it
+        # in one term and not the other was the whole gap. That removes the
+        # unmeasurable constant instead of retuning it: the coefficient left
+        # over is dimensionless and O(1).
+        #
+        # WHAT IS MEASURED AND WHAT IS BORROWED, because they are not the same
+        # and the difference decides how much this can be trusted: sigma =
+        # 0.0202 is measured on this project's own panel. "Y is O(1)" is a
+        # convention from the square-root-law literature, imported and
+        # labelled, not measured here. Y = 1.0 is its conservative end -- it
+        # keeps costs at the high side of the plausible range, which is the
+        # direction to err in. What would actually measure Y is our own fills,
+        # which paper trading will eventually produce.
+        self.market_impact_y = self.config.get('market_impact_y', 1.0)
         self.slippage_pct = self.config.get('slippage_pct', 0.001)
 
     def calculate_execution_costs(self, trade_value: float, daily_volume:
@@ -64,8 +93,10 @@ class TransactionCostModel:
         if order_size_pct is None:
             order_size_pct = (trade_value_abs / daily_volume if
                 daily_volume > 0 else 0.01)
-        market_impact = (trade_value_abs * self.market_impact_coefficient *
-            np.sqrt(order_size_pct))
+        # The square-root law, with the volatility this function is already
+        # given rather than a constant standing in for it. See __init__.
+        market_impact = (trade_value_abs * self.market_impact_y *
+            float(volatility) * np.sqrt(order_size_pct))
         slippage = trade_value_abs * self.slippage_pct * (1 + volatility * 10)
         total_cost = commission + spread_cost + market_impact + slippage
         return {'commission': float(commission), 'spread': float(
