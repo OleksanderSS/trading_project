@@ -79,8 +79,31 @@ strategy:
     # MEDIAN worst drawdown near 20% over 27 years. Twenty percent down is the
     # normal case, not the alarm.
     # ---------------------------------------------------------------------
-    stop_loss_pct: 0.10              # read by VirtualPortfolio
-    take_profit_pct: 0.20            # read by VirtualPortfolio
+    # These said "# read by VirtualPortfolio" until 2026-09-08. True, and
+    # misleading in the way that costs the most: VirtualPortfolio read them
+    # into attributes and used them nowhere. It has no loop that compares a
+    # price to a level -- it executes buy_stock and sell_stock and is told when.
+    #
+    # So NOTHING IN THE PAPER PORTFOLIO STOPS OUT AT 10%. Whoever set these
+    # numbers was entitled to believe otherwise, which is why they are still
+    # here, saying so, instead of quietly deleted.
+    #
+    # Where exit levels DO come from, and note it is a different number:
+    # `recommendation_engine` computes `var_95 * stop_loss_multiplier`, and
+    # `portfolio_manager` checks the level stored on the position itself.
+    #
+    # Wiring these instead would be choosing WHICH mechanism governs exits --
+    # a design decision, not plumbing, and one for the owner.
+    #
+    # NOT listed in tests/known_unread_risk_settings.txt, and the reason is a
+    # limit of that mechanism worth knowing: it searches src/ by key NAME, so
+    # the comment in virtual_portfolio.py that EXPLAINS these are dead is
+    # itself enough to make them look read. Its own docstring already says a
+    # search by name cannot tell a dead assignment from a use. The record
+    # therefore lives here and in that comment, where a person will read it,
+    # rather than in a registry the search would immediately call stale.
+    stop_loss_pct: 0.10              # DECLARED, NOT APPLIED -- see above
+    take_profit_pct: 0.20            # DECLARED, NOT APPLIED -- see above
 
     # Adaptive position sizing (src/algorithms/adaptive_position_sizer.py)
     position_sizer:

@@ -49,8 +49,25 @@ class VirtualPortfolio:
         self.max_total_risk = float(
             risk_config.get('max_total_risk_pct',
                             risk_config.get('max_total_risk', 0.3)))
-        self.stop_loss_pct = risk_config.get('stop_loss_pct', 0.05)
-        self.take_profit_pct = risk_config.get('take_profit_pct', 0.1)
+        # `stop_loss_pct` and `take_profit_pct` were read into attributes here
+        # until 2026-09-08 and used by NOTHING, in a class whose config comment
+        # said "read by VirtualPortfolio". That was true and misleading: read
+        # is not applied.
+        #
+        # This class does not decide when to exit. It has `buy_stock` and
+        # `sell_stock(ticker, quantity, price, reason)` and executes what it is
+        # told; there is no loop here that compares a price to a level. The
+        # levels that do exist are computed elsewhere and from a different
+        # number -- `recommendation_engine` derives them as
+        # `var_95 * stop_loss_multiplier`, and `portfolio_manager` checks the
+        # level stored ON the position. So a 5% here would have competed with a
+        # VaR-derived one rather than adding a control.
+        #
+        # Removed rather than wired, on the `daily_max_years` precedent: wiring
+        # would be a decision about WHICH mechanism governs exits, which is a
+        # design question and not plumbing. What matters for the owner is the
+        # plain fact this makes visible -- the paper portfolio applies no stop
+        # of its own.
         cost_config = self.config_manager.get(
             'backtesting.transaction_costs', {})
         self.transaction_cost_model = TransactionCostModel(cost_config)
