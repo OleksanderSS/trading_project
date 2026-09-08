@@ -18,9 +18,14 @@ import pytest
 
 from tests.contracts._dead_config_scan import scan, scan_never_read
 
-#: Measured 2026-08-22, after `attention_window` was removed and the VIX period
-#: was wired. Lower this when findings are fixed; never raise it.
-CEILING = 21
+#: Measured 2026-09-08: 21 -> 16, after the three that were on the TRADING path
+#: were removed -- VirtualPortfolio's stop_loss_pct and take_profit_pct (read
+#: into attributes, applied nowhere, under a config comment saying "read by
+#: VirtualPortfolio"), and TradingExecutionStage's exposure_monitor
+#: (constructed, configured, asked nothing, labelled "✅ Integrated"). The 16
+#: that remain are monitoring and analytics modules off the pipeline's path.
+#: Lower this when findings are fixed; never raise it.
+CEILING = 16
 
 #: Where the batch is actually built. A setting that decides nothing here is a
 #: window, a threshold or a limit that an operator believes they control and
