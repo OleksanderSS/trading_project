@@ -78,10 +78,18 @@ def test_nothing_on_the_data_path_is_decorative(findings):
 # data-path rule above cannot be applied to them yet.
 # ---------------------------------------------------------------------------
 
-#: Measured 2026-09-07, after the seventeen cache duplicates, the stale yahoo
-#: limit and the six huggingface keys were removed (39 -> 21 -> 15). Lower this
-#: when keys are wired or deleted; never raise it.
-UNREAD_CEILING = 15
+#: Measured 2026-09-08. 39 -> 21 -> 15 -> 9, as each batch was read and either
+#: wired or deleted. The last pass took out the whole inert Investing.com block
+#: under economic_calendar (the COLLECTOR's own docstring already said it was
+#: dead, including a `days_ahead: 30` describing a horizon the ForexFactory
+#: feed does not have and a `time_zone` that would have mattered), reddit's
+#: `use_synthetic_data` (checked first: the collector has no synthetic path at
+#: all, so the flag named a mode that does not exist), and both `max_terms`,
+#: whose real limiter is NewsAPI's daily request budget.
+#:
+#: The 9 that remain are bigquery (4) and free_google_trends' delay knobs (5).
+#: Lower this when keys are wired or deleted; never raise it.
+UNREAD_CEILING = 9
 
 
 @pytest.fixture(scope="module")

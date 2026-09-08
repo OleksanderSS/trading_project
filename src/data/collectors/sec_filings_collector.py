@@ -207,6 +207,42 @@ class SECFilingsCollector(BaseCollector):
         logger.info(f"[SEC] Successfully persisted {len(new_df)} new filings.")
         return new_df
 
+    @staticmethod
+    def _block_to_filings(
+        block: dict[str, Any],
+        ticker: str,
+        cik: str,
+        start_date: datetime,
+    ) -> list[dict[str, Any]]:
+        """One filings block -> rows, filtered to the window.
+
+        `filings.recent` and each file under `filings.files` have the SAME
+        shape -- parallel arrays keyed by field name, the older batch being
+        that block as the whole document. So they share this, rather than the
+        older path getting a second copy of the date filter and the list
+        serialisation to drift away from.
+        """
+        if not block or "accessionNumber" not in block:
+            return []
+        keys = list(block.keys())
+        rows: list[dict[str, Any]] = []
+        for index in range(len(block["accessionNumber"])):
+            filing = {key: block[key][index] for key in keys}
+            try:
+                filed = datetime.strptime(filing["filingDate"], "%Y-%m-%d")
+            except (ValueError, TypeError, KeyError):
+                continue
+            if filed < start_date:
+                continue
+            filing["ticker"] = ticker
+            filing["cik"] = cik
+            # Serialize sub-arrays to JSON string equivalents
+            for key, value in filing.items():
+                if isinstance(value, list):
+                    filing[key] = json.dumps(value)
+            rows.append(filing)
+        return rows
+
     async def _fetch_filings_for_cik(
         self,
         ticker: str,
@@ -239,24 +275,49 @@ class SECFilingsCollector(BaseCollector):
             if not recent or "accessionNumber" not in recent:
                 return []
 
-            keys = list(recent.keys())
-            count = len(recent["accessionNumber"])
-            filings_list = [{k: recent[k][i] for k in keys} for i in range(count)]
+            filtered = self._block_to_filings(recent, ticker, cik, start_date)
 
-            filtered = []
-            for filing in filings_list:
-                try:
-                    filing_date = datetime.strptime(filing["filingDate"], "%Y-%m-%d")
-                    if filing_date >= start_date:
-                        filing["ticker"] = ticker
-                        filing["cik"] = cik
-                        # Serialize sub-arrays to JSON string equivalents
-                        for k, v in filing.items():
-                            if isinstance(v, list):
-                                filing[k] = json.dumps(v)
-                        filtered.append(filing)
-                except (ValueError, TypeError):
+            # The older batches, which this collector did not read until
+            # 2026-09-08. `recent` is capped at 1000 filings, so how far back
+            # it reaches is decided by how OFTEN a company files, and the
+            # result was a coverage curve that made the data unusable for
+            # measurement rather than merely thin:
+            #
+            #   1997-2012   11 to 157 filings a year, from 2 to 6 tickers
+            #   2019-2023   5,894 to 9,036 a year, from 70 to 94 tickers
+            #
+            # A filing-based feature measured over the explorable period would
+            # therefore be a statement about the last five years and about the
+            # names that file most, wearing the label of a thirty-year result.
+            #
+            # `filings.files` carries the rest, free, in the same shape: for
+            # AAPL one batch of 1,246 reaching 1994-01-26, for KO and XOM two
+            # each reaching 1994 and holding 2,301 and 2,554. It is the same
+            # host and the same parser; only the URL differs.
+            for batch in data.get("filings", {}).get("files", []) or []:
+                name = batch.get("name")
+                if not name:
                     continue
+                # Skip a batch that ends before the window opens: its URL costs
+                # a request and its contents are all discarded.
+                if batch.get("filingTo") and batch["filingTo"] < start_date.strftime("%Y-%m-%d"):
+                    continue
+                # Derived from the configured template, not written again: the
+                # host lives in `submissions_url_template` and a second copy of
+                # it here is how one of two URLs gets updated.
+                base = url.rsplit("/", 1)[0]
+                try:
+                    older = await client.get(f"{base}/{name}", headers=headers)
+                    older.raise_for_status()
+                    filtered += self._block_to_filings(
+                        older.json(), ticker, cik, start_date)
+                except Exception as exc:  # noqa: BLE001 - one batch, not the run
+                    # Fails open per batch: an older batch that cannot be read
+                    # loses history, it does not lose the ticker.
+                    logger.warning(
+                        "[SEC] %s: older batch %s could not be read (%s); "
+                        "its filings are missing from this run.",
+                        ticker, name, exc)
 
             return filtered
 
