@@ -78,18 +78,24 @@ def test_nothing_on_the_data_path_is_decorative(findings):
 # data-path rule above cannot be applied to them yet.
 # ---------------------------------------------------------------------------
 
-#: Measured 2026-09-08. 39 -> 21 -> 15 -> 9, as each batch was read and either
-#: wired or deleted. The last pass took out the whole inert Investing.com block
-#: under economic_calendar (the COLLECTOR's own docstring already said it was
-#: dead, including a `days_ahead: 30` describing a horizon the ForexFactory
-#: feed does not have and a `time_zone` that would have mattered), reddit's
-#: `use_synthetic_data` (checked first: the collector has no synthetic path at
-#: all, so the flag named a mode that does not exist), and both `max_terms`,
-#: whose real limiter is NewsAPI's daily request budget.
+#: Measured 2026-09-08: 39 -> 21 -> 15 -> 9 -> ZERO, as each batch was read and
+#: either wired or deleted. Every one of them was a promise to whoever edits the
+#: file that something would change, and four were the same shape -- one number
+#: written in two places, with the config copy inert:
 #:
-#: The 9 that remain are bigquery (4) and free_google_trends' delay knobs (5).
-#: Lower this when keys are wired or deleted; never raise it.
-UNREAD_CEILING = 9
+#:   cache_duration_minutes  in 17 blocks, beside the cache_ttl that runs.
+#:                           NewsAPI's two disagreed by 24x
+#:   intraday_max_days: 60   the exact figure the yahoo collector had replaced
+#:                           with a per-interval table, after a flat 60 threw
+#:                           away 92% of the hourly history
+#:   huggingface.max_rows    10,000 declared while 999,396 rows arrived
+#:   bigquery max_days /     90 and 10000, while the SQL beside them already
+#:   max_rows                said INTERVAL 90 DAY and LIMIT 10000
+#:
+#: A ceiling of zero is strict on purpose, and there are two legitimate ways
+#: past it: read the value where it belongs, or delete the key. Raising this
+#: number is not one of them.
+UNREAD_CEILING = 0
 
 
 @pytest.fixture(scope="module")

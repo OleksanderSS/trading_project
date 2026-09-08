@@ -18,22 +18,29 @@ collectors:
     table_name: aaii_sentiment_data
     type: aaii_sentiment
   bigquery:
-    credentials_path: D:/trading_project/credentials/gcp_credentials.json
+    # Four keys stood here until 2026-09-08, read by nothing, and two of them
+    # were the "one number in two places" shape that this file has now produced
+    # four times:
+    #
+    #   max_days: 90     the query below already says INTERVAL 90 DAY
+    #   max_rows: 10000  the query below already says LIMIT 10000
+    #
+    # The QUERY is what runs. Editing either key would have changed nothing
+    # while looking like it changed the window and the cap.
+    #
+    #   credentials_path   the connector authenticates through the Google
+    #                      client's own discovery (GOOGLE_APPLICATION_
+    #                      CREDENTIALS), and never read this path
+    #   essential_columns  the same seven names the query already selects
+    #
+    # The collector reads `query` and `project_id`, and nothing else of its
+    # own. It is disabled, so none of this was doing harm -- but a disabled
+    # collector is exactly where a dead key survives longest.
     critical: false
     enabled: false
-    essential_columns:
-    - date
-    - ticker
-    - close
-    - volume
-    - high
-    - low
-    - open
     hash_keys:
     - date
     - ticker
-    max_days: 90
-    max_rows: 10000
     project_id: seismic-vista-470410-i5
     query: "SELECT\n  date,\n  ticker,\n  close,\n  volume,\n  high,\n  low,\n  open\n\
       FROM `seismic-vista-470410-i5.market_data.daily_prices`\nWHERE date >= DATE_SUB(CURRENT_DATE(),\
@@ -217,18 +224,21 @@ collectors:
     table_name: fred_data
     type: fred
   free_google_trends:
-    base_delay: 10
-    batch_delay_max: 75
-    batch_delay_min: 45
+    # Five pacing knobs stood here until 2026-09-08 and nothing read any of
+    # them: base_delay, batch_delay_min, batch_delay_max, max_delay,
+    # min_batch_size. What actually paces this collector is
+    # `request_delay_seconds` below, slept between batches of `batch_size`.
+    #
+    # This is the operational form of the same defect: an operator who had just
+    # been blocked by Google and raised batch_delay_min from 45 to 120 would
+    # have changed nothing, and would have believed they had slowed down.
     batch_size: 4
     cache_ttl: 7200
     critical: false
     enabled: false
     geo: US
     language: en-US
-    max_delay: 300
     max_retries: 5
-    min_batch_size: 1
     request_delay_seconds: 5
     table_name: google_trends_data
     timeframe: today 1-m
