@@ -275,6 +275,144 @@ def scan_never_read() -> list[UnreadKey]:
     return sorted(findings, key=str)
 
 
+# ---------------------------------------------------------------------------
+# The MIRROR, added 2026-09-08.
+#
+# The two passes above find a config key with no reader. This one finds the
+# opposite: a reader with no config key. `configs.get('market_impact_
+# coefficient', 0.1)` where no yaml declares that name means the 0.1 wins every
+# time, in every block -- and that particular 0.1 drove 74% of the cost of a
+# $25,000 order while being written down nowhere an operator would look
+# (#290, R66).
+#
+# #288 left this unautomated with a stated reason: "there is no reliable static
+# way to determine which config.get(key) reads THIS block", and two attempts
+# missed and over-reached in opposite directions. That reason is sound and this
+# does not argue with it -- it takes the SUBSET where the question does not
+# arise. If the key appears in no yaml at all, it does not matter which block
+# the call reads: none of them declares it, so the default always governs.
+#
+# Numeric defaults only. A string or dict default is usually a name or a shape;
+# a number is a policy somebody would want to set.
+# ---------------------------------------------------------------------------
+
+#: What the object being `.get()` from must look like. Wider than _CONFIG_HINTS
+#: above because this pass reads the call site, not an assignment.
+_GETTER_HINTS = ("config", "configs", "params", "settings", "opts", "cfg")
+
+
+@dataclass(frozen=True)
+class UndeclaredDefault:
+    path: str
+    line: int
+    key: str
+    default: float
+
+    def __str__(self) -> str:
+        return f"{self.path}:{self.line} {self.key} = {self.default}"
+
+
+@lru_cache(maxsize=1)
+def _declared_yaml_keys() -> frozenset[str]:
+    text = "\n".join(
+        path.read_text(encoding="utf-8", errors="ignore")
+        for path in (PROJECT_ROOT / "src" / "config").glob("*.yaml"))
+    return frozenset(
+        re.findall(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:", text, re.M))
+
+
+def _numeric_constant(node: ast.AST) -> float | None:
+    negative = False
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        node, negative = node.operand, True
+    if not (isinstance(node, ast.Constant)
+            and isinstance(node.value, (int, float))
+            and not isinstance(node.value, bool)):
+        return None
+    return -node.value if negative else node.value
+
+
+def scan_undeclared_defaults() -> list[UndeclaredDefault]:
+    """Numeric `.get(key, number)` defaults whose key no yaml declares.
+
+    Two shapes are excluded, and both were found by reading the first run's
+    output rather than trusting its count:
+
+    A NESTED FALLBACK. `get('max_position_size_pct', get('max_position_size',
+    0.1))` reads a DECLARED key and falls back to an old name. The inner call
+    is not what governs, and flagging it would report the very pattern #288
+    introduced deliberately so an existing deployment does not lose its
+    setting. A `.get` sitting in the default slot of another `.get` is skipped.
+
+    A DOTTED PATH. `config.get('strategy.risk_management.anomaly_threshold',
+    0.8)` asks a config manager to walk a path; no yaml line is ever literally
+    that string. The last segment is what a yaml declares, so that is what is
+    checked.
+    """
+    declared = _declared_yaml_keys()
+    findings: list[UndeclaredDefault] = []
+    for path, text in _sources():
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            continue
+        relative = Path(path).relative_to(PROJECT_ROOT).as_posix()
+
+        # Every `.get` that is the default of another `.get`: a fallback.
+        fallbacks = {
+            id(inner)
+            for outer in ast.walk(tree)
+            if isinstance(outer, ast.Call) and len(outer.args) == 2
+            for inner in [outer.args[1]]
+            if isinstance(inner, ast.Call)
+        }
+        # And every `.get` in the else-branch of `if '<declared key>' in
+        # config:`. Same fallback in statement form -- the engine's spread is
+        # written that way, reading a declared `spread_pct` and dropping to
+        # `spread_bps` only when it is absent.
+        for branch in ast.walk(tree):
+            if not isinstance(branch, ast.If):
+                continue
+            test = branch.test
+            if not (isinstance(test, ast.Compare)
+                    and len(test.ops) == 1
+                    and isinstance(test.ops[0], ast.In)
+                    and isinstance(test.left, ast.Constant)
+                    and isinstance(test.left.value, str)
+                    and test.left.value.rsplit(".", 1)[-1] in declared):
+                continue
+            for statement in branch.orelse:
+                for inner in ast.walk(statement):
+                    if isinstance(inner, ast.Call):
+                        fallbacks.add(id(inner))
+
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "get"
+                    and len(node.args) == 2):
+                continue
+            if id(node) in fallbacks:
+                continue
+            if not any(hint in ast.unparse(node.func.value).lower()
+                       for hint in _GETTER_HINTS):
+                continue
+            key = node.args[0]
+            if not (isinstance(key, ast.Constant)
+                    and isinstance(key.value, str)):
+                continue
+            # A dotted path is walked by the config manager; the last segment
+            # is the name a yaml line actually carries.
+            if key.value.rsplit(".", 1)[-1] in declared:
+                continue
+            number = _numeric_constant(node.args[1])
+            if number is None:
+                continue
+            findings.append(
+                UndeclaredDefault(relative, node.lineno, key.value, number))
+    return sorted(findings, key=lambda f: (f.path, f.line))
+
+
 if __name__ == "__main__":
     results = scan()
     for finding in results:
@@ -284,3 +422,8 @@ if __name__ == "__main__":
     for key in unread:
         print(key)
     print(f"\n{len(unread)} config keys no source file mentions at all")
+    undeclared = scan_undeclared_defaults()
+    for finding in undeclared:
+        print(finding)
+    print(f"\n{len(undeclared)} numbers that govern from code, declared in no "
+          f"yaml")

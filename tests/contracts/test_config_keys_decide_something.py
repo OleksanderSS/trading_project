@@ -16,7 +16,9 @@ from __future__ import annotations
 
 import pytest
 
-from tests.contracts._dead_config_scan import scan, scan_never_read
+from tests.contracts._dead_config_scan import (
+    scan, scan_never_read, scan_undeclared_defaults,
+)
 
 #: Measured 2026-09-08: 21 -> 16, after the three that were on the TRADING path
 #: were removed -- VirtualPortfolio's stop_loss_pct and take_profit_pct (read
@@ -138,6 +140,79 @@ def test_no_collector_declares_its_cache_window_twice(unread):
         f"{offenders} declare a cache window in minutes beside the cache_ttl "
         "in seconds that actually runs. NewsAPI's two disagreed by a factor "
         "of 24.")
+
+
+# ---------------------------------------------------------------------------
+# The MIRROR of both passes above, added 2026-09-08 (#302).
+#
+# They find a config key with no reader. This finds a reader with no key:
+# `configs.get('market_impact_coefficient', 0.1)` where no yaml declares that
+# name means the 0.1 governs every time, written where an operator does not
+# look. That exact 0.1 drove 74% of the cost of a $25,000 order (R66).
+#
+# #288 declined to automate this, and its reason was right: there is no
+# reliable static way to say WHICH config block a `.get` reads. This does not
+# argue with that -- it takes the subset where the question does not arise. If
+# no yaml declares the name at all, it does not matter which block is read.
+# ---------------------------------------------------------------------------
+
+#: Measured 2026-09-08 after three false-positive shapes were found by reading
+#: the output rather than trusting the count -- nested `.get` fallbacks, dotted
+#: paths walked by the config manager, and the `if 'x' in config: ... else:`
+#: form the engine's spread uses. 132 raw -> 122 real, minus the five
+#: position-sizer settings declared in the same pass.
+#:
+#: Lower it by DECLARING the number where the code already reads it, at the
+#: value already acting, so nothing changes but the visibility -- the rule that
+#: made market_impact_coefficient arguable in the first place.
+UNDECLARED_CEILING = 122
+
+#: Where a number governing invisibly is worst: these decide size, exposure and
+#: which signals survive. `src/scripts/optimization` and the analytics modules
+#: also appear in the scan and are deliberately NOT in this tuple -- a search
+#: hyper-parameter is not a policy an owner sets.
+RISK_PATH_PREFIXES = ("src/trading/", "src/risk/", "src/algorithms/")
+
+
+@pytest.fixture(scope="module")
+def undeclared():
+    return scan_undeclared_defaults()
+
+
+def test_numbers_governing_from_code_do_not_multiply(undeclared):
+    assert len(undeclared) <= UNDECLARED_CEILING, (
+        f"{len(undeclared)} numeric defaults are read from a key no yaml "
+        f"declares, ceiling is {UNDECLARED_CEILING}. Each is a number that "
+        "governs from a place nobody looks.\n"
+        + "\n".join(f"  {finding}" for finding in undeclared[:20])
+    )
+
+
+def test_the_risk_path_does_not_grow_invisible_numbers(undeclared):
+    """A ratchet within the ratchet, on the part that decides money."""
+    on_path = [f for f in undeclared
+               if f.path.startswith(RISK_PATH_PREFIXES)]
+    assert len(on_path) <= 29, (
+        f"{len(on_path)} numbers on the trading and risk path are declared in "
+        "no yaml. These decide position size, exposure and which signals "
+        "survive:\n"
+        + "\n".join(f"  {finding}" for finding in on_path)
+    )
+
+
+def test_a_nested_fallback_is_not_reported(undeclared):
+    """`get(new_name, get(old_name, default))` reads the DECLARED new name.
+
+    #288 introduced that pattern deliberately, so a deployment that set the old
+    name does not silently lose it. Reporting it would make the scan argue
+    against a fix the project already made.
+    """
+    assert not [f for f in undeclared
+                if f.path.endswith("virtual_portfolio.py")
+                and f.key in {"max_position_size", "max_total_risk"}], (
+        "the scan is flagging the compatibility fallbacks in VirtualPortfolio; "
+        "the names it should be checking are max_position_size_pct and "
+        "max_total_risk_pct, and both ARE declared")
 
 
 def test_the_scan_does_not_count_logging_as_use():

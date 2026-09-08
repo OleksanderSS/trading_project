@@ -107,8 +107,39 @@ strategy:
 
     # Adaptive position sizing (src/algorithms/adaptive_position_sizer.py)
     position_sizer:
+      # This block IS read -- PortfolioManager passes it straight to
+      # AdaptivePositionSizer -- and until 2026-09-08 it declared two of the
+      # sizer's seven settings. The other five governed from `config.get(name,
+      # <literal>)` defaults in the code, where an operator does not look.
+      #
+      # THE VALUES BELOW ARE THE ONES THAT WERE ALREADY ACTING. Nothing is
+      # changed; they are made visible, on the same rule as
+      # market_impact_coefficient (#290): a number somebody can see is a number
+      # somebody can argue with.
       max_position_size_pct: 0.10
       min_position_size_pct: 0.005
+
+      # The starting size before any regime or Kelly adjustment.
+      base_position_size_pct: 0.02
+
+      # Ten at once. Worth reading against R33: 110 names carry about 3.16
+      # independent bets long-only and 57 for a neutral book, so ten positions
+      # is not ten independent risks. And against #291: 10% per position
+      # against a 51% total cap allows at most five anyway, so this ceiling is
+      # not the binding one.
+      max_active_positions: 10
+
+      # Half-Kelly. R58 measured that the drawdown budget binds FOUR TIMES
+      # BELOW quarter-Kelly, so this fraction is nowhere near the constraint
+      # that actually decides size -- it is the looser of the two by a wide
+      # margin, and that is the point of writing it down.
+      use_kelly_criterion: true
+      kelly_fraction: 0.5
+
+      # Minimum share of daily volume a name must offer before it is sized at
+      # all. No liquidity model exists in the project (see not_implemented
+      # below), so this is a crude floor rather than an impact estimate.
+      liquidity_threshold: 0.01
 
     # Risk-parity allocation (src/algorithms/risk_parity_allocator.py)
     risk_allocator: {}
