@@ -431,7 +431,30 @@ def main() -> int:
                         help="varying: every feature with cross-sectional "
                              "variation. fdr: only the 46 that passed the "
                              "one-day screen, as R23 measured them.")
+    parser.add_argument(
+        "--only", nargs="+", default=None,
+        help=("Re-measure just these columns. The docstring on ROTATIONS says "
+              "a shortlist gets re-measured with more rotations; this is how. "
+              "REQUIRES --attempts, and refuses without it."))
+    parser.add_argument(
+        "--attempts", type=int, default=None,
+        help=("The multiplicity to correct for, when it is NOT the number of "
+              "attempts this run makes. Mandatory with --only.\n\n"
+              "The trap it exists to close: thresholds here are computed from "
+              "the attempts actually made, so re-running a 34-column "
+              "shortlist would divide by 204 instead of 1,458 and print a bar "
+              "a third looser -- a threshold weakened AFTER the answer was "
+              "seen, which is the defect this whole script was written "
+              "against. A shortlist inherits the multiplicity of the screen "
+              "it came from; nothing about re-measuring it makes those "
+              "attempts unmade."))
     args = parser.parse_args()
+
+    if args.only and args.attempts is None:
+        parser.error(
+            "--only requires --attempts: the shortlist inherits the "
+            "multiplicity of the screen it was drawn from, and computing the "
+            "bar from the subset would loosen it after the fact.")
 
     roles = pd.read_csv(ROLES)
     if args.universe == "fdr":
@@ -442,7 +465,19 @@ def main() -> int:
         why = ("have real cross-sectional variation -- selected on NOTHING "
                "about a target")
     names = chosen["feature"].tolist()
-    print(f"{len(names)} features {why}")
+    if args.only:
+        wanted = set(args.only)
+        missing = sorted(wanted - set(names))
+        names = [n for n in names if n in wanted]
+        print(f"--only: {len(names)} of {len(wanted)} requested columns are in "
+              f"the universe that {why}")
+        if missing:
+            print(f"  NOT in the universe, so not measured: {missing}")
+        print(f"  multiplicity held at {args.attempts} attempts, from the "
+              f"screen this shortlist was drawn from -- NOT the "
+              f"{len(names) * len(args.holds)} this run makes")
+    else:
+        print(f"{len(names)} features {why}")
     if args.min_varies != MIN_VARIES:
         print(f"  varies threshold LOWERED {MIN_VARIES} -> {args.min_varies}: "
               f"{len(names)} columns instead of "
@@ -610,7 +645,10 @@ def main() -> int:
         print("\nnothing measurable")
         return 1
 
-    attempts = len(report) * len(args.holds)
+    # `--attempts` overrides, and only ever upward in practice: a shortlist
+    # carries the multiplicity of the screen that produced it. Computing the
+    # bar from a subset is how a threshold gets loosened after the answer.
+    attempts = args.attempts or len(report) * len(args.holds)
     bonferroni, noise_max = _thresholds(attempts)
 
     print("\n" + "=" * len(header))
