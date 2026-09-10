@@ -32,6 +32,42 @@ market_phase_definition:
       condition: "True"
 
 # --- New Section for Adjusting Predictions based on Context ---
+# Read by PostInferenceFilter, which adjusts the confidence of every signal
+# Stage 6 produces. Declared 2026-09-08 (#302) AT THE VALUES THAT WERE ALREADY
+# ACTING -- verified param by param against a filter built with an empty config,
+# six of six identical, so nothing changed but the visibility.
+#
+# Until then `PostInferenceFilter()` was constructed with NO config at all, so
+# these six governed from code defaults and no yaml could reach them. The
+# constructor accepted a config it was never given, which is worse than not
+# accepting one: it reads as configurable.
+#
+# THE WEIGHTS SUM TO 1.0, and that is load-bearing. When a column is missing the
+# filter uses a multiplier of 1.0 for that term, so a missing input contributes
+# its weight neutrally. Change one weight without changing another and a missing
+# column stops being neutral.
+#
+# WHAT CANNOT BE SAID ABOUT THESE NUMBERS: none of them was measured, and none
+# can be measured on the data this project has. The filter runs at trade time,
+# not over the explorable panel, and the sentiment term it weights at 0.3 is a
+# family that carries no cross-sectional information before the seal at all
+# (R63, R65). So these are a stated prior, not a fitted parameter, and the
+# honest place for that sentence is beside them.
+post_inference_filter:
+  macro_weight: 0.2
+  rsi_weight: 0.1
+  sentiment_weight: 0.3
+  chaos_weight: 0.4
+  # 0.0 on purpose: the kill switch has to be able to drive confidence to zero.
+  min_confidence: 0.0
+  max_confidence: 0.95
+
+# DEAD BLOCK -- kept because #165 is open, not because it works.
+# PredictionAdjuster asks for `analysis.prediction_adjustment`, which exists in
+# no config file, while this declares `context_prediction_adjustment` in a
+# different SHAPE as well (weights and multipliers, where the reader wants a
+# `rules` list). Neither end can reach the other, and the component has logged
+# "initialized with no rules" on every run for months.
 context_prediction_adjustment:
   # Weights for different context features when adjusting predictions
   weights:

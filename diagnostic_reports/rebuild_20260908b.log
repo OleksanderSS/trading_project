@@ -1,0 +1,58 @@
+# Rebuild of 2026-09-08, --mode prepare, second attempt. COMPLETED 13:48.
+# (The first attempt died with the laptop at ~08:05; see rebuild_20260908.log.)
+#
+# Started 10:22, finished 13:48 -- 3h26m, not the ~10h the config note
+# estimated. features.parquet 888 MB -> 1,079 MB.
+#
+# The full log was 39,530 lines and 4.2 MB of INFO. Milestones only.
+
+2026-09-08 10:24:02,974 - src.pipeline.pipeline_orchestrator - INFO - ===== Executing Stage0Setup =====
+2026-09-08 10:24:05,262 - src.pipeline.pipeline_orchestrator - INFO - ===== Executing Stage 1: CollectionStage =====
+2026-09-08 10:28:17,766 - src.data.management.data_manager - WARNING - Removed 12 internal duplicates before upsert into 'newsapi_articles'
+2026-09-08 10:35:41,234 - src.pipeline.stages.collection.orchestrator - INFO - Received 2595 records from 'cftc'.
+2026-09-08 10:35:41,477 - src.pipeline.stages.collection.orchestrator - INFO - Received 66 records from 'economic_calendar'.
+2026-09-08 10:35:41,612 - src.pipeline.stages.collection.orchestrator - INFO - Received 250 records from 'fear_greed'.
+2026-09-08 10:35:41,747 - src.pipeline.stages.collection.orchestrator - INFO - Received 391 records from 'newsapi'.
+2026-09-08 10:35:41,900 - src.pipeline.stages.collection.orchestrator - INFO - Received 8 records from 'reddit_sentiment'.
+2026-09-08 10:35:41,997 - src.pipeline.stages.collection.orchestrator - INFO - Received 110 records from 'rss'.
+2026-09-08 10:35:42,103 - src.pipeline.stages.collection.orchestrator - INFO - Received 208580 records from 'sec_fundamentals'.
+2026-09-08 10:35:54,009 - src.pipeline.stages.collection.orchestrator - INFO - Received 7548 records from 'vix'.
+2026-09-08 10:35:54,405 - src.pipeline.stages.collection.orchestrator - INFO - Received 1719 records from 'wikimedia_attention'.
+2026-09-08 10:35:58,314 - src.pipeline.stages.collection.orchestrator - INFO - Collection: 9/15 collectors delivered rows.
+2026-09-08 10:36:10,812 - src.pipeline.stages.collection.orchestrator - INFO - Total 6266357 records fetched from DB for next stage.
+2026-09-08 10:36:11,701 - src.pipeline.pipeline_orchestrator - INFO - ===== Executing Stage 2: ProcessingStage =====
+2026-09-08 10:36:16,344 - DataCleaner - INFO - Removed 14598 rows containing outliers in columns ['close'] (Threshold: 3.0)
+2026-09-08 10:36:40,136 - src.pipeline.pipeline_orchestrator - INFO - ===== Executing Stage 3: FeatureEngineeringStage =====
+2026-09-08 10:45:48,566 - NLPFeaturesEnricher - INFO - Removed timezone from datetime for merge compatibility
+2026-09-08 11:10:35,344 - NLPFeaturesEnricher - INFO - Removed timezone from datetime for merge compatibility
+2026-09-08 11:52:45,117 - NLPFeaturesEnricher - INFO - Removed timezone from datetime for merge compatibility
+2026-09-08 12:10:00,641 - FeatureEngineeringStage - INFO - Assembled 3 causal timeframe contexts: 1262990 total rows across 15m 173,989, 1d 705,819, 60m 383,182
+2026-09-08 12:10:58,429 - RedundancyDetector - INFO - 🗑️ Removed 103 features that separate nothing: 100 constant, 3 carrying no values at all.
+2026-09-08 12:19:01,992 - RedundancyDetector - INFO - 🔗 Found 25 redundant correlation groups
+2026-09-08 13:13:40,050 - src.pipeline.pipeline_orchestrator - INFO - 🧠 Pipeline memory profile - Peak: 3.92GB, Operations: 4, Warnings: 0, Cleanups: 0 (0.0MB freed)
+2026-09-08 13:13:40,050 - src.pipeline.pipeline_orchestrator - INFO - Pipeline execution completed successfully.
+2026-09-08 13:14:37,150 - src.pipeline.parquet_union_writer - INFO - Replacing features.parquet: on disk 1086430 rows x 1393 columns, writing 1262990 x 2317.
+2026-09-08 13:15:15,515 - src.pipeline.parquet_union_writer - INFO - Wrote 15m into features.parquet: 173989 rows, 1398 of 2317 columns carried data.
+2026-09-08 13:16:35,710 - src.pipeline.parquet_union_writer - INFO - Wrote 1d into features.parquet: 705819 rows, 468 of 2317 columns carried data.
+2026-09-08 13:17:15,541 - src.pipeline.parquet_union_writer - INFO - Wrote 60m into features.parquet: 383182 rows, 935 of 2317 columns carried data.
+2026-09-08 13:17:15,686 - src.pipeline.parquet_union_writer - INFO - features.parquet: 1262990 rows across 3 frames, 2317 columns, 1029 MiB on disk.
+2026-09-08 13:17:15,732 - src.pipeline.sealed_period - INFO - Seal exported to data\colab\accumulated\main_database\sealed_period.json (2023-09-01)
+2026-09-08 13:17:15,810 - src.pipeline.parquet_union_writer - INFO - Replacing targets.parquet: on disk 1086430 rows x 21 columns, writing 1262990 x 25.
+2026-09-08 13:17:16,289 - src.pipeline.parquet_union_writer - INFO - Wrote 15m into targets.parquet: 173989 rows, 12 of 25 columns carried data.
+2026-09-08 13:17:18,947 - src.pipeline.parquet_union_writer - INFO - Wrote 1d into targets.parquet: 705819 rows, 16 of 25 columns carried data.
+2026-09-08 13:17:19,422 - src.pipeline.parquet_union_writer - INFO - Wrote 60m into targets.parquet: 383182 rows, 8 of 25 columns carried data.
+2026-09-08 13:17:19,427 - src.pipeline.parquet_union_writer - INFO - targets.parquet: 1262990 rows across 3 frames, 25 columns, 34 MiB on disk.
+2026-09-08 13:17:19,427 - src.pipeline.sealed_period - INFO - Seal exported to data\colab\accumulated\main_database\sealed_period.json (2023-09-01)
+2026-09-08 13:45:31,780 - src.pipeline.parquet_union_writer - INFO - Replacing features.parquet: on disk 1262990 rows x 2317 columns, writing 1262990 x 2317.
+2026-09-08 13:46:02,389 - src.pipeline.parquet_union_writer - INFO - Wrote 15m into features.parquet: 173989 rows, 1398 of 2317 columns carried data.
+2026-09-08 13:47:33,194 - src.pipeline.parquet_union_writer - INFO - Wrote 1d into features.parquet: 705819 rows, 468 of 2317 columns carried data.
+2026-09-08 13:48:32,828 - src.pipeline.parquet_union_writer - INFO - Wrote 60m into features.parquet: 383182 rows, 935 of 2317 columns carried data.
+2026-09-08 13:48:33,012 - src.pipeline.parquet_union_writer - INFO - features.parquet: 1262990 rows across 3 frames, 2317 columns, 1029 MiB on disk.
+2026-09-08 13:48:33,065 - src.pipeline.sealed_period - INFO - Seal exported to data\colab\accumulated\main_database\sealed_period.json (2023-09-01)
+2026-09-08 13:48:33,220 - src.pipeline.parquet_union_writer - INFO - Replacing targets.parquet: on disk 1262990 rows x 25 columns, writing 1262990 x 25.
+2026-09-08 13:48:33,771 - src.pipeline.parquet_union_writer - INFO - Wrote 15m into targets.parquet: 173989 rows, 12 of 25 columns carried data.
+2026-09-08 13:48:40,610 - src.pipeline.parquet_union_writer - INFO - Wrote 1d into targets.parquet: 705819 rows, 16 of 25 columns carried data.
+2026-09-08 13:48:42,205 - src.pipeline.parquet_union_writer - INFO - Wrote 60m into targets.parquet: 383182 rows, 8 of 25 columns carried data.
+2026-09-08 13:48:42,221 - src.pipeline.parquet_union_writer - INFO - targets.parquet: 1262990 rows across 3 frames, 25 columns, 34 MiB on disk.
+2026-09-08 13:48:42,237 - src.pipeline.sealed_period - INFO - Seal exported to data\colab\accumulated\main_database\sealed_period.json (2023-09-01)
+2026-09-08 13:48:42,237 - src.pipeline.hybrid.colab_manager - INFO - Batch written by timeframe: 15m 173,989, 1d 705,819, 60m 383,182

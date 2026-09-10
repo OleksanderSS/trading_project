@@ -46,7 +46,29 @@ class TradingExecutionStage(BaseStage):
         if getattr(self, '_trading_stack_initialized', False):
             return
         self.portfolio = VirtualPortfolio()
-        self.post_inference_filter = PostInferenceFilter()
+        # `PostInferenceFilter()` took no config until 2026-09-08, so the six
+        # numbers deciding how every signal's confidence is adjusted -- four
+        # weights and a confidence floor and ceiling -- came from `.get(name,
+        # <literal>)` defaults that nothing could reach. The constructor has
+        # always ACCEPTED a config; it was never given one, which is worse than
+        # not accepting one, because it reads as configurable.
+        #
+        # The block is named for the class that reads it, deliberately. That is
+        # the lesson of #165, two blocks away in the same file: PredictionAdjuster
+        # asks for `analysis.prediction_adjustment` while strategy.yaml declares
+        # `context_prediction_adjustment` in a different shape, so neither end
+        # reaches the other and the component has logged "no rules" for months.
+        # A name that does not match a reader is the same as no declaration.
+        # The path has NO `strategy.` prefix, and my first version did. Caught
+        # by checking that the block came back non-empty instead of trusting
+        # that the values matched -- they matched either way, because an empty
+        # block falls through to the same code defaults. strategy.yaml has no
+        # top-level `strategy:` key; its blocks ARE the top level, which is why
+        # VirtualPortfolio reads `backtesting.transaction_costs` and not
+        # `strategy.backtesting.transaction_costs`.
+        self.post_inference_filter = PostInferenceFilter(
+            config=self.config_manager.get('post_inference_filter', {})
+        )
         self.diary_engine = DiaryEngine()
         self.enhanced_consensus = EnhancedConsensusEngine()
         self.risk_sizer = EliteRiskSizer(logger=self.logger)
