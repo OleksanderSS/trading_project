@@ -1,0 +1,105 @@
+feature columns in the batch      2,314
+carrying a measured role          388
+NEVER measured for anything       1,926
+daily pre-sealed panel            623,398 rows, 6,800 dates
+
+  ...   40 of 2314
+  ...   80 of 2314
+  ...  120 of 2314
+  ...  160 of 2314
+  ...  200 of 2314
+  ...  240 of 2314
+  ...  280 of 2314
+  ...  320 of 2314
+  ...  360 of 2314
+  ...  400 of 2314
+  ...  440 of 2314
+  ...  480 of 2314
+  ...  520 of 2314
+  ...  560 of 2314
+  ...  600 of 2314
+  ...  640 of 2314
+  ...  680 of 2314
+  ...  720 of 2314
+  ...  760 of 2314
+  ...  800 of 2314
+  ...  840 of 2314
+  ...  880 of 2314
+  ...  920 of 2314
+  ...  960 of 2314
+  ... 1000 of 2314
+  ... 1040 of 2314
+  ... 1080 of 2314
+  ... 1120 of 2314
+  ... 1160 of 2314
+  ... 1200 of 2314
+  ... 1240 of 2314
+  ... 1280 of 2314
+  ... 1320 of 2314
+  ... 1360 of 2314
+  ... 1400 of 2314
+  ... 1440 of 2314
+  ... 1480 of 2314
+  ... 1520 of 2314
+  ... 1560 of 2314
+  ... 1600 of 2314
+  ... 1640 of 2314
+  ... 1680 of 2314
+  ... 1720 of 2314
+  ... 1760 of 2314
+  ... 1800 of 2314
+  ... 1840 of 2314
+  ... 1880 of 2314
+  ... 1920 of 2314
+  ... 1960 of 2314
+  ... 2000 of 2314
+  ... 2040 of 2314
+  ... 2080 of 2314
+  ... 2120 of 2314
+  ... 2160 of 2314
+  ... 2200 of 2314
+  ... 2240 of 2314
+  ... 2280 of 2314
+  ... 2314 of 2314
+
+==========================================================================
+CAPACITY, over the whole batch
+==========================================================================
+  too little history                                    1854  (80.1%)
+  can carry a cross-sectional signal                     231  (10.0%)
+  market-wide: no cross-sectional variation              156  ( 6.7%)
+  constant                                                57  ( 2.5%)
+  tie hazard: ranks are ties, book would be one-sided     16  ( 0.7%)
+
+split by whether anyone has ever measured the column
+                                                     never measured  measured
+verdict                                                                      
+can carry a cross-sectional signal                               11       220
+constant                                                         57         0
+market-wide: no cross-sectional variation                         3       153
+tie hazard: ranks are ties, book would be one-sided               1        15
+too little history                                             1854         0
+
+TIE HAZARD -- the R28 shape, 16 columns. These rank as ties, so a
+`sign(rank - 0.5)` book sends every name the same way and scores like the market.
+                      feature  uniq  mode_share  measured
+          state_CDL_HAMMER_1d     2    0.989525      True
+state_LEVEL_BREAKOUT_UP_20_1d     2    0.977188      True
+         CDL_SHOOTING_STAR_1d     2    0.962246      True
+        CDL_ENGULFING_BULL_1d     2    0.961628      True
+ state_filing_material_30d_1d     3    0.960289     False
+        CDL_ENGULFING_BEAR_1d     2    0.959283      True
+              CDL_MARUBOZU_1d     2    0.957523      True
+                CDL_HAMMER_1d     2    0.953301      True
+    LEVEL_BREAKOUT_DOWN_20_1d     2    0.951121      True
+     state_CDL_OUTSIDE_BAR_1d     2    0.943972      True
+
+  of those, 1 have never been measured for anything -- the same
+  shape that scored 1.016 on 2026-09-04, sitting where nobody has looked.
+
+WHAT AN ADMISSION GATE WOULD ACTUALLY ADMIT, on capacity alone:
+  columns able to carry a cross-sectional signal   231
+  of which never measured for leadingness          11
+  columns that cannot, and are computed anyway     2083
+
+written to D:\trading_project\diagnostic_reports\batch_inventory_1d.csv

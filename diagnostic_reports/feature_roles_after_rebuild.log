@@ -1,0 +1,5 @@
+sealed from 2023-09-01 onward (declared 2026-08-29); exploration sees earlier data only
+  82,421 daily rows withheld; 623,398 remain.
+
+target target_relative_return_5d | daily rows 623,398 | split 2016-08-29 | 110 names
+
