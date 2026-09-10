@@ -757,11 +757,23 @@ def main() -> int:
     # over `net_test_varying.csv` -- and both times the file still looked like
     # the artefact everything cites. A record that does not say how it was made
     # is a record that will be quoted as something else.
+    #
+    # A THIRD TIME ON 2026-09-10, and by the same gap: the guard listed the
+    # flags that existed when it was written, so `--rotations 50 --only <34
+    # columns>` wrote its 34 rows straight over the 243-row screen. Recovered
+    # from git, which is luck rather than design. The list below now covers
+    # every flag that changes WHAT IS MEASURED -- and the lesson is that an
+    # enumeration of flags rots the moment a flag is added, so the next flag
+    # goes in here in the same commit that adds it.
     suffix = "" if args.min_varies == MIN_VARIES else f"_varies{args.min_varies:g}"
     if args.holds != [1, 5, 20, 40, 60, 120]:
         suffix += "_holds" + "-".join(str(h) for h in args.holds)
     if args.rotate_all_holds:
         suffix += "_allholds"
+    if args.rotations != ROTATIONS:
+        suffix += f"_rot{args.rotations}"
+    if args.only:
+        suffix += f"_only{len(args.only)}"
     out = (PROJECT_ROOT / "diagnostic_reports"
            / f"net_test_{args.universe}{suffix}.csv")
     report.to_csv(out, index=False)

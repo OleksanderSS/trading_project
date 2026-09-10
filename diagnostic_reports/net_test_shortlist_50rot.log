@@ -1,0 +1,133 @@
+2026-09-10 15:58:01,159 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+2026-09-10 15:58:01,350 - PathSafety - INFO - PathSafety initialized with 6 allowed roots
+2026-09-10 15:58:01,358 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-10 15:58:01,360 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-10 15:58:01,391 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\paths.yaml
+2026-09-10 15:58:01,412 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\system.yaml
+2026-09-10 15:58:01,427 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\version.yaml
+2026-09-10 15:58:01,431 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\cloud_storage.yaml
+2026-09-10 15:58:01,439 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\data_sources.yaml
+2026-09-10 15:58:01,578 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\collectors.yaml
+2026-09-10 15:58:01,608 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\features.yaml
+2026-09-10 15:58:01,623 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\transformers.yaml
+2026-09-10 15:58:01,655 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\enrichment.yaml
+2026-09-10 15:58:01,696 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\noise_filter_config.yaml
+2026-09-10 15:58:01,713 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\sentiment.yaml
+2026-09-10 15:58:01,749 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\news_impact_classification.yaml
+2026-09-10 15:58:01,795 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\models.yaml
+2026-09-10 15:58:01,804 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\experiments.yaml
+2026-09-10 15:58:01,843 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\analysis.yaml
+2026-09-10 15:58:01,868 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\strategy.yaml
+2026-09-10 15:58:01,896 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\risk_management.yaml
+2026-09-10 15:58:01,904 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\simulation.yaml
+2026-09-10 15:58:01,999 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\targets.yaml
+2026-09-10 15:58:02,023 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\monitoring_config.yaml
+2026-09-10 15:58:02,041 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\error_handling.yaml
+2026-09-10 15:58:02,065 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\processing.yaml
+2026-09-10 15:58:02,205 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\context.yaml
+2026-09-10 15:58:02,280 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\knowledge_base.yaml
+2026-09-10 15:58:02,293 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\generated_context_rules.yaml
+2026-09-10 15:58:02,397 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\assets.yaml
+2026-09-10 15:58:02,471 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\unified_config.yaml
+2026-09-10 15:58:02,471 - UnifiedConfigManager - WARNING - Conflicting top-level key 'analysis' in unified_config.yaml. Previous source: analysis.yaml. Precedence given to latest.
+2026-09-10 15:58:02,472 - UnifiedConfigManager - WARNING - Conflicting top-level key 'strategy' in unified_config.yaml. Previous source: risk_management.yaml. Precedence given to latest.
+2026-09-10 15:58:02,489 - FileManager - INFO - Loaded YAML from D:\trading_project\src\config\pending_decisions.yaml
+2026-09-10 15:58:02,493 - UnifiedConfigManager - INFO - Executing configuration compliance audit...
+2026-09-10 15:58:02,493 - UnifiedConfigManager - INFO - Configuration audit verified. System is compliant.
+2026-09-10 15:58:02,494 - UnifiedConfigManager - INFO - Synchronizing filesystem structure with configuration...
+2026-09-10 15:58:02,522 - UnifiedConfigManager - INFO - Filesystem synchronization complete.
+2026-09-10 15:58:02,526 - src.core.security.secure_secrets_manager - INFO - Environment configuration identified: D:\trading_project\.env
+2026-09-10 15:58:02,527 - src.core.security.secure_secrets_manager - INFO - Successfully loaded 10 variables into the active environment.
+2026-09-10 15:58:02,540 - UnifiedConfigManager - INFO - UnifiedConfigManager initialized for 'development' environment.
+2026-09-10 15:58:02,542 - ProjectLogger - INFO - Logging configured. Level: INFO. Path: logs
+--only: 34 of 34 requested columns are in the universe that have real cross-sectional variation -- selected on NOTHING about a target
+  multiplicity held at 1458 attempts, from the screen this shortlist was drawn from -- NOT the 204 this run makes
+holds: [1, 5, 20, 40, 60, 120]
+
+panel: 623,398 rows, 110 names, 6,800 dates, 1996-08-26 to 2023-08-31
+
+  universe scale: UNKNOWN for 1996-08-26 -- the store's earliest observed delisting is 1997-04-01; asked about 1996-08-26. Answering would claim nothing had died before then, which is the exact bias this store exists to remove
+  universe scale: 110 names in this cross-section of 10,701 that existed on 2023-08-31 (1.0%), and ours are the ones that survived to today (Р47: the list alone is worth Sharpe 1.22 over the real market)
+
+each column is also scored against its OWN null: 50 rotations of its
+positions in time, which keeps the book and breaks only the timing. `z` is how
+far the real book stands above that null, in its standard deviations.
+
+BUY EVERYTHING (the opponent)        -0.598    0.659    0.939    1.005    1.018    0.981
+                              survivorship-inflated: our list beats the real market by 6.86%/yr (Sharpe 1.22, t +6.3, Р47) -- an upper bound, not the market
+
+feature                                  h1       h5      h20      h40      h60     h120  best net  at hold  phase sd    beta     null       z
+----------------------------------------------------------------------------------------------------------------------------------------------
+MAX_DRAWDOWN_1d                      -6.874   -2.474   -1.662   -1.456   -1.301   -1.140    -1.140      120     0.167  -0.332   -0.696   -2.92
+CURRENT_DRAWDOWN_1d                  -6.896   -2.490   -1.663   -1.462   -1.306   -1.141    -1.141      120     0.167  -0.331   -0.696   -2.92
+ATR_14_1d                            -7.030   -2.142   -1.192   -1.002   -0.939   -0.832    -0.832      120     0.195  -0.078   -0.253   -2.82
+atr_14_1d                            -7.104   -2.195   -1.287   -1.060   -0.973   -0.872    -0.872      120     0.188  -0.093   -0.265   -2.97
+AATR_14_1d                           -7.126   -2.239   -1.286   -1.088   -0.987   -0.893    -0.893      120     0.196  -0.112   -0.268   -2.99
+LEVEL_BREAKOUT_DOWN_20_1d            -1.075    0.114    0.000   -0.015   -0.026   -0.055     0.114        5     0.127   0.022   -0.664    5.79
+state_MOMENTUM_ZSCORE_1d             -6.232   -1.183   -0.299   -0.117   -0.039    0.061     0.061      120     0.197   0.024   -0.015    2.77
+state_CDL_LOWER_WICK_RATIO_1d        -6.888   -1.271   -0.289   -0.146   -0.109   -0.056    -0.056      120     0.204  -0.024   -0.012   -1.80
+ABB_Upper_1d                         -8.249   -2.755   -1.668   -1.391   -1.203   -1.016    -1.016      120     0.166  -0.225   -0.496   -3.28
+BB_Upper_1d                          -8.207   -2.689   -1.634   -1.359   -1.188   -0.995    -0.995      120     0.194  -0.204   -0.497   -3.15
+high                                 -8.067   -2.667   -1.681   -1.438   -1.233   -1.031    -1.031      120     0.162  -0.235   -0.505   -3.37
+open                                 -8.076   -2.674   -1.685   -1.439   -1.233   -1.031    -1.031      120     0.162  -0.237   -0.505   -3.37
+low                                  -8.027   -2.658   -1.694   -1.450   -1.238   -1.037    -1.037      120     0.166  -0.239   -0.507   -3.43
+LAG_1_1d                             -8.090   -2.671   -1.682   -1.438   -1.230   -1.030    -1.030      120     0.164  -0.237   -0.505   -3.37
+EMA_5_1d                             -8.094   -2.686   -1.673   -1.426   -1.216   -1.019    -1.019      120     0.164  -0.233   -0.505   -3.31
+SMA_5_1d                             -8.101   -2.686   -1.681   -1.430   -1.221   -1.022    -1.022      120     0.163  -0.233   -0.505   -3.32
+ABB_Mid_1d                           -8.143   -2.713   -1.671   -1.414   -1.222   -1.016    -1.016      120     0.159  -0.232   -0.507   -3.34
+EMA_10_1d                            -8.100   -2.670   -1.669   -1.401   -1.199   -1.003    -1.003      120     0.172  -0.224   -0.504   -3.22
+SMA_20_1d                            -8.055   -2.639   -1.641   -1.373   -1.200   -0.995    -0.995      120     0.187  -0.214   -0.504   -3.18
+BB_Middle_1d                         -8.055   -2.639   -1.641   -1.373   -1.200   -0.995    -0.995      120     0.187  -0.214   -0.504   -3.18
+filing_material_30d_1d               -6.626   -1.544   -0.597   -0.512   -0.388   -0.344    -0.344      120     0.152  -0.039   -0.167   -2.28
+EMA_20_1d                            -8.109   -2.641   -1.635   -1.363   -1.189   -0.979    -0.979      120     0.180  -0.209   -0.502   -3.11
+BB_Lower_1d                          -7.964   -2.663   -1.691   -1.426   -1.240   -1.019    -1.019      120     0.161  -0.248   -0.513   -3.38
+SMA_10_1d                            -8.139   -2.688   -1.664   -1.405   -1.207   -1.010    -1.010      120     0.163  -0.228   -0.505   -3.26
+EMA_100_1d                           -8.021   -2.532   -1.511   -1.304   -1.190   -0.972    -0.972      120     0.186  -0.204   -0.483   -3.37
+LAG_20_1d                            -8.104   -2.668   -1.625   -1.345   -1.191   -0.993    -0.993      120     0.198  -0.213   -0.504   -3.19
+EMA_50_1d                            -8.074   -2.547   -1.519   -1.283   -1.142   -0.966    -0.966      120     0.186  -0.205   -0.496   -3.16
+ABB_Lower_1d                         -7.938   -2.627   -1.690   -1.431   -1.238   -1.024    -1.024      120     0.167  -0.252   -0.519   -3.38
+AEMA_20_1d                           -8.114   -2.654   -1.647   -1.365   -1.192   -0.989    -0.989      120     0.181  -0.210   -0.502   -3.21
+SMA_100_1d                           -8.018   -2.515   -1.513   -1.314   -1.186   -0.983    -0.983      120     0.192  -0.211   -0.496   -3.24
+LAG_5_1d                             -8.097   -2.667   -1.670   -1.416   -1.218   -1.020    -1.020      120     0.166  -0.233   -0.505   -3.32
+LAG_10_1d                            -8.129   -2.694   -1.669   -1.389   -1.208   -1.008    -1.008      120     0.169  -0.227   -0.505   -3.27
+SMA_50_1d                            -8.061   -2.575   -1.546   -1.297   -1.153   -0.975    -0.975      120     0.191  -0.206   -0.501   -3.13
+close                                -8.072   -2.666   -1.683   -1.442   -1.233   -1.034    -1.034      120     0.165  -0.238   -0.506   -3.39
+
+==============================================================================================================================================
+constant opponent, by hold:  h1=-0.598  h5=+0.659  h20=+0.939  h40=+1.005  h60=+1.018  h120=+0.981
+features measured                            34
+attempts (features x holds)                  1458
+best net Sharpe anywhere                     +0.114
+expected maximum of that many noise draws    0.755
+Bonferroni family-wise 5%                    0.969
+clear Bonferroni                             0
+clear the noise maximum                      0
+positive but inside the noise                2
+negative at every horizon                    32
+
+|beta| median / 90th / max                   0.219 / 0.245 / 0.332
+books moving with the opponent (|corr|>0.2)  29 of 34   <- dollar-neutral is not market-neutral
+  best at hold    1: -1.075  (LEVEL_BREAKOUT_DOWN_20_1d)
+  best at hold    5: +0.114  (LEVEL_BREAKOUT_DOWN_20_1d)
+  best at hold   20: +0.000  (LEVEL_BREAKOUT_DOWN_20_1d)
+  best at hold   40: -0.015  (LEVEL_BREAKOUT_DOWN_20_1d)
+  best at hold   60: -0.026  (LEVEL_BREAKOUT_DOWN_20_1d)
+  best at hold  120: +0.061  (state_MOMENTUM_ZSCORE_1d)
+
+z against each column's OWN rotated null, bar 4.14:
+  know something about WHEN                  1
+  of those, also net positive                1
+  net positive but NOT above their own null  1   <- tilts, not edges
+                  feature  z_hold  net_at_z_hold  rotated_null  z_vs_own_null  vs_opponent  beta_at_z_hold
+LEVEL_BREAKOUT_DOWN_20_1d       5       0.114416     -0.664092       5.787055    -0.544893        0.021938
+
+  of those, BEAT BUYING EVERYTHING at the same hold  0
+  Every one of them knows something and is still worth less than owning the
+  same names outright. That is a measured number, not a candidate.
+
+NONE clears the multiplicity-corrected bar. Widening the universe from 46 to every
+varying feature, and the horizon out to 120 days, did not find one. The conclusion
+is not about which feature was picked and not about the holding period: it is about
+this universe and these features.
+
+written to D:\trading_project\diagnostic_reports\net_test_varying.csv
