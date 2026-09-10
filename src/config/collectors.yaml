@@ -563,7 +563,39 @@ collectors:
   vix:
     cache_ttl: 86400
     critical: false
-    enabled: true
+    # DISABLED 2026-09-10. ONE SOURCE FOR VIX, AND IT IS FRED.
+    #
+    # This collector works. Its table holds 7,548 rows over 1996-09-09..
+    # 2026-09-07 after the window was widened on 2026-09-07 (#298), and every
+    # derived column it computes is causal. It is switched off anyway, because
+    # NOTHING READS IT: outside this collector, `vix_data` is mentioned twice
+    # in src/, both times in comments (R67). The panel's VIX has always come
+    # from FRED, and `volatility_regime_1d` is computed by VolatilityEnricher
+    # from PRICES with a different vocabulary -- so the backfill that made this
+    # table healthy changed not one feature.
+    #
+    # Measured before choosing, rather than assumed:
+    #
+    #                        vix_data      FRED VIXCLS
+    #   distinct dates          7,548            7,827
+    #   point-in-time vintages   none   realtime_start / realtime_end
+    #   reaches the panel          no   yes, 623,165 of 623,398 rows
+    #
+    # The vintages settle it. FRED carries what was KNOWN AS OF a date, which
+    # is the discipline #286 exists to enforce; this table carries only today's
+    # value per date, so using it historically assumes today's number was known
+    # then. Harmless for VIX, which is not revised -- and exactly the shape
+    # that is not harmless elsewhere.
+    #
+    # Two sources for one series is how every fix in this project has
+    # half-landed, so the second one goes.
+    #
+    # WHAT IS GIVEN UP: the derived state this collector computes -- regime,
+    # percentiles, z-score, classification. They never reached the panel, so
+    # there is no evidence they were worth anything, and if they are ever
+    # wanted they belong in an enricher over FRED_VIXCLS: one source, one
+    # place. REVERSING THIS IS ONE WORD; the table and its 7,548 rows stay.
+    enabled: false
     # vix_close, not vix_current: the collector has never produced a column by
     # that name (see VixCollector._standardize_columns, which requires
     # vix_close). The wrong name reached DataManager as `unique_on`, so BOTH
