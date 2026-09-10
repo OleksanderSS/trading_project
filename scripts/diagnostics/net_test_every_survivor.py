@@ -222,6 +222,28 @@ CHUNK = 40
 MIN_VARIES = 0.5
 
 
+#: HOW TO READ A NEGATIVE RESULT HERE, because the obvious reading is wrong and
+#: it cost most of an hour on 2026-09-10 before the arithmetic caught it.
+#:
+#: The book is built one way -- long the high ranks, short the low ones -- so a
+#: column that loses looks like a column that would WIN inverted. `SMA_20_1d`
+#: nets -0.995 at hold 120, and the tempting reading is +0.995 the other way.
+#:
+#: It is not, because NET IS NOT SYMMETRIC UNDER A SIGN FLIP. Costs are paid in
+#: both directions: net = gross - cost, and inverting flips only the gross, so
+#:
+#:     inverted_net = -net - 2 * cost
+#:
+#: and the rotated null estimates that cost, since rotation preserves turnover
+#: and friction and breaks only the timing. Measured across the 32 columns whose
+#: z was significantly NEGATIVE on the 2026-09-10 screen: inverting gives a
+#: MEDIAN net of +0.034 and a maximum of +0.387, against a noise bar of 0.753.
+#: Not one of them clears anything. `SMA_20_1d`'s -0.995 becomes about +0.02.
+#:
+#: The caveat, so the arithmetic is not reused where it does not hold: `-null`
+#: estimates the cost only while the rotated book's own return is small. For
+#: the volatility family, whose null is +0.54 because the tilt dominates, it is
+#: meaningless.
 def _thresholds(attempts: int) -> tuple[float, float]:
     """Family-wise 5% by Bonferroni, and the expected maximum of pure noise.
 
