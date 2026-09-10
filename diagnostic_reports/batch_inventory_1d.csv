@@ -75,11 +75,11 @@ context_stability_1d,True,float32,623398,1.0,111,0.03334466905572363,1.0,can car
 context_velocity_1d,True,float32,623398,1.0,11,0.6928639488737532,0.9997058823529412,can carry a cross-sectional signal
 context_velocity_rank_1d,True,float32,621308,0.9966474066326809,463615,0.0007757827035866269,0.9972058823529412,can carry a cross-sectional signal
 days_since_last_significant_1d,True,float32,623398,1.0,365,0.1764586989371156,0.9998529411764706,can carry a cross-sectional signal
-filing_count_30d_1d,False,float32,532115,0.853571875431105,1325,0.08604155116845043,0.9979411764705882,can carry a cross-sectional signal
-filing_data_available_1d,False,float64,623398,1.0,2,0.853571875431105,0.9979411764705882,can carry a cross-sectional signal
-filing_days_since_last_1d,False,float32,532115,0.853571875431105,881,0.22684006276838653,0.9977941176470588,can carry a cross-sectional signal
-filing_material_30d_1d,False,float32,532115,0.853571875431105,29,0.42149535344803285,0.9973529411764706,can carry a cross-sectional signal
-filing_periodic_30d_1d,False,float32,532115,0.853571875431105,7,0.6841284308843013,0.9966176470588235,can carry a cross-sectional signal
+filing_count_30d_1d,True,float32,532115,0.853571875431105,1325,0.08604155116845043,0.9979411764705882,can carry a cross-sectional signal
+filing_data_available_1d,True,float64,623398,1.0,2,0.853571875431105,0.9979411764705882,can carry a cross-sectional signal
+filing_days_since_last_1d,True,float32,532115,0.853571875431105,881,0.22684006276838653,0.9977941176470588,can carry a cross-sectional signal
+filing_material_30d_1d,True,float32,532115,0.853571875431105,29,0.42149535344803285,0.9973529411764706,can carry a cross-sectional signal
+filing_periodic_30d_1d,True,float32,532115,0.853571875431105,7,0.6841284308843013,0.9966176470588235,can carry a cross-sectional signal
 fund_current_ratio_1d,True,float32,240664,0.3860519283026253,3831,0.0010346375029086194,0.5301470588235294,can carry a cross-sectional signal
 fund_data_available_1d,True,float64,623398,1.0,2,0.5406096907593544,0.5308823529411765,can carry a cross-sectional signal
 fund_days_since_report_1d,True,float32,286383,0.4593903092406456,201,0.015887814569998916,0.5301470588235294,can carry a cross-sectional signal
@@ -190,8 +190,8 @@ state_Williams_R_1d,True,float64,623398,1.0,3,0.5292589966602396,1.0,can carry a
 state_atr_14_1d,True,float64,623398,1.0,3,0.4604634599405195,0.9998529411764706,can carry a cross-sectional signal
 state_close_1d,True,float64,623398,1.0,3,0.4542074244704025,0.9998529411764706,can carry a cross-sectional signal
 state_days_since_last_significant_1d,True,float64,623398,1.0,3,0.5951863817336597,0.9995588235294117,can carry a cross-sectional signal
-state_filing_count_30d_1d,False,float64,623398,1.0,3,0.8573495583880603,0.9920588235294118,can carry a cross-sectional signal
-state_filing_days_since_last_1d,False,float64,623398,1.0,3,0.7476443620287521,0.9975,can carry a cross-sectional signal
+state_filing_count_30d_1d,True,float64,623398,1.0,3,0.8573495583880603,0.9920588235294118,can carry a cross-sectional signal
+state_filing_days_since_last_1d,True,float64,623398,1.0,3,0.7476443620287521,0.9975,can carry a cross-sectional signal
 state_fund_days_since_report_1d,True,float64,623398,1.0,3,0.8738959701506902,0.5264705882352941,can carry a cross-sectional signal
 state_gk_volatility_1d,True,float64,623398,1.0,3,0.5788805867198804,0.9975,can carry a cross-sectional signal
 state_high_1d,True,float64,623398,1.0,3,0.47346478493674987,0.9998529411764706,can carry a cross-sectional signal
@@ -418,17 +418,17 @@ state_day_of_week_cos_1d,True,float64,623398,1.0,3,0.41399555340248123,0.0,marke
 state_day_of_week_sin_1d,True,float64,623398,1.0,2,0.6075220003914032,0.0,market-wide: no cross-sectional variation
 state_fear_greed_available_1d,True,float64,623398,1.0,2,0.999990375330046,0.000588235294117647,market-wide: no cross-sectional variation
 state_filing_data_available_1d,True,float64,623398,1.0,2,0.9999133779704138,0.0004411764705882353,market-wide: no cross-sectional variation
-state_filing_periodic_30d_1d,False,float64,623398,1.0,3,0.9936525301653197,0.27852941176470586,market-wide: no cross-sectional variation
+state_filing_periodic_30d_1d,True,float64,623398,1.0,3,0.9936525301653197,0.27852941176470586,market-wide: no cross-sectional variation
 state_fund_current_ratio_1d,True,float64,623398,1.0,3,0.9976547887545356,0.1327941176470588,market-wide: no cross-sectional variation
 state_fund_data_available_1d,True,float64,623398,1.0,2,0.9998684628439617,0.0072058823529411765,market-wide: no cross-sectional variation
 state_fund_debt_to_equity_1d,True,float64,623398,1.0,3,0.9989364739700801,0.07720588235294118,market-wide: no cross-sectional variation
 state_fund_return_on_equity_1d,True,float64,623398,1.0,3,0.9977414107841218,0.12676470588235295,market-wide: no cross-sectional variation
 state_insider_available_1d,True,float64,623398,1.0,2,0.9999534807618888,0.0014705882352941176,market-wide: no cross-sectional variation
-state_insider_net_value_30d_1d,False,float64,623398,1.0,2,0.9999983958883409,0.00014705882352941175,market-wide: no cross-sectional variation
+state_insider_net_value_30d_1d,True,float64,623398,1.0,2,0.9999983958883409,0.00014705882352941175,market-wide: no cross-sectional variation
 state_news_intensity_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
 state_peer_count_1d,True,float64,623398,1.0,3,0.9482385249872474,0.4472058823529412,market-wide: no cross-sectional variation
 state_sentiment_decay_weighted_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
-state_sentiment_ema_1d,False,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
+state_sentiment_ema_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
 state_sentiment_sma_20_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
 state_sentiment_sma_50_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
 state_sentiment_sma_5_1d,True,float64,623398,1.0,2,0.999996791776682,0.0002941176470588235,market-wide: no cross-sectional variation
@@ -456,7 +456,7 @@ state_CDL_HAMMER_1d,True,float64,623398,1.0,2,0.9895251508667016,0.5233823529411
 state_CDL_INSIDE_BAR_1d,True,float64,623398,1.0,2,0.9124860843313581,0.9725,"tie hazard: ranks are ties, book would be one-sided"
 state_CDL_OUTSIDE_BAR_1d,True,float64,623398,1.0,2,0.9439715879742957,0.9436764705882353,"tie hazard: ranks are ties, book would be one-sided"
 state_LEVEL_BREAKOUT_UP_20_1d,True,float64,623398,1.0,2,0.977187928097299,0.663235294117647,"tie hazard: ranks are ties, book would be one-sided"
-state_filing_material_30d_1d,False,float64,623398,1.0,3,0.960288611769688,0.8727941176470588,"tie hazard: ranks are ties, book would be one-sided"
+state_filing_material_30d_1d,True,float64,623398,1.0,3,0.960288611769688,0.8727941176470588,"tie hazard: ranks are ties, book would be one-sided"
 state_fund_earnings_yield_1d,True,float64,623398,1.0,3,0.9134437389917838,0.5266176470588235,"tie hazard: ranks are ties, book would be one-sided"
 state_fund_price_to_book_1d,True,float64,623398,1.0,3,0.9090500771577708,0.5280882352941176,"tie hazard: ranks are ties, book would be one-sided"
 AATR_14_15m,False,float32,0,0.0,0,1.0,0.0,too little history

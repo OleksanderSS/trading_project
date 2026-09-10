@@ -99,8 +99,29 @@ def capable_but_unmeasured(frame: pd.DataFrame) -> pd.DataFrame:
     return capable[~capable["measured"].astype(bool)]
 
 
+#: Tie-hazard columns that arrived from a BACKFILL rather than from the batch
+#: degrading, each with the reason on its line. This is a registry, not a raised
+#: ceiling, and the difference is the whole point: a ceiling raised by one hides
+#: WHICH column arrived, while a named line can be argued with -- the same
+#: mechanism as tests/known_unread_risk_settings.txt (#288).
+#:
+#: Any tie hazard NOT on this list still fails the ceiling below.
+KNOWN_TIE_HAZARDS = {
+    # 2026-09-10. Entered the measurable set for the first time when the SEC
+    # backfill gave filings 442,127 explorable rows (#298, #299, R68). It is
+    # not a column that got worse -- it is a column that could not be judged
+    # before and now can. mode_share 0.960: a material filing in the last 30
+    # days is rare, so 96% of name-days share one value and `sign(rank - 0.5)`
+    # sends nearly all of them the same way. It also failed the roles report
+    # outright ("sign flipped out of sample"), so nothing is being protected
+    # here -- the entry exists so the count stays honest.
+    "state_filing_material_30d_1d",
+}
+
+
 def tie_hazards(frame: pd.DataFrame) -> pd.DataFrame:
-    return frame[frame["verdict"].astype(str).str.startswith(TIE_HAZARD_PREFIX)]
+    flagged = frame[frame["verdict"].astype(str).str.startswith(TIE_HAZARD_PREFIX)]
+    return flagged[~flagged["feature"].isin(KNOWN_TIE_HAZARDS)]
 
 
 @pytest.fixture(scope="module")
@@ -142,6 +163,24 @@ def test_capable_columns_do_not_accumulate_unmeasured(inventory):
         f"feature admitted without a leadingness verdict:\n"
         + "\n".join(f"  {name}" for name in unmeasured["feature"].head(20))
     )
+
+
+def test_every_known_tie_hazard_is_still_one(inventory):
+    """A registry line that no longer describes anything is worse than none.
+
+    If a column on KNOWN_TIE_HAZARDS stops being a tie hazard -- more data, a
+    changed encoding -- its line has to go, or the exemption outlives the
+    reason for it. That is the failure mode the risk-settings registry was
+    given a second test for (#288).
+    """
+    flagged = set(inventory.loc[
+        inventory["verdict"].astype(str).str.startswith(TIE_HAZARD_PREFIX),
+        "feature"])
+    stale = KNOWN_TIE_HAZARDS - flagged
+    assert not stale, (
+        f"{sorted(stale)} are exempted as known tie hazards and are no longer "
+        "flagged as one. Remove the line: an exemption that outlives its "
+        "reason is how a ceiling gets raised without anyone deciding to.")
 
 
 def test_the_tie_hazard_does_not_spread(inventory):
