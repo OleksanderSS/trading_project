@@ -61,6 +61,15 @@ BLOCK = 150
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--batch", default=str(DEFAULT_BATCH))
+    parser.add_argument(
+        "--suffix", default="_1d",
+        help=("Only count columns ending in this, '' for all. Defaults to the "
+              "daily frame because comparing two batches WITHOUT it is "
+              "misleading: the rebuild of 2026-09-08 gained 456 `_15m` columns "
+              "the previous batch did not have at all, and doubled `_60m` from "
+              "461 to 920. Every 15m column is post-seal by construction "
+              "(#297), so all 456 land in `absent` and the family totals stop "
+              "being comparable. `_1d` went 916 -> 918, which is a comparison."))
     args = parser.parse_args()
     batch = Path(args.batch)
     features = batch / "features.parquet"
@@ -84,7 +93,10 @@ def main() -> int:
 
     names = [n for n in pq.ParquetFile(features).schema_arrow.names
              if n not in {"datetime", "ticker", "interval"}
-             and not n.startswith("target_")]
+             and not n.startswith("target_")
+             and n.endswith(args.suffix)]
+    print(f"counting columns ending in {args.suffix!r}: {len(names):,} of "
+          f"{len(pq.ParquetFile(features).schema_arrow.names):,}\n")
     wanted = {family: [n for n in names
                        if any(mark in n.lower() for mark in marks)]
               for family, marks in FAMILIES.items()}
@@ -99,12 +111,19 @@ def main() -> int:
             block = pd.read_parquet(features, columns=chunk)
             block = block.loc[mask]
             for name in chunk:
-                values = pd.to_numeric(block[name], errors="coerce").to_numpy(
-                    dtype=float)
-                finite = np.isfinite(values)
-                if not finite.any():
+                # NOT `pd.to_numeric(errors='coerce')`, which is what this did
+                # until 2026-09-10 and which made it lie. `volatility_regime_1d`
+                # is a dictionary of strings -- normal/low/extreme/high, fully
+                # populated on all 623,398 explorable rows -- and coercing it to
+                # a number turned every value into NaN, so the script reported it
+                # ABSENT. A diagnostic that cannot see a categorical column
+                # silently classifies it as missing data, which is the exact
+                # confusion R63 exists to remove.
+                column = block[name]
+                present = column.notna()
+                if not present.any():
                     absent += 1
-                elif values[finite].min() == values[finite].max():
+                elif column[present].nunique(dropna=True) <= 1:
                     constant += 1
                 else:
                     alive += 1

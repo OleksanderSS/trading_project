@@ -1,0 +1,16 @@
+batch: D:\trading_project\data\colab\accumulated\main_database
+daily rows 705,819, of them explorable 623,398 (seal 2023-09-01)
+
+counting columns ending in '_1d': 918 of 2,317
+
+family              columns  alive here  constant   absent
+----------------------------------------------------------
+vix (ours)                2           1         0        1
+vix (FRED)                4           2         0        2
+filings                  20          10         0       10
+news/sentiment          112          10        46       56
+fear/greed                8           1         2        5
+
+'alive here' means the column carries more than one value BEFORE the seal --
+the only place any measurement happens. 'constant' is a filled default and
+'absent' never reached the explorable period at all (CLAIMS R63).
